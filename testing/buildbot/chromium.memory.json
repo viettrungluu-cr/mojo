@@ -1,0 +1,232 @@
+{
+  "Linux ASan LSan Tests (1)": {
+    "gtest_tests": [
+      "accessibility_unittests",
+      "app_shell_browsertests",
+      {
+        "test": "base_unittests",
+        "swarming": {
+          "can_use_on_swarming_builders": true
+        }
+      },
+      {
+        "test": "browser_tests",
+        "swarming": {
+          "can_use_on_swarming_builders": true,
+          "shards": 5
+        }
+      },
+      "cacheinvalidation_unittests",
+      "cast_unittests",
+      "cc_unittests",
+      "components_unittests",
+      {
+        "test": "content_browsertests",
+        "swarming": {
+          "can_use_on_swarming_builders": true
+        }
+      },
+      {
+        "test": "content_unittests",
+        "swarming": {
+          "can_use_on_swarming_builders": true
+        }
+      },
+      "crypto_unittests",
+      "device_unittests",
+      "display_unittests",
+      "gcm_unit_tests",
+      "gfx_unittests",
+      "google_apis_unittests",
+      "gpu_unittests",
+      {
+        "test": "interactive_ui_tests",
+        "swarming": {
+          "can_use_on_swarming_builders": true
+        }
+      },
+      "ipc_tests",
+      "jingle_unittests",
+      "media_unittests",
+      {
+        "test": "net_unittests",
+        "swarming": {
+          "can_use_on_swarming_builders": true
+        }
+      },
+      "ppapi_unittests",
+      "printing_unittests",
+      "remoting_unittests",
+      "sandbox_linux_unittests",
+      "sql_unittests",
+      "sync_unit_tests",
+      "ui_unittests",
+      {
+        "test": "unit_tests",
+        "swarming": {
+          "can_use_on_swarming_builders": true
+        }
+      },
+      "url_unittests"
+    ]
+  },
+  "Linux ASan LSan Tests (2)": {
+    "gtest_tests": [
+    ]
+  },
+  "Linux ASan LSan Tests (3)": {
+    "gtest_tests": [
+    ]
+  },
+  "Linux ASan Tests (sandboxed)": {
+    "gtest_tests": [
+      {
+        "test": "browser_tests",
+        "swarming": {
+          "can_use_on_swarming_builders": true,
+          "shards": 5
+        }
+      },
+      {
+        "test": "content_browsertests",
+        "swarming": {
+          "can_use_on_swarming_builders": true
+        }
+      },
+      {
+        "test": "interactive_ui_tests",
+        "swarming": {
+          "can_use_on_swarming_builders": true
+        }
+      }
+    ]
+  },
+  "Mac ASan Tests (1)": {
+    "gtest_tests": [
+      "base_unittests",
+      "cacheinvalidation_unittests",
+      "cc_unittests",
+      "chromedriver_unittests",
+      "components_unittests",
+      "content_browsertests",
+      "content_unittests",
+      "crypto_unittests",
+      "gcm_unit_tests",
+      "gpu_unittests",
+      "ipc_tests",
+      "jingle_unittests",
+      "media_unittests",
+      "ppapi_unittests",
+      "printing_unittests",
+      "remoting_unittests",
+      "sql_unittests",
+      "url_unittests",
+      {"test": "browser_tests", "shard_index": 0, "total_shards": 3}
+    ]
+  },
+  "Mac ASan Tests (2)": {
+    "gtest_tests": [
+      "net_unittests",
+      "sync_unit_tests",
+      "ui_unittests",
+      {"test": "browser_tests", "shard_index": 1, "total_shards": 3}
+    ]
+  },
+  "Mac ASan Tests (3)": {
+    "gtest_tests": [
+      "interactive_ui_tests",
+      {"test": "browser_tests", "shard_index": 2, "total_shards": 3}
+    ]
+  },
+  "Mac ASan 64 Tests (1)": {
+    "gtest_tests": [
+      "base_unittests",
+      "cacheinvalidation_unittests",
+      "cc_unittests",
+      "chromedriver_unittests",
+      "components_unittests",
+      "content_browsertests",
+      "content_unittests",
+      "crypto_unittests",
+      "gcm_unit_tests",
+      "gpu_unittests",
+      "ipc_tests",
+      "jingle_unittests",
+      "media_unittests",
+      "ppapi_unittests",
+      "printing_unittests",
+      "remoting_unittests",
+      "sql_unittests",
+      "unit_tests",
+      "url_unittests",
+      {"test": "browser_tests", "shard_index": 0, "total_shards": 3}
+    ]
+  },
+  "Mac ASan 64 Tests (2)": {
+    "gtest_tests": [
+      "net_unittests",
+      "sync_unit_tests",
+      "ui_unittests",
+      {"test": "browser_tests", "shard_index": 1, "total_shards": 3}
+    ]
+  },
+  "Mac ASan 64 Tests (3)": {
+    "gtest_tests": [
+      "interactive_ui_tests",
+      {"test": "browser_tests", "shard_index": 2, "total_shards": 3}
+    ]
+  },
+  "Linux Chromium OS ASan LSan Tests (1)": {
+    "gtest_tests": [
+      "ash_unittests",
+      "aura_unittests",
+      "base_unittests",
+      "cacheinvalidation_unittests",
+      "chromeos_unittests",
+      "compositor_unittests",
+      "content_browsertests",
+      "crypto_unittests",
+      "events_unittests",
+      "gcm_unit_tests",
+      "gpu_unittests",
+      "jingle_unittests",
+      "media_unittests",
+      "ppapi_unittests",
+      "printing_unittests",
+      "remoting_unittests",
+      "url_unittests",
+      "views_unittests",
+      {"test": "browser_tests", "shard_index": 0, "total_shards": 3}
+    ]
+  },
+  "Linux Chromium OS ASan LSan Tests (2)": {
+    "gtest_tests": [
+      "interactive_ui_tests",
+      "net_unittests",
+      {"test": "browser_tests", "shard_index": 1, "total_shards": 3}
+    ]
+  },
+  "Linux Chromium OS ASan LSan Tests (3)": {
+    "gtest_tests": [
+      "accessibility_unittests",
+      "app_list_unittests",
+      "athena_unittests",
+      "cast_unittests",
+      "components_unittests",
+      "content_unittests",
+      "device_unittests",
+      "display_unittests",
+      "gfx_unittests",
+      "google_apis_unittests",
+      "ipc_tests",
+      "message_center_unittests",
+      "nacl_loader_unittests",
+      "sandbox_linux_unittests",
+      "sql_unittests",
+      "sync_unittests",
+      "ui_unittests",
+      "unit_tests",
+      {"test": "browser_tests", "shard_index": 2, "total_shards": 3}
+    ]
+  }
+}
