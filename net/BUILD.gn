@@ -41,13 +41,11 @@ posix_avoid_mmap = is_android && cpu_arch != "x86"
 
 # WebSockets and socket stream code are used everywhere except iOS.
 enable_websockets = !is_ios
+use_v8_in_net = !is_ios
 enable_built_in_dns = !is_ios
 disable_ftp_support = is_ios
 
 declare_args() {
-  # Enables proxy auto config support. Disabled by default on iOS.
-  use_v8_in_net = !is_ios
-
   # Disables support for file URLs.  File URL support requires use of icu.
   disable_file_support = false
 }
@@ -59,9 +57,6 @@ config("net_config") {
   }
   if (disable_file_support) {
     defines += [ "DISABLE_FILE_SUPPORT" ]
-  }
-  if (!use_v8_in_net) {
-    defines += [ "DISABLE_V8_IN_NET" ]
   }
 }
 
@@ -556,8 +551,6 @@ grit("net_resources") {
   ]
 }
 
-if (false) {
-
 static_library("extras") {
   sources = gypi_values.net_extras_sources
   configs += [ "//build/config/compiler:wexit_time_destructors" ]
@@ -566,8 +559,6 @@ static_library("extras") {
     "//sql:sql",
   ]
 }
-
-} # if (false)
 
 static_library("http_server") {
   sources = [
@@ -1112,14 +1103,11 @@ source_set("quic_tools") {
 test("net_unittests") {
   sources = gypi_values.net_test_sources
 
-  sources -= [
-    "extras/sqlite/sqlite_channel_id_store_unittest.cc",
-  ]
-
   configs += [ ":net_win_size_truncation" ]
   defines = []
 
   deps = [
+    ":extras",
     ":http_server",
     ":net",
     ":quic_tools",

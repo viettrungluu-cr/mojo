@@ -19,7 +19,7 @@
 #include "url/android/url_jni_registrar.h"
 #endif
 
-#if !defined(DISABLE_V8_IN_NET)
+#if !defined(OS_IOS)
 #include "net/proxy/proxy_resolver_v8.h"
 #endif
 
@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
   // single-threaded.
   net::EnableSSLServerSockets();
 
-#if !defined(DISABLE_V8_IN_NET)
+#if !defined(OS_IOS)
   net::ProxyResolverV8::EnsureIsolateCreated();
 #endif
 

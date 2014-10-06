@@ -11,6 +11,7 @@
 #include "net/base/net_errors.h"
 #include "net/dns/mock_host_resolver.h"
 #include "net/proxy/proxy_info.h"
+#include "net/proxy/proxy_resolver_v8.h"
 #include "net/test/spawned_test_server/spawned_test_server.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
@@ -18,10 +19,6 @@
 #include "net/proxy/proxy_resolver_winhttp.h"
 #elif defined(OS_MACOSX)
 #include "net/proxy/proxy_resolver_mac.h"
-#endif
-
-#if !defined(DISABLE_V8_IN_NET)
-#include "net/proxy/proxy_resolver_v8.h"
 #endif
 
 // This class holds the URL to use for resolving, and the expected result.
@@ -198,8 +195,6 @@ TEST(ProxyResolverPerfTest, ProxyResolverMac) {
 }
 #endif
 
-#if !defined(DISABLE_V8_IN_NET)
-
 class MockJSBindings : public net::ProxyResolverV8::JSBindings {
  public:
   MockJSBindings() {}
@@ -231,5 +226,3 @@ TEST(ProxyResolverPerfTest, ProxyResolverV8) {
   PacPerfSuiteRunner runner(&resolver, "ProxyResolverV8");
   runner.RunAllTests();
 }
-
-#endif  // !defined(DISABLE_V8_IN_NET)

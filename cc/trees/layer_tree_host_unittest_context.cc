@@ -15,6 +15,8 @@
 #include "cc/layers/picture_layer.h"
 #include "cc/layers/texture_layer.h"
 #include "cc/layers/texture_layer_impl.h"
+#include "cc/layers/video_layer.h"
+#include "cc/layers/video_layer_impl.h"
 #include "cc/output/filter_operations.h"
 #include "cc/resources/single_release_callback.h"
 #include "cc/test/fake_content_layer.h"
@@ -30,6 +32,7 @@
 #include "cc/test/fake_picture_layer_impl.h"
 #include "cc/test/fake_scoped_ui_resource.h"
 #include "cc/test/fake_scrollbar.h"
+#include "cc/test/fake_video_frame_provider.h"
 #include "cc/test/layer_tree_test.h"
 #include "cc/test/render_pass_test_common.h"
 #include "cc/test/test_context_provider.h"
@@ -39,6 +42,9 @@
 #include "cc/trees/layer_tree_impl.h"
 #include "cc/trees/single_thread_proxy.h"
 #include "gpu/GLES2/gl2extchromium.h"
+#include "media/base/media.h"
+
+using media::VideoFrame;
 
 namespace cc {
 namespace {
@@ -59,6 +65,7 @@ class LayerTreeHostContextTest : public LayerTreeTest {
         context_should_support_io_surface_(false),
         fallback_context_works_(false),
         async_output_surface_creation_(false) {
+    media::InitializeMediaLibraryForTesting();
   }
 
   void LoseContext() {
@@ -937,6 +944,49 @@ class LayerTreeHostContextTestDontUseLostResources
     layer_with_mask->SetMaskLayer(mask.get());
     root->AddChild(layer_with_mask);
 
+    scoped_refptr<VideoLayer> video_color =
+        VideoLayer::Create(&color_frame_provider_, media::VIDEO_ROTATION_0);
+    video_color->SetBounds(gfx::Size(10, 10));
+    video_color->SetIsDrawable(true);
+    root->AddChild(video_color);
+
+    scoped_refptr<VideoLayer> video_hw =
+        VideoLayer::Create(&hw_frame_provider_, media::VIDEO_ROTATION_0);
+    video_hw->SetBounds(gfx::Size(10, 10));
+    video_hw->SetIsDrawable(true);
+    root->AddChild(video_hw);
+
+    scoped_refptr<VideoLayer> video_scaled_hw =
+        VideoLayer::Create(&scaled_hw_frame_provider_, media::VIDEO_ROTATION_0);
+    video_scaled_hw->SetBounds(gfx::Size(10, 10));
+    video_scaled_hw->SetIsDrawable(true);
+    root->AddChild(video_scaled_hw);
+
+    color_video_frame_ = VideoFrame::CreateColorFrame(
+        gfx::Size(4, 4), 0x80, 0x80, 0x80, base::TimeDelta());
+    hw_video_frame_ =
+        VideoFrame::WrapNativeTexture(make_scoped_ptr(new gpu::MailboxHolder(
+                                          mailbox, GL_TEXTURE_2D, sync_point)),
+                                      media::VideoFrame::ReleaseMailboxCB(),
+                                      gfx::Size(4, 4),
+                                      gfx::Rect(0, 0, 4, 4),
+                                      gfx::Size(4, 4),
+                                      base::TimeDelta(),
+                                      VideoFrame::ReadPixelsCB());
+    scaled_hw_video_frame_ =
+        VideoFrame::WrapNativeTexture(make_scoped_ptr(new gpu::MailboxHolder(
+                                          mailbox, GL_TEXTURE_2D, sync_point)),
+                                      media::VideoFrame::ReleaseMailboxCB(),
+                                      gfx::Size(4, 4),
+                                      gfx::Rect(0, 0, 3, 2),
+                                      gfx::Size(4, 4),
+                                      base::TimeDelta(),
+                                      VideoFrame::ReadPixelsCB());
+
+    color_frame_provider_.set_frame(color_video_frame_);
+    hw_frame_provider_.set_frame(hw_video_frame_);
+    scaled_hw_frame_provider_.set_frame(scaled_hw_video_frame_);
+
     if (!delegating_renderer()) {
       // TODO(danakj): IOSurface layer can not be transported. crbug.com/239335
       scoped_refptr<IOSurfaceLayer> io_surface = IOSurfaceLayer::Create();
@@ -966,6 +1016,14 @@ class LayerTreeHostContextTestDontUseLostResources
 
   virtual void CommitCompleteOnThread(LayerTreeHostImpl* host_impl) OVERRIDE {
     LayerTreeHostContextTest::CommitCompleteOnThread(host_impl);
+
+    if (host_impl->active_tree()->source_frame_number() == 3) {
+      // On the third commit we're recovering from context loss. Hardware
+      // video frames should not be reused by the VideoFrameProvider, but
+      // software frames can be.
+      hw_frame_provider_.set_frame(NULL);
+      scaled_hw_frame_provider_.set_frame(NULL);
+    }
   }
 
   virtual DrawResult PrepareToDrawOnThread(
@@ -1016,6 +1074,14 @@ class LayerTreeHostContextTestDontUseLostResources
   scoped_refptr<DelegatedFrameResourceCollection>
       delegated_resource_collection_;
   scoped_refptr<DelegatedFrameProvider> delegated_frame_provider_;
+
+  scoped_refptr<VideoFrame> color_video_frame_;
+  scoped_refptr<VideoFrame> hw_video_frame_;
+  scoped_refptr<VideoFrame> scaled_hw_video_frame_;
+
+  FakeVideoFrameProvider color_frame_provider_;
+  FakeVideoFrameProvider hw_frame_provider_;
+  FakeVideoFrameProvider scaled_hw_frame_provider_;
 };
 
 SINGLE_AND_MULTI_THREAD_TEST_F(LayerTreeHostContextTestDontUseLostResources);

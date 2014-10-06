@@ -12,6 +12,7 @@
 #include "cc/test/fake_picture_pile_impl.h"
 #include "cc/test/pixel_test.h"
 #include "gpu/command_buffer/client/gles2_interface.h"
+#include "media/base/video_frame.h"
 #include "third_party/skia/include/core/SkColorPriv.h"
 #include "third_party/skia/include/core/SkImageFilter.h"
 #include "third_party/skia/include/core/SkMatrix.h"
@@ -381,6 +382,346 @@ TEST_F(GLRendererPixelTest, NonPremultipliedTextureWithBackground) {
       &pass_list,
       base::FilePath(FILE_PATH_LITERAL("green_alpha.png")),
       FuzzyPixelOffByOneComparator(true)));
+}
+
+class VideoGLRendererPixelTest : public GLRendererPixelTest {
+ protected:
+  void CreateTestYUVVideoDrawQuad_Striped(const SharedQuadState* shared_state,
+                                          media::VideoFrame::Format format,
+                                          bool is_transparent,
+                                          const gfx::RectF& tex_coord_rect,
+                                          RenderPass* render_pass) {
+    const gfx::Rect rect(this->device_viewport_size_);
+
+    scoped_refptr<media::VideoFrame> video_frame =
+        media::VideoFrame::CreateFrame(
+            format, rect.size(), rect, rect.size(), base::TimeDelta());
+
+    // YUV values representing a striped pattern, for validating texture
+    // coordinates for sampling.
+    uint8_t y_value = 0;
+    uint8_t u_value = 0;
+    uint8_t v_value = 0;
+    for (int i = 0; i < video_frame->rows(media::VideoFrame::kYPlane); ++i) {
+      uint8_t* y_row = video_frame->data(media::VideoFrame::kYPlane) +
+                       video_frame->stride(media::VideoFrame::kYPlane) * i;
+      for (int j = 0; j < video_frame->row_bytes(media::VideoFrame::kYPlane);
+           ++j) {
+        y_row[j] = (y_value += 1);
+      }
+    }
+    for (int i = 0; i < video_frame->rows(media::VideoFrame::kUPlane); ++i) {
+      uint8_t* u_row = video_frame->data(media::VideoFrame::kUPlane) +
+                       video_frame->stride(media::VideoFrame::kUPlane) * i;
+      uint8_t* v_row = video_frame->data(media::VideoFrame::kVPlane) +
+                       video_frame->stride(media::VideoFrame::kVPlane) * i;
+      for (int j = 0; j < video_frame->row_bytes(media::VideoFrame::kUPlane);
+           ++j) {
+        u_row[j] = (u_value += 3);
+        v_row[j] = (v_value += 5);
+      }
+    }
+    CreateTestYUVVideoDrawQuad_FromVideoFrame(
+        shared_state, video_frame, is_transparent, tex_coord_rect, render_pass);
+  }
+
+  void CreateTestYUVVideoDrawQuad_Solid(const SharedQuadState* shared_state,
+                                        media::VideoFrame::Format format,
+                                        bool is_transparent,
+                                        const gfx::RectF& tex_coord_rect,
+                                        uint8 y,
+                                        uint8 u,
+                                        uint8 v,
+                                        RenderPass* render_pass) {
+    const gfx::Rect rect(this->device_viewport_size_);
+
+    scoped_refptr<media::VideoFrame> video_frame =
+        media::VideoFrame::CreateFrame(
+            format, rect.size(), rect, rect.size(), base::TimeDelta());
+
+    // YUV values of a solid, constant, color. Useful for testing that color
+    // space/color range are being handled properly.
+    memset(video_frame->data(media::VideoFrame::kYPlane),
+           y,
+           video_frame->stride(media::VideoFrame::kYPlane) *
+               video_frame->rows(media::VideoFrame::kYPlane));
+    memset(video_frame->data(media::VideoFrame::kUPlane),
+           u,
+           video_frame->stride(media::VideoFrame::kUPlane) *
+               video_frame->rows(media::VideoFrame::kUPlane));
+    memset(video_frame->data(media::VideoFrame::kVPlane),
+           v,
+           video_frame->stride(media::VideoFrame::kVPlane) *
+               video_frame->rows(media::VideoFrame::kVPlane));
+
+    CreateTestYUVVideoDrawQuad_FromVideoFrame(
+        shared_state, video_frame, is_transparent, tex_coord_rect, render_pass);
+  }
+
+  void CreateTestYUVVideoDrawQuad_FromVideoFrame(
+      const SharedQuadState* shared_state,
+      scoped_refptr<media::VideoFrame> video_frame,
+      bool is_transparent,
+      const gfx::RectF& tex_coord_rect,
+      RenderPass* render_pass) {
+    const bool with_alpha = (video_frame->format() == media::VideoFrame::YV12A);
+    const YUVVideoDrawQuad::ColorSpace color_space =
+        (video_frame->format() == media::VideoFrame::YV12J
+             ? YUVVideoDrawQuad::REC_601_JPEG
+             : YUVVideoDrawQuad::REC_601);
+    const gfx::Rect rect(this->device_viewport_size_);
+    const gfx::Rect opaque_rect(0, 0, 0, 0);
+
+    if (with_alpha)
+      memset(video_frame->data(media::VideoFrame::kAPlane),
+             is_transparent ? 0 : 128,
+             video_frame->stride(media::VideoFrame::kAPlane) *
+                 video_frame->rows(media::VideoFrame::kAPlane));
+
+    VideoFrameExternalResources resources =
+        video_resource_updater_->CreateExternalResourcesFromVideoFrame(
+            video_frame);
+
+    EXPECT_EQ(VideoFrameExternalResources::YUV_RESOURCE, resources.type);
+    EXPECT_EQ(media::VideoFrame::NumPlanes(video_frame->format()),
+              resources.mailboxes.size());
+    EXPECT_EQ(media::VideoFrame::NumPlanes(video_frame->format()),
+              resources.release_callbacks.size());
+
+    ResourceProvider::ResourceId y_resource =
+        resource_provider_->CreateResourceFromTextureMailbox(
+            resources.mailboxes[media::VideoFrame::kYPlane],
+            SingleReleaseCallbackImpl::Create(
+                resources.release_callbacks[media::VideoFrame::kYPlane]));
+    ResourceProvider::ResourceId u_resource =
+        resource_provider_->CreateResourceFromTextureMailbox(
+            resources.mailboxes[media::VideoFrame::kUPlane],
+            SingleReleaseCallbackImpl::Create(
+                resources.release_callbacks[media::VideoFrame::kUPlane]));
+    ResourceProvider::ResourceId v_resource =
+        resource_provider_->CreateResourceFromTextureMailbox(
+            resources.mailboxes[media::VideoFrame::kVPlane],
+            SingleReleaseCallbackImpl::Create(
+                resources.release_callbacks[media::VideoFrame::kVPlane]));
+    ResourceProvider::ResourceId a_resource = 0;
+    if (with_alpha) {
+      a_resource = resource_provider_->CreateResourceFromTextureMailbox(
+          resources.mailboxes[media::VideoFrame::kAPlane],
+          SingleReleaseCallbackImpl::Create(
+              resources.release_callbacks[media::VideoFrame::kAPlane]));
+    }
+
+    YUVVideoDrawQuad* yuv_quad =
+        render_pass->CreateAndAppendDrawQuad<YUVVideoDrawQuad>();
+    yuv_quad->SetNew(shared_state,
+                     rect,
+                     opaque_rect,
+                     rect,
+                     tex_coord_rect,
+                     y_resource,
+                     u_resource,
+                     v_resource,
+                     a_resource,
+                     color_space);
+  }
+
+  virtual void SetUp() OVERRIDE {
+    GLRendererPixelTest::SetUp();
+    video_resource_updater_.reset(new VideoResourceUpdater(
+        output_surface_->context_provider(), resource_provider_.get()));
+  }
+
+ private:
+  scoped_ptr<VideoResourceUpdater> video_resource_updater_;
+};
+
+TEST_F(VideoGLRendererPixelTest, SimpleYUVRect) {
+  gfx::Rect rect(this->device_viewport_size_);
+
+  RenderPassId id(1, 1);
+  scoped_ptr<RenderPass> pass = CreateTestRootRenderPass(id, rect);
+
+  SharedQuadState* shared_state =
+      CreateTestSharedQuadState(gfx::Transform(), rect, pass.get());
+
+  CreateTestYUVVideoDrawQuad_Striped(shared_state,
+                                     media::VideoFrame::YV12,
+                                     false,
+                                     gfx::RectF(0.0f, 0.0f, 1.0f, 1.0f),
+                                     pass.get());
+
+  RenderPassList pass_list;
+  pass_list.push_back(pass.Pass());
+
+  EXPECT_TRUE(
+      this->RunPixelTest(&pass_list,
+                         base::FilePath(FILE_PATH_LITERAL("yuv_stripes.png")),
+                         FuzzyPixelOffByOneComparator(true)));
+}
+
+TEST_F(VideoGLRendererPixelTest, OffsetYUVRect) {
+  gfx::Rect rect(this->device_viewport_size_);
+
+  RenderPassId id(1, 1);
+  scoped_ptr<RenderPass> pass = CreateTestRootRenderPass(id, rect);
+
+  SharedQuadState* shared_state =
+      CreateTestSharedQuadState(gfx::Transform(), rect, pass.get());
+
+  // Intentionally sets frame format to I420 for testing coverage.
+  CreateTestYUVVideoDrawQuad_Striped(shared_state,
+                                     media::VideoFrame::I420,
+                                     false,
+                                     gfx::RectF(0.125f, 0.25f, 0.75f, 0.5f),
+                                     pass.get());
+
+  RenderPassList pass_list;
+  pass_list.push_back(pass.Pass());
+
+  EXPECT_TRUE(this->RunPixelTest(
+      &pass_list,
+      base::FilePath(FILE_PATH_LITERAL("yuv_stripes_offset.png")),
+      FuzzyPixelOffByOneComparator(true)));
+}
+
+TEST_F(VideoGLRendererPixelTest, SimpleYUVRectBlack) {
+  gfx::Rect rect(this->device_viewport_size_);
+
+  RenderPassId id(1, 1);
+  scoped_ptr<RenderPass> pass = CreateTestRootRenderPass(id, rect);
+
+  SharedQuadState* shared_state =
+      CreateTestSharedQuadState(gfx::Transform(), rect, pass.get());
+
+  // In MPEG color range YUV values of (15,128,128) should produce black.
+  CreateTestYUVVideoDrawQuad_Solid(shared_state,
+                                   media::VideoFrame::YV12,
+                                   false,
+                                   gfx::RectF(0.0f, 0.0f, 1.0f, 1.0f),
+                                   15,
+                                   128,
+                                   128,
+                                   pass.get());
+
+  RenderPassList pass_list;
+  pass_list.push_back(pass.Pass());
+
+  // If we didn't get black out of the YUV values above, then we probably have a
+  // color range issue.
+  EXPECT_TRUE(this->RunPixelTest(&pass_list,
+                                 base::FilePath(FILE_PATH_LITERAL("black.png")),
+                                 FuzzyPixelOffByOneComparator(true)));
+}
+
+TEST_F(VideoGLRendererPixelTest, SimpleYUVJRect) {
+  gfx::Rect rect(this->device_viewport_size_);
+
+  RenderPassId id(1, 1);
+  scoped_ptr<RenderPass> pass = CreateTestRootRenderPass(id, rect);
+
+  SharedQuadState* shared_state =
+      CreateTestSharedQuadState(gfx::Transform(), rect, pass.get());
+
+  // YUV of (149,43,21) should be green (0,255,0) in RGB.
+  CreateTestYUVVideoDrawQuad_Solid(shared_state,
+                                   media::VideoFrame::YV12J,
+                                   false,
+                                   gfx::RectF(0.0f, 0.0f, 1.0f, 1.0f),
+                                   149,
+                                   43,
+                                   21,
+                                   pass.get());
+
+  RenderPassList pass_list;
+  pass_list.push_back(pass.Pass());
+
+  EXPECT_TRUE(this->RunPixelTest(&pass_list,
+                                 base::FilePath(FILE_PATH_LITERAL("green.png")),
+                                 FuzzyPixelOffByOneComparator(true)));
+}
+
+TEST_F(VideoGLRendererPixelTest, SimpleYUVJRectGrey) {
+  gfx::Rect rect(this->device_viewport_size_);
+
+  RenderPassId id(1, 1);
+  scoped_ptr<RenderPass> pass = CreateTestRootRenderPass(id, rect);
+
+  SharedQuadState* shared_state =
+      CreateTestSharedQuadState(gfx::Transform(), rect, pass.get());
+
+  // Dark grey in JPEG color range (in MPEG, this is black).
+  CreateTestYUVVideoDrawQuad_Solid(shared_state,
+                                   media::VideoFrame::YV12J,
+                                   false,
+                                   gfx::RectF(0.0f, 0.0f, 1.0f, 1.0f),
+                                   15,
+                                   128,
+                                   128,
+                                   pass.get());
+
+  RenderPassList pass_list;
+  pass_list.push_back(pass.Pass());
+
+  EXPECT_TRUE(
+      this->RunPixelTest(&pass_list,
+                         base::FilePath(FILE_PATH_LITERAL("dark_grey.png")),
+                         FuzzyPixelOffByOneComparator(true)));
+}
+
+TEST_F(VideoGLRendererPixelTest, SimpleYUVARect) {
+  gfx::Rect rect(this->device_viewport_size_);
+
+  RenderPassId id(1, 1);
+  scoped_ptr<RenderPass> pass = CreateTestRootRenderPass(id, rect);
+
+  SharedQuadState* shared_state =
+      CreateTestSharedQuadState(gfx::Transform(), rect, pass.get());
+
+  CreateTestYUVVideoDrawQuad_Striped(shared_state,
+                                     media::VideoFrame::YV12A,
+                                     false,
+                                     gfx::RectF(0.0f, 0.0f, 1.0f, 1.0f),
+                                     pass.get());
+
+  SolidColorDrawQuad* color_quad =
+      pass->CreateAndAppendDrawQuad<SolidColorDrawQuad>();
+  color_quad->SetNew(shared_state, rect, rect, SK_ColorWHITE, false);
+
+  RenderPassList pass_list;
+  pass_list.push_back(pass.Pass());
+
+  EXPECT_TRUE(this->RunPixelTest(
+      &pass_list,
+      base::FilePath(FILE_PATH_LITERAL("yuv_stripes_alpha.png")),
+      FuzzyPixelOffByOneComparator(true)));
+}
+
+TEST_F(VideoGLRendererPixelTest, FullyTransparentYUVARect) {
+  gfx::Rect rect(this->device_viewport_size_);
+
+  RenderPassId id(1, 1);
+  scoped_ptr<RenderPass> pass = CreateTestRootRenderPass(id, rect);
+
+  SharedQuadState* shared_state =
+      CreateTestSharedQuadState(gfx::Transform(), rect, pass.get());
+
+  CreateTestYUVVideoDrawQuad_Striped(shared_state,
+                                     media::VideoFrame::YV12A,
+                                     true,
+                                     gfx::RectF(0.0f, 0.0f, 1.0f, 1.0f),
+                                     pass.get());
+
+  SolidColorDrawQuad* color_quad =
+      pass->CreateAndAppendDrawQuad<SolidColorDrawQuad>();
+  color_quad->SetNew(shared_state, rect, rect, SK_ColorBLACK, false);
+
+  RenderPassList pass_list;
+  pass_list.push_back(pass.Pass());
+
+  EXPECT_TRUE(this->RunPixelTest(
+      &pass_list,
+      base::FilePath(FILE_PATH_LITERAL("black.png")),
+      ExactPixelComparator(true)));
 }
 
 TYPED_TEST(RendererPixelTest, FastPassColorFilterAlpha) {

@@ -26,6 +26,7 @@
 #include "cc/layers/solid_color_scrollbar_layer_impl.h"
 #include "cc/layers/texture_layer_impl.h"
 #include "cc/layers/tiled_layer_impl.h"
+#include "cc/layers/video_layer_impl.h"
 #include "cc/output/begin_frame_args.h"
 #include "cc/output/compositor_frame_ack.h"
 #include "cc/output/compositor_frame_metadata.h"
@@ -46,6 +47,7 @@
 #include "cc/test/fake_picture_pile_impl.h"
 #include "cc/test/fake_proxy.h"
 #include "cc/test/fake_rendering_stats_instrumentation.h"
+#include "cc/test/fake_video_frame_provider.h"
 #include "cc/test/geometry_test_utils.h"
 #include "cc/test/layer_test_common.h"
 #include "cc/test/render_pass_test_common.h"
@@ -53,6 +55,7 @@
 #include "cc/test/test_web_graphics_context_3d.h"
 #include "cc/trees/layer_tree_impl.h"
 #include "cc/trees/single_thread_proxy.h"
+#include "media/base/media.h"
 #include "testing/gmock/include/gmock/gmock.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "third_party/skia/include/core/SkMallocPixelRef.h"
@@ -66,6 +69,7 @@ using ::testing::Return;
 using ::testing::AnyNumber;
 using ::testing::AtLeast;
 using ::testing::_;
+using media::VideoFrame;
 
 namespace cc {
 namespace {
@@ -89,6 +93,7 @@ class LayerTreeHostImplTest : public testing::Test,
         reduce_memory_result_(true),
         current_limit_bytes_(0),
         current_priority_cutoff_value_(0) {
+    media::InitializeMediaLibraryForTesting();
   }
 
   LayerTreeSettings DefaultSettings() {
@@ -4821,6 +4826,18 @@ TEST_F(LayerTreeHostImplTest, LayersFreeTextures) {
       LayerImpl::Create(host_impl_->active_tree(), 1);
   root_layer->SetBounds(gfx::Size(10, 10));
 
+  scoped_refptr<VideoFrame> softwareFrame =
+      media::VideoFrame::CreateColorFrame(
+          gfx::Size(4, 4), 0x80, 0x80, 0x80, base::TimeDelta());
+  FakeVideoFrameProvider provider;
+  provider.set_frame(softwareFrame);
+  scoped_ptr<VideoLayerImpl> video_layer = VideoLayerImpl::Create(
+      host_impl_->active_tree(), 4, &provider, media::VIDEO_ROTATION_0);
+  video_layer->SetBounds(gfx::Size(10, 10));
+  video_layer->SetContentBounds(gfx::Size(10, 10));
+  video_layer->SetDrawsContent(true);
+  root_layer->AddChild(video_layer.Pass());
+
   scoped_ptr<IOSurfaceLayerImpl> io_surface_layer =
       IOSurfaceLayerImpl::Create(host_impl_->active_tree(), 5);
   io_surface_layer->SetBounds(gfx::Size(10, 10));
@@ -5855,6 +5872,16 @@ TEST_F(LayerTreeHostImplTest,
   // SolidColorLayerImpl will be drawn.
   scoped_ptr<SolidColorLayerImpl> root_layer =
       SolidColorLayerImpl::Create(host_impl_->active_tree(), 1);
+
+  // VideoLayerImpl will not be drawn.
+  FakeVideoFrameProvider provider;
+  scoped_ptr<VideoLayerImpl> video_layer = VideoLayerImpl::Create(
+      host_impl_->active_tree(), 2, &provider, media::VIDEO_ROTATION_0);
+  video_layer->SetBounds(gfx::Size(10, 10));
+  video_layer->SetContentBounds(gfx::Size(10, 10));
+  video_layer->SetDrawsContent(true);
+  root_layer->AddChild(video_layer.Pass());
+  SetupRootLayerImpl(root_layer.Pass());
 
   LayerTreeHostImpl::FrameData frame;
   EXPECT_EQ(DRAW_SUCCESS, host_impl_->PrepareToDraw(&frame));

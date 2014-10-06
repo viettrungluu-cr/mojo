@@ -693,7 +693,6 @@
               'proxy/proxy_resolver_v8_unittest.cc',
               'proxy/proxy_resolver_v8_tracing_unittest.cc',
             ],
-            'defines': [ 'DISABLE_V8_IN_NET' ],
           },
         ],
 
@@ -991,10 +990,11 @@
           ],
         }],
         [ 'use_v8_in_net==1', {
-          'dependencies': [
-            'net_with_v8',
-          ],
-        }],
+            'dependencies': [
+              'net_with_v8',
+            ],
+          },
+        ],
         [ 'enable_mdns != 1', {
             'sources!' : [
               'dns/mock_mdns_socket_factory.cc',
@@ -1174,14 +1174,6 @@
           'msvs_disabled_warnings': [4267, ],
         },
       ],
-    }, {
-      'defines': [ 'DISABLE_V8_IN_NET' ],
-      'targets': [
-        {
-          'target_name': 'net_with_v8',
-          'type':        'none',
-        }
-      ]
     }],
     ['OS != "ios" and OS != "android"', {
       'targets': [
