@@ -30,7 +30,12 @@ vars = {
   'skia_git': 'https://skia.googlesource.com',
   'boringssl_git': 'https://boringssl.googlesource.com',
   'sfntly_revision': '1bdaae8fc788a5ac8936d68bf24f37d977a13dac',
-  'skia_revision': '9e96aa07dbf1210fd35ae8e0c54d4d9822544e89',
+  'skia_revision': 'fa38a30897ceda3e93355d69b8a6812c823f41f6',
+  # Three lines of non-changing comments so that
+  # the commit queue can handle CLs rolling Skia
+  # and V8 without interference from each other.
+  'v8_branch': 'trunk',
+  'v8_revision': '725db4046a387a27c9bd0de9f3fe13c541c07544', # from svn revision 24398
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling ANGLE
   # and whatever else without interference from each other.
@@ -42,7 +47,7 @@ vars = {
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling BoringSSL
   # and whatever else without interference from each other.
-  'boringssl_revision': 'c7dd5f301f5081972002cd3c64b3e2ddd5acfb9a',
+  'boringssl_revision': '51fcd871028d1bb5f0a3b541e823cefd2f2aba63',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling lss
   # and whatever else without interference from each other.
@@ -84,6 +89,9 @@ deps = {
 
   'src/tools/grit':
     Var('chromium_git') + '/external/grit-i18n.git' + '@' + '740badd5e3e44434a9a47b5d16749daac1e8ea80', # from svn revision 176
+
+  'src/v8':
+    Var('chromium_git') + '/v8/v8.git' + '@' +  Var('v8_revision'),
 
   'src/third_party/sfntly/cpp/src':
     Var('chromium_git') + '/external/sfntly/cpp/src.git' + '@' +  Var('sfntly_revision'),
