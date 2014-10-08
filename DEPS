@@ -30,16 +30,16 @@ vars = {
   'skia_git': 'https://skia.googlesource.com',
   'boringssl_git': 'https://boringssl.googlesource.com',
   'sfntly_revision': '1bdaae8fc788a5ac8936d68bf24f37d977a13dac',
-  'skia_revision': 'fa38a30897ceda3e93355d69b8a6812c823f41f6',
+  'skia_revision': '47326ab5bb626ad0d4910a556889abf9f78bc273',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling Skia
   # and V8 without interference from each other.
   'v8_branch': 'trunk',
-  'v8_revision': '725db4046a387a27c9bd0de9f3fe13c541c07544', # from svn revision 24398
+  'v8_revision': '5815eef91b345b01819b7866e9498e8f0fe00af1', # from svn revision 24398
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling ANGLE
   # and whatever else without interference from each other.
-  "angle_revision": "b4fd0c96d21ff1534e1d6db40dcf142eeebda0d0",
+  "angle_revision": "e0a2d1c5a8e55f26f1bff6b514733605f20b9f82",
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling build tools
   # and whatever else without interference from each other.
