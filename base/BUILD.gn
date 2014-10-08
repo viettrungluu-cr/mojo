@@ -445,6 +445,7 @@ component("base") {
     "power_monitor/power_monitor_device_source.h",
     "power_monitor/power_monitor_device_source_android.cc",
     "power_monitor/power_monitor_device_source_android.h",
+    "power_monitor/power_monitor_device_source_chromeos.cc",
     "power_monitor/power_monitor_device_source_ios.mm",
     "power_monitor/power_monitor_device_source_mac.mm",
     "power_monitor/power_monitor_device_source_posix.cc",
@@ -799,6 +800,12 @@ component("base") {
 
     sources -= [
       "debug/stack_trace_posix.cc",
+    ]
+  }
+
+  if (is_chromeos) {
+    sources -= [
+      "power_monitor/power_monitor_device_source_posix.cc",
     ]
   }
 
@@ -1317,6 +1324,7 @@ test("base_unittests") {
     "//base/test:run_all_unittests",
     "//base/test:test_support",
     "//base/third_party/dynamic_annotations",
+    "//base/third_party/nspr",
     "//testing/gmock",
     "//testing/gtest",
     "//third_party/icu",

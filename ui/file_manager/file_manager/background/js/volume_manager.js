@@ -10,7 +10,7 @@
  *
  * @param {VolumeManagerCommon.VolumeType} volumeType The type of the volume.
  * @param {string} volumeId ID of the volume.
- * @param {DOMFileSystem} fileSystem The file system object for this volume.
+ * @param {FileSystem} fileSystem The file system object for this volume.
  * @param {string} error The error if an error is found.
  * @param {?string} deviceType The type of device ('usb'|'sd'|'optical'|'mobile'
  *     |'unknown') (as defined in chromeos/disks/disk_mount_manager.cc).
@@ -91,7 +91,7 @@ VolumeInfo.prototype = {
     return this.volumeId_;
   },
   /**
-   * @return {DOMFileSystem} File system object.
+   * @return {FileSystem} File system object.
    */
   get fileSystem() {
     return this.fileSystem_;
@@ -157,15 +157,16 @@ VolumeInfo.prototype = {
  * Starts resolving the display root and obtains it.  It may take long time for
  * Drive. Once resolved, it is cached.
  *
- * @param {function(DirectoryEntry)} onSuccess Success callback with the
+ * @param {function(DirectoryEntry)=} opt_onSuccess Success callback with the
  *     display root directory as an argument.
- * @param {function(FileError)} onFailure Failure callback.
+ * @param {function(*)=} opt_onFailure Failure callback.
  * @return {Promise}
  */
-VolumeInfo.prototype.resolveDisplayRoot = function(onSuccess, onFailure) {
+VolumeInfo.prototype.resolveDisplayRoot = function(opt_onSuccess,
+                                                   opt_onFailure) {
   if (!this.displayRootPromise_) {
     // TODO(mtomasz): Do not add VolumeInfo which failed to resolve root, and
-    // remove this if logic. Call onSuccess() always, instead.
+    // remove this if logic. Call opt_onSuccess() always, instead.
     if (this.volumeType !== VolumeManagerCommon.VolumeType.DRIVE) {
       if (this.fileSystem_)
         this.displayRootPromise_ = Promise.resolve(this.fileSystem_.root);
@@ -183,8 +184,8 @@ VolumeInfo.prototype.resolveDisplayRoot = function(onSuccess, onFailure) {
       this.displayRoot_ = displayRoot;
     }.bind(this));
   }
-  if (onSuccess)
-    this.displayRootPromise_.then(onSuccess, onFailure);
+  if (opt_onSuccess)
+    this.displayRootPromise_.then(opt_onSuccess, opt_onFailure);
   return this.displayRootPromise_;
 };
 
@@ -826,7 +827,7 @@ VolumeManager.prototype.onTimeout_ = function(key) {
 
 /**
  * @param {string} key Key produced by |makeRequestKey_|.
- * @param {VolumeManagerCommon.VolumeError|'success'} status Status received
+ * @param {VolumeManagerCommon.VolumeError|string} status Status received
  *     from the API.
  * @param {VolumeInfo=} opt_volumeInfo Volume info of the mounted volume.
  * @private

@@ -20,6 +20,7 @@ var SHORT_RESCAN_INTERVAL = 100;
  * @param {MetadataCache} metadataCache The metadata cache service.
  * @param {VolumeManagerWrapper} volumeManager The volume manager.
  * @constructor
+ * @extends {cr.EventTarget}
  */
 function DirectoryModel(singleSelection, fileFilter, fileWatcher,
                         metadataCache, volumeManager) {
@@ -375,7 +376,7 @@ DirectoryModel.prototype.rescan = function(refresh) {
  *
  * This should be used when changing directory or initiating a new search.
  *
- * @param {DirectoryContentes} newDirContents New DirectoryContents instance to
+ * @param {DirectoryContents} newDirContents New DirectoryContents instance to
  *     replace currentDirContents_.
  * @param {function(boolean)} callback Callback with result. True if the scan
  *     is completed successfully, false if the scan is failed.
@@ -741,7 +742,7 @@ DirectoryModel.prototype.onRenameEntry = function(
  *
  * @param {string} name Directory name.
  * @param {function(DirectoryEntry)} successCallback Callback on success.
- * @param {function(FileError)} errorCallback Callback on failure.
+ * @param {function(DOMError)} errorCallback Callback on failure.
  * @param {function()} abortCallback Callback on abort (cancelled by user).
  */
 DirectoryModel.prototype.createDirectory = function(name,
@@ -793,7 +794,7 @@ DirectoryModel.prototype.createDirectory = function(name,
           successCallback(newEntry);
         }
       }.bind(this), function(reason) {
-        errorCallback(reason);
+        errorCallback(/** @type {DOMError} */ (reason));
       });
 };
 

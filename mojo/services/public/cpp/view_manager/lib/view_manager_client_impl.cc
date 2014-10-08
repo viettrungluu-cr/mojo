@@ -18,8 +18,6 @@
 #include "mojo/services/public/cpp/view_manager/view_manager_delegate.h"
 #include "mojo/services/public/cpp/view_manager/view_observer.h"
 #include "mojo/services/public/cpp/view_manager/window_manager_delegate.h"
-#include "third_party/skia/include/core/SkBitmap.h"
-#include "ui/gfx/codec/png_codec.h"
 
 namespace mojo {
 
@@ -80,7 +78,7 @@ class RootObserver : public ViewObserver {
 
  private:
   // Overridden from ViewObserver:
-  virtual void OnViewDestroyed(View* view) OVERRIDE {
+  virtual void OnViewDestroyed(View* view) override {
     DCHECK_EQ(view, root_);
     static_cast<ViewManagerClientImpl*>(
         ViewPrivate(root_).view_manager())->RemoveRoot(root_);
@@ -99,8 +97,7 @@ ViewManagerClientImpl::ViewManagerClientImpl(ViewManagerDelegate* delegate,
       connection_id_(0),
       next_id_(1),
       delegate_(delegate),
-      window_manager_delegate_(NULL),
-      shell_(shell) {
+      window_manager_delegate_(NULL) {
   // TODO(beng): Come up with a better way of establishing a configuration for
   //             what the active window manager is.
   std::string window_manager_url = "mojo:mojo_window_manager";
@@ -110,7 +107,7 @@ ViewManagerClientImpl::ViewManagerClientImpl(ViewManagerDelegate* delegate,
             "window-manager");
   }
   InterfacePtr<ServiceProvider> sp;
-  shell->ConnectToApplication(window_manager_url, Get(&sp));
+  shell->ConnectToApplication(window_manager_url, GetProxy(&sp));
   ConnectToService(sp.get(), &window_manager_);
   window_manager_.set_client(this);
 }

@@ -51,6 +51,16 @@ class BASE_EXPORT PowerMonitorDeviceSource : public PowerMonitorSource {
 #endif  // OS_IOS
 #endif  // OS_MACOSX
 
+#if defined(OS_CHROMEOS)
+  // On Chrome OS, Chrome receives power-related events from powerd, the system
+  // power daemon, via D-Bus signals received on the UI thread. base can't
+  // directly depend on that code, so this class instead exposes static methods
+  // so that events can be passed in.
+  static void SetPowerSource(bool on_battery);
+  static void HandleSystemSuspending();
+  static void HandleSystemResumed();
+#endif
+
  private:
 #if defined(OS_WIN)
   // Represents a message-only window for power message handling on Windows.
@@ -80,7 +90,7 @@ class BASE_EXPORT PowerMonitorDeviceSource : public PowerMonitorSource {
   // Platform-specific method to check whether the system is currently
   // running on battery power.  Returns true if running on batteries,
   // false otherwise.
-  virtual bool IsOnBatteryPowerImpl() OVERRIDE;
+  virtual bool IsOnBatteryPowerImpl() override;
 
   // Checks the battery status and notifies observers if the battery
   // status has changed.

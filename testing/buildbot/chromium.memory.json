@@ -35,6 +35,7 @@
       "crypto_unittests",
       "device_unittests",
       "display_unittests",
+      "extensions_unittests",
       "gcm_unit_tests",
       "gfx_unittests",
       "google_apis_unittests",
@@ -223,7 +224,7 @@
       "nacl_loader_unittests",
       "sandbox_linux_unittests",
       "sql_unittests",
-      "sync_unittests",
+      "sync_unit_tests",
       "ui_unittests",
       "unit_tests",
       {"test": "browser_tests", "shard_index": 2, "total_shards": 3}

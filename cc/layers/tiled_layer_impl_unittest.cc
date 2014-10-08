@@ -70,9 +70,8 @@ class TiledLayerImplTest : public testing::Test {
     layer->draw_properties().visible_content_rect = visible_content_rect;
     layer->SetBounds(layer_size);
 
-    MockOcclusionTracker<LayerImpl> occlusion_tracker;
     AppendQuadsData data;
-    layer->AppendQuads(render_pass, occlusion_tracker, &data);
+    layer->AppendQuads(render_pass, Occlusion(), &data);
   }
 
  protected:
@@ -92,12 +91,11 @@ TEST_F(TiledLayerImplTest, EmptyQuadList) {
   {
     scoped_ptr<TiledLayerImpl> layer =
         CreateLayer(tile_size, layer_size, LayerTilingData::NO_BORDER_TEXELS);
-    MockOcclusionTracker<LayerImpl> occlusion_tracker;
     scoped_ptr<RenderPass> render_pass = RenderPass::Create();
 
     AppendQuadsData data;
     EXPECT_TRUE(layer->WillDraw(DRAW_MODE_HARDWARE, NULL));
-    layer->AppendQuads(render_pass.get(), occlusion_tracker, &data);
+    layer->AppendQuads(render_pass.get(), Occlusion(), &data);
     layer->DidDraw(NULL);
     unsigned num_tiles = num_tiles_x * num_tiles_y;
     EXPECT_EQ(render_pass->quad_list.size(), num_tiles);
@@ -109,7 +107,6 @@ TEST_F(TiledLayerImplTest, EmptyQuadList) {
         CreateLayer(tile_size, layer_size, LayerTilingData::NO_BORDER_TEXELS);
     layer->draw_properties().visible_content_rect = gfx::Rect();
 
-    MockOcclusionTracker<LayerImpl> occlusion_tracker;
     scoped_ptr<RenderPass> render_pass = RenderPass::Create();
 
     EXPECT_FALSE(layer->WillDraw(DRAW_MODE_HARDWARE, NULL));
@@ -123,12 +120,11 @@ TEST_F(TiledLayerImplTest, EmptyQuadList) {
     gfx::Rect outside_bounds(-100, -100, 50, 50);
     layer->draw_properties().visible_content_rect = outside_bounds;
 
-    MockOcclusionTracker<LayerImpl> occlusion_tracker;
     scoped_ptr<RenderPass> render_pass = RenderPass::Create();
 
     AppendQuadsData data;
     EXPECT_TRUE(layer->WillDraw(DRAW_MODE_HARDWARE, NULL));
-    layer->AppendQuads(render_pass.get(), occlusion_tracker, &data);
+    layer->AppendQuads(render_pass.get(), Occlusion(), &data);
     layer->DidDraw(NULL);
     EXPECT_EQ(render_pass->quad_list.size(), 0u);
   }
@@ -139,11 +135,10 @@ TEST_F(TiledLayerImplTest, EmptyQuadList) {
         CreateLayer(tile_size, layer_size, LayerTilingData::NO_BORDER_TEXELS);
     layer->set_skips_draw(true);
 
-    MockOcclusionTracker<LayerImpl> occlusion_tracker;
     scoped_ptr<RenderPass> render_pass = RenderPass::Create();
 
     AppendQuadsData data;
-    layer->AppendQuads(render_pass.get(), occlusion_tracker, &data);
+    layer->AppendQuads(render_pass.get(), Occlusion(), &data);
     EXPECT_EQ(render_pass->quad_list.size(), 0u);
   }
 }
@@ -160,18 +155,15 @@ TEST_F(TiledLayerImplTest, Checkerboarding) {
 
   // No checkerboarding
   {
-    MockOcclusionTracker<LayerImpl> occlusion_tracker;
     scoped_ptr<RenderPass> render_pass = RenderPass::Create();
 
     AppendQuadsData data;
-    layer->AppendQuads(render_pass.get(), occlusion_tracker, &data);
+    layer->AppendQuads(render_pass.get(), Occlusion(), &data);
     EXPECT_EQ(render_pass->quad_list.size(), 4u);
     EXPECT_EQ(0u, data.num_missing_tiles);
 
-    for (QuadList::Iterator iter = render_pass->quad_list.begin();
-         iter != render_pass->quad_list.end();
-         ++iter)
-      EXPECT_EQ(iter->material, DrawQuad::TILED_CONTENT);
+    for (const auto& quad : render_pass->quad_list)
+      EXPECT_EQ(quad.material, DrawQuad::TILED_CONTENT);
   }
 
   for (int i = 0; i < num_tiles_x; ++i)
@@ -180,17 +172,14 @@ TEST_F(TiledLayerImplTest, Checkerboarding) {
 
   // All checkerboarding
   {
-    MockOcclusionTracker<LayerImpl> occlusion_tracker;
     scoped_ptr<RenderPass> render_pass = RenderPass::Create();
 
     AppendQuadsData data;
-    layer->AppendQuads(render_pass.get(), occlusion_tracker, &data);
+    layer->AppendQuads(render_pass.get(), Occlusion(), &data);
     EXPECT_LT(0u, data.num_missing_tiles);
     EXPECT_EQ(render_pass->quad_list.size(), 4u);
-    for (QuadList::Iterator iter = render_pass->quad_list.begin();
-         iter != render_pass->quad_list.end();
-         ++iter)
-      EXPECT_NE(iter->material, DrawQuad::TILED_CONTENT);
+    for (const auto& quad : render_pass->quad_list)
+      EXPECT_NE(quad.material, DrawQuad::TILED_CONTENT);
   }
 }
 
@@ -266,8 +255,8 @@ TEST_F(TiledLayerImplTest, TextureInfoForLayerNoBorders) {
            LayerTilingData::NO_BORDER_TEXELS,
            gfx::Rect(layer_size));
 
-  for (QuadList::Iterator iter = render_pass->quad_list.begin();
-       iter != render_pass->quad_list.end();
+  for (auto iter = render_pass->quad_list.cbegin();
+       iter != render_pass->quad_list.cend();
        ++iter) {
     const TileDrawQuad* quad = TileDrawQuad::MaterialCast(&*iter);
 

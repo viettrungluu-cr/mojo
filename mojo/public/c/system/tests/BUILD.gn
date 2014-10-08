@@ -19,7 +19,7 @@ source_set("tests") {
   ]
 }
 
-# GYP version: mojo/mojo_public_tests.gypi:mojo_public_system_perftests
+# GYP version: mojo/mojo_base.gyp:mojo_public_system_perftests
 executable("perftests") {
   testonly = true
   output_name = "mojo_public_system_perftests"
@@ -30,7 +30,7 @@ executable("perftests") {
 
   deps = [
     "//base",
-    "//mojo/common/test:run_all_perftests",
+    "//mojo/edk/test:run_all_perftests",
     "//mojo/public/c/environment",
     "//mojo/public/cpp/system",
     "//mojo/public/cpp/test_support:test_utils",

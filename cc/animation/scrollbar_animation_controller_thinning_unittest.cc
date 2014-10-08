@@ -21,10 +21,10 @@ class ScrollbarAnimationControllerThinningTest
       : host_impl_(&proxy_, &shared_bitmap_manager_) {}
 
   virtual void PostDelayedScrollbarFade(const base::Closure& start_fade,
-                                        base::TimeDelta delay) OVERRIDE {
+                                        base::TimeDelta delay) override {
     start_fade_ = start_fade;
   }
-  virtual void SetNeedsScrollbarAnimationFrame() OVERRIDE {}
+  virtual void SetNeedsScrollbarAnimationFrame() override {}
 
  protected:
   virtual void SetUp() {
@@ -58,6 +58,7 @@ class ScrollbarAnimationControllerThinningTest
         scroll_layer_ptr,
         this,
         base::TimeDelta::FromSeconds(2),
+        base::TimeDelta::FromSeconds(5),
         base::TimeDelta::FromSeconds(3));
   }
 
@@ -83,7 +84,7 @@ TEST_F(ScrollbarAnimationControllerThinningTest, Idle) {
 TEST_F(ScrollbarAnimationControllerThinningTest, AwakenByProgrammaticScroll) {
   base::TimeTicks time;
   time += base::TimeDelta::FromSeconds(1);
-  scrollbar_controller_->DidScrollUpdate();
+  scrollbar_controller_->DidScrollUpdate(false);
   EXPECT_FLOAT_EQ(1.0f, scrollbar_layer_->opacity());
   // Scrollbar doesn't change size if triggered by scroll.
   EXPECT_FLOAT_EQ(0.4f, scrollbar_layer_->thumb_thickness_scale_factor());
@@ -96,7 +97,7 @@ TEST_F(ScrollbarAnimationControllerThinningTest, AwakenByProgrammaticScroll) {
   EXPECT_FLOAT_EQ(0.4f, scrollbar_layer_->thumb_thickness_scale_factor());
 
   // Subsequent scroll restarts animation.
-  scrollbar_controller_->DidScrollUpdate();
+  scrollbar_controller_->DidScrollUpdate(false);
 
   start_fade_.Run();
 
@@ -134,7 +135,7 @@ TEST_F(ScrollbarAnimationControllerThinningTest, ScrollWithMouseNear) {
   scrollbar_controller_->Animate(time);
   EXPECT_FLOAT_EQ(1.0f, scrollbar_layer_->thumb_thickness_scale_factor());
 
-  scrollbar_controller_->DidScrollUpdate();
+  scrollbar_controller_->DidScrollUpdate(false);
   start_fade_.Run();
   scrollbar_controller_->Animate(time);
   EXPECT_FLOAT_EQ(1.0f, scrollbar_layer_->opacity());

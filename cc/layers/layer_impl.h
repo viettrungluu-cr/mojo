@@ -98,24 +98,24 @@ class CC_EXPORT LayerImpl : public LayerAnimationValueObserver,
   int id() const { return layer_id_; }
 
   // LayerAnimationValueProvider implementation.
-  virtual gfx::ScrollOffset ScrollOffsetForAnimation() const OVERRIDE;
+  virtual gfx::ScrollOffset ScrollOffsetForAnimation() const override;
 
   // LayerAnimationValueObserver implementation.
-  virtual void OnFilterAnimated(const FilterOperations& filters) OVERRIDE;
-  virtual void OnOpacityAnimated(float opacity) OVERRIDE;
-  virtual void OnTransformAnimated(const gfx::Transform& transform) OVERRIDE;
+  virtual void OnFilterAnimated(const FilterOperations& filters) override;
+  virtual void OnOpacityAnimated(float opacity) override;
+  virtual void OnTransformAnimated(const gfx::Transform& transform) override;
   virtual void OnScrollOffsetAnimated(
-      const gfx::ScrollOffset& scroll_offset) OVERRIDE;
-  virtual void OnAnimationWaitingForDeletion() OVERRIDE;
-  virtual bool IsActive() const OVERRIDE;
+      const gfx::ScrollOffset& scroll_offset) override;
+  virtual void OnAnimationWaitingForDeletion() override;
+  virtual bool IsActive() const override;
 
   // AnimationDelegate implementation.
   virtual void NotifyAnimationStarted(
       base::TimeTicks monotonic_time,
-      Animation::TargetProperty target_property) OVERRIDE{};
+      Animation::TargetProperty target_property) override{};
   virtual void NotifyAnimationFinished(
       base::TimeTicks monotonic_time,
-      Animation::TargetProperty target_property) OVERRIDE;
+      Animation::TargetProperty target_property) override;
 
   // Tree structure.
   LayerImpl* parent() { return parent_; }
@@ -195,7 +195,7 @@ class CC_EXPORT LayerImpl : public LayerAnimationValueObserver,
   virtual bool WillDraw(DrawMode draw_mode,
                         ResourceProvider* resource_provider);
   virtual void AppendQuads(RenderPass* render_pass,
-                           const OcclusionTracker<LayerImpl>& occlusion_tracker,
+                           const Occlusion& occlusion_in_content_space,
                            AppendQuadsData* append_quads_data) {}
   virtual void DidDraw(ResourceProvider* resource_provider);
 
@@ -386,7 +386,8 @@ class CC_EXPORT LayerImpl : public LayerAnimationValueObserver,
   gfx::ScrollOffset MaxScrollOffset() const;
   gfx::Vector2dF ClampScrollToMaxScrollOffset();
   void SetScrollbarPosition(ScrollbarLayerImplBase* scrollbar_layer,
-                            LayerImpl* scrollbar_clip_layer) const;
+                            LayerImpl* scrollbar_clip_layer,
+                            bool on_resize) const;
   void SetScrollDelta(const gfx::Vector2dF& scroll_delta);
   gfx::Vector2dF ScrollDelta() const;
 
@@ -513,7 +514,7 @@ class CC_EXPORT LayerImpl : public LayerAnimationValueObserver,
   void AddScrollbar(ScrollbarLayerImplBase* layer);
   void RemoveScrollbar(ScrollbarLayerImplBase* layer);
   bool HasScrollbar(ScrollbarOrientation orientation) const;
-  void ScrollbarParametersDidChange();
+  void ScrollbarParametersDidChange(bool on_resize);
   int clip_height() {
     return scroll_clip_layer_ ? scroll_clip_layer_->bounds().height() : 0;
   }

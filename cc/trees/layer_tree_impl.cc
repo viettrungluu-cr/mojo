@@ -50,16 +50,16 @@ class LayerScrollOffsetDelegateProxy : public LayerImpl::ScrollOffsetDelegate {
 
   // LayerScrollOffsetDelegate implementation.
   virtual void SetTotalScrollOffset(
-      const gfx::ScrollOffset& new_offset) OVERRIDE {
+      const gfx::ScrollOffset& new_offset) override {
     last_set_scroll_offset_ = new_offset;
     layer_tree_impl_->UpdateScrollOffsetDelegate();
   }
 
-  virtual gfx::ScrollOffset GetTotalScrollOffset() OVERRIDE {
+  virtual gfx::ScrollOffset GetTotalScrollOffset() override {
     return layer_tree_impl_->GetDelegatedScrollOffset(layer_);
   }
 
-  virtual bool IsExternalFlingActive() const OVERRIDE {
+  virtual bool IsExternalFlingActive() const override {
     return delegate_->IsExternalFlingActive();
   }
 
@@ -296,7 +296,7 @@ void ForceScrollbarParameterUpdateAfterScaleChange(LayerImpl* current_layer) {
     return;
 
   while (current_layer) {
-    current_layer->ScrollbarParametersDidChange();
+    current_layer->ScrollbarParametersDidChange(false);
     current_layer = current_layer->parent();
   }
 }
@@ -792,16 +792,25 @@ LayerTreeImpl::CreateScrollbarAnimationController(LayerImpl* scrolling_layer) {
   DCHECK(settings().scrollbar_fade_duration_ms);
   base::TimeDelta delay =
       base::TimeDelta::FromMilliseconds(settings().scrollbar_fade_delay_ms);
+  base::TimeDelta resize_delay = base::TimeDelta::FromMilliseconds(
+      settings().scrollbar_fade_resize_delay_ms);
   base::TimeDelta duration =
       base::TimeDelta::FromMilliseconds(settings().scrollbar_fade_duration_ms);
   switch (settings().scrollbar_animator) {
     case LayerTreeSettings::LinearFade: {
       return ScrollbarAnimationControllerLinearFade::Create(
-          scrolling_layer, layer_tree_host_impl_, delay, duration);
+          scrolling_layer,
+          layer_tree_host_impl_,
+          delay,
+          resize_delay,
+          duration);
     }
     case LayerTreeSettings::Thinning: {
-      return ScrollbarAnimationControllerThinning::Create(
-          scrolling_layer, layer_tree_host_impl_, delay, duration);
+      return ScrollbarAnimationControllerThinning::Create(scrolling_layer,
+                                                          layer_tree_host_impl_,
+                                                          delay,
+                                                          resize_delay,
+                                                          duration);
     }
     case LayerTreeSettings::NoAnimator:
       NOTREACHED();

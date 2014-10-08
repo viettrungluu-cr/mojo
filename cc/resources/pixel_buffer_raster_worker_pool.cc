@@ -36,7 +36,7 @@ class RasterBufferImpl : public RasterBuffer {
   }
 
   // Overridden from RasterBuffer:
-  virtual skia::RefPtr<SkCanvas> AcquireSkCanvas() OVERRIDE {
+  virtual skia::RefPtr<SkCanvas> AcquireSkCanvas() override {
     if (!buffer_)
       return skia::AdoptRef(SkCreateNullCanvas());
 
@@ -44,7 +44,7 @@ class RasterBufferImpl : public RasterBuffer {
         &bitmap_, buffer_, resource_->format(), resource_->size(), stride_);
     return skia::AdoptRef(new SkCanvas(bitmap_));
   }
-  virtual void ReleaseSkCanvas(const skia::RefPtr<SkCanvas>& canvas) OVERRIDE {
+  virtual void ReleaseSkCanvas(const skia::RefPtr<SkCanvas>& canvas) override {
     if (!buffer_)
       return;
 
@@ -448,11 +448,6 @@ void PixelBufferRasterWorkerPool::CheckForCompletedUploads() {
     task->WillComplete();
     task->CompleteOnOriginThread(this);
     task->DidComplete();
-
-    // Async set pixels commands are not necessarily processed in-sequence with
-    // drawing commands. Read lock fences are required to ensure that async
-    // commands don't access the resource while used for drawing.
-    resource_provider_->EnableReadLockFences(task->resource()->id());
 
     DCHECK(std::find(completed_raster_tasks_.begin(),
                      completed_raster_tasks_.end(),

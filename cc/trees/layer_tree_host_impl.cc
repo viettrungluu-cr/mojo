@@ -145,7 +145,7 @@ class LayerTreeHostImplTimeSourceAdapter : public TimeSourceClient {
     time_source_->SetActive(false);
   }
 
-  virtual void OnTimerTick() OVERRIDE {
+  virtual void OnTimerTick() override {
     // In single threaded mode we attempt to simulate changing the current
     // thread by maintaining a fake thread id. When we switch from one
     // thread to another, we construct DebugScopedSetXXXThread objects that
@@ -335,6 +335,10 @@ void LayerTreeHostImpl::BeginCommit() {
 
 void LayerTreeHostImpl::CommitComplete() {
   TRACE_EVENT0("cc", "LayerTreeHostImpl::CommitComplete");
+
+  // Ask to be animated if there are animations
+  if (needs_animate_layers())
+    SetNeedsAnimate();
 
   if (pending_tree_)
     pending_tree_->ApplyScrollDeltasSinceBeginMainFrame();
@@ -546,7 +550,10 @@ static void AppendQuadsForLayer(
     LayerImpl* layer,
     const OcclusionTracker<LayerImpl>& occlusion_tracker,
     AppendQuadsData* append_quads_data) {
-  layer->AppendQuads(target_render_pass, occlusion_tracker, append_quads_data);
+  layer->AppendQuads(
+      target_render_pass,
+      occlusion_tracker.GetCurrentOcclusionForLayer(layer->draw_transform()),
+      append_quads_data);
 }
 
 static void AppendQuadsForRenderSurfaceLayer(
@@ -861,13 +868,11 @@ DrawResult LayerTreeHostImpl::CalculateRenderPasses(
     draw_result = DRAW_SUCCESS;
 
 #if DCHECK_IS_ON
-  for (size_t i = 0; i < frame->render_passes.size(); ++i) {
-    for (QuadList::Iterator iter = frame->render_passes[i]->quad_list.begin();
-         iter != frame->render_passes[i]->quad_list.end();
-         ++iter)
-      DCHECK(iter->shared_quad_state);
-    DCHECK(frame->render_passes_by_id.find(frame->render_passes[i]->id)
-           != frame->render_passes_by_id.end());
+  for (auto* render_pass : frame->render_passes) {
+    for (auto& quad : render_pass->quad_list)
+      DCHECK(quad.shared_quad_state);
+    DCHECK(frame->render_passes_by_id.find(render_pass->id) !=
+           frame->render_passes_by_id.end());
   }
 #endif
   DCHECK(frame->render_passes.back()->output_rect.origin().IsOrigin());
@@ -1478,9 +1483,7 @@ void LayerTreeHostImpl::DrawLayers(FrameData* frame,
 
   fps_counter_->SaveTimeStamp(frame_begin_time,
                               !output_surface_->context_provider());
-  bool on_main_thread = false;
-  rendering_stats_instrumentation_->IncrementFrameCount(
-      1, on_main_thread);
+  rendering_stats_instrumentation_->IncrementFrameCount(1);
 
   if (tile_manager_) {
     memory_history_->SaveEntry(
@@ -2536,7 +2539,7 @@ bool LayerTreeHostImpl::ScrollBy(const gfx::Point& viewport_point,
         // Force updating of vertical adjust values if needed.
         if (applied_delta.y() != 0) {
           did_scroll_top_controls = true;
-          layer_impl->ScrollbarParametersDidChange();
+          layer_impl->ScrollbarParametersDidChange(false);
         }
       }
       // Track root layer deltas for reporting overscroll.

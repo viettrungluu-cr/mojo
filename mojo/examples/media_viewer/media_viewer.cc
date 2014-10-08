@@ -34,6 +34,7 @@
 #include "ui/gfx/canvas.h"
 #include "ui/gfx/geometry/insets.h"
 #include "ui/gfx/geometry/rect.h"
+#include "ui/gfx/image/image_skia.h"
 #include "ui/views/background.h"
 #include "ui/views/border.h"
 #include "ui/views/controls/button/button.h"
@@ -134,11 +135,12 @@ class ControlPanel : public views::ButtonListener {
     virtual void ButtonPressed(ControlType type) = 0;
   };
 
-  ControlPanel(Delegate* delegate) : delegate_(delegate), buttons_() {}
+  explicit ControlPanel(Delegate* delegate)
+      : delegate_(delegate), shell_(nullptr), buttons_() {}
 
   virtual ~ControlPanel() {}
 
-  void Initialize(View* view) {
+  void Initialize(View* view, Shell* shell) {
     const char* kNames[] = { "Zoom In", "Actual Size", "Zoom Out" };
 
     views::WidgetDelegateView* widget_delegate = new views::WidgetDelegateView;
@@ -160,7 +162,7 @@ class ControlPanel : public views::ButtonListener {
     views::Widget* widget = new views::Widget;
     views::Widget::InitParams params(
         views::Widget::InitParams::TYPE_WINDOW_FRAMELESS);
-    params.native_widget = new NativeWidgetViewManager(widget, view);
+    params.native_widget = new NativeWidgetViewManager(widget, shell, view);
     params.delegate = widget_delegate;
     params.bounds = gfx::Rect(view->bounds().width(), view->bounds().height());
     params.opacity = views::Widget::InitParams::OPAQUE_WINDOW;
@@ -181,6 +183,7 @@ class ControlPanel : public views::ButtonListener {
   }
 
   Delegate* delegate_;
+  Shell* shell_;
   views::Button* buttons_[CONTROL_COUNT];
 
   DISALLOW_COPY_AND_ASSIGN(ControlPanel);
@@ -193,7 +196,8 @@ class MediaViewer
       public ViewObserver {
  public:
   MediaViewer()
-      : app_(NULL),
+      : shell_(nullptr),
+        app_(NULL),
         view_manager_(NULL),
         root_view_(NULL),
         control_view_(NULL),
@@ -213,6 +217,7 @@ class MediaViewer
 
   // Overridden from ApplicationDelegate:
   virtual void Initialize(ApplicationImpl* app) override {
+    shell_ = app->shell();
     view_manager_client_factory_.reset(
         new ViewManagerClientFactory(app->shell(), this));
     app_ = app;
@@ -248,7 +253,7 @@ class MediaViewer
     content_view_ = View::Create(view_manager_);
     root_view_->AddChild(content_view_);
 
-    control_panel_.Initialize(control_view_);
+    control_panel_.Initialize(control_view_, shell_);
 
     LayoutViews();
     root_view_->AddObserver(this);
@@ -296,6 +301,8 @@ class MediaViewer
     HandlerMap::const_iterator it = handler_map_.find(content_type);
     return it != handler_map_.end() ? it->second : std::string();
   }
+
+  Shell* shell_;
 
   scoped_ptr<ViewManagerClientFactory> view_manager_client_factory_;
 

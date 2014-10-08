@@ -1,4 +1,4 @@
-// Copyright 2013 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
@@ -11,7 +11,7 @@
  * @param {DialogType} dialogType Dialog type.
  * @constructor.
  */
-var FileManagerUI = function(element, dialogType) {
+function FileManagerUI(element, dialogType) {
   /**
    * Top level element of Files.app.
    * @type {HTMLElement}
@@ -70,7 +70,7 @@ var FileManagerUI = function(element, dialogType) {
 
   /**
    * Default task picker.
-   * @type {DefaultActionDialog}
+   * @type {cr.filebrowser.DefaultActionDialog}
    */
   this.defaultTaskPicker = null;
 
@@ -87,22 +87,10 @@ var FileManagerUI = function(element, dialogType) {
   this.conflictDialog = null;
 
   /**
-   * Volume icon of location information on the toolbar.
-   * @type {HTMLElement}
+   * Location line.
+   * @type {LocationLine}
    */
-  this.locationVolumeIcon = null;
-
-  /**
-   * Breadcrumbs of location information on the toolbar.
-   * @type {BreadcrumbsController}
-   */
-  this.locationBreadcrumbs = null;
-
-  /**
-   * Search button.
-   * @type {HTMLElement}
-   */
-  this.searchButton = null;
+  this.locationLine = null;
 
   /**
    * Search box.
@@ -145,7 +133,7 @@ var FileManagerUI = function(element, dialogType) {
 
   // Pre-populate the static localized strings.
   i18nTemplate.process(this.element_.ownerDocument, loadTimeData);
-};
+}
 
 /**
  * Tweak the UI to become a particular kind of dialog, as determined by the
@@ -224,45 +212,10 @@ FileManagerUI.prototype.initDialogs = function() {
  * or hidden in the beginning.
  */
 FileManagerUI.prototype.initAdditionalUI = function() {
-  this.locationVolumeIcon =
-      this.element_.querySelector('#location-volume-icon');
-
-  this.searchButton = this.element_.querySelector('#search-button');
-  this.searchButton.addEventListener('click',
-      this.onSearchButtonClick_.bind(this));
-  this.searchBox = new SearchBox(this.element_.querySelector('#search-box'));
+  this.searchBox = new SearchBox(
+      this.element_.querySelector('#search-box'),
+      this.element_.querySelector('#search-button'),
+      this.element_.querySelector('#no-search-results'));
 
   this.toggleViewButton = this.element_.querySelector('#view-button');
-};
-
-/**
- * Updates the location information displayed on the toolbar.
- * @param {DirectoryEntry=} opt_entry Directory entry to be displayed as
- *     current location. Default entry is the current directory.
- */
-FileManagerUI.prototype.updateLocationLine = function(volumeManager, entry) {
-  // Updates volume icon.
-  var location = volumeManager.getLocationInfo(entry);
-  if (location && location.rootType && location.isRootEntry) {
-    this.locationVolumeIcon.setAttribute(
-        'volume-type-icon', location.rootType);
-    this.locationVolumeIcon.removeAttribute('volume-subtype');
-  } else {
-    this.locationVolumeIcon.setAttribute(
-        'volume-type-icon', location.volumeInfo.volumeType);
-    this.locationVolumeIcon.setAttribute(
-        'volume-subtype', location.volumeInfo.deviceType);
-  }
-
-  // Updates breadcrumbs.
-  this.locationBreadcrumbs.show(entry);
-};
-
-/**
- * Handles click event on the search button.
- * @param {Event} event Click event.
- * @private
- */
-FileManagerUI.prototype.onSearchButtonClick_ = function(event) {
-  this.searchBox.inputElement.focus();
 };

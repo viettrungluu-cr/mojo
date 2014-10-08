@@ -38,7 +38,7 @@ class MockCanvas : public SkCanvas {
  public:
   explicit MockCanvas(int w, int h) : SkCanvas(w, h) {}
 
-  virtual void drawRect(const SkRect& rect, const SkPaint& paint) OVERRIDE {
+  virtual void drawRect(const SkRect& rect, const SkPaint& paint) override {
     // Capture calls before SkCanvas quickReject() kicks in.
     rects_.push_back(rect);
   }
@@ -71,7 +71,7 @@ class PictureLayerImplTest : public testing::Test {
   virtual ~PictureLayerImplTest() {
   }
 
-  virtual void SetUp() OVERRIDE {
+  virtual void SetUp() override {
     InitializeRenderer();
   }
 
@@ -353,18 +353,14 @@ TEST_F(PictureLayerImplTest, ExternalViewportRectForPrioritizingTiles) {
                                         viewport_rect_for_tile_priority,
                                         transform_for_tile_priority,
                                         resourceless_software_draw);
-  active_layer_->draw_properties().visible_content_rect = viewport;
-  active_layer_->draw_properties().screen_space_transform = transform;
-  active_layer_->UpdateTiles(Occlusion(), resourceless_software_draw);
+  host_impl_.active_tree()->UpdateDrawProperties();
 
   gfx::Rect viewport_rect_for_tile_priority_in_view_space =
       viewport_rect_for_tile_priority;
 
-  // Verify the viewport rect for tile priority is used in picture layer impl.
-  EXPECT_EQ(active_layer_->viewport_rect_for_tile_priority(),
-            viewport_rect_for_tile_priority_in_view_space);
-
   // Verify the viewport rect for tile priority is used in picture layer tiling.
+  EXPECT_EQ(viewport_rect_for_tile_priority_in_view_space,
+            active_layer_->GetViewportForTilePriorityInContentSpace());
   PictureLayerTilingSet* tilings = active_layer_->tilings();
   for (size_t i = 0; i < tilings->num_tilings(); i++) {
     PictureLayerTiling* tiling = tilings->tiling_at(i);
@@ -391,9 +387,7 @@ TEST_F(PictureLayerImplTest, ExternalViewportRectForPrioritizingTiles) {
                                         viewport_rect_for_tile_priority,
                                         transform_for_tile_priority,
                                         resourceless_software_draw);
-  active_layer_->draw_properties().visible_content_rect = viewport;
-  active_layer_->draw_properties().screen_space_transform = transform;
-  active_layer_->UpdateTiles(Occlusion(), resourceless_software_draw);
+  host_impl_.active_tree()->UpdateDrawProperties();
 
   gfx::Transform screen_to_view(gfx::Transform::kSkipInitialization);
   bool success = transform_for_tile_priority.GetInverse(&screen_to_view);
@@ -407,10 +401,8 @@ TEST_F(PictureLayerImplTest, ExternalViewportRectForPrioritizingTiles) {
       gfx::ToEnclosingRect(MathUtil::ProjectClippedRect(
           screen_to_view, viewport_rect_for_tile_priority));
 
-  // Verify the viewport rect for tile priority is used in PictureLayerImpl.
-  EXPECT_EQ(active_layer_->viewport_rect_for_tile_priority(),
-            viewport_rect_for_tile_priority_in_view_space);
-
+  EXPECT_EQ(viewport_rect_for_tile_priority_in_view_space,
+            active_layer_->GetViewportForTilePriorityInContentSpace());
   tilings = active_layer_->tilings();
   for (size_t i = 0; i < tilings->num_tilings(); i++) {
     PictureLayerTiling* tiling = tilings->tiling_at(i);
@@ -460,11 +452,8 @@ TEST_F(PictureLayerImplTest, InvalidViewportForPrioritizingTiles) {
   gfx::Rect visible_rect_for_tile_priority =
       active_layer_->visible_rect_for_tile_priority();
   EXPECT_FALSE(visible_rect_for_tile_priority.IsEmpty());
-  gfx::Rect viewport_rect_for_tile_priority =
-      active_layer_->viewport_rect_for_tile_priority();
-  EXPECT_FALSE(viewport_rect_for_tile_priority.IsEmpty());
   gfx::Transform screen_space_transform_for_tile_priority =
-      active_layer_->screen_space_transform_for_tile_priority();
+      active_layer_->screen_space_transform();
 
   // Expand viewport and set it as invalid for prioritizing tiles.
   // Should update viewport and transform, but not update visible rect.
@@ -484,10 +473,9 @@ TEST_F(PictureLayerImplTest, InvalidViewportForPrioritizingTiles) {
                                         resourceless_software_draw);
   active_layer_->UpdateTiles(Occlusion(), resourceless_software_draw);
 
-  // Viewport and transform for tile priority are updated.
-  EXPECT_EQ(viewport, active_layer_->viewport_rect_for_tile_priority());
-  EXPECT_TRANSFORMATION_MATRIX_EQ(
-      transform, active_layer_->screen_space_transform_for_tile_priority());
+  // Transform for tile priority is updated.
+  EXPECT_TRANSFORMATION_MATRIX_EQ(transform,
+                                  active_layer_->screen_space_transform());
   // Visible rect for tile priority retains old value.
   EXPECT_EQ(visible_rect_for_tile_priority,
             active_layer_->visible_rect_for_tile_priority());
@@ -505,13 +493,9 @@ TEST_F(PictureLayerImplTest, InvalidViewportForPrioritizingTiles) {
                                         resourceless_software_draw);
   active_layer_->UpdateTiles(Occlusion(), resourceless_software_draw);
 
-  EXPECT_TRANSFORMATION_MATRIX_EQ(
-      transform, active_layer_->screen_space_transform_for_tile_priority());
+  EXPECT_TRANSFORMATION_MATRIX_EQ(transform,
+                                  active_layer_->screen_space_transform());
   EXPECT_EQ(viewport, active_layer_->visible_rect_for_tile_priority());
-
-  // Match the reverse translate in |transform|.
-  EXPECT_EQ(viewport - gfx::Vector2d(1, 1),
-            active_layer_->viewport_rect_for_tile_priority());
 }
 
 TEST_F(PictureLayerImplTest, ClonePartialInvalidation) {
@@ -1377,7 +1361,6 @@ TEST_F(PictureLayerImplTest, ClampSingleTileToToMaxTileSize) {
 }
 
 TEST_F(PictureLayerImplTest, DisallowTileDrawQuads) {
-  MockOcclusionTracker<LayerImpl> occlusion_tracker;
   scoped_ptr<RenderPass> render_pass = RenderPass::Create();
 
   gfx::Size tile_size(400, 400);
@@ -1399,7 +1382,7 @@ TEST_F(PictureLayerImplTest, DisallowTileDrawQuads) {
 
   AppendQuadsData data;
   active_layer_->WillDraw(DRAW_MODE_RESOURCELESS_SOFTWARE, NULL);
-  active_layer_->AppendQuads(render_pass.get(), occlusion_tracker, &data);
+  active_layer_->AppendQuads(render_pass.get(), Occlusion(), &data);
   active_layer_->DidDraw(NULL);
 
   ASSERT_EQ(1U, render_pass->quad_list.size());
@@ -1580,11 +1563,10 @@ TEST_F(PictureLayerImplTest, TileOutsideOfViewportForTilePriorityNotRequired) {
   host_impl_.active_tree()->UpdateDrawProperties();
   active_layer_->draw_properties().visible_content_rect = visible_content_rect;
 
-  MockOcclusionTracker<LayerImpl> occlusion_tracker;
   scoped_ptr<RenderPass> render_pass = RenderPass::Create();
   AppendQuadsData data;
   active_layer_->WillDraw(DRAW_MODE_SOFTWARE, NULL);
-  active_layer_->AppendQuads(render_pass.get(), occlusion_tracker, &data);
+  active_layer_->AppendQuads(render_pass.get(), Occlusion(), &data);
   active_layer_->DidDraw(NULL);
 
   // All tiles in activation rect is ready to draw.
@@ -1615,11 +1597,10 @@ TEST_F(PictureLayerImplTest, HighResTileIsComplete) {
       active_layer_->tilings()->tiling_at(0)->AllTilesForTesting();
   host_impl_.tile_manager()->InitializeTilesWithResourcesForTesting(tiles);
 
-  MockOcclusionTracker<LayerImpl> occlusion_tracker;
   scoped_ptr<RenderPass> render_pass = RenderPass::Create();
   AppendQuadsData data;
   active_layer_->WillDraw(DRAW_MODE_SOFTWARE, NULL);
-  active_layer_->AppendQuads(render_pass.get(), occlusion_tracker, &data);
+  active_layer_->AppendQuads(render_pass.get(), Occlusion(), &data);
   active_layer_->DidDraw(NULL);
 
   // All high res tiles drew, nothing was incomplete.
@@ -1657,11 +1638,10 @@ TEST_F(PictureLayerImplTest, LowResTileIsIncomplete) {
       active_layer_->tilings()->tiling_at(1)->AllTilesForTesting();
   host_impl_.tile_manager()->InitializeTilesWithResourcesForTesting(low_tiles);
 
-  MockOcclusionTracker<LayerImpl> occlusion_tracker;
   scoped_ptr<RenderPass> render_pass = RenderPass::Create();
   AppendQuadsData data;
   active_layer_->WillDraw(DRAW_MODE_SOFTWARE, NULL);
-  active_layer_->AppendQuads(render_pass.get(), occlusion_tracker, &data);
+  active_layer_->AppendQuads(render_pass.get(), Occlusion(), &data);
   active_layer_->DidDraw(NULL);
 
   // The missing high res tile was replaced by a low res tile.
@@ -1719,11 +1699,10 @@ TEST_F(PictureLayerImplTest,
       active_layer_->HighResTiling()->AllTilesForTesting();
   host_impl_.tile_manager()->InitializeTilesWithResourcesForTesting(high_tiles);
 
-  MockOcclusionTracker<LayerImpl> occlusion_tracker;
   scoped_ptr<RenderPass> render_pass = RenderPass::Create();
   AppendQuadsData data;
   active_layer_->WillDraw(DRAW_MODE_SOFTWARE, NULL);
-  active_layer_->AppendQuads(render_pass.get(), occlusion_tracker, &data);
+  active_layer_->AppendQuads(render_pass.get(), Occlusion(), &data);
   active_layer_->DidDraw(NULL);
 
   // All high res tiles drew, and the one ideal res tile drew.
@@ -2237,14 +2216,14 @@ TEST_F(PictureLayerImplTest, PinchingTooSmall) {
 
 class DeferredInitPictureLayerImplTest : public PictureLayerImplTest {
  public:
-  virtual void InitializeRenderer() OVERRIDE {
+  virtual void InitializeRenderer() override {
     bool delegated_rendering = false;
     host_impl_.InitializeRenderer(FakeOutputSurface::CreateDeferredGL(
         scoped_ptr<SoftwareOutputDevice>(new SoftwareOutputDevice),
         delegated_rendering));
   }
 
-  virtual void SetUp() OVERRIDE {
+  virtual void SetUp() override {
     PictureLayerImplTest::SetUp();
 
     // Create some default active and pending trees.
@@ -3197,11 +3176,8 @@ TEST_F(NoLowResPictureLayerImplTest, InvalidViewportForPrioritizingTiles) {
   gfx::Rect visible_rect_for_tile_priority =
       active_layer_->visible_rect_for_tile_priority();
   EXPECT_FALSE(visible_rect_for_tile_priority.IsEmpty());
-  gfx::Rect viewport_rect_for_tile_priority =
-      active_layer_->viewport_rect_for_tile_priority();
-  EXPECT_FALSE(viewport_rect_for_tile_priority.IsEmpty());
   gfx::Transform screen_space_transform_for_tile_priority =
-      active_layer_->screen_space_transform_for_tile_priority();
+      active_layer_->screen_space_transform();
 
   // Expand viewport and set it as invalid for prioritizing tiles.
   // Should update viewport and transform, but not update visible rect.
@@ -3221,10 +3197,9 @@ TEST_F(NoLowResPictureLayerImplTest, InvalidViewportForPrioritizingTiles) {
                                         resourceless_software_draw);
   active_layer_->UpdateTiles(Occlusion(), resourceless_software_draw);
 
-  // Viewport and transform for tile priority are updated.
-  EXPECT_EQ(viewport, active_layer_->viewport_rect_for_tile_priority());
-  EXPECT_TRANSFORMATION_MATRIX_EQ(
-      transform, active_layer_->screen_space_transform_for_tile_priority());
+  // Transform for tile priority is updated.
+  EXPECT_TRANSFORMATION_MATRIX_EQ(transform,
+                                  active_layer_->screen_space_transform());
   // Visible rect for tile priority retains old value.
   EXPECT_EQ(visible_rect_for_tile_priority,
             active_layer_->visible_rect_for_tile_priority());
@@ -3242,13 +3217,9 @@ TEST_F(NoLowResPictureLayerImplTest, InvalidViewportForPrioritizingTiles) {
                                         resourceless_software_draw);
   active_layer_->UpdateTiles(Occlusion(), resourceless_software_draw);
 
-  EXPECT_TRANSFORMATION_MATRIX_EQ(
-      transform, active_layer_->screen_space_transform_for_tile_priority());
+  EXPECT_TRANSFORMATION_MATRIX_EQ(transform,
+                                  active_layer_->screen_space_transform());
   EXPECT_EQ(viewport, active_layer_->visible_rect_for_tile_priority());
-
-  // Match the reverse translate in |transform|.
-  EXPECT_EQ(viewport - gfx::Vector2d(1, 1),
-            active_layer_->viewport_rect_for_tile_priority());
 }
 
 TEST_F(NoLowResPictureLayerImplTest, CleanUpTilings) {
@@ -3468,7 +3439,6 @@ TEST_F(NoLowResPictureLayerImplTest, ReleaseResources) {
 }
 
 TEST_F(PictureLayerImplTest, SharedQuadStateContainsMaxTilingScale) {
-  MockOcclusionTracker<LayerImpl> occlusion_tracker;
   scoped_ptr<RenderPass> render_pass = RenderPass::Create();
 
   gfx::Size tile_size(400, 400);
@@ -3494,7 +3464,7 @@ TEST_F(PictureLayerImplTest, SharedQuadStateContainsMaxTilingScale) {
                               SK_MScalar1 / max_contents_scale);
 
   AppendQuadsData data;
-  active_layer_->AppendQuads(render_pass.get(), occlusion_tracker, &data);
+  active_layer_->AppendQuads(render_pass.get(), Occlusion(), &data);
 
   // SharedQuadState should have be of size 1, as we are doing AppenQuad once.
   EXPECT_EQ(1u, render_pass->shared_quad_state_list.size());
@@ -3564,7 +3534,7 @@ class PictureLayerImplTestWithDelegatingRenderer : public PictureLayerImplTest {
  public:
   PictureLayerImplTestWithDelegatingRenderer() : PictureLayerImplTest() {}
 
-  virtual void InitializeRenderer() OVERRIDE {
+  virtual void InitializeRenderer() override {
     host_impl_.InitializeRenderer(FakeOutputSurface::CreateDelegating3d());
   }
 };
@@ -3603,11 +3573,10 @@ TEST_F(PictureLayerImplTestWithDelegatingRenderer,
   host_impl_.SetTreePriority(SAME_PRIORITY_FOR_BOTH_TREES);
   host_impl_.ManageTiles();
 
-  MockOcclusionTracker<LayerImpl> occlusion_tracker;
   scoped_ptr<RenderPass> render_pass = RenderPass::Create();
   AppendQuadsData data;
   active_layer_->WillDraw(DRAW_MODE_HARDWARE, NULL);
-  active_layer_->AppendQuads(render_pass.get(), occlusion_tracker, &data);
+  active_layer_->AppendQuads(render_pass.get(), Occlusion(), &data);
   active_layer_->DidDraw(NULL);
 
   // Even when OOM, quads should be produced, and should be different material
@@ -4314,11 +4283,10 @@ void PictureLayerImplTest::TestQuadsForSolidColor(bool test_for_solid) {
     host_impl_.tile_manager()->InitializeTilesWithResourcesForTesting(tiles);
   }
 
-  MockOcclusionTracker<LayerImpl> occlusion_tracker;
   scoped_ptr<RenderPass> render_pass = RenderPass::Create();
   AppendQuadsData data;
   active_layer_->WillDraw(DRAW_MODE_SOFTWARE, NULL);
-  active_layer_->AppendQuads(render_pass.get(), occlusion_tracker, &data);
+  active_layer_->AppendQuads(render_pass.get(), Occlusion(), &data);
   active_layer_->DidDraw(NULL);
 
   DrawQuad::Material expected = test_for_solid

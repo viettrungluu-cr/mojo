@@ -9,6 +9,7 @@
 #include "mojo/aura/aura_init.h"
 #include "mojo/public/cpp/application/application_connection.h"
 #include "mojo/public/cpp/application/application_impl.h"
+#include "mojo/public/interfaces/application/shell.mojom.h"
 #include "mojo/services/public/cpp/input_events/input_events_type_converters.h"
 #include "mojo/services/public/cpp/view_manager/view.h"
 #include "mojo/services/public/cpp/view_manager/view_manager.h"
@@ -37,28 +38,28 @@ class DummyDelegate : public aura::WindowDelegate {
 
  private:
   // WindowDelegate overrides:
-  virtual gfx::Size GetMinimumSize() const OVERRIDE { return gfx::Size(); }
-  virtual gfx::Size GetMaximumSize() const OVERRIDE { return gfx::Size(); }
+  virtual gfx::Size GetMinimumSize() const override { return gfx::Size(); }
+  virtual gfx::Size GetMaximumSize() const override { return gfx::Size(); }
   virtual void OnBoundsChanged(const gfx::Rect& old_bounds,
-                               const gfx::Rect& new_bounds) OVERRIDE {}
-  virtual gfx::NativeCursor GetCursor(const gfx::Point& point) OVERRIDE {
+                               const gfx::Rect& new_bounds) override {}
+  virtual gfx::NativeCursor GetCursor(const gfx::Point& point) override {
     return gfx::kNullCursor;
   }
-  virtual int GetNonClientComponent(const gfx::Point& point) const OVERRIDE {
+  virtual int GetNonClientComponent(const gfx::Point& point) const override {
     return HTCAPTION;
   }
   virtual bool ShouldDescendIntoChildForEventHandling(
       aura::Window* child,
-      const gfx::Point& location) OVERRIDE { return true; }
-  virtual bool CanFocus() OVERRIDE { return true; }
-  virtual void OnCaptureLost() OVERRIDE {}
-  virtual void OnPaint(gfx::Canvas* canvas) OVERRIDE {}
-  virtual void OnDeviceScaleFactorChanged(float device_scale_factor) OVERRIDE {}
-  virtual void OnWindowDestroying(aura::Window* window) OVERRIDE {}
-  virtual void OnWindowDestroyed(aura::Window* window) OVERRIDE {}
-  virtual void OnWindowTargetVisibilityChanged(bool visible) OVERRIDE {}
-  virtual bool HasHitTestMask() const OVERRIDE { return false; }
-  virtual void GetHitTestMask(gfx::Path* mask) const OVERRIDE {}
+      const gfx::Point& location) override { return true; }
+  virtual bool CanFocus() override { return true; }
+  virtual void OnCaptureLost() override {}
+  virtual void OnPaint(gfx::Canvas* canvas) override {}
+  virtual void OnDeviceScaleFactorChanged(float device_scale_factor) override {}
+  virtual void OnWindowDestroying(aura::Window* window) override {}
+  virtual void OnWindowDestroyed(aura::Window* window) override {}
+  virtual void OnWindowTargetVisibilityChanged(bool visible) override {}
+  virtual bool HasHitTestMask() const override { return false; }
+  virtual void GetHitTestMask(gfx::Path* mask) const override {}
 
   DISALLOW_COPY_AND_ASSIGN(DummyDelegate);
 };
@@ -79,7 +80,8 @@ Id GetIdForWindow(aura::Window* window) {
 WindowManagerApp::WindowManagerApp(
     ViewManagerDelegate* view_manager_delegate,
     WindowManagerDelegate* window_manager_delegate)
-    : window_manager_service_factory_(this),
+    : shell_(nullptr),
+      window_manager_service_factory_(this),
       wrapped_view_manager_delegate_(view_manager_delegate),
       wrapped_window_manager_delegate_(window_manager_delegate),
       view_manager_(NULL),
@@ -147,9 +149,10 @@ void WindowManagerApp::InitFocus(wm::FocusRules* rules) {
 // WindowManagerApp, ApplicationDelegate implementation:
 
 void WindowManagerApp::Initialize(ApplicationImpl* impl) {
+  shell_ = impl->shell();
   aura_init_.reset(new AuraInit);
   view_manager_client_factory_.reset(
-      new ViewManagerClientFactory(impl->shell(), this));
+      new ViewManagerClientFactory(shell_, this));
 }
 
 bool WindowManagerApp::ConfigureIncomingConnection(
@@ -171,7 +174,7 @@ void WindowManagerApp::OnEmbed(ViewManager* view_manager,
   view_manager_->SetWindowManagerDelegate(this);
   root_ = root;
 
-  window_tree_host_.reset(new WindowTreeHostMojo(root_, this));
+  window_tree_host_.reset(new WindowTreeHostMojo(shell_, root_));
   window_tree_host_->window()->SetBounds(root->bounds());
   window_tree_host_->window()->Show();
 
@@ -259,14 +262,6 @@ void WindowManagerApp::OnViewBoundsChanged(View* view,
                                            const gfx::Rect& new_bounds) {
   aura::Window* window = GetWindowForViewId(view->id());
   window->SetBounds(new_bounds);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// WindowManagerApp, WindowTreeHostMojoDelegate implementation:
-
-void WindowManagerApp::CompositorContentsChanged(const SkBitmap& bitmap) {
-  // We draw nothing.
-  NOTREACHED();
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -26,6 +26,7 @@
 #include "cc/layers/solid_color_scrollbar_layer_impl.h"
 #include "cc/layers/texture_layer_impl.h"
 #include "cc/layers/tiled_layer_impl.h"
+#include "cc/layers/video_layer_impl.h"
 #include "cc/output/begin_frame_args.h"
 #include "cc/output/compositor_frame_ack.h"
 #include "cc/output/compositor_frame_metadata.h"
@@ -46,6 +47,7 @@
 #include "cc/test/fake_picture_pile_impl.h"
 #include "cc/test/fake_proxy.h"
 #include "cc/test/fake_rendering_stats_instrumentation.h"
+#include "cc/test/fake_video_frame_provider.h"
 #include "cc/test/geometry_test_utils.h"
 #include "cc/test/layer_test_common.h"
 #include "cc/test/render_pass_test_common.h"
@@ -53,6 +55,7 @@
 #include "cc/test/test_web_graphics_context_3d.h"
 #include "cc/trees/layer_tree_impl.h"
 #include "cc/trees/single_thread_proxy.h"
+#include "media/base/media.h"
 #include "testing/gmock/include/gmock/gmock.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "third_party/skia/include/core/SkMallocPixelRef.h"
@@ -66,6 +69,7 @@ using ::testing::Return;
 using ::testing::AnyNumber;
 using ::testing::AtLeast;
 using ::testing::_;
+using media::VideoFrame;
 
 namespace cc {
 namespace {
@@ -89,6 +93,7 @@ class LayerTreeHostImplTest : public testing::Test,
         reduce_memory_result_(true),
         current_limit_bytes_(0),
         current_priority_cutoff_value_(0) {
+    media::InitializeMediaLibraryForTesting();
   }
 
   LayerTreeSettings DefaultSettings() {
@@ -100,64 +105,64 @@ class LayerTreeHostImplTest : public testing::Test,
     return settings;
   }
 
-  virtual void SetUp() OVERRIDE {
+  virtual void SetUp() override {
     CreateHostImpl(DefaultSettings(), CreateOutputSurface());
   }
 
-  virtual void TearDown() OVERRIDE {}
+  virtual void TearDown() override {}
 
-  virtual void UpdateRendererCapabilitiesOnImplThread() OVERRIDE {}
-  virtual void DidLoseOutputSurfaceOnImplThread() OVERRIDE {}
+  virtual void UpdateRendererCapabilitiesOnImplThread() override {}
+  virtual void DidLoseOutputSurfaceOnImplThread() override {}
   virtual void CommitVSyncParameters(base::TimeTicks timebase,
-                                     base::TimeDelta interval) OVERRIDE {}
-  virtual void SetEstimatedParentDrawTime(base::TimeDelta draw_time) OVERRIDE {}
-  virtual void SetMaxSwapsPendingOnImplThread(int max) OVERRIDE {}
-  virtual void DidSwapBuffersOnImplThread() OVERRIDE {}
-  virtual void DidSwapBuffersCompleteOnImplThread() OVERRIDE {}
-  virtual void OnCanDrawStateChanged(bool can_draw) OVERRIDE {
+                                     base::TimeDelta interval) override {}
+  virtual void SetEstimatedParentDrawTime(base::TimeDelta draw_time) override {}
+  virtual void SetMaxSwapsPendingOnImplThread(int max) override {}
+  virtual void DidSwapBuffersOnImplThread() override {}
+  virtual void DidSwapBuffersCompleteOnImplThread() override {}
+  virtual void OnCanDrawStateChanged(bool can_draw) override {
     on_can_draw_state_changed_called_ = true;
   }
-  virtual void NotifyReadyToActivate() OVERRIDE {
+  virtual void NotifyReadyToActivate() override {
     did_notify_ready_to_activate_ = true;
     host_impl_->ActivateSyncTree();
   }
-  virtual void SetNeedsRedrawOnImplThread() OVERRIDE {
+  virtual void SetNeedsRedrawOnImplThread() override {
     did_request_redraw_ = true;
   }
   virtual void SetNeedsRedrawRectOnImplThread(
-      const gfx::Rect& damage_rect) OVERRIDE {
+      const gfx::Rect& damage_rect) override {
     did_request_redraw_ = true;
   }
-  virtual void SetNeedsAnimateOnImplThread() OVERRIDE {
+  virtual void SetNeedsAnimateOnImplThread() override {
     did_request_animate_ = true;
   }
-  virtual void SetNeedsManageTilesOnImplThread() OVERRIDE {
+  virtual void SetNeedsManageTilesOnImplThread() override {
     did_request_manage_tiles_ = true;
   }
-  virtual void DidInitializeVisibleTileOnImplThread() OVERRIDE {
+  virtual void DidInitializeVisibleTileOnImplThread() override {
     did_upload_visible_tile_ = true;
   }
-  virtual void SetNeedsCommitOnImplThread() OVERRIDE {
+  virtual void SetNeedsCommitOnImplThread() override {
     did_request_commit_ = true;
   }
   virtual void PostAnimationEventsToMainThreadOnImplThread(
-      scoped_ptr<AnimationEventsVector> events) OVERRIDE {}
+      scoped_ptr<AnimationEventsVector> events) override {}
   virtual bool ReduceContentsTextureMemoryOnImplThread(
-      size_t limit_bytes, int priority_cutoff) OVERRIDE {
+      size_t limit_bytes, int priority_cutoff) override {
     current_limit_bytes_ = limit_bytes;
     current_priority_cutoff_value_ = priority_cutoff;
     return reduce_memory_result_;
   }
-  virtual bool IsInsideDraw() OVERRIDE { return false; }
-  virtual void RenewTreePriority() OVERRIDE {}
+  virtual bool IsInsideDraw() override { return false; }
+  virtual void RenewTreePriority() override {}
   virtual void PostDelayedScrollbarFadeOnImplThread(
       const base::Closure& start_fade,
-      base::TimeDelta delay) OVERRIDE {
+      base::TimeDelta delay) override {
     scrollbar_fade_start_ = start_fade;
     requested_scrollbar_animation_delay_ = delay;
   }
-  virtual void DidActivateSyncTree() OVERRIDE {}
-  virtual void DidManageTiles() OVERRIDE {}
+  virtual void DidActivateSyncTree() override {}
+  virtual void DidManageTiles() override {}
 
   void set_reduce_memory_result(bool reduce_memory_result) {
     reduce_memory_result_ = reduce_memory_result;
@@ -1363,7 +1368,7 @@ class LayerTreeHostImplOverridePhysicalTime : public LayerTreeHostImpl {
                           manager,
                           0) {}
 
-  virtual BeginFrameArgs CurrentBeginFrameArgs() const OVERRIDE {
+  virtual BeginFrameArgs CurrentBeginFrameArgs() const override {
     return CreateBeginFrameArgsForTesting(fake_current_physical_time_);
   }
 
@@ -1703,7 +1708,7 @@ class DidDrawCheckLayer : public LayerImpl {
   }
 
   virtual bool WillDraw(DrawMode draw_mode, ResourceProvider* provider)
-      OVERRIDE {
+      override {
     will_draw_called_ = true;
     if (will_draw_returns_false_)
       return false;
@@ -1711,13 +1716,14 @@ class DidDrawCheckLayer : public LayerImpl {
   }
 
   virtual void AppendQuads(RenderPass* render_pass,
-                           const OcclusionTracker<LayerImpl>& occlusion_tracker,
-                           AppendQuadsData* append_quads_data) OVERRIDE {
+                           const Occlusion& occlusion_in_content_space,
+                           AppendQuadsData* append_quads_data) override {
     append_quads_called_ = true;
-    LayerImpl::AppendQuads(render_pass, occlusion_tracker, append_quads_data);
+    LayerImpl::AppendQuads(
+        render_pass, occlusion_in_content_space, append_quads_data);
   }
 
-  virtual void DidDraw(ResourceProvider* provider) OVERRIDE {
+  virtual void DidDraw(ResourceProvider* provider) override {
     did_draw_called_ = true;
     LayerImpl::DidDraw(provider);
   }
@@ -1934,9 +1940,10 @@ class MissingTextureAnimatingLayer : public DidDrawCheckLayer {
   }
 
   virtual void AppendQuads(RenderPass* render_pass,
-                           const OcclusionTracker<LayerImpl>& occlusion_tracker,
-                           AppendQuadsData* append_quads_data) OVERRIDE {
-    LayerImpl::AppendQuads(render_pass, occlusion_tracker, append_quads_data);
+                           const Occlusion& occlusion_in_content_space,
+                           AppendQuadsData* append_quads_data) override {
+    LayerImpl::AppendQuads(
+        render_pass, occlusion_in_content_space, append_quads_data);
     if (had_incomplete_tile_)
       append_quads_data->num_incomplete_tiles++;
     if (tile_missing_)
@@ -3278,11 +3285,11 @@ class TestScrollOffsetDelegate : public LayerScrollOffsetDelegate {
 
   virtual ~TestScrollOffsetDelegate() {}
 
-  virtual gfx::ScrollOffset GetTotalScrollOffset() OVERRIDE {
+  virtual gfx::ScrollOffset GetTotalScrollOffset() override {
     return getter_return_value_;
   }
 
-  virtual bool IsExternalFlingActive() const OVERRIDE { return false; }
+  virtual bool IsExternalFlingActive() const override { return false; }
 
   virtual void UpdateRootLayerState(
       const gfx::ScrollOffset& total_scroll_offset,
@@ -3290,7 +3297,7 @@ class TestScrollOffsetDelegate : public LayerScrollOffsetDelegate {
       const gfx::SizeF& scrollable_size,
       float page_scale_factor,
       float min_page_scale_factor,
-      float max_page_scale_factor) OVERRIDE {
+      float max_page_scale_factor) override {
     DCHECK(total_scroll_offset.x() <= max_scroll_offset.x());
     DCHECK(total_scroll_offset.y() <= max_scroll_offset.y());
     last_set_scroll_offset_ = total_scroll_offset;
@@ -3733,8 +3740,8 @@ class BlendStateCheckLayer : public LayerImpl {
   }
 
   virtual void AppendQuads(RenderPass* render_pass,
-                           const OcclusionTracker<LayerImpl>& occlusion_tracker,
-                           AppendQuadsData* append_quads_data) OVERRIDE {
+                           const Occlusion& occlusion_in_content_space,
+                           AppendQuadsData* append_quads_data) override {
     quads_appended_ = true;
 
     gfx::Rect opaque_rect;
@@ -4144,7 +4151,7 @@ class LayerTreeHostImplViewportCoveredTest : public LayerTreeHostImplTest {
     host_impl_->DidDrawAllLayers(frame);
   }
 
-  virtual void DidActivateSyncTree() OVERRIDE {
+  virtual void DidActivateSyncTree() override {
     did_activate_pending_tree_ = true;
   }
 
@@ -4158,10 +4165,8 @@ class LayerTreeHostImplViewportCoveredTest : public LayerTreeHostImplTest {
  protected:
   size_t CountGutterQuads(const QuadList& quad_list) {
     size_t num_gutter_quads = 0;
-    for (QuadList::ConstIterator iter = quad_list.begin();
-         iter != quad_list.end();
-         ++iter) {
-      num_gutter_quads += (iter->material == gutter_quad_material_) ? 1 : 0;
+    for (const auto& quad : quad_list) {
+      num_gutter_quads += (quad.material == gutter_quad_material_) ? 1 : 0;
     }
     return num_gutter_quads;
   }
@@ -4173,22 +4178,23 @@ class LayerTreeHostImplViewportCoveredTest : public LayerTreeHostImplTest {
 
   // Make sure that the texture coordinates match their expectations.
   void ValidateTextureDrawQuads(const QuadList& quad_list) {
-    for (QuadList::ConstIterator iter = quad_list.begin();
-         iter != quad_list.end();
-         ++iter) {
-      if (iter->material != DrawQuad::TEXTURE_CONTENT)
+    for (const auto& quad : quad_list) {
+      if (quad.material != DrawQuad::TEXTURE_CONTENT)
         continue;
-      const TextureDrawQuad* quad = TextureDrawQuad::MaterialCast(&*iter);
+      const TextureDrawQuad* texture_quad =
+          TextureDrawQuad::MaterialCast(&quad);
       gfx::SizeF gutter_texture_size_pixels = gfx::ScaleSize(
           gutter_texture_size_, host_impl_->device_scale_factor());
-      EXPECT_EQ(quad->uv_top_left.x(),
-                quad->rect.x() / gutter_texture_size_pixels.width());
-      EXPECT_EQ(quad->uv_top_left.y(),
-                quad->rect.y() / gutter_texture_size_pixels.height());
-      EXPECT_EQ(quad->uv_bottom_right.x(),
-                quad->rect.right() / gutter_texture_size_pixels.width());
-      EXPECT_EQ(quad->uv_bottom_right.y(),
-                quad->rect.bottom() / gutter_texture_size_pixels.height());
+      EXPECT_EQ(texture_quad->uv_top_left.x(),
+                texture_quad->rect.x() / gutter_texture_size_pixels.width());
+      EXPECT_EQ(texture_quad->uv_top_left.y(),
+                texture_quad->rect.y() / gutter_texture_size_pixels.height());
+      EXPECT_EQ(
+          texture_quad->uv_bottom_right.x(),
+          texture_quad->rect.right() / gutter_texture_size_pixels.width());
+      EXPECT_EQ(
+          texture_quad->uv_bottom_right.y(),
+          texture_quad->rect.bottom() / gutter_texture_size_pixels.height());
     }
   }
 
@@ -4497,8 +4503,8 @@ class FakeLayerWithQuads : public LayerImpl {
   }
 
   virtual void AppendQuads(RenderPass* render_pass,
-                           const OcclusionTracker<LayerImpl>& occlusion_tracker,
-                           AppendQuadsData* append_quads_data) OVERRIDE {
+                           const Occlusion& occlusion_in_content_space,
+                           AppendQuadsData* append_quads_data) override {
     SharedQuadState* shared_quad_state =
         render_pass->CreateAndAppendSharedQuadState();
     PopulateSharedQuadState(shared_quad_state);
@@ -4821,6 +4827,18 @@ TEST_F(LayerTreeHostImplTest, LayersFreeTextures) {
       LayerImpl::Create(host_impl_->active_tree(), 1);
   root_layer->SetBounds(gfx::Size(10, 10));
 
+  scoped_refptr<VideoFrame> softwareFrame =
+      media::VideoFrame::CreateColorFrame(
+          gfx::Size(4, 4), 0x80, 0x80, 0x80, base::TimeDelta());
+  FakeVideoFrameProvider provider;
+  provider.set_frame(softwareFrame);
+  scoped_ptr<VideoLayerImpl> video_layer = VideoLayerImpl::Create(
+      host_impl_->active_tree(), 4, &provider, media::VIDEO_ROTATION_0);
+  video_layer->SetBounds(gfx::Size(10, 10));
+  video_layer->SetContentBounds(gfx::Size(10, 10));
+  video_layer->SetDrawsContent(true);
+  root_layer->AddChild(video_layer.Pass());
+
   scoped_ptr<IOSurfaceLayerImpl> io_surface_layer =
       IOSurfaceLayerImpl::Create(host_impl_->active_tree(), 5);
   io_surface_layer->SetBounds(gfx::Size(10, 10));
@@ -4934,7 +4952,7 @@ TEST_F(LayerTreeHostImplTest, ReleaseContentsTextureShouldTriggerCommit) {
 class LayerTreeHostImplTestWithDelegatingRenderer
     : public LayerTreeHostImplTest {
  protected:
-  virtual scoped_ptr<OutputSurface> CreateOutputSurface() OVERRIDE {
+  virtual scoped_ptr<OutputSurface> CreateOutputSurface() override {
     return FakeOutputSurface::CreateDelegating3d();
   }
 
@@ -5024,7 +5042,7 @@ class FakeMaskLayerImpl : public LayerImpl {
     return make_scoped_ptr(new FakeMaskLayerImpl(tree_impl, id));
   }
 
-  virtual ResourceProvider::ResourceId ContentsResourceId() const OVERRIDE {
+  virtual ResourceProvider::ResourceId ContentsResourceId() const override {
     return 0;
   }
 
@@ -5754,7 +5772,7 @@ class CompositorFrameMetadataTest : public LayerTreeHostImplTest {
   CompositorFrameMetadataTest()
       : swap_buffers_complete_(0) {}
 
-  virtual void DidSwapBuffersCompleteOnImplThread() OVERRIDE {
+  virtual void DidSwapBuffersCompleteOnImplThread() override {
     swap_buffers_complete_++;
   }
 
@@ -5779,11 +5797,11 @@ class CountingSoftwareDevice : public SoftwareOutputDevice {
  public:
   CountingSoftwareDevice() : frames_began_(0), frames_ended_(0) {}
 
-  virtual SkCanvas* BeginPaint(const gfx::Rect& damage_rect) OVERRIDE {
+  virtual SkCanvas* BeginPaint(const gfx::Rect& damage_rect) override {
     ++frames_began_;
     return SoftwareOutputDevice::BeginPaint(damage_rect);
   }
-  virtual void EndPaint(SoftwareFrameData* frame_data) OVERRIDE {
+  virtual void EndPaint(SoftwareFrameData* frame_data) override {
     ++frames_ended_;
     SoftwareOutputDevice::EndPaint(frame_data);
   }
@@ -5856,6 +5874,16 @@ TEST_F(LayerTreeHostImplTest,
   scoped_ptr<SolidColorLayerImpl> root_layer =
       SolidColorLayerImpl::Create(host_impl_->active_tree(), 1);
 
+  // VideoLayerImpl will not be drawn.
+  FakeVideoFrameProvider provider;
+  scoped_ptr<VideoLayerImpl> video_layer = VideoLayerImpl::Create(
+      host_impl_->active_tree(), 2, &provider, media::VIDEO_ROTATION_0);
+  video_layer->SetBounds(gfx::Size(10, 10));
+  video_layer->SetContentBounds(gfx::Size(10, 10));
+  video_layer->SetDrawsContent(true);
+  root_layer->AddChild(video_layer.Pass());
+  SetupRootLayerImpl(root_layer.Pass());
+
   LayerTreeHostImpl::FrameData frame;
   EXPECT_EQ(DRAW_SUCCESS, host_impl_->PrepareToDraw(&frame));
   host_impl_->DrawLayers(&frame, gfx::FrameTime::Now());
@@ -5867,7 +5895,7 @@ TEST_F(LayerTreeHostImplTest,
 
 class LayerTreeHostImplTestDeferredInitialize : public LayerTreeHostImplTest {
  protected:
-  virtual void SetUp() OVERRIDE {
+  virtual void SetUp() override {
     LayerTreeHostImplTest::SetUp();
 
     set_reduce_memory_result(false);
@@ -5888,7 +5916,7 @@ class LayerTreeHostImplTestDeferredInitialize : public LayerTreeHostImplTest {
     onscreen_context_provider_ = TestContextProvider::Create();
   }
 
-  virtual void UpdateRendererCapabilitiesOnImplThread() OVERRIDE {
+  virtual void UpdateRendererCapabilitiesOnImplThread() override {
     did_update_renderer_capabilities_ = true;
   }
 
@@ -6055,7 +6083,7 @@ TEST_F(LayerTreeHostImplTest, RequireHighResAfterGpuRasterizationToggles) {
 
 class LayerTreeHostImplTestManageTiles : public LayerTreeHostImplTest {
  public:
-  virtual void SetUp() OVERRIDE {
+  virtual void SetUp() override {
     LayerTreeSettings settings;
     settings.impl_side_painting = true;
 
@@ -6607,15 +6635,15 @@ class SimpleSwapPromiseMonitor : public SwapPromiseMonitor {
 
   virtual ~SimpleSwapPromiseMonitor() {}
 
-  virtual void OnSetNeedsCommitOnMain() OVERRIDE {
+  virtual void OnSetNeedsCommitOnMain() override {
     (*set_needs_commit_count_)++;
   }
 
-  virtual void OnSetNeedsRedrawOnImpl() OVERRIDE {
+  virtual void OnSetNeedsRedrawOnImpl() override {
     (*set_needs_redraw_count_)++;
   }
 
-  virtual void OnForwardScrollUpdateToMainThreadOnImpl() OVERRIDE {
+  virtual void OnForwardScrollUpdateToMainThreadOnImpl() override {
     (*forward_to_main_count_)++;
   }
 
@@ -6715,7 +6743,7 @@ TEST_F(LayerTreeHostImplTest, SimpleSwapPromiseMonitor) {
 
 class LayerTreeHostImplWithTopControlsTest : public LayerTreeHostImplTest {
  public:
-  virtual void SetUp() OVERRIDE {
+  virtual void SetUp() override {
     LayerTreeSettings settings = DefaultSettings();
     settings.calculate_top_controls_position = true;
     settings.top_controls_height = top_controls_height_;
@@ -7034,7 +7062,7 @@ TEST_F(LayerTreeHostImplVirtualViewportTest, FlingScrollBubblesToInner) {
 
 class LayerTreeHostImplWithImplicitLimitsTest : public LayerTreeHostImplTest {
  public:
-  virtual void SetUp() OVERRIDE {
+  virtual void SetUp() override {
     LayerTreeSettings settings = DefaultSettings();
     settings.max_memory_for_prepaint_percentage = 50;
     CreateHostImpl(settings, CreateOutputSurface());
@@ -7225,7 +7253,7 @@ TEST_F(LayerTreeHostImplTest, DidBecomeActive) {
 class LayerTreeHostImplCountingLostSurfaces : public LayerTreeHostImplTest {
  public:
   LayerTreeHostImplCountingLostSurfaces() : num_lost_surfaces_(0) {}
-  virtual void DidLoseOutputSurfaceOnImplThread() OVERRIDE {
+  virtual void DidLoseOutputSurfaceOnImplThread() override {
     num_lost_surfaces_++;
   }
 

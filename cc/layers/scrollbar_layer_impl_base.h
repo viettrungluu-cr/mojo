@@ -44,8 +44,8 @@ class CC_EXPORT ScrollbarLayerImplBase : public LayerImpl {
     return is_left_side_vertical_scrollbar_;
   }
 
-  virtual void PushPropertiesTo(LayerImpl* layer) OVERRIDE;
-  virtual ScrollbarLayerImplBase* ToScrollbarLayer() OVERRIDE;
+  virtual void PushPropertiesTo(LayerImpl* layer) override;
+  virtual ScrollbarLayerImplBase* ToScrollbarLayer() override;
   void PushScrollClipPropertiesTo(LayerImpl* layer);
 
   bool SetVisibleToTotalLengthRatio(float ratio);
@@ -56,7 +56,7 @@ class CC_EXPORT ScrollbarLayerImplBase : public LayerImpl {
   }
   bool SetThumbThicknessScaleFactor(float thumb_thickness_scale_factor);
 
-  void ScrollbarParametersDidChange();
+  void ScrollbarParametersDidChange(bool on_resize);
 
  protected:
   ScrollbarLayerImplBase(LayerTreeImpl* tree_impl,

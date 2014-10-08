@@ -12,7 +12,8 @@ namespace mojo {
 class String;
 
 namespace internal {
-template <typename T> class Array_Data;
+template <typename T>
+class Array_Data;
 
 #pragma pack(push, 1)
 
@@ -20,33 +21,33 @@ struct StructHeader {
   uint32_t num_bytes;
   uint32_t num_fields;
 };
-MOJO_COMPILE_ASSERT(sizeof(StructHeader) == 8, bad_sizeof_StructHeader);
+static_assert(sizeof(StructHeader) == 8, "Bad sizeof(StructHeader)");
 
 struct ArrayHeader {
   uint32_t num_bytes;
   uint32_t num_elements;
 };
-MOJO_COMPILE_ASSERT(sizeof(ArrayHeader) == 8, bad_sizeof_ArrayHeader);
+static_assert(sizeof(ArrayHeader) == 8, "Bad_sizeof(ArrayHeader)");
 
 template <typename T>
 union StructPointer {
   uint64_t offset;
   T* ptr;
 };
-MOJO_COMPILE_ASSERT(sizeof(StructPointer<char>) == 8, bad_sizeof_StructPointer);
+static_assert(sizeof(StructPointer<char>) == 8, "Bad_sizeof(StructPointer)");
 
 template <typename T>
 union ArrayPointer {
   uint64_t offset;
   Array_Data<T>* ptr;
 };
-MOJO_COMPILE_ASSERT(sizeof(ArrayPointer<char>) == 8, bad_sizeof_ArrayPointer);
+static_assert(sizeof(ArrayPointer<char>) == 8, "Bad_sizeof(ArrayPointer)");
 
 union StringPointer {
   uint64_t offset;
   Array_Data<char>* ptr;
 };
-MOJO_COMPILE_ASSERT(sizeof(StringPointer) == 8, bad_sizeof_StringPointer);
+static_assert(sizeof(StringPointer) == 8, "Bad_sizeof(StringPointer)");
 
 #pragma pack(pop)
 
@@ -63,20 +64,24 @@ T FetchAndReset(T* ptr) {
   return temp;
 }
 
-template <typename H> struct IsHandle {
+template <typename H>
+struct IsHandle {
   enum { value = IsBaseOf<Handle, H>::value };
 };
 
 template <typename T, bool move_only = IsMoveOnlyType<T>::value>
 struct WrapperTraits;
 
-template <typename T> struct WrapperTraits<T, false> {
+template <typename T>
+struct WrapperTraits<T, false> {
   typedef T DataType;
 };
-template <typename H> struct WrapperTraits<ScopedHandleBase<H>, true> {
+template <typename H>
+struct WrapperTraits<ScopedHandleBase<H>, true> {
   typedef H DataType;
 };
-template <typename S> struct WrapperTraits<S, true> {
+template <typename S>
+struct WrapperTraits<S, true> {
   typedef typename S::Data_* DataType;
 };
 

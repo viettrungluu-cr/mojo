@@ -101,11 +101,11 @@ class TextureStateTrackingContext : public TestWebGraphicsContext3D {
 
   // Force all textures to be consecutive numbers starting at "1",
   // so we easily can test for them.
-  virtual GLuint NextTextureId() OVERRIDE {
+  virtual GLuint NextTextureId() override {
     base::AutoLock lock(namespace_->lock);
     return namespace_->next_texture_id++;
   }
-  virtual void RetireTextureId(GLuint) OVERRIDE {}
+  virtual void RetireTextureId(GLuint) override {}
 };
 
 // Shared data between multiple ResourceProviderContext. This contains mailbox
@@ -168,7 +168,7 @@ class ResourceProviderContext : public TestWebGraphicsContext3D {
     return make_scoped_ptr(new ResourceProviderContext(shared_data));
   }
 
-  virtual GLuint insertSyncPoint() OVERRIDE {
+  virtual GLuint insertSyncPoint() override {
     uint32 sync_point = shared_data_->InsertSyncPoint();
     // Commit the produceTextureCHROMIUM calls at this point, so that
     // they're associated with the sync point.
@@ -183,7 +183,7 @@ class ResourceProviderContext : public TestWebGraphicsContext3D {
     return sync_point;
   }
 
-  virtual void waitSyncPoint(GLuint sync_point) OVERRIDE {
+  virtual void waitSyncPoint(GLuint sync_point) override {
     last_waited_sync_point_ = std::max(sync_point, last_waited_sync_point_);
   }
 
@@ -193,7 +193,7 @@ class ResourceProviderContext : public TestWebGraphicsContext3D {
                                GLint levels,
                                GLuint internalformat,
                                GLint width,
-                               GLint height) OVERRIDE {
+                               GLint height) override {
     CheckTextureIsBound(target);
     ASSERT_EQ(static_cast<unsigned>(GL_TEXTURE_2D), target);
     ASSERT_EQ(1, levels);
@@ -218,7 +218,7 @@ class ResourceProviderContext : public TestWebGraphicsContext3D {
                           GLint border,
                           GLenum format,
                           GLenum type,
-                          const void* pixels) OVERRIDE {
+                          const void* pixels) override {
     CheckTextureIsBound(target);
     ASSERT_EQ(static_cast<unsigned>(GL_TEXTURE_2D), target);
     ASSERT_FALSE(level);
@@ -238,7 +238,7 @@ class ResourceProviderContext : public TestWebGraphicsContext3D {
                              GLsizei height,
                              GLenum format,
                              GLenum type,
-                             const void* pixels) OVERRIDE {
+                             const void* pixels) override {
     CheckTextureIsBound(target);
     ASSERT_EQ(static_cast<unsigned>(GL_TEXTURE_2D), target);
     ASSERT_FALSE(level);
@@ -251,12 +251,12 @@ class ResourceProviderContext : public TestWebGraphicsContext3D {
     SetPixels(xoffset, yoffset, width, height, pixels);
   }
 
-  virtual void genMailboxCHROMIUM(GLbyte* mailbox) OVERRIDE {
+  virtual void genMailboxCHROMIUM(GLbyte* mailbox) override {
     return shared_data_->GenMailbox(mailbox);
   }
 
   virtual void produceTextureCHROMIUM(GLenum target,
-                                      const GLbyte* mailbox) OVERRIDE {
+                                      const GLbyte* mailbox) override {
     CheckTextureIsBound(target);
 
     // Delay moving the texture into the mailbox until the next
@@ -270,7 +270,7 @@ class ResourceProviderContext : public TestWebGraphicsContext3D {
   }
 
   virtual void consumeTextureCHROMIUM(GLenum target,
-                                      const GLbyte* mailbox) OVERRIDE {
+                                      const GLbyte* mailbox) override {
     CheckTextureIsBound(target);
     base::AutoLock lock_for_texture_access(namespace_->lock);
     scoped_refptr<TestTexture> texture =
@@ -632,10 +632,11 @@ TEST_P(ResourceProviderTest, TransferGLResources) {
 
   ResourceProvider::ResourceId id3 = child_resource_provider_->CreateResource(
       size, GL_CLAMP_TO_EDGE, ResourceProvider::TextureHintImmutable, format);
-  child_resource_provider_->AcquireImage(id3);
-  int stride;
-  child_resource_provider_->MapImage(id3, &stride);
-  child_resource_provider_->UnmapImage(id3);
+  {
+    ResourceProvider::ScopedWriteLockGpuMemoryBuffer lock(
+        child_resource_provider_.get(), id3);
+    EXPECT_TRUE(!!lock.gpu_memory_buffer());
+  }
 
   GLuint external_texture_id = child_context_->createExternalTexture();
   child_context_->bindTexture(GL_TEXTURE_EXTERNAL_OES, external_texture_id);
@@ -3311,30 +3312,29 @@ TEST_P(ResourceProviderTest, Image_GLTexture) {
   id = resource_provider->CreateResource(
       size, GL_CLAMP_TO_EDGE, ResourceProvider::TextureHintImmutable, format);
 
-  const int kStride = 4;
-  void* dummy_mapped_buffer_address = NULL;
+  const int kStride = 8;
+  uint8 buffer_data[kStride * kHeight];
   EXPECT_CALL(
       *context,
       createImageCHROMIUM(kWidth, kHeight, GL_RGBA8_OES, GL_IMAGE_MAP_CHROMIUM))
       .WillOnce(Return(kImageId))
       .RetiresOnSaturation();
-  resource_provider->AcquireImage(id);
-
+  EXPECT_CALL(*context, mapImageCHROMIUM(kImageId))
+      .WillOnce(Return(buffer_data))
+      .RetiresOnSaturation();
   EXPECT_CALL(*context, getImageParameterivCHROMIUM(kImageId,
                                                     GL_IMAGE_ROWBYTES_CHROMIUM,
                                                     _))
       .WillOnce(SetArgPointee<2>(kStride))
       .RetiresOnSaturation();
-  EXPECT_CALL(*context, mapImageCHROMIUM(kImageId))
-      .WillOnce(Return(dummy_mapped_buffer_address))
-      .RetiresOnSaturation();
-  int stride;
-  resource_provider->MapImage(id, &stride);
-
   EXPECT_CALL(*context, unmapImageCHROMIUM(kImageId))
       .Times(1)
       .RetiresOnSaturation();
-  resource_provider->UnmapImage(id);
+  {
+    ResourceProvider::ScopedWriteLockGpuMemoryBuffer lock(
+        resource_provider.get(), id);
+    EXPECT_TRUE(!!lock.gpu_memory_buffer());
+  }
 
   EXPECT_CALL(*context, NextTextureId())
       .WillOnce(Return(kTextureId))
@@ -3351,20 +3351,22 @@ TEST_P(ResourceProviderTest, Image_GLTexture) {
     EXPECT_EQ(kTextureId, lock_gl.texture_id());
   }
 
+  EXPECT_CALL(*context, mapImageCHROMIUM(kImageId))
+      .WillOnce(Return(buffer_data))
+      .RetiresOnSaturation();
   EXPECT_CALL(
       *context,
       getImageParameterivCHROMIUM(kImageId, GL_IMAGE_ROWBYTES_CHROMIUM, _))
       .WillOnce(SetArgPointee<2>(kStride))
       .RetiresOnSaturation();
-  EXPECT_CALL(*context, mapImageCHROMIUM(kImageId))
-      .WillOnce(Return(dummy_mapped_buffer_address))
-      .RetiresOnSaturation();
-  resource_provider->MapImage(id, &stride);
-
   EXPECT_CALL(*context, unmapImageCHROMIUM(kImageId))
       .Times(1)
       .RetiresOnSaturation();
-  resource_provider->UnmapImage(id);
+  {
+    ResourceProvider::ScopedWriteLockGpuMemoryBuffer lock(
+        resource_provider.get(), id);
+    EXPECT_TRUE(!!lock.gpu_memory_buffer());
+  }
 
   EXPECT_CALL(*context, bindTexture(GL_TEXTURE_2D, kTextureId)).Times(1)
       .RetiresOnSaturation();
@@ -3423,28 +3425,29 @@ TEST_P(ResourceProviderTest, CopyResource_GLTexture) {
   source_id = resource_provider->CreateResource(
       size, GL_CLAMP_TO_EDGE, ResourceProvider::TextureHintImmutable, format);
 
-  const int kStride = 4;
-  void* dummy_mapped_buffer_address = NULL;
+  const int kStride = 8;
+  uint8 buffer_data[kStride * kHeight];
   EXPECT_CALL(
       *context,
       createImageCHROMIUM(kWidth, kHeight, GL_RGBA8_OES, GL_IMAGE_MAP_CHROMIUM))
       .WillOnce(Return(kImageId))
+      .RetiresOnSaturation();
+  EXPECT_CALL(*context, mapImageCHROMIUM(kImageId))
+      .WillOnce(Return(buffer_data))
       .RetiresOnSaturation();
   EXPECT_CALL(
       *context,
       getImageParameterivCHROMIUM(kImageId, GL_IMAGE_ROWBYTES_CHROMIUM, _))
       .WillOnce(SetArgPointee<2>(kStride))
       .RetiresOnSaturation();
-  EXPECT_CALL(*context, mapImageCHROMIUM(kImageId))
-      .WillOnce(Return(dummy_mapped_buffer_address))
-      .RetiresOnSaturation();
-  resource_provider->AcquireImage(source_id);
-  int stride;
-  resource_provider->MapImage(source_id, &stride);
   EXPECT_CALL(*context, unmapImageCHROMIUM(kImageId))
       .Times(1)
       .RetiresOnSaturation();
-  resource_provider->UnmapImage(source_id);
+  {
+    ResourceProvider::ScopedWriteLockGpuMemoryBuffer lock(
+        resource_provider.get(), source_id);
+    EXPECT_TRUE(!!lock.gpu_memory_buffer());
+  }
   Mock::VerifyAndClearExpectations(context);
 
   dest_id = resource_provider->CreateResource(
@@ -3615,11 +3618,11 @@ INSTANTIATE_TEST_CASE_P(
 
 class TextureIdAllocationTrackingContext : public TestWebGraphicsContext3D {
  public:
-  virtual GLuint NextTextureId() OVERRIDE {
+  virtual GLuint NextTextureId() override {
     base::AutoLock lock(namespace_->lock);
     return namespace_->next_texture_id++;
   }
-  virtual void RetireTextureId(GLuint) OVERRIDE {}
+  virtual void RetireTextureId(GLuint) override {}
   GLuint PeekTextureId() {
     base::AutoLock lock(namespace_->lock);
     return namespace_->next_texture_id;

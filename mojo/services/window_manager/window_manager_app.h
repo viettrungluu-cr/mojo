@@ -9,7 +9,6 @@
 
 #include "base/memory/scoped_ptr.h"
 #include "mojo/aura/window_tree_host_mojo.h"
-#include "mojo/aura/window_tree_host_mojo_delegate.h"
 #include "mojo/public/cpp/application/application_delegate.h"
 #include "mojo/public/cpp/application/interface_factory_impl.h"
 #include "mojo/public/cpp/bindings/string.h"
@@ -59,7 +58,6 @@ class WindowManagerApp
       public ViewManagerDelegate,
       public WindowManagerDelegate,
       public ViewObserver,
-      public WindowTreeHostMojoDelegate,
       public ui::EventHandler,
       public aura::client::FocusChangeObserver,
       public aura::client::ActivationChangeObserver {
@@ -107,8 +105,8 @@ class WindowManagerApp
   // Overridden from WindowManagerDelegate:
   virtual void Embed(
       const String& url,
-      InterfaceRequest<ServiceProvider> service_provider) OVERRIDE;
-  virtual void DispatchEvent(EventPtr event) OVERRIDE;
+      InterfaceRequest<ServiceProvider> service_provider) override;
+  virtual void DispatchEvent(EventPtr event) override;
 
   // Overridden from ViewObserver:
   virtual void OnTreeChanged(
@@ -117,9 +115,6 @@ class WindowManagerApp
   virtual void OnViewBoundsChanged(View* view,
                                    const gfx::Rect& old_bounds,
                                    const gfx::Rect& new_bounds) override;
-
-  // Overridden from WindowTreeHostMojoDelegate:
-  virtual void CompositorContentsChanged(const SkBitmap& bitmap) override;
 
   // Overridden from ui::EventHandler:
   virtual void OnEvent(ui::Event* event) override;
@@ -140,6 +135,8 @@ class WindowManagerApp
   // Deletes the aura::Windows associated with the hierarchy beneath |id|,
   // and removes from the registry.
   void UnregisterSubtree(View* view);
+
+  Shell* shell_;
 
   InterfaceFactoryImplWithContext<WindowManagerServiceImpl, WindowManagerApp>
       window_manager_service_factory_;

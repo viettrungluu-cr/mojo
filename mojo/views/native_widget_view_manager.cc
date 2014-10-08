@@ -32,7 +32,7 @@ class FocusRulesImpl : public wm::BaseFocusRules {
   FocusRulesImpl() {}
   virtual ~FocusRulesImpl() {}
 
-  virtual bool SupportsChildActivation(aura::Window* window) const OVERRIDE {
+  virtual bool SupportsChildActivation(aura::Window* window) const override {
     return true;
   }
 
@@ -65,7 +65,7 @@ class MinimalInputEventFilter : public ui::internal::InputMethodDelegate,
 
  private:
   // ui::EventHandler:
-  virtual void OnKeyEvent(ui::KeyEvent* event) OVERRIDE {
+  virtual void OnKeyEvent(ui::KeyEvent* event) override {
     // See the comment in InputMethodEventFilter::OnKeyEvent() for details.
     if (event->IsTranslated()) {
       event->SetTranslated(false);
@@ -76,7 +76,7 @@ class MinimalInputEventFilter : public ui::internal::InputMethodDelegate,
   }
 
   // ui::internal::InputMethodDelegate:
-  virtual bool DispatchKeyEventPostIME(const ui::KeyEvent& event) OVERRIDE {
+  virtual bool DispatchKeyEventPostIME(const ui::KeyEvent& event) override {
     // See the comment in InputMethodEventFilter::DispatchKeyEventPostIME() for
     // details.
     ui::KeyEvent aura_event(event);
@@ -95,11 +95,12 @@ class MinimalInputEventFilter : public ui::internal::InputMethodDelegate,
 }  // namespace
 
 NativeWidgetViewManager::NativeWidgetViewManager(
-    views::internal::NativeWidgetDelegate* delegate, View* view)
-    : NativeWidgetAura(delegate),
-      view_(view) {
+    views::internal::NativeWidgetDelegate* delegate,
+    Shell* shell,
+    View* view)
+    : NativeWidgetAura(delegate), view_(view) {
   view_->AddObserver(this);
-  window_tree_host_.reset(new WindowTreeHostMojo(view_, this));
+  window_tree_host_.reset(new WindowTreeHostMojo(shell, view_));
   window_tree_host_->InitHost();
 
   ime_filter_.reset(
@@ -129,16 +130,12 @@ void NativeWidgetViewManager::InitNativeWidget(
   NativeWidgetAura::InitNativeWidget(params);
 }
 
-void NativeWidgetViewManager::CompositorContentsChanged(
-    const SkBitmap& bitmap) {
-  if (view_)
-    view_->SetContents(bitmap);
-}
-
 void NativeWidgetViewManager::OnViewDestroyed(View* view) {
   DCHECK_EQ(view, view_);
   view->RemoveObserver(this);
   view_ = NULL;
+  // TODO(sky): WindowTreeHostMojo assumes the View outlives it.
+  // NativeWidgetViewManager needs to deal, likely by deleting this.
 }
 
 void NativeWidgetViewManager::OnViewBoundsChanged(View* view,

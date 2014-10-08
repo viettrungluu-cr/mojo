@@ -8,7 +8,6 @@
 #include "cc/layers/picture_layer_impl.h"
 #include "cc/quads/draw_quad.h"
 #include "cc/test/layer_tree_pixel_test.h"
-#include "cc/test/mock_occlusion_tracker.h"
 #include "cc/trees/layer_tree_impl.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 #include "third_party/skia/include/core/SkColor.h"
@@ -22,11 +21,11 @@ namespace {
 
 class LayerTreeHostOnDemandRasterPixelTest : public LayerTreePixelTest {
  public:
-  virtual void InitializeSettings(LayerTreeSettings* settings) OVERRIDE {
+  virtual void InitializeSettings(LayerTreeSettings* settings) override {
     settings->impl_side_painting = true;
   }
 
-  virtual void BeginCommitOnThread(LayerTreeHostImpl* impl) OVERRIDE {
+  virtual void BeginCommitOnThread(LayerTreeHostImpl* impl) override {
     // Not enough memory available. Enforce on-demand rasterization.
     impl->SetMemoryPolicy(
         ManagedMemoryPolicy(1, gpu::MemoryAllocation::CUTOFF_ALLOW_EVERYTHING,
@@ -34,23 +33,20 @@ class LayerTreeHostOnDemandRasterPixelTest : public LayerTreePixelTest {
   }
 
   virtual void SwapBuffersOnThread(LayerTreeHostImpl* host_impl,
-                                   bool result) OVERRIDE {
+                                   bool result) override {
     // Find the PictureLayerImpl ask it to append quads to check their material.
     // The PictureLayerImpl is assumed to be the first child of the root layer
     // in the active tree.
     PictureLayerImpl* picture_layer = static_cast<PictureLayerImpl*>(
         host_impl->active_tree()->root_layer()->child_at(0));
 
-    MockOcclusionTracker<LayerImpl> occlusion_tracker;
     scoped_ptr<RenderPass> render_pass = RenderPass::Create();
 
     AppendQuadsData data;
-    picture_layer->AppendQuads(render_pass.get(), occlusion_tracker, &data);
+    picture_layer->AppendQuads(render_pass.get(), Occlusion(), &data);
 
-    for (QuadList::Iterator iter = render_pass->quad_list.begin();
-         iter != render_pass->quad_list.end();
-         ++iter)
-      EXPECT_EQ(iter->material, DrawQuad::PICTURE_CONTENT);
+    for (const auto& quad : render_pass->quad_list)
+      EXPECT_EQ(quad.material, DrawQuad::PICTURE_CONTENT);
 
     // Triggers pixel readback and ends the test.
     LayerTreePixelTest::SwapBuffersOnThread(host_impl, result);
@@ -64,14 +60,14 @@ class BlueYellowLayerClient : public ContentLayerClient {
   explicit BlueYellowLayerClient(gfx::Rect layer_rect)
       : layer_rect_(layer_rect) {}
 
-  virtual void DidChangeLayerCanUseLCDText() OVERRIDE { }
+  virtual void DidChangeLayerCanUseLCDText() override { }
 
-  virtual bool FillsBoundsCompletely() const OVERRIDE { return false; }
+  virtual bool FillsBoundsCompletely() const override { return false; }
 
   virtual void PaintContents(
       SkCanvas* canvas,
       const gfx::Rect& clip,
-      ContentLayerClient::GraphicsContextStatus gc_status) OVERRIDE {
+      ContentLayerClient::GraphicsContextStatus gc_status) override {
     SkPaint paint;
     paint.setColor(SK_ColorBLUE);
     canvas->drawRect(SkRect::MakeWH(layer_rect_.width(),
@@ -113,7 +109,7 @@ TEST_F(LayerTreeHostOnDemandRasterPixelTest, RasterPictureLayer) {
 
 class LayerTreeHostOnDemandRasterPixelTestWithGpuRasterizationForced
     : public LayerTreeHostOnDemandRasterPixelTest {
-  virtual void InitializeSettings(LayerTreeSettings* settings) OVERRIDE {
+  virtual void InitializeSettings(LayerTreeSettings* settings) override {
     LayerTreeHostOnDemandRasterPixelTest::InitializeSettings(settings);
     settings->gpu_rasterization_forced = true;
   }
