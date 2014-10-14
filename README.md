@@ -22,7 +22,9 @@ solutions = [
 
 then run 'gclient sync' from the directory containing the .gclient file.
 This will clone this repository into a subdirectory called 'src'.  From that
-directory, you can then build by doing
+directory, you can then build by running:
 
-src$ gn gen out/Debug
-src$ ninja -C out/Debug mojo
+```
+$ gn gen out/Debug
+$ ninja -C out/Debug mojo
+```
