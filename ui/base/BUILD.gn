@@ -9,7 +9,7 @@ if (is_android) {
   import("//build/config/android/rules.gni")
 }
 
-build_ime = !is_ios
+build_ime = false
 
 component("base") {
   output_name = "ui_base"
@@ -699,6 +699,8 @@ if (is_android) {
   }
 }
 
+if (false) {
+
 # TODO(GYP): Make this work on Android and reenable it.
 if (!is_android) {
 # TODO(tfarina): Rename this target to ui_base_unittests.
@@ -898,6 +900,7 @@ test("ui_unittests") {
       "//ui/chromeos:ui_chromeos",
     ]
   }
+}
 }
 }
 # TODO(GYP) Mac (ui_unittest_bundle) and Android (ui_unittests_apk).
