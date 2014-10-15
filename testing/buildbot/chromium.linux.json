@@ -199,10 +199,6 @@
       "wm_unittests"
     ]
   },
-  "Linux Tests (dbg)(2)(32)": {
-    "gtest_tests": [
-    ]
-  },
   "Linux Tests (dbg)(1)": {
     "gtest_tests": [
       "accessibility_unittests",
@@ -283,7 +279,10 @@
       "ppapi_unittests",
       "printing_unittests",
       "remoting_unittests",
-      "sandbox_linux_unittests",
+      {
+        "test": "sandbox_linux_unittests",
+        "args": ["--test-launcher-print-test-stdio=always"]
+      },
       "sql_unittests",
       "ui_unittests",
       {
@@ -302,10 +301,6 @@
       "url_unittests",
       "views_unittests",
       "wm_unittests"
-    ]
-  },
-  "Linux Tests (dbg)(2)": {
-    "gtest_tests": [
     ]
   },
   "Linux Clang (dbg)": {

@@ -7,19 +7,18 @@
 #include "base/memory/scoped_vector.h"
 #include "base/message_loop/message_loop.h"
 #include "mojo/common/common_type_converters.h"
+#include "mojo/services/network/net_adapters.h"
 #include "mojo/services/network/network_context.h"
+#include "net/base/elements_upload_data_stream.h"
 #include "net/base/io_buffer.h"
 #include "net/base/load_flags.h"
 #include "net/base/upload_bytes_element_reader.h"
-#include "net/base/upload_data_stream.h"
 #include "net/http/http_response_headers.h"
 #include "net/url_request/redirect_info.h"
 #include "net/url_request/url_request_context.h"
 
 namespace mojo {
 namespace {
-
-const uint32_t kMaxReadSize = 64 * 1024;
 
 // Generates an URLResponsePtr from the response state of a net::URLRequest.
 URLResponsePtr MakeURLResponse(const net::URLRequest* url_request) {
@@ -49,13 +48,6 @@ URLResponsePtr MakeURLResponse(const net::URLRequest* url_request) {
   response->charset = charset;
 
   return response.Pass();
-}
-
-NetworkErrorPtr MakeNetworkError(int error_code) {
-  NetworkErrorPtr error = NetworkError::New();
-  error->code = error_code;
-  error->description = net::ErrorToString(error_code);
-  return error.Pass();
 }
 
 // Reads the request body upload data from a DataPipe.
@@ -105,59 +97,6 @@ class UploadDataPipeElementReader : public net::UploadElementReader {
 
 }  // namespace
 
-// Keeps track of a pending two-phase write on a DataPipeProducerHandle.
-class URLLoaderImpl::PendingWriteToDataPipe :
-    public base::RefCountedThreadSafe<PendingWriteToDataPipe> {
- public:
-  explicit PendingWriteToDataPipe(ScopedDataPipeProducerHandle handle)
-      : handle_(handle.Pass()),
-        buffer_(NULL) {
-  }
-
-  MojoResult BeginWrite(uint32_t* num_bytes) {
-    MojoResult result = BeginWriteDataRaw(handle_.get(), &buffer_, num_bytes,
-                                          MOJO_WRITE_DATA_FLAG_NONE);
-    if (*num_bytes > kMaxReadSize)
-      *num_bytes = kMaxReadSize;
-
-    return result;
-  }
-
-  ScopedDataPipeProducerHandle Complete(uint32_t num_bytes) {
-    EndWriteDataRaw(handle_.get(), num_bytes);
-    buffer_ = NULL;
-    return handle_.Pass();
-  }
-
-  char* buffer() { return static_cast<char*>(buffer_); }
-
- private:
-  friend class base::RefCountedThreadSafe<PendingWriteToDataPipe>;
-
-  ~PendingWriteToDataPipe() {
-    if (handle_.is_valid())
-      EndWriteDataRaw(handle_.get(), 0);
-  }
-
-  ScopedDataPipeProducerHandle handle_;
-  void* buffer_;
-
-  DISALLOW_COPY_AND_ASSIGN(PendingWriteToDataPipe);
-};
-
-// Takes ownership of a pending two-phase write on a DataPipeProducerHandle,
-// and makes its buffer available as a net::IOBuffer.
-class URLLoaderImpl::DependentIOBuffer : public net::WrappedIOBuffer {
- public:
-  DependentIOBuffer(PendingWriteToDataPipe* pending_write)
-      : net::WrappedIOBuffer(pending_write->buffer()),
-        pending_write_(pending_write) {
-  }
- private:
-  virtual ~DependentIOBuffer() {}
-  scoped_refptr<PendingWriteToDataPipe> pending_write_;
-};
-
 URLLoaderImpl::URLLoaderImpl(NetworkContext* context)
     : context_(context),
       response_body_buffer_size_(0),
@@ -198,8 +137,8 @@ void URLLoaderImpl::Start(URLRequestPtr request,
       element_readers.push_back(
           new UploadDataPipeElementReader(request->body[i].Pass()));
     }
-    url_request_->set_upload(make_scoped_ptr(
-        new net::UploadDataStream(element_readers.Pass(), 0)));
+    url_request_->set_upload(make_scoped_ptr<net::UploadDataStream>(
+        new net::ElementsUploadDataStream(element_readers.Pass(), 0)));
   }
   if (request->bypass_cache)
     url_request_->SetLoadFlags(net::LOAD_BYPASS_CACHE);
@@ -318,44 +257,32 @@ void URLLoaderImpl::OnResponseBodyStreamReady(MojoResult result) {
   ReadMore();
 }
 
-void URLLoaderImpl::WaitToReadMore() {
-  handle_watcher_.Start(response_body_stream_.get(),
-                        MOJO_HANDLE_SIGNAL_WRITABLE,
-                        MOJO_DEADLINE_INDEFINITE,
-                        base::Bind(&URLLoaderImpl::OnResponseBodyStreamReady,
-                                   weak_ptr_factory_.GetWeakPtr()));
-}
-
 void URLLoaderImpl::ReadMore() {
   DCHECK(!pending_write_.get());
 
-  pending_write_ = new PendingWriteToDataPipe(response_body_stream_.Pass());
-
   uint32_t num_bytes;
-  MojoResult result = pending_write_->BeginWrite(&num_bytes);
+  MojoResult result = NetToMojoPendingBuffer::BeginWrite(
+      &response_body_stream_, &pending_write_, &num_bytes);
+
   if (result == MOJO_RESULT_SHOULD_WAIT) {
     // The pipe is full. We need to wait for it to have more space.
-    response_body_stream_ = pending_write_->Complete(num_bytes);
-    pending_write_ = NULL;
-    WaitToReadMore();
+    handle_watcher_.Start(response_body_stream_.get(),
+                          MOJO_HANDLE_SIGNAL_WRITABLE,
+                          MOJO_DEADLINE_INDEFINITE,
+                          base::Bind(&URLLoaderImpl::OnResponseBodyStreamReady,
+                                     weak_ptr_factory_.GetWeakPtr()));
     return;
-  }
-  if (result != MOJO_RESULT_OK) {
+  } else if (result != MOJO_RESULT_OK) {
     // The response body stream is in a bad state. Bail.
     // TODO(darin): How should this be communicated to our client?
     return;
   }
   CHECK_GT(static_cast<uint32_t>(std::numeric_limits<int>::max()), num_bytes);
 
-  scoped_refptr<net::IOBuffer> buf =
-      new DependentIOBuffer(pending_write_.get());
+  scoped_refptr<net::IOBuffer> buf(new NetToMojoIOBuffer(pending_write_.get()));
 
   int bytes_read;
   url_request_->Read(buf.get(), static_cast<int>(num_bytes), &bytes_read);
-
-  // Drop our reference to the buffer.
-  buf = NULL;
-
   if (url_request_->status().is_io_pending()) {
     // Wait for OnReadCompleted.
   } else if (url_request_->status().is_success() && bytes_read > 0) {

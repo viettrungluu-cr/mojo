@@ -38,7 +38,7 @@ class NET_EXPORT_PRIVATE ServerHelloNotifier : public
       int num_original_bytes,
       int num_retransmitted_packets,
       int num_retransmitted_bytes,
-      QuicTime::Delta delta_largest_observed) OVERRIDE;
+      QuicTime::Delta delta_largest_observed) override;
 
  private:
   virtual ~ServerHelloNotifier() {}
@@ -60,7 +60,7 @@ class NET_EXPORT_PRIVATE QuicCryptoServerStream : public QuicCryptoStream {
 
   // CryptoFramerVisitorInterface implementation
   virtual void OnHandshakeMessage(
-      const CryptoHandshakeMessage& message) OVERRIDE;
+      const CryptoHandshakeMessage& message) override;
 
   // GetBase64SHA256ClientChannelID sets |*output| to the base64 encoded,
   // SHA-256 hash of the client's ChannelID key and returns true, if the client
@@ -74,8 +74,11 @@ class NET_EXPORT_PRIVATE QuicCryptoServerStream : public QuicCryptoStream {
   }
 
   // Sends the latest server config and source-address token to the client.
+  // |on_handshake_complete| is true when this is called immediately after
+  // handshake completes, and should be false for subsequent updates.
   virtual void SendServerConfigUpdate(
-      const CachedNetworkParameters* cached_network_params);
+      const CachedNetworkParameters* cached_network_params,
+      bool on_handshake_complete);
 
   // Called by the ServerHello AckNotifier once the SHLO has been ACKed by the
   // client.
@@ -103,7 +106,7 @@ class NET_EXPORT_PRIVATE QuicCryptoServerStream : public QuicCryptoStream {
 
     // From ValidateClientHelloResultCallback
     virtual void RunImpl(const CryptoHandshakeMessage& client_hello,
-                         const Result& result) OVERRIDE;
+                         const Result& result) override;
 
    private:
     QuicCryptoServerStream* parent_;
@@ -132,6 +135,11 @@ class NET_EXPORT_PRIVATE QuicCryptoServerStream : public QuicCryptoStream {
 
   // Number of server config update (SCUP) messages sent by this stream.
   int num_server_config_update_messages_sent_;
+
+  // If the client provides CachedNetworkParameters in the STK in the CHLO, then
+  // store here, and send back in future STKs if we have no better bandwidth
+  // estimate to send.
+  scoped_ptr<CachedNetworkParameters> previous_cached_network_params_;
 
   DISALLOW_COPY_AND_ASSIGN(QuicCryptoServerStream);
 };

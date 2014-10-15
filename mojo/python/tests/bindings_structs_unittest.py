@@ -5,11 +5,12 @@
 import math
 import unittest
 
-# pylint: disable=F0401
+# pylint: disable=E0611,F0401
 import mojo.system
 
 # Generated files
 # pylint: disable=F0401
+import regression_tests_mojom
 import sample_import_mojom
 import sample_import2_mojom
 import sample_service_mojom
@@ -66,7 +67,7 @@ class StructBindingsTest(unittest.TestCase):
 
     defaults_test1 = sample_service_mojom.DefaultsTest()
     defaults_test2 = sample_service_mojom.DefaultsTest()
-    self.assertNotEquals(defaults_test1.a22, defaults_test2.a22)
+    self.assertIsNot(defaults_test1.a22, defaults_test2.a22)
 
   def testImmutableAttributeSet(self):
     foo_instance = sample_service_mojom.Foo()
@@ -206,3 +207,11 @@ class StructBindingsTest(unittest.TestCase):
       p = sample_import_mojom.Point(0, x=0)
     with self.assertRaises(TypeError):
       p = sample_import_mojom.Point(c=0)
+
+  def testCyclicDefinition(self):
+    a = regression_tests_mojom.A()
+    b = regression_tests_mojom.B()
+    self.assertIsNone(a.b)
+    self.assertIsNone(b.a)
+    a.b = b
+    self.assertIs(a.b, b)

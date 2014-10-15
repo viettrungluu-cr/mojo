@@ -13,19 +13,11 @@ GpuMemoryBufferHandle::GpuMemoryBufferHandle()
       ,
       io_surface_id(0u)
 #endif
-#if defined(OS_ANDROID)
-      ,
-      buffer_id(0)
-#endif
 #if defined(USE_X11)
       ,
       pixmap(0)
 #endif
 {
 }
-
-GpuMemoryBuffer::GpuMemoryBuffer() {}
-
-GpuMemoryBuffer::~GpuMemoryBuffer() {}
 
 }  // namespace gfx

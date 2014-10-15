@@ -49,8 +49,6 @@
         'android/surface_texture.h',
         'android/surface_texture_listener.cc',
         'android/surface_texture_listener.h',
-        'android/surface_texture_tracker.cc',
-        'android/surface_texture_tracker.h',
         'gl_bindings.h',
         'gl_bindings_skia_in_process.cc',
         'gl_bindings_skia_in_process.h',
@@ -197,6 +195,12 @@
           'sources': [
             'gl_implementation_osmesa.cc',
             'gl_implementation_osmesa.h',
+          ],
+        }],
+        ['OS=="linux"', {
+          'sources': [
+            'gl_image_linux_dma_buffer.cc',
+            'gl_image_linux_dma_buffer.h',
           ],
         }],
         ['use_x11 == 1', {

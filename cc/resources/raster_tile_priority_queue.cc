@@ -69,8 +69,23 @@ WhichTree HigherPriorityTree(
     const PictureLayerImpl::LayerRasterTileIterator* pending_iterator,
     const Tile* shared_tile) {
   switch (tree_priority) {
-    case SMOOTHNESS_TAKES_PRIORITY:
+    case SMOOTHNESS_TAKES_PRIORITY: {
+      const Tile* active_tile = shared_tile ? shared_tile : **active_iterator;
+      const Tile* pending_tile = shared_tile ? shared_tile : **pending_iterator;
+
+      const TilePriority& active_priority = active_tile->priority(ACTIVE_TREE);
+      const TilePriority& pending_priority =
+          pending_tile->priority(PENDING_TREE);
+
+      // If we're down to eventually bin tiles on the active tree, process the
+      // pending tree to allow tiles required for activation to be initialized
+      // when memory policy only allows prepaint.
+      if (active_priority.priority_bin == TilePriority::EVENTUALLY &&
+          pending_priority.priority_bin == TilePriority::NOW) {
+        return PENDING_TREE;
+      }
       return ACTIVE_TREE;
+    }
     case NEW_CONTENT_TAKES_PRIORITY:
       return PENDING_TREE;
     case SAME_PRIORITY_FOR_BOTH_TREES: {
@@ -152,6 +167,8 @@ RasterTilePriorityQueue::PairedPictureLayerQueue::PairedPictureLayerQueue(
                                  tree_priority == SMOOTHNESS_TAKES_PRIORITY)
                            : PictureLayerImpl::LayerRasterTileIterator()),
       has_both_layers(layer_pair.active && layer_pair.pending) {
+  if (has_both_layers)
+    SkipTilesReturnedByTwin(tree_priority);
 }
 
 RasterTilePriorityQueue::PairedPictureLayerQueue::~PairedPictureLayerQueue() {
@@ -185,29 +202,35 @@ void RasterTilePriorityQueue::PairedPictureLayerQueue::Pop(
   DCHECK(returned_tiles_for_debug.insert(**next_iterator).second);
   ++(*next_iterator);
 
-  if (has_both_layers) {
-    // We have both layers (active and pending) thus we can encounter shared
-    // tiles twice (from the active iterator and from the pending iterator).
-    for (; !IsEmpty(); ++(*next_iterator)) {
-      next_tree = NextTileIteratorTree(tree_priority);
-      next_iterator =
-          next_tree == ACTIVE_TREE ? &active_iterator : &pending_iterator;
-
-      // Accept all non-shared tiles.
-      const Tile* tile = **next_iterator;
-      if (!tile->is_shared())
-        break;
-
-      // Accept a shared tile if the next tree is the higher priority one
-      // corresponding the iterator (active or pending) which usually (but due
-      // to spiral iterators not always) returns the shared tile first.
-      if (next_tree == HigherPriorityTree(tree_priority, NULL, NULL, tile))
-        break;
-    }
-  }
+  if (has_both_layers)
+    SkipTilesReturnedByTwin(tree_priority);
 
   // If no empty, use Top to do DCHECK the next iterator.
   DCHECK(IsEmpty() || Top(tree_priority));
+}
+
+void RasterTilePriorityQueue::PairedPictureLayerQueue::SkipTilesReturnedByTwin(
+    TreePriority tree_priority) {
+  // We have both layers (active and pending) thus we can encounter shared
+  // tiles twice (from the active iterator and from the pending iterator).
+  while (!IsEmpty()) {
+    WhichTree next_tree = NextTileIteratorTree(tree_priority);
+    PictureLayerImpl::LayerRasterTileIterator* next_iterator =
+        next_tree == ACTIVE_TREE ? &active_iterator : &pending_iterator;
+
+    // Accept all non-shared tiles.
+    const Tile* tile = **next_iterator;
+    if (!tile->is_shared())
+      break;
+
+    // Accept a shared tile if the next tree is the higher priority one
+    // corresponding the iterator (active or pending) which usually (but due
+    // to spiral iterators not always) returns the shared tile first.
+    if (next_tree == HigherPriorityTree(tree_priority, nullptr, nullptr, tile))
+      break;
+
+    ++(*next_iterator);
+  }
 }
 
 WhichTree
@@ -223,7 +246,7 @@ RasterTilePriorityQueue::PairedPictureLayerQueue::NextTileIteratorTree(
 
   // Now both iterators have tiles, so we have to decide based on tree priority.
   return HigherPriorityTree(
-      tree_priority, &active_iterator, &pending_iterator, NULL);
+      tree_priority, &active_iterator, &pending_iterator, nullptr);
 }
 
 }  // namespace cc

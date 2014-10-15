@@ -93,15 +93,15 @@ class TaggingEncrypter : public QuicEncrypter {
   virtual ~TaggingEncrypter() {}
 
   // QuicEncrypter interface.
-  virtual bool SetKey(StringPiece key) OVERRIDE { return true; }
-  virtual bool SetNoncePrefix(StringPiece nonce_prefix) OVERRIDE {
+  virtual bool SetKey(StringPiece key) override { return true; }
+  virtual bool SetNoncePrefix(StringPiece nonce_prefix) override {
     return true;
   }
 
   virtual bool Encrypt(StringPiece nonce,
                        StringPiece associated_data,
                        StringPiece plaintext,
-                       unsigned char* output) OVERRIDE {
+                       unsigned char* output) override {
     memcpy(output, plaintext.data(), plaintext.size());
     output += plaintext.size();
     memset(output, tag_, kTagSize);
@@ -110,29 +110,29 @@ class TaggingEncrypter : public QuicEncrypter {
 
   virtual QuicData* EncryptPacket(QuicPacketSequenceNumber sequence_number,
                                   StringPiece associated_data,
-                                  StringPiece plaintext) OVERRIDE {
+                                  StringPiece plaintext) override {
     const size_t len = plaintext.size() + kTagSize;
     uint8* buffer = new uint8[len];
     Encrypt(StringPiece(), associated_data, plaintext, buffer);
     return new QuicData(reinterpret_cast<char*>(buffer), len, true);
   }
 
-  virtual size_t GetKeySize() const OVERRIDE { return 0; }
-  virtual size_t GetNoncePrefixSize() const OVERRIDE { return 0; }
+  virtual size_t GetKeySize() const override { return 0; }
+  virtual size_t GetNoncePrefixSize() const override { return 0; }
 
-  virtual size_t GetMaxPlaintextSize(size_t ciphertext_size) const OVERRIDE {
+  virtual size_t GetMaxPlaintextSize(size_t ciphertext_size) const override {
     return ciphertext_size - kTagSize;
   }
 
-  virtual size_t GetCiphertextSize(size_t plaintext_size) const OVERRIDE {
+  virtual size_t GetCiphertextSize(size_t plaintext_size) const override {
     return plaintext_size + kTagSize;
   }
 
-  virtual StringPiece GetKey() const OVERRIDE {
+  virtual StringPiece GetKey() const override {
     return StringPiece();
   }
 
-  virtual StringPiece GetNoncePrefix() const OVERRIDE {
+  virtual StringPiece GetNoncePrefix() const override {
     return StringPiece();
   }
 
@@ -153,8 +153,8 @@ class TaggingDecrypter : public QuicDecrypter {
   virtual ~TaggingDecrypter() {}
 
   // QuicDecrypter interface
-  virtual bool SetKey(StringPiece key) OVERRIDE { return true; }
-  virtual bool SetNoncePrefix(StringPiece nonce_prefix) OVERRIDE {
+  virtual bool SetKey(StringPiece key) override { return true; }
+  virtual bool SetNoncePrefix(StringPiece nonce_prefix) override {
     return true;
   }
 
@@ -162,7 +162,7 @@ class TaggingDecrypter : public QuicDecrypter {
                        StringPiece associated_data,
                        StringPiece ciphertext,
                        unsigned char* output,
-                       size_t* output_length) OVERRIDE {
+                       size_t* output_length) override {
     if (ciphertext.size() < kTagSize) {
       return false;
     }
@@ -176,7 +176,7 @@ class TaggingDecrypter : public QuicDecrypter {
 
   virtual QuicData* DecryptPacket(QuicPacketSequenceNumber sequence_number,
                                   StringPiece associated_data,
-                                  StringPiece ciphertext) OVERRIDE {
+                                  StringPiece ciphertext) override {
     if (ciphertext.size() < kTagSize) {
       return nullptr;
     }
@@ -190,8 +190,8 @@ class TaggingDecrypter : public QuicDecrypter {
                         true /* owns buffer */);
   }
 
-  virtual StringPiece GetKey() const OVERRIDE { return StringPiece(); }
-  virtual StringPiece GetNoncePrefix() const OVERRIDE { return StringPiece(); }
+  virtual StringPiece GetKey() const override { return StringPiece(); }
+  virtual StringPiece GetNoncePrefix() const override { return StringPiece(); }
 
  protected:
   virtual uint8 GetTag(StringPiece ciphertext) {
@@ -222,7 +222,7 @@ class StrictTaggingDecrypter : public TaggingDecrypter {
   virtual ~StrictTaggingDecrypter() {}
 
   // TaggingQuicDecrypter
-  virtual uint8 GetTag(StringPiece ciphertext) OVERRIDE {
+  virtual uint8 GetTag(StringPiece ciphertext) override {
     return tag_;
   }
 
@@ -238,8 +238,8 @@ class TestConnectionHelper : public QuicConnectionHelperInterface {
         : QuicAlarm(delegate) {
     }
 
-    virtual void SetImpl() OVERRIDE {}
-    virtual void CancelImpl() OVERRIDE {}
+    virtual void SetImpl() override {}
+    virtual void CancelImpl() override {}
     using QuicAlarm::Fire;
   };
 
@@ -250,15 +250,15 @@ class TestConnectionHelper : public QuicConnectionHelperInterface {
   }
 
   // QuicConnectionHelperInterface
-  virtual const QuicClock* GetClock() const OVERRIDE {
+  virtual const QuicClock* GetClock() const override {
     return clock_;
   }
 
-  virtual QuicRandom* GetRandomGenerator() OVERRIDE {
+  virtual QuicRandom* GetRandomGenerator() override {
     return random_generator_;
   }
 
-  virtual QuicAlarm* CreateAlarm(QuicAlarm::Delegate* delegate) OVERRIDE {
+  virtual QuicAlarm* CreateAlarm(QuicAlarm::Delegate* delegate) override {
     return new TestAlarm(delegate);
   }
 
@@ -288,7 +288,7 @@ class TestPacketWriter : public QuicPacketWriter {
   virtual WriteResult WritePacket(
       const char* buffer, size_t buf_len,
       const IPAddressNumber& self_address,
-      const IPEndPoint& peer_address) OVERRIDE {
+      const IPEndPoint& peer_address) override {
     QuicEncryptedPacket packet(buffer, buf_len);
     ++packets_write_attempts_;
 
@@ -313,13 +313,13 @@ class TestPacketWriter : public QuicPacketWriter {
     return WriteResult(WRITE_STATUS_OK, last_packet_size_);
   }
 
-  virtual bool IsWriteBlockedDataBuffered() const OVERRIDE {
+  virtual bool IsWriteBlockedDataBuffered() const override {
     return is_write_blocked_data_buffered_;
   }
 
-  virtual bool IsWriteBlocked() const OVERRIDE { return write_blocked_; }
+  virtual bool IsWriteBlocked() const override { return write_blocked_; }
 
-  virtual void SetWritable() OVERRIDE { write_blocked_ = false; }
+  virtual void SetWritable() override { write_blocked_ = false; }
 
   void BlockOnNextWrite() { block_on_next_write_ = true; }
 
@@ -591,7 +591,7 @@ class FecQuicConnectionDebugVisitor
     : public QuicConnectionDebugVisitor {
  public:
   virtual void OnRevivedPacket(const QuicPacketHeader& header,
-                               StringPiece data) OVERRIDE {
+                               StringPiece data) override {
     revived_header_ = header;
   }
 
@@ -2416,19 +2416,22 @@ TEST_P(QuicConnectionTest, RetransmitPacketsWithInitialEncryption) {
 }
 
 TEST_P(QuicConnectionTest, BufferNonDecryptablePackets) {
+  // SetFromConfig is always called after construction from InitializeSession.
+  EXPECT_CALL(*send_algorithm_, SetFromConfig(_, _));
+  QuicConfig config;
+  connection_.SetFromConfig(config);
   EXPECT_CALL(visitor_, OnSuccessfulVersionNegotiation(_));
   use_tagging_decrypter();
 
   const uint8 tag = 0x07;
   framer_.SetEncrypter(ENCRYPTION_INITIAL, new TaggingEncrypter(tag));
 
-  // Process an encrypted packet which can not yet be decrypted
-  // which should result in the packet being buffered.
+  // Process an encrypted packet which can not yet be decrypted which should
+  // result in the packet being buffered.
   ProcessDataPacketAtLevel(1, 0, kEntropyFlag, ENCRYPTION_INITIAL);
 
-  // Transition to the new encryption state and process another
-  // encrypted packet which should result in the original packet being
-  // processed.
+  // Transition to the new encryption state and process another encrypted packet
+  // which should result in the original packet being processed.
   connection_.SetDecrypter(new StrictTaggingDecrypter(tag),
                            ENCRYPTION_INITIAL);
   connection_.SetDefaultEncryptionLevel(ENCRYPTION_INITIAL);
@@ -2436,10 +2439,42 @@ TEST_P(QuicConnectionTest, BufferNonDecryptablePackets) {
   EXPECT_CALL(visitor_, OnStreamFrames(_)).Times(2);
   ProcessDataPacketAtLevel(2, 0, kEntropyFlag, ENCRYPTION_INITIAL);
 
-  // Finally, process a third packet and note that we do not
-  // reprocess the buffered packet.
+  // Finally, process a third packet and note that we do not reprocess the
+  // buffered packet.
   EXPECT_CALL(visitor_, OnStreamFrames(_)).Times(1);
   ProcessDataPacketAtLevel(3, 0, kEntropyFlag, ENCRYPTION_INITIAL);
+}
+
+TEST_P(QuicConnectionTest, Buffer100NonDecryptablePackets) {
+  // SetFromConfig is always called after construction from InitializeSession.
+  EXPECT_CALL(*send_algorithm_, SetFromConfig(_, _));
+  QuicConfig config;
+  config.set_max_undecryptable_packets(100);
+  connection_.SetFromConfig(config);
+  EXPECT_CALL(visitor_, OnSuccessfulVersionNegotiation(_));
+  use_tagging_decrypter();
+
+  const uint8 tag = 0x07;
+  framer_.SetEncrypter(ENCRYPTION_INITIAL, new TaggingEncrypter(tag));
+
+  // Process an encrypted packet which can not yet be decrypted which should
+  // result in the packet being buffered.
+  for (QuicPacketSequenceNumber i = 1; i <= 100; ++i) {
+    ProcessDataPacketAtLevel(i, 0, kEntropyFlag, ENCRYPTION_INITIAL);
+  }
+
+  // Transition to the new encryption state and process another encrypted packet
+  // which should result in the original packets being processed.
+  connection_.SetDecrypter(new StrictTaggingDecrypter(tag), ENCRYPTION_INITIAL);
+  connection_.SetDefaultEncryptionLevel(ENCRYPTION_INITIAL);
+  connection_.SetEncrypter(ENCRYPTION_INITIAL, new TaggingEncrypter(tag));
+  EXPECT_CALL(visitor_, OnStreamFrames(_)).Times(101);
+  ProcessDataPacketAtLevel(101, 0, kEntropyFlag, ENCRYPTION_INITIAL);
+
+  // Finally, process a third packet and note that we do not reprocess the
+  // buffered packet.
+  EXPECT_CALL(visitor_, OnStreamFrames(_)).Times(1);
+  ProcessDataPacketAtLevel(102, 0, kEntropyFlag, ENCRYPTION_INITIAL);
 }
 
 TEST_P(QuicConnectionTest, TestRetransmitOrder) {
@@ -2682,7 +2717,6 @@ TEST_P(QuicConnectionTest, InitialTimeout) {
   // SetFromConfig sets the initial timeouts before negotiation.
   EXPECT_CALL(*send_algorithm_, SetFromConfig(_, _));
   QuicConfig config;
-  config.SetDefaults();
   connection_.SetFromConfig(config);
   // Subtract a second from the idle timeout on the client side.
   QuicTime default_timeout = clock_.ApproximateNow().Add(
@@ -2835,7 +2869,6 @@ TEST_P(QuicConnectionTest, TimeoutAfterSend) {
   EXPECT_TRUE(connection_.connected());
   EXPECT_CALL(*send_algorithm_, SetFromConfig(_, _));
   QuicConfig config;
-  config.SetDefaults();
   connection_.SetFromConfig(config);
 
   const QuicTime::Delta initial_idle_timeout =
@@ -3924,12 +3957,12 @@ class MockQuicConnectionDebugVisitor
                void(const QuicFrame&));
 
   MOCK_METHOD6(OnPacketSent,
-               void(QuicPacketSequenceNumber,
+               void(const SerializedPacket&,
                     QuicPacketSequenceNumber,
                     EncryptionLevel,
                     TransmissionType,
                     const QuicEncryptedPacket&,
-                    WriteResult));
+                    QuicTime));
 
   MOCK_METHOD3(OnPacketReceived,
                void(const IPEndPoint&,

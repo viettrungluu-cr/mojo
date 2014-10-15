@@ -1416,7 +1416,7 @@
     # Sets the default version name and code for Android app, by default we
     # do a developer build.
     'android_app_version_name%': 'Developer Build',
-    'android_app_version_code%': 0,
+    'android_app_version_code%': 1,
 
     # Contains data about the attached devices for gyp_managed_install.
     'build_device_config_path': '<(PRODUCT_DIR)/build_devices.cfg',
@@ -4003,6 +4003,9 @@
               # Else building libyuv gives clang's register allocator issues,
               # see llvm.org/PR15798 / crbug.com/233709
               '-momit-leaf-frame-pointer',
+              # Align the stack on 16-byte boundaries, http://crbug.com/418554.
+              '-mstack-alignment=16',
+              '-mstackrealign',
             ],
           }],
           ['clang==1 and "<(GENERATOR)"=="ninja"', {
@@ -5576,6 +5579,27 @@
       'target_defaults': {
         'target_conditions': [
           ['_toolset=="host"', { 'cflags!': [ '-Wno-unused-local-typedefs' ]}],
+        ],
+      },
+    }],
+    # In the android webview build, force host targets to be compiled with clang
+    # as the hermetic host gcc is very old on some platforms. This is already
+    # the default on the current development version of AOSP but we force it
+    # here in case we need to compile against an older release version. We also
+    # explicitly set it to false for target binaries to avoid causing problems
+    # for the work to enable clang by default in AOSP.
+    ['android_webview_build==1', {
+      'target_defaults': {
+        'target_conditions': [
+          ['_toolset=="host"', {
+            'aosp_build_settings': {
+              'LOCAL_CLANG': 'true',
+            },
+          }, {  # else: _toolset != "host"
+            'aosp_build_settings': {
+              'LOCAL_CLANG': 'false',
+            },
+          }],
         ],
       },
     }],

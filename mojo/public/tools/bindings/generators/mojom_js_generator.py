@@ -250,8 +250,7 @@ class Generator(generator.Generator):
     "validate_struct_params": JavaScriptValidateStructParams,
   }
 
-  @UseJinja("js_templates/module.js.tmpl", filters=js_filters)
-  def GenerateJsModule(self):
+  def GetParameters(self):
     return {
       "namespace": self.module.namespace,
       "imports": self.GetImports(),
@@ -260,16 +259,46 @@ class Generator(generator.Generator):
       "module": self.module,
       "structs": self.GetStructs() + self.GetStructsFromMethods(),
       "interfaces": self.module.interfaces,
+      "imported_interfaces": self.GetImportedInterfaces(),
     }
 
+  @UseJinja("js_templates/module.amd.tmpl", filters=js_filters)
+  def GenerateAMDModule(self):
+    return self.GetParameters()
+
+  @UseJinja("js_templates/module.html.tmpl", filters=js_filters)
+  def GenerateHTMLModule(self):
+    return self.GetParameters()
+
   def GenerateFiles(self, args):
-    self.Write(self.GenerateJsModule(), "%s.js" % self.module.name)
+    self.Write(self.GenerateAMDModule(),
+        self.MatchMojomFilePath("%s.js" % self.module.name))
+    self.Write(self.GenerateHTMLModule(),
+        self.MatchMojomFilePath("%s.html" % self.module.name))
 
   def GetImports(self):
-    # Since each import is assigned a variable in JS, they need to have unique
-    # names.
-    counter = 1
-    for each in self.module.imports:
-      each["unique_name"] = "import" + str(counter)
+    used_names = set()
+    for each_import in self.module.imports:
+      simple_name = each_import["module_name"].split(".")[0]
+
+      # Since each import is assigned a variable in JS, they need to have unique
+      # names.
+      unique_name = simple_name
+      counter = 0
+      while unique_name in used_names:
+        counter += 1
+        unique_name = simple_name + str(counter)
+
+      used_names.add(unique_name)
+      each_import["unique_name"] = unique_name
       counter += 1
     return self.module.imports
+
+  def GetImportedInterfaces(self):
+    interface_to_import = {};
+    for each_import in self.module.imports:
+      for each_interface in each_import["module"].interfaces:
+        name = each_interface.name
+        interface_to_import[name] = each_import["unique_name"] + "." + name
+    return interface_to_import;
+

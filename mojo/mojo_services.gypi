@@ -94,6 +94,9 @@
       'include_dirs': [
         'third_party/WebKit'
       ],
+      'includes': [
+        'mojo_public_gles2_for_loadable_module.gypi',
+      ],
       'sources': [
         'services/html_viewer/blink_basic_type_converters.cc',
         'services/html_viewer/blink_basic_type_converters.h',
@@ -168,6 +171,7 @@
         'mojo_geometry_lib',
         'mojo_gles2_service',
         'mojo_input_events_lib',
+        'mojo_native_viewport_service_args',
         'mojo_surfaces_lib',
         'services/public/mojo_services_public.gyp:mojo_geometry_bindings',
         'services/public/mojo_services_public.gyp:mojo_gpu_bindings',
@@ -259,10 +263,22 @@
       'sources': [
         'services/network/cookie_store_impl.cc',
         'services/network/cookie_store_impl.h',
+        'services/network/net_adapters.cc',
+        'services/network/net_adapters.h',
+        'services/network/net_address_type_converters.cc',
+        'services/network/net_address_type_converters.h',
         'services/network/network_context.cc',
         'services/network/network_context.h',
         'services/network/network_service_impl.cc',
         'services/network/network_service_impl.h',
+        'services/network/tcp_bound_socket_impl.cc',
+        'services/network/tcp_bound_socket_impl.h',
+        'services/network/tcp_connected_socket_impl.cc',
+        'services/network/tcp_connected_socket_impl.h',
+        'services/network/tcp_server_socket_impl.cc',
+        'services/network/tcp_server_socket_impl.h',
+        'services/network/udp_socket_impl.cc',
+        'services/network/udp_socket_impl.h',
         'services/network/url_loader_impl.cc',
         'services/network/url_loader_impl.h',
         'services/network/web_socket_impl.cc',
@@ -287,6 +303,26 @@
       ],
       'sources': [
         'services/network/main.cc',
+      ],
+    },
+    {
+      # GN version: //mojo/services/network:unittests
+      'target_name': 'mojo_network_service_unittests',
+      'type': 'executable',
+      'dependencies': [
+        '../base/base.gyp:base',
+        '../base/base.gyp:test_support_base',
+        '../testing/gtest.gyp:gtest',
+        'edk/mojo_edk.gyp:mojo_run_all_unittests',
+        'edk/mojo_edk.gyp:mojo_system_impl',
+        'mojo_application_manager',
+        'mojo_base.gyp:mojo_environment_chromium',
+        'mojo_network_service',
+        'mojo_shell_test_support',
+        'services/public/mojo_services_public.gyp:mojo_network_bindings',
+      ],
+      'sources': [
+        'services/network/udp_socket_unittest.cc',
       ],
     },
     {
@@ -359,7 +395,6 @@
       'dependencies': [
         '../base/base.gyp:base',
         '../ui/gfx/gfx.gyp:gfx_geometry',
-        'mojo_application_manager',
         'mojo_base.gyp:mojo_application_chromium',
         'mojo_geometry_lib',
         'public/mojo_public.gyp:mojo_application_base',
@@ -390,7 +425,6 @@
         'services/public/cpp/view_manager/view_manager_context.h',
         'services/public/cpp/view_manager/view_manager_delegate.h',
         'services/public/cpp/view_manager/view_observer.h',
-        'services/public/cpp/view_manager/window_manager_delegate.h',
       ],
       'export_dependent_settings': [
         'services/public/mojo_services_public.gyp:mojo_view_manager_bindings',
@@ -458,135 +492,15 @@
       ],
     },
     {
-      # GN version: //mojo/services/public/cpp/input_events
-      'target_name': 'mojo_input_events_lib',
-      'type': '<(component)',
-      'defines': [
-        'MOJO_INPUT_EVENTS_IMPLEMENTATION',
-      ],
-      'dependencies': [
-        '../base/base.gyp:base',
-        '../ui/events/events.gyp:events',
-        '../ui/gfx/gfx.gyp:gfx_geometry',
-        'mojo_geometry_lib',
-        'services/public/mojo_services_public.gyp:mojo_geometry_bindings',
-        'services/public/mojo_services_public.gyp:mojo_input_events_bindings',
-        '<(mojo_system_for_component)',
-      ],
+      # GN version: //mojo/services/public/cpp/native_viewport:args
+      'target_name': 'mojo_native_viewport_service_args',
+      'type': 'static_library',
       'sources': [
-        'services/public/cpp/input_events/lib/input_events_type_converters.cc',
-        'services/public/cpp/input_events/lib/mojo_extended_key_event_data.cc',
-        'services/public/cpp/input_events/lib/mojo_extended_key_event_data.h',
-        'services/public/cpp/input_events/input_events_type_converters.h',
-        'services/public/cpp/input_events/mojo_input_events_export.h',
+        'services/public/cpp/native_viewport/lib/args.cc',
+        'services/public/cpp/native_viewport/args.h',
       ],
-      'conditions': [
-        ['component=="shared_library"', {
-          'dependencies': [
-            'mojo_base.gyp:mojo_environment_chromium',
-          ],
-        }],
-      ],
-    },
-    {
-      # GN version: //mojo/services/public/cpp/geometry
-      'target_name': 'mojo_geometry_lib',
-      'type': '<(component)',
-      'defines': [
-        'MOJO_GEOMETRY_IMPLEMENTATION',
-      ],
-      'dependencies': [
-        '../skia/skia.gyp:skia',
-        '../ui/gfx/gfx.gyp:gfx',
-        '../ui/gfx/gfx.gyp:gfx_geometry',
-        'services/public/mojo_services_public.gyp:mojo_geometry_bindings',
-        '<(mojo_system_for_component)',
-      ],
-      'export_dependent_settings': [
-        '../ui/gfx/gfx.gyp:gfx',
-      ],
-      'sources': [
-        'services/public/cpp/geometry/lib/geometry_type_converters.cc',
-        'services/public/cpp/geometry/geometry_type_converters.h',
-        'services/public/cpp/geometry/mojo_geometry_export.h',
-      ],
-      'conditions': [
-        ['component=="shared_library"', {
-          'dependencies': [
-            'mojo_base.gyp:mojo_environment_chromium',
-          ],
-        }],
-      ],
-    },
-    {
-      # GN version: //mojo/services/public/cpp/surfaces
-      'target_name': 'mojo_surfaces_lib',
-      'type': '<(component)',
-      'defines': [
-        'MOJO_SURFACES_IMPLEMENTATION',
-      ],
-      'dependencies': [
-        '../base/base.gyp:base',
-        '../cc/cc.gyp:cc',
-        '../cc/cc.gyp:cc_surfaces',
-        '../skia/skia.gyp:skia',
-        '../gpu/gpu.gyp:gpu',
-        '../ui/gfx/gfx.gyp:gfx',
-        '../ui/gfx/gfx.gyp:gfx_geometry',
-        'mojo_geometry_lib',
-        'services/public/mojo_services_public.gyp:mojo_gpu_bindings',
-        'services/public/mojo_services_public.gyp:mojo_surfaces_bindings',
-        '<(mojo_system_for_component)',
-      ],
-      'export_dependent_settings': [
-        'mojo_geometry_lib',
-        'services/public/mojo_services_public.gyp:mojo_surfaces_bindings',
-      ],
-      'sources': [
-        'services/public/cpp/surfaces/lib/surfaces_type_converters.cc',
-        'services/public/cpp/surfaces/lib/surfaces_utils.cc',
-        'services/public/cpp/surfaces/surfaces_type_converters.h',
-        'services/public/cpp/surfaces/surfaces_utils.h',
-        'services/public/cpp/surfaces/mojo_surfaces_export.h',
-      ],
-      'conditions': [
-        ['component=="shared_library"', {
-          'dependencies': [
-            'mojo_base.gyp:mojo_environment_chromium',
-          ],
-        }],
-      ],
-    },
-    {
-      # GN version: //mojo/services/public/cpp/surfaces/tests
-      'target_name': 'mojo_surfaces_lib_unittests',
-      'type': 'executable',
-      'dependencies': [
-        '../base/base.gyp:base',
-        '../base/base.gyp:test_support_base',
-        '../cc/cc.gyp:cc',
-        '../cc/cc.gyp:cc_surfaces',
-        '../gpu/gpu.gyp:gpu',
-        '../skia/skia.gyp:skia',
-        '../testing/gtest.gyp:gtest',
-        '../ui/gfx/gfx.gyp:gfx',
-        '../ui/gfx/gfx.gyp:gfx_geometry',
-        '../ui/gfx/gfx.gyp:gfx_test_support',
-        'edk/mojo_edk.gyp:mojo_run_all_unittests',
-        'mojo_base.gyp:mojo_environment_chromium',
-        'mojo_geometry_lib',
-        'mojo_surfaces_lib',
-        'services/public/mojo_services_public.gyp:mojo_surfaces_bindings',
-      ],
-      'sources': [
-        'services/public/cpp/surfaces/tests/surface_unittest.cc',
-      ],
-      'conditions': [
-        ['component=="shared_library"', {
-          'dependencies': [
-            'mojo_base.gyp:mojo_environment_chromium',
-          ],
-        }],
+      'include_dirs': [
+        '..'
       ],
     },
   ],
@@ -608,18 +522,17 @@
             '../ui/gfx/gfx.gyp:gfx_geometry',
             'mojo_base.gyp:mojo_application_chromium',
             'mojo_base.gyp:mojo_common_lib',
-            'mojo_base.gyp:mojo_common_lib',
             'mojo_geometry_lib',
             'mojo_input_events_lib',
             'mojo_surfaces_lib',
             'services/public/mojo_services_public.gyp:mojo_geometry_bindings',
-            'services/public/mojo_services_public.gyp:mojo_gpu_bindings',
             'services/public/mojo_services_public.gyp:mojo_gpu_bindings',
             'services/public/mojo_services_public.gyp:mojo_input_events_bindings',
             'services/public/mojo_services_public.gyp:mojo_native_viewport_bindings',
             'services/public/mojo_services_public.gyp:mojo_surfaces_bindings',
             'services/public/mojo_services_public.gyp:mojo_view_manager_bindings',
             'services/public/mojo_services_public.gyp:mojo_view_manager_common',
+            'services/public/mojo_services_public.gyp:mojo_window_manager_bindings',
             '<(mojo_system_for_loadable_module)',
           ],
           'sources': [
@@ -645,6 +558,8 @@
             'services/view_manager/view_manager_service_impl.h',
             'services/view_manager/window_manager_access_policy.cc',
             'services/view_manager/window_manager_access_policy.h',
+            'services/view_manager/window_manager_client_impl.cc',
+            'services/view_manager/window_manager_client_impl.h',
           ],
           'includes': [
             'mojo_public_gles2_for_loadable_module.gypi',
@@ -669,12 +584,14 @@
             'mojo_base.gyp:mojo_application_chromium',
             'mojo_geometry_lib',
             'mojo_input_events_lib',
+            'mojo_native_viewport_service_args',
             'mojo_shell_test_support',
             'mojo_view_manager_run_unittests',
             'services/public/mojo_services_public.gyp:mojo_geometry_bindings',
             'services/public/mojo_services_public.gyp:mojo_input_events_bindings',
             'services/public/mojo_services_public.gyp:mojo_view_manager_bindings',
             'services/public/mojo_services_public.gyp:mojo_view_manager_common',
+            'services/public/mojo_services_public.gyp:mojo_window_manager_bindings',
             # Included only to force deps for bots.
             'mojo_native_viewport_service',
             'mojo_surfaces_service',
@@ -715,13 +632,18 @@
             'mojo_base.gyp:mojo_common_lib',
             'mojo_input_events_lib',
             'mojo_view_manager_lib',
+            'public/mojo_public.gyp:mojo_application_bindings',
             'services/public/mojo_services_public.gyp:mojo_core_window_manager_bindings',
+            'services/public/mojo_services_public.gyp:mojo_window_manager_bindings',
           ],
           'sources': [
             'services/window_manager/window_manager_app.cc',
             'services/window_manager/window_manager_app.h',
+            'services/window_manager/window_manager_delegate.h',
             'services/window_manager/window_manager_service_impl.cc',
             'services/window_manager/window_manager_service_impl.h',
+            'services/window_manager/window_manager_service2_impl.cc',
+            'services/window_manager/window_manager_service2_impl.h',
           ],
         },
         {

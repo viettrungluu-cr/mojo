@@ -7,10 +7,10 @@
 #include "base/message_loop/message_loop.h"
 #include "base/stl_util.h"
 #include "mojo/aura/aura_init.h"
+#include "mojo/converters/input_events/input_events_type_converters.h"
 #include "mojo/public/cpp/application/application_connection.h"
 #include "mojo/public/cpp/application/application_impl.h"
 #include "mojo/public/interfaces/application/shell.mojom.h"
-#include "mojo/services/public/cpp/input_events/input_events_type_converters.h"
 #include "mojo/services/public/cpp/view_manager/view.h"
 #include "mojo/services/public/cpp/view_manager/view_manager.h"
 #include "ui/aura/window.h"
@@ -81,12 +81,14 @@ WindowManagerApp::WindowManagerApp(
     ViewManagerDelegate* view_manager_delegate,
     WindowManagerDelegate* window_manager_delegate)
     : shell_(nullptr),
+      window_manager_service2_factory_(this),
       window_manager_service_factory_(this),
       wrapped_view_manager_delegate_(view_manager_delegate),
-      wrapped_window_manager_delegate_(window_manager_delegate),
+      window_manager_delegate_(window_manager_delegate),
       view_manager_(NULL),
       root_(NULL),
-      dummy_delegate_(new DummyDelegate) {
+      dummy_delegate_(new DummyDelegate),
+      window_manager_client_(nullptr) {
 }
 
 WindowManagerApp::~WindowManagerApp() {}
@@ -101,12 +103,12 @@ aura::Window* WindowManagerApp::GetWindowForViewId(Id view) {
   return it != view_id_to_window_map_.end() ? it->second : NULL;
 }
 
-void WindowManagerApp::AddConnection(WindowManagerServiceImpl* connection) {
+void WindowManagerApp::AddConnection(WindowManagerService2Impl* connection) {
   DCHECK(connections_.find(connection) == connections_.end());
   connections_.insert(connection);
 }
 
-void WindowManagerApp::RemoveConnection(WindowManagerServiceImpl* connection) {
+void WindowManagerApp::RemoveConnection(WindowManagerService2Impl* connection) {
   DCHECK(connections_.find(connection) != connections_.end());
   connections_.erase(connection);
 }
@@ -157,8 +159,9 @@ void WindowManagerApp::Initialize(ApplicationImpl* impl) {
 
 bool WindowManagerApp::ConfigureIncomingConnection(
     ApplicationConnection* connection) {
-  connection->AddService(&window_manager_service_factory_);
+  connection->AddService(&window_manager_service2_factory_);
   connection->AddService(view_manager_client_factory_.get());
+  connection->AddService(&window_manager_service_factory_);
   return true;
 }
 
@@ -171,7 +174,6 @@ void WindowManagerApp::OnEmbed(ViewManager* view_manager,
                                scoped_ptr<ServiceProvider> imported_services) {
   DCHECK(!view_manager_ && !root_);
   view_manager_ = view_manager;
-  view_manager_->SetWindowManagerDelegate(this);
   root_ = root;
 
   window_tree_host_.reset(new WindowTreeHostMojo(shell_, root_));
@@ -204,22 +206,6 @@ void WindowManagerApp::OnViewManagerDisconnected(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// WindowManagerApp, WindowManagerDelegate implementation:
-
-void WindowManagerApp::Embed(
-    const String& url,
-    InterfaceRequest<ServiceProvider> service_provider) {
-  if (wrapped_window_manager_delegate_)
-    wrapped_window_manager_delegate_->Embed(url, service_provider.Pass());
-}
-
-void WindowManagerApp::DispatchEvent(EventPtr event) {
-  scoped_ptr<ui::Event> ui_event = event.To<scoped_ptr<ui::Event> >();
-  if (ui_event)
-    window_tree_host_->SendEventToProcessor(ui_event.get());
-}
-
-////////////////////////////////////////////////////////////////////////////////
 // WindowManagerApp, ViewObserver implementation:
 
 void WindowManagerApp::OnTreeChanged(
@@ -243,9 +229,11 @@ void WindowManagerApp::OnTreeChanged(
   }
 }
 
-void WindowManagerApp::OnViewDestroyed(View* view) {
-  if (view != root_)
+void WindowManagerApp::OnViewDestroying(View* view) {
+  if (view != root_) {
+    Unregister(view);
     return;
+  }
   aura::Window* window = GetWindowForViewId(view->id());
   window->RemovePreTargetHandler(this);
   root_ = NULL;
@@ -268,8 +256,15 @@ void WindowManagerApp::OnViewBoundsChanged(View* view,
 // WindowManagerApp, ui::EventHandler implementation:
 
 void WindowManagerApp::OnEvent(ui::Event* event) {
-  aura::Window* window = static_cast<aura::Window*>(event->target());
-  view_manager_->DispatchEvent(GetViewForWindow(window), Event::From(*event));
+  if (!window_manager_client_)
+    return;
+
+  View* view = GetViewForWindow(static_cast<aura::Window*>(event->target()));
+  if (!view)
+    return;
+
+  window_manager_client_->DispatchInputEventToView(view->id(),
+                                                   Event::From(*event));
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -324,14 +319,24 @@ void WindowManagerApp::RegisterSubtree(View* view, aura::Window* parent) {
 }
 
 void WindowManagerApp::UnregisterSubtree(View* view) {
-  view->RemoveObserver(this);
+  for (View* child : view->children())
+    UnregisterSubtree(child);
+  Unregister(view);
+}
+
+void WindowManagerApp::Unregister(View* view) {
   ViewIdToWindowMap::iterator it = view_id_to_window_map_.find(view->id());
+  if (it == view_id_to_window_map_.end()) {
+    // Because we unregister in OnViewDestroying() we can still get a subsequent
+    // OnTreeChanged for the same view. Ignore this one.
+    return;
+  }
+  view->RemoveObserver(this);
   DCHECK(it != view_id_to_window_map_.end());
-  scoped_ptr<aura::Window> window(it->second);
+  // Delete before we remove from map as destruction may want to look up view
+  // for window.
+  delete it->second;
   view_id_to_window_map_.erase(it);
-  View::Children::const_iterator child = view->children().begin();
-  for (; child != view->children().end(); ++child)
-    UnregisterSubtree(*child);
 }
 
 }  // namespace mojo

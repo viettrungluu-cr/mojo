@@ -9,7 +9,7 @@
     '../third_party/icu/icu.isolate',
   ],
   'conditions': [
-    ['OS=="linux" and asan==1', {
+    ['OS=="linux" and asan==1 and chromeos==0', {
       'variables': {
         'files': [
           '<(PRODUCT_DIR)/lib/libc++.so',
@@ -20,6 +20,22 @@
       'variables': {
         'files': [
           '<(PRODUCT_DIR)/libclang_rt.asan_osx_dynamic.dylib',
+        ],
+      },
+    }],
+    ['asan==1', {
+      'variables': {
+        'files': [
+          '../tools/valgrind/asan/',
+          '../third_party/llvm-build/Release+Asserts/bin/llvm-symbolizer',
+          '../third_party/llvm-build/Release+Asserts/lib/libstdc++.so.6',
+        ],
+      },
+    }],
+    ['lsan==1', {
+      'variables': {
+        'files': [
+          '../tools/lsan/suppressions.txt',
         ],
       },
     }],

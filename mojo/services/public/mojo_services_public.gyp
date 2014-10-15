@@ -159,7 +159,7 @@
         'interfaces/network/network_error.mojom',
         'interfaces/network/network_service.mojom',
         'interfaces/network/tcp_bound_socket.mojom',
-        'interfaces/network/tcp_client_socket.mojom',
+        'interfaces/network/tcp_connected_socket.mojom',
         'interfaces/network/tcp_server_socket.mojom',
         'interfaces/network/udp_socket.mojom',
         'interfaces/network/url_loader.mojom',
@@ -244,10 +244,29 @@
     },
     {
       # GN version: //mojo/services/public/interfaces/window_manager
-      'target_name': 'mojo_core_window_manager_bindings',
+      'target_name': 'mojo_window_manager_bindings',
       'type': 'static_library',
       'sources': [
         'interfaces/window_manager/window_manager.mojom',
+      ],
+      'includes': [ '../../public/tools/bindings/mojom_bindings_generator.gypi' ],
+      'dependencies': [
+        'mojo_input_events_bindings',
+        '../../public/mojo_public.gyp:mojo_application_bindings',
+        '../../public/mojo_public.gyp:mojo_cpp_bindings',
+      ],
+      'export_dependent_settings': [
+        'mojo_input_events_bindings',
+        '../../public/mojo_public.gyp:mojo_application_bindings',
+        '../../public/mojo_public.gyp:mojo_cpp_bindings',
+      ],
+    },
+    {
+      # GN version: //mojo/services/public/interfaces/window_manager2
+      'target_name': 'mojo_core_window_manager_bindings',
+      'type': 'static_library',
+      'sources': [
+        'interfaces/window_manager2/window_manager2.mojom',
       ],
       'includes': [ '../../public/tools/bindings/mojom_bindings_generator.gypi' ],
       'export_dependent_settings': [

@@ -77,8 +77,6 @@ component("compositor") {
   }
 }
 
-if (false) {
-
 source_set("test_support") {
   testonly = true
   sources = [
@@ -111,6 +109,7 @@ source_set("test_support") {
   deps = [
     "//base/test:test_support",
     "//cc",
+    "//cc/surfaces",
     "//cc:test_support",
     "//skia",
     "//testing/gtest",
@@ -133,8 +132,6 @@ source_set("test_support") {
     sources += [ "test/test_compositor_host_x11.cc" ]
   }
 }
-
-}  # if (false)
 
 # TODO(GYP) enable this when all dependencies are complete and it links.
 #test("compositor_unittests") {

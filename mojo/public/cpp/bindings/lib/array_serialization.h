@@ -11,6 +11,7 @@
 
 #include "mojo/public/c/system/macros.h"
 #include "mojo/public/cpp/bindings/lib/array_internal.h"
+#include "mojo/public/cpp/bindings/lib/map_serialization.h"
 #include "mojo/public/cpp/bindings/lib/string_serialization.h"
 #include "mojo/public/cpp/bindings/lib/template_util.h"
 #include "mojo/public/cpp/bindings/lib/validation_errors.h"
@@ -28,6 +29,16 @@ template <typename ValidateParams, typename E, typename F>
 inline void SerializeArray_(Array<E> input,
                             internal::Buffer* buf,
                             internal::Array_Data<F>** output);
+
+template <typename ValueValidateParams,
+          typename KeyWrapperType,
+          typename ValueWrapperType,
+          typename KeySerializationType,
+          typename ValueSerializationType>
+inline void SerializeMap_(
+    Map<KeyWrapperType, ValueWrapperType> input,
+    internal::Buffer* buf,
+    internal::Map_Data<KeySerializationType, ValueSerializationType>** output);
 
 template <typename E, typename F>
 inline void Deserialize_(internal::Array_Data<F>* data, Array<E>* output);
@@ -121,12 +132,20 @@ struct ArraySerializer<ScopedHandleBase<H>, H, true> {
   }
 };
 
+// This template must only apply to pointer mojo entity (structs and arrays).
+// This is done by ensuring that WrapperTraits<S>::DataType is a pointer.
 template <typename S>
-struct ArraySerializer<S, typename S::Data_*, true> {
+struct ArraySerializer<S,
+                       typename internal::EnableIf<
+                           internal::IsPointer<typename internal::WrapperTraits<
+                               S>::DataType>::value,
+                           typename internal::WrapperTraits<S>::DataType>::type,
+                       true> {
+  typedef typename internal::RemovePointer<
+      typename internal::WrapperTraits<S>::DataType>::type S_Data;
   static size_t GetSerializedSize(const Array<S>& input) {
-    size_t size =
-        sizeof(Array_Data<typename S::Data_*>) +
-        input.size() * sizeof(internal::StructPointer<typename S::Data_>);
+    size_t size = sizeof(Array_Data<S_Data*>) +
+                  input.size() * sizeof(internal::StructPointer<S_Data>);
     for (size_t i = 0; i < input.size(); ++i)
       size += GetSerializedSize_(input[i]);
     return size;
@@ -134,9 +153,9 @@ struct ArraySerializer<S, typename S::Data_*, true> {
   template <bool element_is_nullable, typename ElementValidateParams>
   static void SerializeElements(Array<S> input,
                                 Buffer* buf,
-                                Array_Data<typename S::Data_*>* output) {
+                                Array_Data<S_Data*>* output) {
     for (size_t i = 0; i < input.size(); ++i) {
-      typename S::Data_* element;
+      S_Data* element;
       SerializeCaller<S, ElementValidateParams>::Run(
           input[i].Pass(), buf, &element);
       output->at(i) = element;
@@ -147,7 +166,7 @@ struct ArraySerializer<S, typename S::Data_*, true> {
               "null in array expecting valid pointers", input.size(), i));
     }
   }
-  static void DeserializeElements(Array_Data<typename S::Data_*>* input,
+  static void DeserializeElements(Array_Data<S_Data*>* input,
                                   Array<S>* output) {
     Array<S> result(input->size());
     for (size_t i = 0; i < input->size(); ++i) {
@@ -161,7 +180,9 @@ struct ArraySerializer<S, typename S::Data_*, true> {
  private:
   template <typename T, typename Params>
   struct SerializeCaller {
-    static void Run(T input, Buffer* buf, typename T::Data_** output) {
+    static void Run(T input,
+                    Buffer* buf,
+                    typename internal::WrapperTraits<T>::DataType* output) {
       static_assert((IsSame<Params, NoValidateParams>::value),
                     "Struct type should not have array validate params");
 
@@ -175,6 +196,15 @@ struct ArraySerializer<S, typename S::Data_*, true> {
                     Buffer* buf,
                     typename Array<T>::Data_** output) {
       SerializeArray_<Params>(input.Pass(), buf, output);
+    }
+  };
+
+  template <typename T, typename U, typename Params>
+  struct SerializeCaller<Map<T, U>, Params> {
+    static void Run(Map<T, U> input,
+                    Buffer* buf,
+                    typename Map<T, U>::Data_** output) {
+      SerializeMap_<Params>(input.Pass(), buf, output);
     }
   };
 };

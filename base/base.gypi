@@ -81,7 +81,7 @@
           'atomicops.h',
           'atomicops_internals_gcc.h',
           'atomicops_internals_mac.h',
-          'atomicops_internals_tsan.h',
+          'atomicops_internals_portable.h',
           'atomicops_internals_x86_gcc.cc',
           'atomicops_internals_x86_gcc.h',
           'atomicops_internals_x86_msvc.h',
@@ -328,8 +328,6 @@
           'memory/discardable_memory_emulated.h',
           'memory/discardable_memory_linux.cc',
           'memory/discardable_memory_mac.cc',
-          'memory/discardable_memory_malloc.cc',
-          'memory/discardable_memory_malloc.h',
           'memory/discardable_memory_manager.cc',
           'memory/discardable_memory_manager.h',
           'memory/discardable_memory_win.cc',
@@ -940,6 +938,10 @@
             ],
           }],
           ['(OS == "mac" or OS == "ios") and >(nacl_untrusted_build)==0', {
+            'sources': [
+              'memory/discardable_memory_mach.cc',
+              'memory/discardable_memory_mach.h',
+            ],
             'sources/': [
               ['exclude', '^files/file_path_watcher_stub\\.cc$'],
               ['exclude', '^base_paths_posix\\.cc$'],

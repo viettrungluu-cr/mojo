@@ -57,7 +57,9 @@ class WebLayerImpl : public blink::WebLayer, public cc::LayerClient {
 
   // WebLayer implementation.
   virtual int id() const;
+  // TODO(danakj): Remove WebFloatRect version.
   virtual void invalidateRect(const blink::WebFloatRect&);
+  virtual void invalidateRect(const blink::WebRect&);
   virtual void invalidate();
   virtual void addChild(blink::WebLayer* child);
   virtual void insertChild(blink::WebLayer* child, size_t index);
@@ -103,10 +105,6 @@ class WebLayerImpl : public blink::WebLayer, public cc::LayerClient {
   virtual void pauseAnimation(int animation_id, double time_offset);
   virtual bool hasActiveAnimation();
   virtual void setForceRenderSurface(bool force);
-  // TODO(miletus): Add the WebDoublePoint version to WebLayer and then remove
-  // the WebPoint version from WebLayer and WebLayerImpl.
-  virtual void setScrollPosition(blink::WebPoint position);
-  virtual blink::WebPoint scrollPosition() const;
   virtual void setScrollPositionDouble(blink::WebDoublePoint position);
   virtual blink::WebDoublePoint scrollPositionDouble() const;
   virtual void setScrollClipLayer(blink::WebLayer* clip_layer);

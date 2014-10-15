@@ -21,7 +21,7 @@ class TestProofVerifyDetails : public ProofVerifyDetails {
   virtual ~TestProofVerifyDetails() {}
 
   // ProofVerifyDetails implementation
-  virtual ProofVerifyDetails* Clone() const OVERRIDE {
+  virtual ProofVerifyDetails* Clone() const override {
     return new TestProofVerifyDetails;
   }
 };
@@ -81,7 +81,6 @@ TEST(QuicCryptoClientConfigTest, InchoateChlo) {
 
 TEST(QuicCryptoClientConfigTest, PreferAesGcm) {
   QuicCryptoClientConfig config;
-  config.SetDefaults();
   if (config.aead.size() > 1)
     EXPECT_NE(kAESG, config.aead[0]);
   config.PreferAesGcm();

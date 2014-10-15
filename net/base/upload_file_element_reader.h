@@ -42,16 +42,16 @@ class NET_EXPORT UploadFileElementReader : public UploadElementReader {
   }
 
   // UploadElementReader overrides:
-  virtual const UploadFileElementReader* AsFileReader() const OVERRIDE;
-  virtual int Init(const CompletionCallback& callback) OVERRIDE;
-  virtual uint64 GetContentLength() const OVERRIDE;
-  virtual uint64 BytesRemaining() const OVERRIDE;
+  virtual const UploadFileElementReader* AsFileReader() const override;
+  virtual int Init(const CompletionCallback& callback) override;
+  virtual uint64 GetContentLength() const override;
+  virtual uint64 BytesRemaining() const override;
   virtual int Read(IOBuffer* buf,
                    int buf_length,
-                   const CompletionCallback& callback) OVERRIDE;
+                   const CompletionCallback& callback) override;
 
  private:
-  FRIEND_TEST_ALL_PREFIXES(UploadDataStreamTest, FileSmallerThanLength);
+  FRIEND_TEST_ALL_PREFIXES(ElementsUploadDataStreamTest, FileSmallerThanLength);
   FRIEND_TEST_ALL_PREFIXES(HttpNetworkTransactionTest,
                            UploadFileSmallerThanLength);
 

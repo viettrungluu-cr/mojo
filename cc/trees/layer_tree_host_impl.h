@@ -120,7 +120,8 @@ class CC_EXPORT LayerTreeHostImpl
       LayerTreeHostImplClient* client,
       Proxy* proxy,
       RenderingStatsInstrumentation* rendering_stats_instrumentation,
-      SharedBitmapManager* manager,
+      SharedBitmapManager* shared_bitmap_manager,
+      GpuMemoryBufferManager* gpu_memory_buffer_manager,
       int id);
   virtual ~LayerTreeHostImpl();
 
@@ -417,6 +418,7 @@ class CC_EXPORT LayerTreeHostImpl
   bool pinch_gesture_active() const { return pinch_gesture_active_; }
 
   void SetTreePriority(TreePriority priority);
+  TreePriority GetTreePriority() const;
 
   void UpdateCurrentBeginFrameArgs(const BeginFrameArgs& args);
   void ResetCurrentBeginFrameArgsForNextFrame();
@@ -481,16 +483,21 @@ class CC_EXPORT LayerTreeHostImpl
 
   void SetTopControlsLayoutHeight(float height);
 
+  void SetRequiresHighResToDraw() { requires_high_res_to_draw_ = true; }
+  void ResetRequiresHighResToDraw() { requires_high_res_to_draw_ = false; }
+  bool RequiresHighResToDraw() const { return requires_high_res_to_draw_; }
+
  protected:
   LayerTreeHostImpl(
       const LayerTreeSettings& settings,
       LayerTreeHostImplClient* client,
       Proxy* proxy,
       RenderingStatsInstrumentation* rendering_stats_instrumentation,
-      SharedBitmapManager* manager,
+      SharedBitmapManager* shared_bitmap_manager,
+      GpuMemoryBufferManager* gpu_memory_buffer_manager,
       int id);
 
-  void UpdateInnerViewportContainerSize();
+  void UpdateViewportContainerSizes();
 
   // Virtual for testing.
   virtual void AnimateLayers(base::TimeTicks monotonic_time);
@@ -528,6 +535,8 @@ class CC_EXPORT LayerTreeHostImpl
   void AnimatePageScale(base::TimeTicks monotonic_time);
   void AnimateScrollbars(base::TimeTicks monotonic_time);
   void AnimateTopControls(base::TimeTicks monotonic_time);
+
+  bool ShouldTopControlsConsumeScroll(const gfx::Vector2dF& scroll_delta) const;
 
   gfx::Vector2dF ScrollLayerWithViewportSpaceDelta(
       LayerImpl* layer_impl,
@@ -696,12 +705,15 @@ class CC_EXPORT LayerTreeHostImpl
   base::Closure tree_activation_callback_;
 
   SharedBitmapManager* shared_bitmap_manager_;
+  GpuMemoryBufferManager* gpu_memory_buffer_manager_;
   int id_;
 
   std::set<SwapPromiseMonitor*> swap_promise_monitor_;
 
   std::vector<PictureLayerImpl*> picture_layers_;
   std::vector<PictureLayerImpl::Pair> picture_layer_pairs_;
+
+  bool requires_high_res_to_draw_;
 
   DISALLOW_COPY_AND_ASSIGN(LayerTreeHostImpl);
 };

@@ -41,10 +41,10 @@ class CryptoFramerVisitor : public CryptoFramerVisitorInterface {
       : error_(false) {
   }
 
-  virtual void OnError(CryptoFramer* framer) OVERRIDE { error_ = true; }
+  virtual void OnError(CryptoFramer* framer) override { error_ = true; }
 
   virtual void OnHandshakeMessage(
-      const CryptoHandshakeMessage& message) OVERRIDE {
+      const CryptoHandshakeMessage& message) override {
     messages_.push_back(message);
   }
 
@@ -143,7 +143,7 @@ class AsyncTestChannelIDSource : public ChannelIDSource,
   virtual QuicAsyncStatus GetChannelIDKey(
       const string& hostname,
       scoped_ptr<ChannelIDKey>* channel_id_key,
-      ChannelIDSourceCallback* callback) OVERRIDE {
+      ChannelIDSourceCallback* callback) override {
     // Synchronous mode.
     if (!callback) {
       return sync_source_->GetChannelIDKey(hostname, channel_id_key, nullptr);
@@ -160,7 +160,7 @@ class AsyncTestChannelIDSource : public ChannelIDSource,
   }
 
   // CallbackSource implementation.
-  virtual void RunPendingCallbacks() OVERRIDE {
+  virtual void RunPendingCallbacks() override {
     if (callback_.get()) {
       callback_->Run(&channel_id_key_);
       callback_.reset();
@@ -219,8 +219,6 @@ int CryptoTestUtils::HandshakeWithFakeClient(
   TestClientSession client_session(client_conn, DefaultQuicConfig());
   QuicCryptoClientConfig crypto_config;
 
-  client_session.config()->SetDefaults();
-  crypto_config.SetDefaults();
   if (!options.dont_verify_certs) {
     // TODO(wtc): replace this with ProofVerifierForTesting() when we have
     // a working ProofSourceForTesting().
@@ -273,7 +271,6 @@ void CryptoTestUtils::SetupCryptoServerConfigForTest(
     QuicRandom* rand,
     QuicConfig* config,
     QuicCryptoServerConfig* crypto_config) {
-  config->SetDefaults();
   QuicCryptoServerConfig::ConfigOptions options;
   options.channel_id_enabled = true;
   scoped_ptr<CryptoHandshakeMessage> scfg(
@@ -356,12 +353,12 @@ class MockCommonCertSets : public CommonCertSets {
         index_(index) {
   }
 
-  virtual StringPiece GetCommonHashes() const OVERRIDE {
+  virtual StringPiece GetCommonHashes() const override {
     CHECK(false) << "not implemented";
     return StringPiece();
   }
 
-  virtual StringPiece GetCert(uint64 hash, uint32 index) const OVERRIDE {
+  virtual StringPiece GetCert(uint64 hash, uint32 index) const override {
     if (hash == hash_ && index == index_) {
       return cert_;
     }
@@ -371,7 +368,7 @@ class MockCommonCertSets : public CommonCertSets {
   virtual bool MatchCert(StringPiece cert,
                          StringPiece common_set_hashes,
                          uint64* out_hash,
-                         uint32* out_index) const OVERRIDE {
+                         uint32* out_index) const override {
     if (cert != cert_) {
       return false;
     }

@@ -13,6 +13,7 @@
 #include "base/observer_list.h"
 #include "base/single_thread_task_runner.h"
 #include "base/time/time.h"
+#include "cc/surfaces/surface_sequence.h"
 #include "cc/trees/layer_tree_host_client.h"
 #include "cc/trees/layer_tree_host_single_thread_client.h"
 #include "third_party/skia/include/core/SkColor.h"
@@ -33,10 +34,12 @@ class RunLoop;
 
 namespace cc {
 class ContextProvider;
+class GpuMemoryBufferManager;
 class Layer;
 class LayerTreeDebugState;
 class LayerTreeHost;
 class SharedBitmapManager;
+class SurfaceIdAllocator;
 }
 
 namespace gfx {
@@ -92,9 +95,15 @@ class COMPOSITOR_EXPORT ContextFactory {
   // Gets the shared bitmap manager for software mode.
   virtual cc::SharedBitmapManager* GetSharedBitmapManager() = 0;
 
+  // Gets the GPU memory buffer manager.
+  virtual cc::GpuMemoryBufferManager* GetGpuMemoryBufferManager() = 0;
+
   // Gets the compositor message loop, or NULL if not using threaded
   // compositing.
   virtual base::MessageLoopProxy* GetCompositorMessageLoop() = 0;
+
+  // Creates a Surface ID allocator with a new namespace.
+  virtual scoped_ptr<cc::SurfaceIdAllocator> CreateSurfaceIdAllocator() = 0;
 };
 
 // This class represents a lock on the compositor, that can be used to prevent
@@ -228,31 +237,31 @@ class COMPOSITOR_EXPORT Compositor
   void OnSwapBuffersAborted();
 
   // LayerTreeHostClient implementation.
-  virtual void WillBeginMainFrame(int frame_id) OVERRIDE {}
-  virtual void DidBeginMainFrame() OVERRIDE {}
-  virtual void BeginMainFrame(const cc::BeginFrameArgs& args) OVERRIDE;
-  virtual void Layout() OVERRIDE;
+  virtual void WillBeginMainFrame(int frame_id) override {}
+  virtual void DidBeginMainFrame() override {}
+  virtual void BeginMainFrame(const cc::BeginFrameArgs& args) override;
+  virtual void Layout() override;
   virtual void ApplyViewportDeltas(
       const gfx::Vector2d& inner_delta,
       const gfx::Vector2d& outer_delta,
       float page_scale,
-      float top_controls_delta) OVERRIDE {}
+      float top_controls_delta) override {}
   virtual void ApplyViewportDeltas(
       const gfx::Vector2d& scroll_delta,
       float page_scale,
-      float top_controls_delta) OVERRIDE {}
-  virtual void RequestNewOutputSurface(bool fallback) OVERRIDE;
-  virtual void DidInitializeOutputSurface() OVERRIDE {}
-  virtual void WillCommit() OVERRIDE {}
-  virtual void DidCommit() OVERRIDE;
-  virtual void DidCommitAndDrawFrame() OVERRIDE;
-  virtual void DidCompleteSwapBuffers() OVERRIDE;
+      float top_controls_delta) override {}
+  virtual void RequestNewOutputSurface(bool fallback) override;
+  virtual void DidInitializeOutputSurface() override {}
+  virtual void WillCommit() override {}
+  virtual void DidCommit() override;
+  virtual void DidCommitAndDrawFrame() override;
+  virtual void DidCompleteSwapBuffers() override;
 
   // cc::LayerTreeHostSingleThreadClient implementation.
-  virtual void ScheduleComposite() OVERRIDE;
-  virtual void ScheduleAnimation() OVERRIDE;
-  virtual void DidPostSwapBuffers() OVERRIDE;
-  virtual void DidAbortSwapBuffers() OVERRIDE;
+  virtual void ScheduleComposite() override;
+  virtual void ScheduleAnimation() override;
+  virtual void DidPostSwapBuffers() override;
+  virtual void DidAbortSwapBuffers() override;
 
   int last_started_frame() { return last_started_frame_; }
   int last_ended_frame() { return last_ended_frame_; }
@@ -264,6 +273,14 @@ class COMPOSITOR_EXPORT Compositor
 
   LayerAnimatorCollection* layer_animator_collection() {
     return &layer_animator_collection_;
+  }
+
+  // Inserts a SurfaceSequence that will be satisfied on the next frame this
+  // compositor commits and swaps.
+  cc::SurfaceSequence InsertSurfaceSequenceForNextFrame();
+
+  cc::SurfaceIdAllocator* surface_id_allocator() {
+    return surface_id_allocator_.get();
   }
 
  private:
@@ -290,6 +307,8 @@ class COMPOSITOR_EXPORT Compositor
   ObserverList<CompositorAnimationObserver> animation_observer_list_;
 
   gfx::AcceleratedWidget widget_;
+  scoped_ptr<cc::SurfaceIdAllocator> surface_id_allocator_;
+  uint32_t surface_sequence_number_;
   scoped_refptr<cc::Layer> root_web_layer_;
   scoped_ptr<cc::LayerTreeHost> host_;
   scoped_refptr<base::MessageLoopProxy> compositor_thread_loop_;

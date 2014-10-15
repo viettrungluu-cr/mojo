@@ -30,13 +30,12 @@ class JSApp {
   // This method causes Load() and then Run() to run on a new thread.
   bool Start();
 
-
   // Subclasses must return the JS source code for this app's main script and
   // the filename or URL that identifies the script's origin. This method will
   // be called from this app's thread.
   virtual bool Load(std::string* source, std::string* file_name) = 0;
 
-  // Called by the JS mojo module to quit this JS app. See mojo_module.cc.
+  // Called by the JS mojo module to quit this JS app. See mojo.js.
   void Quit();
 
   // Called by the JS mojo module to connect to a Mojo service.

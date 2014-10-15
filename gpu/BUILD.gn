@@ -43,6 +43,7 @@ component("gpu") {
     "//gpu/command_buffer/common",
     "//gpu/command_buffer/service",
     "//gpu/config",
+    "//gpu/ipc",
   ]
 }
 

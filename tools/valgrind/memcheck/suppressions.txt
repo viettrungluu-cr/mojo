@@ -2746,18 +2746,6 @@
    fun:_ZN3WTFL18callFunctionObjectEPv
 }
 {
-   bug_365259
-   Memcheck:Leak
-   fun:malloc
-   fun:_ZN3WTF10fastMallocEm
-   fun:_ZN3WTF10RefCountedIN7blink20IDBDatabaseCallbacksEEnwEm
-   fun:_ZN5blink20IDBDatabaseCallbacks6createEv
-   fun:_ZN5blink10IDBFactory12openInternalEPNS_16ExecutionContextERKN3WTF6StringElRNS_14ExceptionStateE
-   fun:_ZN5blink10IDBFactory4openEPNS_16ExecutionContextERKN3WTF6StringERNS_14ExceptionStateE
-   fun:_ZN5blink20IDBFactoryV8InternalL10openMethodERKN2v820FunctionCallbackInfoINS1_5ValueEEE
-   fun:_ZN5blink20IDBFactoryV8InternalL18openMethodCallbackERKN2v820FunctionCallbackInfoINS1_5ValueEEE
-}
-{
    bug_367809_a
    Memcheck:Leak
    fun:_Znw*
@@ -3455,7 +3443,7 @@
    bug_417526
    Memcheck:Leak
    fun:_Znw*
-   fun:_ZN4base19SequencedWorkerPoolC1EmRKSs
+   ...
    fun:_ZN16sync_file_system13drive_backend14SyncEngineTest5SetUpEv
 }
 {
@@ -3468,4 +3456,15 @@
    fun:_ZN5blink20InlineFlowBoxPainter5paintERNS_9PaintInfoERKNS_11LayoutPointENS_10LayoutUnitES6_
    fun:_ZN5blink13InlineFlowBox5paintERNS_9PaintInfoERKNS_11LayoutPointENS_10LayoutUnitES6_
    fun:_ZN5blink13RootInlineBox5paintERNS_9PaintInfoERKNS_11LayoutPointENS_10LayoutUnitES6_
+}
+{
+   bug_422485
+   Memcheck:Overlap
+   fun:memcpy@@GLIBC_2.14
+   fun:_ZNK8SkBitmap12copyPixelsToEPvmmb
+   fun:_ZN5blink19ImageFrameGenerator14decodeAndScaleERK11SkImageInfomPvm
+   fun:_ZN5blink22DecodingImageGenerator11onGetPixelsERK11SkImageInfoPvmPjPi
+   fun:_ZN16SkImageGenerator9getPixelsERK11SkImageInfoPvmPjPi
+   ...
+   fun:_ZNK6SkDraw10drawBitmapERK8SkBitmapRK8SkMatrixRK7SkPaint
 }

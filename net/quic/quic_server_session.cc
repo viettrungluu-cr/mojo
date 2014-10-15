@@ -13,10 +13,9 @@
 
 namespace net {
 
-QuicServerSession::QuicServerSession(
-    const QuicConfig& config,
-    QuicConnection* connection,
-    QuicServerSessionVisitor* visitor)
+QuicServerSession::QuicServerSession(const QuicConfig& config,
+                                     QuicConnection* connection,
+                                     QuicServerSessionVisitor* visitor)
     : QuicSession(connection, config),
       visitor_(visitor),
       bandwidth_estimate_sent_to_client_(QuicBandwidth::Zero()),
@@ -134,7 +133,7 @@ void QuicServerSession::OnCongestionWindowChange(QuicTime now) {
     cached_network_params.set_serving_region(serving_region_);
   }
 
-  crypto_stream_->SendServerConfigUpdate(&cached_network_params);
+  crypto_stream_->SendServerConfigUpdate(&cached_network_params, false);
   last_server_config_update_time_ = now;
 }
 

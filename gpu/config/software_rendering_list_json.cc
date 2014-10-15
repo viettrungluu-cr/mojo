@@ -18,7 +18,7 @@ const char kSoftwareRenderingListJson[] = LONG_STRING_CONST(
 {
   "name": "software rendering list",
   // Please update the version number whenever you change this file.
-  "version": "9.10",
+  "version": "9.11",
   "entries": [
     {
       "id": 1,
@@ -868,7 +868,11 @@ LONG_STRING_CONST(
       "description": "Samsung Galaxy NOTE is too buggy to use for video decoding",
       "cr_bugs": [308721],
       "os": {
-        "type": "android"
+        "type": "android",
+        "version": {
+          "op": "<",
+          "value": "4.4"
+        }
       },
       "machine_model_name": ["GT-.*"],
       "features": [
@@ -880,7 +884,11 @@ LONG_STRING_CONST(
       "description": "Samsung Galaxy S4 is too buggy to use for video decoding",
       "cr_bugs": [329072],
       "os": {
-        "type": "android"
+        "type": "android",
+        "version": {
+          "op": "<",
+          "value": "4.4"
+        }
       },
       "machine_model_name": ["SCH-.*"],
       "features": [
@@ -1117,7 +1125,11 @@ LONG_STRING_CONST(
       "description": "Samsung Galaxy Tab is too buggy to use for video decoding",
       "cr_bugs": [408353],
       "os": {
-        "type": "android"
+        "type": "android",
+        "version": {
+          "op": "<",
+          "value": "4.4"
+        }
       },
       "machine_model_name": ["SM-.*"],
       "features": [
@@ -1135,6 +1147,23 @@ LONG_STRING_CONST(
       "features": [
         "accelerated_2d_canvas",
         "gpu_rasterization"
+      ]
+    },
+    {
+      "id": 103,
+      "description": "Intel GM965/GL960 crash often on Mac OS 10.6",
+      "cr_bugs": [421641],
+      "os": {
+        "type": "macosx",
+        "version": {
+          "op": "=",
+          "value": "10.6"
+        }
+      },
+      "vendor_id": "0x8086",
+      "device_id": ["0x2a02"],
+      "features": [
+        "all"
       ]
     }
   ]

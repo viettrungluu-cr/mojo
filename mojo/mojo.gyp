@@ -15,6 +15,7 @@
   },
   'includes': [
     'mojo_apps.gypi',
+    'mojo_converters.gypi',
     'mojo_examples.gypi',
     'mojo_services.gypi',
     'mojo_variables.gypi',
@@ -32,7 +33,6 @@
         'mojo_base.gyp:mojo_base',
         'mojo_clipboard',
         'mojo_clipboard_unittests',
-        'mojo_compositor_app',
         'mojo_content_handler_demo',
         'mojo_echo_client',
         'mojo_echo_service',
@@ -282,6 +282,7 @@
         'shell/child_process_host_unittest.cc',
         'shell/dynamic_application_loader_unittest.cc',
         'shell/in_process_dynamic_service_runner_unittest.cc',
+        'shell/mojo_url_resolver_unittest.cc',
         'shell/shell_test_base.cc',
         'shell/shell_test_base.h',
         'shell/shell_test_base_unittest.cc',
@@ -373,6 +374,8 @@
       'sources': [
         'cc/context_provider_mojo.cc',
         'cc/context_provider_mojo.h',
+        'cc/direct_output_surface.cc',
+        'cc/direct_output_surface.h',
         'cc/output_surface_mojo.cc',
         'cc/output_surface_mojo.h',
       ],

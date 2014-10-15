@@ -131,11 +131,6 @@
 // GL_CHROMIUM_sync_query
 #define GL_COMMANDS_COMPLETED_CHROMIUM                   0x84F7
 
-// GL_CHROMIUM_image
-#define GL_IMAGE_ROWBYTES_CHROMIUM                       0x78F0
-#define GL_IMAGE_MAP_CHROMIUM                            0x78F1
-#define GL_IMAGE_SCANOUT_CHROMIUM                        0x78F2
-
 // GL_CHROMIUM_gpu_memory_buffer_image
 #define GL_MAP_CHROMIUM                                  0x78F1
 #define GL_SCANOUT_CHROMIUM                              0x78F2
@@ -195,6 +190,9 @@
 #define GL_DEPTH_EXT                                     0x1801
 #define GL_STENCIL_EXT                                   0x1802
 #endif
+
+// GL_EXT_sRGB
+#define GL_FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING_EXT     0x8210
 
 // GL_ARB_get_program_binary
 #define PROGRAM_BINARY_RETRIEVABLE_HINT                  0x8257

@@ -139,7 +139,7 @@ TEST(LayerImplTest, VerifyLayerChangesAreTrackedProperly) {
   // These properties are internal, and should not be considered "change" when
   // they are used.
   EXECUTE_AND_VERIFY_NEEDS_PUSH_PROPERTIES_AND_SUBTREE_DID_NOT_CHANGE(
-      root->SetUpdateRect(arbitrary_rect_f));
+      root->SetUpdateRect(arbitrary_rect));
   EXECUTE_AND_VERIFY_ONLY_LAYER_CHANGED(root->SetBounds(arbitrary_size));
 
   // Changing these properties affects the entire subtree of layers.
@@ -416,7 +416,7 @@ TEST(LayerImplTest, TransformInvertibility) {
 class LayerImplScrollTest : public testing::Test {
  public:
   LayerImplScrollTest()
-      : host_impl_(&proxy_, &shared_bitmap_manager_), root_id_(7) {
+      : host_impl_(settings(), &proxy_, &shared_bitmap_manager_), root_id_(7) {
     host_impl_.active_tree()->SetRootLayer(
         LayerImpl::Create(host_impl_.active_tree(), root_id_));
     host_impl_.active_tree()->root_layer()->AddChild(
@@ -435,6 +435,12 @@ class LayerImplScrollTest : public testing::Test {
   }
 
   LayerTreeImpl* tree() { return host_impl_.active_tree(); }
+
+  LayerTreeSettings settings() {
+    LayerTreeSettings settings;
+    settings.use_pinch_virtual_viewport = true;
+    return settings;
+  }
 
  private:
   FakeImplProxy proxy_;
@@ -527,7 +533,7 @@ TEST_F(LayerImplScrollTest, ScrollByWithIgnoringDelegate) {
   EXPECT_VECTOR_EQ(fixed_offset, layer()->TotalScrollOffset());
   EXPECT_VECTOR_EQ(scroll_offset, layer()->scroll_offset());
 
-  layer()->SetScrollOffsetDelegate(NULL);
+  layer()->SetScrollOffsetDelegate(nullptr);
 
   EXPECT_VECTOR_EQ(fixed_offset, layer()->TotalScrollOffset());
   EXPECT_VECTOR_EQ(scroll_offset, layer()->scroll_offset());
@@ -574,7 +580,7 @@ TEST_F(LayerImplScrollTest, ScrollByWithAcceptingDelegate) {
   EXPECT_VECTOR_EQ(gfx::Vector2dF(0, 80), layer()->TotalScrollOffset());
   EXPECT_VECTOR_EQ(scroll_offset, layer()->scroll_offset());
 
-  layer()->SetScrollOffsetDelegate(NULL);
+  layer()->SetScrollOffsetDelegate(nullptr);
 
   EXPECT_VECTOR_EQ(gfx::Vector2dF(0, 80), layer()->TotalScrollOffset());
   EXPECT_VECTOR_EQ(scroll_offset, layer()->scroll_offset());
@@ -659,9 +665,7 @@ TEST_F(LayerImplScrollTest, ApplySentScrollsWithAcceptingDelegate) {
   EXPECT_VECTOR_EQ(gfx::Vector2d(), layer()->sent_scroll_delta());
 }
 
-// The user-scrollability breaks for zoomed-in pages. So disable this.
-// http://crbug.com/322223
-TEST_F(LayerImplScrollTest, DISABLED_ScrollUserUnscrollableLayer) {
+TEST_F(LayerImplScrollTest, ScrollUserUnscrollableLayer) {
   gfx::ScrollOffset scroll_offset(10, 5);
   gfx::Vector2dF scroll_delta(20.5f, 8.5f);
 

@@ -6,10 +6,10 @@
 
 #include "base/numerics/safe_conversions.h"
 #include "cc/surfaces/surface_id_allocator.h"
+#include "mojo/converters/geometry/geometry_type_converters.h"
+#include "mojo/converters/surfaces/surfaces_type_converters.h"
+#include "mojo/converters/surfaces/surfaces_utils.h"
 #include "mojo/public/cpp/application/application_connection.h"
-#include "mojo/services/public/cpp/geometry/geometry_type_converters.h"
-#include "mojo/services/public/cpp/surfaces/surfaces_type_converters.h"
-#include "mojo/services/public/cpp/surfaces/surfaces_utils.h"
 #include "mojo/services/public/interfaces/gpu/gpu.mojom.h"
 #include "mojo/services/public/interfaces/surfaces/quads.mojom.h"
 #include "mojo/services/view_manager/connection_manager.h"
@@ -160,7 +160,7 @@ void DisplayManager::OnSizeChanged(SizePtr size) {
 
 void DisplayManager::OnEvent(EventPtr event,
                              const mojo::Callback<void()>& callback) {
-  connection_manager_->DispatchViewInputEventToWindowManager(event.Pass());
+  connection_manager_->DispatchViewInputEventToDelegate(event.Pass());
   callback.Run();
 }
 

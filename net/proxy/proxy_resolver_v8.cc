@@ -93,11 +93,11 @@ class V8ExternalStringFromScriptData
       const scoped_refptr<ProxyResolverScriptData>& script_data)
       : script_data_(script_data) {}
 
-  virtual const uint16_t* data() const OVERRIDE {
+  virtual const uint16_t* data() const override {
     return reinterpret_cast<const uint16*>(script_data_->utf16().data());
   }
 
-  virtual size_t length() const OVERRIDE {
+  virtual size_t length() const override {
     return script_data_->utf16().size();
   }
 
@@ -107,7 +107,8 @@ class V8ExternalStringFromScriptData
 };
 
 // External string wrapper so V8 can access a string literal.
-class V8ExternalASCIILiteral : public v8::String::ExternalAsciiStringResource {
+class V8ExternalASCIILiteral
+    : public v8::String::ExternalOneByteStringResource {
  public:
   // |ascii| must be a NULL-terminated C string, and must remain valid
   // throughout this object's lifetime.
@@ -116,11 +117,11 @@ class V8ExternalASCIILiteral : public v8::String::ExternalAsciiStringResource {
     DCHECK(base::IsStringASCII(ascii));
   }
 
-  virtual const char* data() const OVERRIDE {
+  virtual const char* data() const override {
     return ascii_;
   }
 
-  virtual size_t length() const OVERRIDE {
+  virtual size_t length() const override {
     return length_;
   }
 

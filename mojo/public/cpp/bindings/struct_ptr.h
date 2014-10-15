@@ -7,6 +7,7 @@
 
 #include <new>
 
+#include "mojo/public/cpp/bindings/type_converter.h"
 #include "mojo/public/cpp/environment/logging.h"
 #include "mojo/public/cpp/system/macros.h"
 
@@ -29,7 +30,6 @@ class StructPtr {
   MOJO_MOVE_ONLY_TYPE_FOR_CPP_03(StructPtr, RValue);
 
  public:
-  typedef typename Struct::Data_ Data_;
 
   StructPtr() : ptr_(nullptr) {}
   ~StructPtr() { delete ptr_; }
@@ -71,6 +71,12 @@ class StructPtr {
   // that it contains Mojo handles).
   StructPtr Clone() const { return is_null() ? StructPtr() : ptr_->Clone(); }
 
+  bool Equals(const StructPtr& other) const {
+    if (is_null() || other.is_null())
+      return is_null() && other.is_null();
+    return ptr_->Equals(*other.ptr_);
+  }
+
  private:
   typedef Struct* StructPtr::*Testable;
 
@@ -98,7 +104,6 @@ class InlinedStructPtr {
   MOJO_MOVE_ONLY_TYPE_FOR_CPP_03(InlinedStructPtr, RValue);
 
  public:
-  typedef typename Struct::Data_ Data_;
 
   InlinedStructPtr() : is_null_(true) {}
   ~InlinedStructPtr() {}
@@ -139,6 +144,11 @@ class InlinedStructPtr {
 
   InlinedStructPtr Clone() const {
     return is_null() ? InlinedStructPtr() : value_.Clone();
+  }
+  bool Equals(const InlinedStructPtr& other) const {
+    if (is_null() || other.is_null())
+      return is_null() && other.is_null();
+    return value_.Equals(other.value_);
   }
 
  private:

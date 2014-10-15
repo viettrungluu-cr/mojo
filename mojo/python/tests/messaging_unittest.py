@@ -4,26 +4,27 @@
 
 import unittest
 
-# pylint: disable=F0401
-import mojo.embedder
+import mojo_unittest
 from mojo.bindings import messaging
+
+# pylint: disable=E0611
 from mojo import system
 
 
 class _ForwardingConnectionErrorHandler(messaging.ConnectionErrorHandler):
 
   def __init__(self, callback):
+    messaging.ConnectionErrorHandler.__init__(self)
     self._callback = callback
 
   def OnError(self, result):
     self._callback(result)
 
 
-class ConnectorTest(unittest.TestCase):
+class ConnectorTest(mojo_unittest.MojoTestCase):
 
   def setUp(self):
-    mojo.embedder.Init()
-    self.loop = system.RunLoop()
+    super(ConnectorTest, self).setUp()
     self.received_messages = []
     self.received_errors = []
     def _OnMessage(message):
@@ -44,7 +45,7 @@ class ConnectorTest(unittest.TestCase):
   def tearDown(self):
     self.connector = None
     self.handle = None
-    self.loop = None
+    super(ConnectorTest, self).tearDown()
 
   def testConnectorRead(self):
     self.handle.WriteMessage()
@@ -134,11 +135,10 @@ class HeaderTest(unittest.TestCase):
     self.assertEqual(other_header.request_id, 0xdeadbeafdeadbeaf)
 
 
-class RouterTest(unittest.TestCase):
+class RouterTest(mojo_unittest.MojoTestCase):
 
   def setUp(self):
-    mojo.embedder.Init()
-    self.loop = system.RunLoop()
+    super(RouterTest, self).setUp()
     self.received_messages = []
     self.received_errors = []
     def _OnMessage(message):
@@ -158,7 +158,7 @@ class RouterTest(unittest.TestCase):
   def tearDown(self):
     self.router = None
     self.handle = None
-    self.loop = None
+    super(RouterTest, self).tearDown()
 
   def testSimpleMessage(self):
     header_data = messaging.MessageHeader(0, messaging.NO_FLAG).Serialize()

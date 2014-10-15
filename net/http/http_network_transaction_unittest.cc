@@ -22,7 +22,9 @@
 #include "base/test/test_file_util.h"
 #include "net/base/auth.h"
 #include "net/base/capturing_net_log.h"
+#include "net/base/chunked_upload_data_stream.h"
 #include "net/base/completion_callback.h"
+#include "net/base/elements_upload_data_stream.h"
 #include "net/base/load_timing_info.h"
 #include "net/base/load_timing_info_test_util.h"
 #include "net/base/net_log.h"
@@ -31,7 +33,6 @@
 #include "net/base/test_completion_callback.h"
 #include "net/base/test_data_directory.h"
 #include "net/base/upload_bytes_element_reader.h"
-#include "net/base/upload_data_stream.h"
 #include "net/base/upload_file_element_reader.h"
 #include "net/cert/mock_cert_verifier.h"
 #include "net/dns/host_cache.h"
@@ -1111,7 +1112,7 @@ TEST_P(HttpNetworkTransactionTest, ReuseConnection) {
 TEST_P(HttpNetworkTransactionTest, Ignores100) {
   ScopedVector<UploadElementReader> element_readers;
   element_readers.push_back(new UploadBytesElementReader("foo", 3));
-  UploadDataStream upload_data_stream(element_readers.Pass(), 0);
+  ElementsUploadDataStream upload_data_stream(element_readers.Pass(), 0);
 
   HttpRequestInfo request;
   request.method = "POST";
@@ -5016,7 +5017,7 @@ TEST_P(HttpNetworkTransactionTest, RecycleSocketAfterZeroContentLength) {
 TEST_P(HttpNetworkTransactionTest, ResendRequestOnWriteBodyError) {
   ScopedVector<UploadElementReader> element_readers;
   element_readers.push_back(new UploadBytesElementReader("foo", 3));
-  UploadDataStream upload_data_stream(element_readers.Pass(), 0);
+  ElementsUploadDataStream upload_data_stream(element_readers.Pass(), 0);
 
   HttpRequestInfo request[2];
   // Transaction 1: a GET request that succeeds.  The socket is recycled
@@ -8102,7 +8103,7 @@ TEST_P(HttpNetworkTransactionTest, UploadFileSmallerThanLength) {
                                   0,
                                   kuint64max,
                                   base::Time()));
-  UploadDataStream upload_data_stream(element_readers.Pass(), 0);
+  ElementsUploadDataStream upload_data_stream(element_readers.Pass(), 0);
 
   HttpRequestInfo request;
   request.method = "POST";
@@ -8159,7 +8160,7 @@ TEST_P(HttpNetworkTransactionTest, UploadUnreadableFile) {
                                   0,
                                   kuint64max,
                                   base::Time()));
-  UploadDataStream upload_data_stream(element_readers.Pass(), 0);
+  ElementsUploadDataStream upload_data_stream(element_readers.Pass(), 0);
 
   HttpRequestInfo request;
   request.method = "POST";
@@ -8198,15 +8199,15 @@ TEST_P(HttpNetworkTransactionTest, CancelDuringInitRequestBody) {
     const CompletionCallback& callback() const { return callback_; }
 
     // UploadElementReader overrides:
-    virtual int Init(const CompletionCallback& callback) OVERRIDE {
+    virtual int Init(const CompletionCallback& callback) override {
       callback_ = callback;
       return ERR_IO_PENDING;
     }
-    virtual uint64 GetContentLength() const OVERRIDE { return 0; }
-    virtual uint64 BytesRemaining() const OVERRIDE { return 0; }
+    virtual uint64 GetContentLength() const override { return 0; }
+    virtual uint64 BytesRemaining() const override { return 0; }
     virtual int Read(IOBuffer* buf,
                      int buf_length,
-                     const CompletionCallback& callback) OVERRIDE {
+                     const CompletionCallback& callback) override {
       return ERR_FAILED;
     }
 
@@ -8217,7 +8218,7 @@ TEST_P(HttpNetworkTransactionTest, CancelDuringInitRequestBody) {
   FakeUploadElementReader* fake_reader = new FakeUploadElementReader;
   ScopedVector<UploadElementReader> element_readers;
   element_readers.push_back(fake_reader);
-  UploadDataStream upload_data_stream(element_readers.Pass(), 0);
+  ElementsUploadDataStream upload_data_stream(element_readers.Pass(), 0);
 
   HttpRequestInfo request;
   request.method = "POST";
@@ -9105,7 +9106,7 @@ class CapturingProxyResolver : public ProxyResolver {
                              ProxyInfo* results,
                              const CompletionCallback& callback,
                              RequestHandle* request,
-                             const BoundNetLog& net_log) OVERRIDE {
+                             const BoundNetLog& net_log) override {
     ProxyServer proxy_server(ProxyServer::SCHEME_HTTP,
                              HostPortPair("myproxy", 80));
     results->UseProxyServer(proxy_server);
@@ -9113,21 +9114,21 @@ class CapturingProxyResolver : public ProxyResolver {
     return OK;
   }
 
-  virtual void CancelRequest(RequestHandle request) OVERRIDE {
+  virtual void CancelRequest(RequestHandle request) override {
     NOTREACHED();
   }
 
-  virtual LoadState GetLoadState(RequestHandle request) const OVERRIDE {
+  virtual LoadState GetLoadState(RequestHandle request) const override {
     NOTREACHED();
     return LOAD_STATE_IDLE;
   }
 
-  virtual void CancelSetPacScript() OVERRIDE {
+  virtual void CancelSetPacScript() override {
     NOTREACHED();
   }
 
   virtual int SetPacScript(const scoped_refptr<ProxyResolverScriptData>&,
-                           const CompletionCallback& /*callback*/) OVERRIDE {
+                           const CompletionCallback& /*callback*/) override {
     return OK;
   }
 
@@ -10069,7 +10070,7 @@ class UrlRecordingHttpAuthHandlerMock : public HttpAuthHandlerMock {
   virtual int GenerateAuthTokenImpl(const AuthCredentials* credentials,
                                     const HttpRequestInfo* request,
                                     const CompletionCallback& callback,
-                                    std::string* auth_token) OVERRIDE {
+                                    std::string* auth_token) override {
     *url_ = request->url;
     return HttpAuthHandlerMock::GenerateAuthTokenImpl(
         credentials, request, callback, auth_token);
@@ -11166,21 +11167,21 @@ class OneTimeCachingHostResolver : public net::HostResolver {
                       AddressList* addresses,
                       const CompletionCallback& callback,
                       RequestHandle* out_req,
-                      const BoundNetLog& net_log) OVERRIDE {
+                      const BoundNetLog& net_log) override {
     return host_resolver_.Resolve(
         info, priority, addresses, callback, out_req, net_log);
   }
 
   virtual int ResolveFromCache(const RequestInfo& info,
                                AddressList* addresses,
-                               const BoundNetLog& net_log) OVERRIDE {
+                               const BoundNetLog& net_log) override {
     int rv = host_resolver_.ResolveFromCache(info, addresses, net_log);
     if (rv == OK && info.host_port_pair().Equals(host_port_))
       host_resolver_.GetHostCache()->clear();
     return rv;
   }
 
-  virtual void CancelRequest(RequestHandle req) OVERRIDE {
+  virtual void CancelRequest(RequestHandle req) override {
     host_resolver_.CancelRequest(req);
   }
 
@@ -12212,83 +12213,83 @@ class FakeStream : public HttpStreamBase,
   virtual int InitializeStream(const HttpRequestInfo* request_info,
                                RequestPriority priority,
                                const BoundNetLog& net_log,
-                               const CompletionCallback& callback) OVERRIDE {
+                               const CompletionCallback& callback) override {
     return ERR_IO_PENDING;
   }
 
   virtual int SendRequest(const HttpRequestHeaders& request_headers,
                           HttpResponseInfo* response,
-                          const CompletionCallback& callback) OVERRIDE {
+                          const CompletionCallback& callback) override {
     ADD_FAILURE();
     return ERR_UNEXPECTED;
   }
 
-  virtual int ReadResponseHeaders(const CompletionCallback& callback) OVERRIDE {
+  virtual int ReadResponseHeaders(const CompletionCallback& callback) override {
     ADD_FAILURE();
     return ERR_UNEXPECTED;
   }
 
   virtual int ReadResponseBody(IOBuffer* buf, int buf_len,
-                               const CompletionCallback& callback) OVERRIDE {
+                               const CompletionCallback& callback) override {
     ADD_FAILURE();
     return ERR_UNEXPECTED;
   }
 
-  virtual void Close(bool not_reusable) OVERRIDE {}
+  virtual void Close(bool not_reusable) override {}
 
-  virtual bool IsResponseBodyComplete() const OVERRIDE {
+  virtual bool IsResponseBodyComplete() const override {
     ADD_FAILURE();
     return false;
   }
 
-  virtual bool CanFindEndOfResponse() const OVERRIDE {
+  virtual bool CanFindEndOfResponse() const override {
     return false;
   }
 
-  virtual bool IsConnectionReused() const OVERRIDE {
+  virtual bool IsConnectionReused() const override {
     ADD_FAILURE();
     return false;
   }
 
-  virtual void SetConnectionReused() OVERRIDE {
+  virtual void SetConnectionReused() override {
     ADD_FAILURE();
   }
 
-  virtual bool IsConnectionReusable() const OVERRIDE {
+  virtual bool IsConnectionReusable() const override {
     ADD_FAILURE();
     return false;
   }
 
-  virtual int64 GetTotalReceivedBytes() const OVERRIDE {
+  virtual int64 GetTotalReceivedBytes() const override {
     ADD_FAILURE();
     return 0;
   }
 
   virtual bool GetLoadTimingInfo(
-      LoadTimingInfo* load_timing_info) const OVERRIDE {
+      LoadTimingInfo* load_timing_info) const override {
     ADD_FAILURE();
     return false;
   }
 
-  virtual void GetSSLInfo(SSLInfo* ssl_info) OVERRIDE {
+  virtual void GetSSLInfo(SSLInfo* ssl_info) override {
     ADD_FAILURE();
   }
 
   virtual void GetSSLCertRequestInfo(
-      SSLCertRequestInfo* cert_request_info) OVERRIDE {
+      SSLCertRequestInfo* cert_request_info) override {
     ADD_FAILURE();
   }
 
-  virtual bool IsSpdyHttpStream() const OVERRIDE {
+  virtual bool IsSpdyHttpStream() const override {
     ADD_FAILURE();
     return false;
   }
 
-  virtual void Drain(HttpNetworkSession* session) OVERRIDE {
+  virtual void Drain(HttpNetworkSession* session) override {
     ADD_FAILURE();
   }
 
-  virtual void SetPriority(RequestPriority priority) OVERRIDE {
+  virtual void SetPriority(RequestPriority priority) override {
     priority_ = priority;
   }
 
@@ -12337,29 +12338,29 @@ class FakeStreamRequest : public HttpStreamRequest,
   }
 
   virtual int RestartTunnelWithProxyAuth(
-      const AuthCredentials& credentials) OVERRIDE {
+      const AuthCredentials& credentials) override {
     ADD_FAILURE();
     return ERR_UNEXPECTED;
   }
 
-  virtual LoadState GetLoadState() const OVERRIDE {
+  virtual LoadState GetLoadState() const override {
     ADD_FAILURE();
     return LoadState();
   }
 
-  virtual void SetPriority(RequestPriority priority) OVERRIDE {
+  virtual void SetPriority(RequestPriority priority) override {
     priority_ = priority;
   }
 
-  virtual bool was_npn_negotiated() const OVERRIDE {
+  virtual bool was_npn_negotiated() const override {
     return false;
   }
 
-  virtual NextProto protocol_negotiated() const OVERRIDE {
+  virtual NextProto protocol_negotiated() const override {
     return kProtoUnknown;
   }
 
-  virtual bool using_spdy() const OVERRIDE {
+  virtual bool using_spdy() const override {
     return false;
   }
 
@@ -12389,7 +12390,7 @@ class FakeStreamFactory : public HttpStreamFactory {
       const SSLConfig& server_ssl_config,
       const SSLConfig& proxy_ssl_config,
       HttpStreamRequest::Delegate* delegate,
-      const BoundNetLog& net_log) OVERRIDE {
+      const BoundNetLog& net_log) override {
     FakeStreamRequest* fake_request = new FakeStreamRequest(priority, delegate);
     last_stream_request_ = fake_request->AsWeakPtr();
     return fake_request;
@@ -12402,7 +12403,7 @@ class FakeStreamFactory : public HttpStreamFactory {
       const SSLConfig& proxy_ssl_config,
       HttpStreamRequest::Delegate* delegate,
       WebSocketHandshakeStreamBase::CreateHelper* create_helper,
-      const BoundNetLog& net_log) OVERRIDE {
+      const BoundNetLog& net_log) override {
     FakeStreamRequest* fake_request =
         new FakeStreamRequest(priority, delegate, create_helper);
     last_stream_request_ = fake_request->AsWeakPtr();
@@ -12413,11 +12414,11 @@ class FakeStreamFactory : public HttpStreamFactory {
                                  const HttpRequestInfo& info,
                                  RequestPriority priority,
                                  const SSLConfig& server_ssl_config,
-                                 const SSLConfig& proxy_ssl_config) OVERRIDE {
+                                 const SSLConfig& proxy_ssl_config) override {
     ADD_FAILURE();
   }
 
-  virtual const HostMappingRules* GetHostMappingRules() const OVERRIDE {
+  virtual const HostMappingRules* GetHostMappingRules() const override {
     ADD_FAILURE();
     return NULL;
   }
@@ -12435,14 +12436,14 @@ class FakeWebSocketStreamCreateHelper :
  public:
   virtual WebSocketHandshakeStreamBase* CreateBasicStream(
       scoped_ptr<ClientSocketHandle> connection,
-      bool using_proxy) OVERRIDE {
+      bool using_proxy) override {
     NOTREACHED();
     return NULL;
   }
 
   virtual WebSocketHandshakeStreamBase* CreateSpdyStream(
       const base::WeakPtr<SpdySession>& session,
-      bool use_relative_url) OVERRIDE {
+      bool use_relative_url) override {
     NOTREACHED();
     return NULL;
   };
@@ -12731,7 +12732,7 @@ TEST_P(HttpNetworkTransactionTest, CloseSSLSocketOnIdleForHttpRequest2) {
 TEST_P(HttpNetworkTransactionTest, PostReadsErrorResponseAfterReset) {
   ScopedVector<UploadElementReader> element_readers;
   element_readers.push_back(new UploadBytesElementReader("foo", 3));
-  UploadDataStream upload_data_stream(element_readers.Pass(), 0);
+  ElementsUploadDataStream upload_data_stream(element_readers.Pass(), 0);
 
   HttpRequestInfo request;
   request.method = "POST";
@@ -12838,7 +12839,7 @@ TEST_P(HttpNetworkTransactionTest,
 
   ScopedVector<UploadElementReader> element_readers;
   element_readers.push_back(new UploadBytesElementReader("foo", 3));
-  UploadDataStream upload_data_stream(element_readers.Pass(), 0);
+  ElementsUploadDataStream upload_data_stream(element_readers.Pass(), 0);
 
   HttpRequestInfo request2;
   request2.method = "POST";
@@ -12870,7 +12871,7 @@ TEST_P(HttpNetworkTransactionTest,
        PostReadsErrorResponseAfterResetPartialBodySent) {
   ScopedVector<UploadElementReader> element_readers;
   element_readers.push_back(new UploadBytesElementReader("foo", 3));
-  UploadDataStream upload_data_stream(element_readers.Pass(), 0);
+  ElementsUploadDataStream upload_data_stream(element_readers.Pass(), 0);
 
   HttpRequestInfo request;
   request.method = "POST";
@@ -12925,7 +12926,7 @@ TEST_P(HttpNetworkTransactionTest,
 TEST_P(HttpNetworkTransactionTest, ChunkedPostReadsErrorResponseAfterReset) {
   ScopedVector<UploadElementReader> element_readers;
   element_readers.push_back(new UploadBytesElementReader("foo", 3));
-  UploadDataStream upload_data_stream(UploadDataStream::CHUNKED, 0);
+  ChunkedUploadDataStream upload_data_stream(0);
 
   HttpRequestInfo request;
   request.method = "POST";
@@ -12964,7 +12965,7 @@ TEST_P(HttpNetworkTransactionTest, ChunkedPostReadsErrorResponseAfterReset) {
   // the test more future proof.
   base::RunLoop().RunUntilIdle();
 
-  upload_data_stream.AppendChunk("last chunk", 10, true);
+  upload_data_stream.AppendData("last chunk", 10, true);
 
   rv = callback.WaitForResult();
   EXPECT_EQ(OK, rv);
@@ -12984,7 +12985,7 @@ TEST_P(HttpNetworkTransactionTest, ChunkedPostReadsErrorResponseAfterReset) {
 TEST_P(HttpNetworkTransactionTest, PostReadsErrorResponseAfterResetAnd100) {
   ScopedVector<UploadElementReader> element_readers;
   element_readers.push_back(new UploadBytesElementReader("foo", 3));
-  UploadDataStream upload_data_stream(element_readers.Pass(), 0);
+  ElementsUploadDataStream upload_data_stream(element_readers.Pass(), 0);
 
   HttpRequestInfo request;
   request.method = "POST";
@@ -13037,7 +13038,7 @@ TEST_P(HttpNetworkTransactionTest, PostReadsErrorResponseAfterResetAnd100) {
 TEST_P(HttpNetworkTransactionTest, PostIgnoresNonErrorResponseAfterReset) {
   ScopedVector<UploadElementReader> element_readers;
   element_readers.push_back(new UploadBytesElementReader("foo", 3));
-  UploadDataStream upload_data_stream(element_readers.Pass(), 0);
+  ElementsUploadDataStream upload_data_stream(element_readers.Pass(), 0);
 
   HttpRequestInfo request;
   request.method = "POST";
@@ -13082,7 +13083,7 @@ TEST_P(HttpNetworkTransactionTest,
        PostIgnoresNonErrorResponseAfterResetAnd100) {
   ScopedVector<UploadElementReader> element_readers;
   element_readers.push_back(new UploadBytesElementReader("foo", 3));
-  UploadDataStream upload_data_stream(element_readers.Pass(), 0);
+  ElementsUploadDataStream upload_data_stream(element_readers.Pass(), 0);
 
   HttpRequestInfo request;
   request.method = "POST";
@@ -13128,7 +13129,7 @@ TEST_P(HttpNetworkTransactionTest,
 TEST_P(HttpNetworkTransactionTest, PostIgnoresHttp09ResponseAfterReset) {
   ScopedVector<UploadElementReader> element_readers;
   element_readers.push_back(new UploadBytesElementReader("foo", 3));
-  UploadDataStream upload_data_stream(element_readers.Pass(), 0);
+  ElementsUploadDataStream upload_data_stream(element_readers.Pass(), 0);
 
   HttpRequestInfo request;
   request.method = "POST";
@@ -13171,7 +13172,7 @@ TEST_P(HttpNetworkTransactionTest, PostIgnoresHttp09ResponseAfterReset) {
 TEST_P(HttpNetworkTransactionTest, PostIgnoresPartial400HeadersAfterReset) {
   ScopedVector<UploadElementReader> element_readers;
   element_readers.push_back(new UploadBytesElementReader("foo", 3));
-  UploadDataStream upload_data_stream(element_readers.Pass(), 0);
+  ElementsUploadDataStream upload_data_stream(element_readers.Pass(), 0);
 
   HttpRequestInfo request;
   request.method = "POST";

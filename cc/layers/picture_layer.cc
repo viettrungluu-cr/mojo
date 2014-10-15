@@ -68,12 +68,11 @@ void PictureLayer::SetLayerTreeHost(LayerTreeHost* host) {
   }
 }
 
-void PictureLayer::SetNeedsDisplayRect(const gfx::RectF& layer_rect) {
-  gfx::Rect rect = gfx::ToEnclosedRect(layer_rect);
-  if (!rect.IsEmpty()) {
+void PictureLayer::SetNeedsDisplayRect(const gfx::Rect& layer_rect) {
+  if (!layer_rect.IsEmpty()) {
     // Clamp invalidation to the layer bounds.
-    rect.Intersect(gfx::Rect(bounds()));
-    pending_invalidation_.Union(rect);
+    pending_invalidation_.Union(
+        gfx::IntersectRects(layer_rect, gfx::Rect(bounds())));
   }
   Layer::SetNeedsDisplayRect(layer_rect);
 }
@@ -184,7 +183,7 @@ skia::RefPtr<SkPicture> PictureLayer::GetPicture() const {
   int height = bounds().height();
 
   SkPictureRecorder recorder;
-  SkCanvas* canvas = recorder.beginRecording(width, height, NULL, 0);
+  SkCanvas* canvas = recorder.beginRecording(width, height, nullptr, 0);
   client_->PaintContents(canvas,
                          gfx::Rect(width, height),
                          ContentLayerClient::GRAPHICS_CONTEXT_ENABLED);
@@ -197,7 +196,7 @@ bool PictureLayer::IsSuitableForGpuRasterization() const {
 }
 
 void PictureLayer::ClearClient() {
-  client_ = NULL;
+  client_ = nullptr;
   UpdateDrawsContent(HasDrawableContent());
 }
 

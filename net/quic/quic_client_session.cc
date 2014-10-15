@@ -153,7 +153,7 @@ QuicClientSession::QuicClientSession(
       num_total_streams_(0),
       task_runner_(task_runner),
       net_log_(BoundNetLog::Make(net_log, NetLog::SOURCE_QUIC_SESSION)),
-      logger_(new QuicConnectionLogger(net_log_)),
+      logger_(new QuicConnectionLogger(this, net_log_)),
       num_packets_read_(0),
       going_away_(false),
       weak_factory_(this) {
@@ -265,14 +265,14 @@ QuicClientSession::~QuicClientSession() {
   const QuicConnectionStats stats = connection()->GetStats();
   if (stats.max_sequence_reordering == 0)
     return;
-  const uint64 kMaxReordering = 100;
-  uint64 reordering = kMaxReordering;
-  if (stats.min_rtt_us > 0 ) {
-    reordering =
-        GG_UINT64_C(100) * stats.max_time_reordering_us / stats.min_rtt_us;
+  const base::HistogramBase::Sample kMaxReordering = 100;
+  base::HistogramBase::Sample reordering = kMaxReordering;
+  if (stats.min_rtt_us > 0) {
+    reordering = static_cast<base::HistogramBase::Sample>(
+        100 * stats.max_time_reordering_us / stats.min_rtt_us);
   }
   UMA_HISTOGRAM_CUSTOM_COUNTS("Net.QuicSession.MaxReorderingTime",
-                                reordering, 0, kMaxReordering, 50);
+                              reordering, 0, kMaxReordering, 50);
   if (stats.min_rtt_us > 100 * 1000) {
     UMA_HISTOGRAM_CUSTOM_COUNTS("Net.QuicSession.MaxReorderingTimeLongRtt",
                                 reordering, 0, kMaxReordering, 50);

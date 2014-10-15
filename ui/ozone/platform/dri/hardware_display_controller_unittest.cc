@@ -30,9 +30,9 @@ class MockScanoutBuffer : public ui::ScanoutBuffer {
   MockScanoutBuffer(const gfx::Size& size) : size_(size) {}
 
   // ScanoutBuffer:
-  virtual uint32_t GetFramebufferId() const OVERRIDE {return 0; }
-  virtual uint32_t GetHandle() const OVERRIDE { return 0; }
-  virtual gfx::Size GetSize() const OVERRIDE { return size_; }
+  virtual uint32_t GetFramebufferId() const override {return 0; }
+  virtual uint32_t GetHandle() const override { return 0; }
+  virtual gfx::Size GetSize() const override { return size_; }
 
  private:
   virtual ~MockScanoutBuffer() {}
@@ -49,8 +49,8 @@ class HardwareDisplayControllerTest : public testing::Test {
   HardwareDisplayControllerTest() {}
   virtual ~HardwareDisplayControllerTest() {}
 
-  virtual void SetUp() OVERRIDE;
-  virtual void TearDown() OVERRIDE;
+  virtual void SetUp() override;
+  virtual void TearDown() override;
  protected:
   scoped_ptr<ui::HardwareDisplayController> controller_;
   scoped_ptr<ui::MockDriWrapper> drm_;
@@ -182,4 +182,38 @@ TEST_F(HardwareDisplayControllerTest, PageflipMirroredControllers) {
   controller_->QueueOverlayPlane(plane2);
   EXPECT_TRUE(controller_->SchedulePageFlip());
   EXPECT_EQ(2, drm_->get_page_flip_call_count());
+
+  controller_->WaitForPageFlipEvent();
+  EXPECT_EQ(2, drm_->get_handle_events_count());
+}
+
+TEST_F(HardwareDisplayControllerTest,
+       PageflipMirroredControllersWithInvertedCrtcOrder) {
+  scoped_ptr<ui::CrtcController> crtc1(
+      new ui::CrtcController(drm_.get(), kPrimaryCrtc, kPrimaryConnector));
+  scoped_ptr<ui::CrtcController> crtc2(
+      new ui::CrtcController(drm_.get(), kSecondaryCrtc, kSecondaryConnector));
+
+  // Make sure that if the order is reversed everything is still fine.
+  std::queue<ui::CrtcController*> crtc_queue;
+  crtc_queue.push(crtc2.get());
+  crtc_queue.push(crtc1.get());
+
+  controller_.reset(new ui::HardwareDisplayController(crtc1.Pass()));
+  controller_->AddCrtc(crtc2.Pass());
+
+  ui::OverlayPlane plane1(scoped_refptr<ui::ScanoutBuffer>(
+      new MockScanoutBuffer(kDefaultModeSize)));
+  EXPECT_TRUE(controller_->Modeset(plane1, kDefaultMode));
+  EXPECT_EQ(2, drm_->get_set_crtc_call_count());
+
+  ui::OverlayPlane plane2(scoped_refptr<ui::ScanoutBuffer>(
+      new MockScanoutBuffer(kDefaultModeSize)));
+  controller_->QueueOverlayPlane(plane2);
+  EXPECT_TRUE(controller_->SchedulePageFlip());
+  EXPECT_EQ(2, drm_->get_page_flip_call_count());
+
+  drm_->set_controllers(crtc_queue);
+  controller_->WaitForPageFlipEvent();
+  EXPECT_EQ(2, drm_->get_handle_events_count());
 }

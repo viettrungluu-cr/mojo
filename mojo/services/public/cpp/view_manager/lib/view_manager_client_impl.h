@@ -9,12 +9,12 @@
 #include "base/callback.h"
 #include "base/memory/scoped_vector.h"
 #include "base/memory/weak_ptr.h"
-#include "mojo/services/public/cpp/geometry/geometry_type_converters.h"
+#include "mojo/converters/geometry/geometry_type_converters.h"
 #include "mojo/services/public/cpp/view_manager/types.h"
 #include "mojo/services/public/cpp/view_manager/view.h"
 #include "mojo/services/public/cpp/view_manager/view_manager.h"
 #include "mojo/services/public/interfaces/view_manager/view_manager.mojom.h"
-#include "mojo/services/public/interfaces/window_manager/window_manager.mojom.h"
+#include "mojo/services/public/interfaces/window_manager2/window_manager2.mojom.h"
 
 namespace mojo {
 class Shell;
@@ -25,7 +25,7 @@ class ViewManagerTransaction;
 // Manages the connection with the View Manager service.
 class ViewManagerClientImpl : public ViewManager,
                               public InterfaceImpl<ViewManagerClient>,
-                              public WindowManagerClient {
+                              public WindowManagerClient2 {
  public:
   ViewManagerClientImpl(ViewManagerDelegate* delegate, Shell* shell);
   virtual ~ViewManagerClientImpl();
@@ -77,9 +77,6 @@ class ViewManagerClientImpl : public ViewManager,
   typedef std::map<Id, View*> IdToViewMap;
 
   // Overridden from ViewManager:
-  virtual void SetWindowManagerDelegate(
-      WindowManagerDelegate* delegate) override;
-  virtual void DispatchEvent(View* target, EventPtr event) override;
   virtual const std::string& GetEmbedderURL() const override;
   virtual const std::vector<View*>& GetRoots() const override;
   virtual View* GetViewById(Id id) override;
@@ -108,12 +105,8 @@ class ViewManagerClientImpl : public ViewManager,
   virtual void OnViewInputEvent(Id view_id,
                                 EventPtr event,
                                 const Callback<void()>& callback) override;
-  virtual void Embed(
-      const String& url,
-      InterfaceRequest<ServiceProvider> service_provider) override;
-  virtual void DispatchOnViewInputEvent(EventPtr event) override;
 
-    // Overridden from WindowManagerClient:
+    // Overridden from WindowManagerClient2:
   virtual void OnWindowManagerReady() override;
   virtual void OnCaptureChanged(Id old_capture_view_id,
                                 Id new_capture_view_id) override;
@@ -139,7 +132,6 @@ class ViewManagerClientImpl : public ViewManager,
   base::Callback<void(void)> change_acked_callback_;
 
   ViewManagerDelegate* delegate_;
-  WindowManagerDelegate* window_manager_delegate_;
 
   std::vector<View*> roots_;
 
@@ -147,7 +139,7 @@ class ViewManagerClientImpl : public ViewManager,
 
   ViewManagerService* service_;
 
-  WindowManagerServicePtr window_manager_;
+  WindowManagerService2Ptr window_manager_;
 
   DISALLOW_COPY_AND_ASSIGN(ViewManagerClientImpl);
 };

@@ -25,7 +25,6 @@
       ],
       'all_sources': [
         '<@(_common_sources)',
-        'android/scroller_unittest.cc',
         'animation/animation_container_unittest.cc',
         'animation/animation_unittest.cc',
         'animation/multi_animation_unittest.cc',
@@ -38,6 +37,7 @@
         'codec/jpeg_codec_unittest.cc',
         'codec/png_codec_unittest.cc',
         'color_analysis_unittest.cc',
+        'color_profile_mac_unittest.mm',
         'color_utils_unittest.cc',
         'display_change_notifier_unittest.cc',
         'display_unittest.cc',

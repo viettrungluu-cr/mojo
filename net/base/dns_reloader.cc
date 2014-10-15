@@ -46,7 +46,7 @@ class DnsReloader : public net::NetworkChangeNotifier::DNSObserver {
   };
 
   // NetworkChangeNotifier::DNSObserver:
-  virtual void OnDNSChanged() OVERRIDE {
+  virtual void OnDNSChanged() override {
     DCHECK(base::MessageLoopForIO::IsCurrent());
     base::AutoLock l(lock_);
     resolver_generation_++;
@@ -110,7 +110,7 @@ base::LazyInstance<DnsReloader>::Leaky
 namespace net {
 
 void EnsureDnsReloaderInit() {
-  DnsReloader* t ALLOW_UNUSED = g_dns_reloader.Pointer();
+  g_dns_reloader.Pointer();
 }
 
 void DnsReloaderMaybeReload() {

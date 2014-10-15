@@ -71,6 +71,7 @@
 #include "base/logging.h"
 #include "base/memory/singleton.h"
 #include "base/metrics/histogram.h"
+#include "base/profiler/scoped_profile.h"
 #include "base/single_thread_task_runner.h"
 #include "base/stl_util.h"
 #include "base/strings/string_number_conversions.h"
@@ -407,6 +408,7 @@ struct HandshakeState {
   void Reset() {
     next_proto_status = SSLClientSocket::kNextProtoUnsupported;
     next_proto.clear();
+    negotiation_extension_ = SSLClientSocket::kExtensionUnknown;
     channel_id_sent = false;
     server_cert_chain.Reset(NULL);
     server_cert = NULL;
@@ -420,6 +422,9 @@ struct HandshakeState {
   // negotiated protocol stored in |next_proto|.
   SSLClientSocket::NextProtoStatus next_proto_status;
   std::string next_proto;
+
+  // TLS extension used for protocol negotiation.
+  SSLClientSocket::SSLNegotiationExtension negotiation_extension_;
 
   // True if a channel ID was sent.
   bool channel_id_sent;
@@ -759,6 +764,8 @@ class SSLClientSocketNSS::Core : public base::RefCountedThreadSafe<Core> {
   // UpdateNextProto gets any application-layer protocol that may have been
   // negotiated by the TLS connection.
   void UpdateNextProto();
+  // Record TLS extension used for protocol negotiation (NPN or ALPN).
+  void UpdateExtensionUsed();
 
   ////////////////////////////////////////////////////////////////////////////
   // Methods that are ONLY called on the network task runner:
@@ -1640,6 +1647,7 @@ void SSLClientSocketNSS::Core::HandshakeSucceeded() {
   UpdateStapledOCSPResponse();
   UpdateConnectionStatus();
   UpdateNextProto();
+  UpdateExtensionUsed();
 
   // Update the network task runners view of the handshake state whenever
   // a handshake has completed.
@@ -2213,6 +2221,10 @@ void SSLClientSocketNSS::Core::DoReadCallback(int rv) {
   PostOrRunCallback(
       FROM_HERE,
       base::Bind(&Core::DidNSSRead, this, rv));
+  // TODO(vadimt): Remove ScopedProfile below once crbug.com/418183 is fixed.
+  tracked_objects::ScopedProfile tracking_profile(
+      FROM_HERE_WITH_EXPLICIT_FUNCTION(
+          "SSLClientSocketNSS::Core::DoReadCallback"));
   PostOrRunCallback(
       FROM_HERE,
       base::Bind(base::ResetAndReturn(&user_read_callback_), rv));
@@ -2491,6 +2503,23 @@ void SSLClientSocketNSS::Core::UpdateNextProto() {
   }
 }
 
+void SSLClientSocketNSS::Core::UpdateExtensionUsed() {
+  PRBool negotiated_extension;
+  SECStatus rv = SSL_HandshakeNegotiatedExtension(nss_fd_,
+                                                  ssl_app_layer_protocol_xtn,
+                                                  &negotiated_extension);
+  if (rv == SECSuccess && negotiated_extension) {
+    nss_handshake_state_.negotiation_extension_ = kExtensionALPN;
+  } else {
+    rv = SSL_HandshakeNegotiatedExtension(nss_fd_,
+                                          ssl_next_proto_nego_xtn,
+                                          &negotiated_extension);
+    if (rv == SECSuccess && negotiated_extension) {
+      nss_handshake_state_.negotiation_extension_ = kExtensionNPN;
+    }
+  }
+}
+
 void SSLClientSocketNSS::Core::RecordChannelIDSupportOnNSSTaskRunner() {
   DCHECK(OnNSSTaskRunner());
   if (nss_handshake_state_.resumed_handshake)
@@ -2623,6 +2652,11 @@ void SSLClientSocketNSS::Core::DidNSSWrite(int result) {
 }
 
 void SSLClientSocketNSS::Core::BufferSendComplete(int result) {
+  // TODO(vadimt): Remove ScopedProfile below once crbug.com/418183 is fixed.
+  tracked_objects::ScopedProfile tracking_profile(
+      FROM_HERE_WITH_EXPLICIT_FUNCTION(
+          "418183 DidCompleteReadWrite => Core::BufferSendComplete"));
+
   if (!OnNSSTaskRunner()) {
     if (detached_)
       return;
@@ -2666,6 +2700,11 @@ void SSLClientSocketNSS::Core::OnGetChannelIDComplete(int result) {
 void SSLClientSocketNSS::Core::BufferRecvComplete(
     IOBuffer* read_buffer,
     int result) {
+  // TODO(vadimt): Remove ScopedProfile below once crbug.com/418183 is fixed.
+  tracked_objects::ScopedProfile tracking_profile(
+      FROM_HERE_WITH_EXPLICIT_FUNCTION(
+          "418183 DidCompleteReadWrite => SSLClientSocketNSS::Core::..."));
+
   DCHECK(read_buffer);
 
   if (!OnNSSTaskRunner()) {
@@ -3314,6 +3353,11 @@ int SSLClientSocketNSS::DoHandshakeComplete(int result) {
   EnterFunction(result);
 
   if (result == OK) {
+    if (ssl_config_.version_fallback &&
+        ssl_config_.version_max < ssl_config_.version_fallback_min) {
+      return ERR_SSL_FALLBACK_BEYOND_MINIMUM_VERSION;
+    }
+
     // SSL handshake is completed. Let's verify the certificate.
     GotoState(STATE_VERIFY_CERT);
     // Done!
@@ -3323,6 +3367,7 @@ int SSLClientSocketNSS::DoHandshakeComplete(int result) {
       !core_->state().sct_list_from_tls_extension.empty());
   set_stapled_ocsp_response_received(
       !core_->state().stapled_ocsp_response.empty());
+  set_negotiation_extension(core_->state().negotiation_extension_);
 
   LeaveFunction(result);
   return result;

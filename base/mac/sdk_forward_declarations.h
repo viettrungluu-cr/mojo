@@ -207,6 +207,15 @@ enum {
 @end
 
 BASE_EXPORT extern "C" NSString* const NSWindowWillEnterFullScreenNotification;
+BASE_EXPORT extern "C" NSString* const NSWindowWillExitFullScreenNotification;
+BASE_EXPORT extern "C" NSString* const NSWindowDidEnterFullScreenNotification;
+BASE_EXPORT extern "C" NSString* const NSWindowDidExitFullScreenNotification;
+
+BASE_EXPORT extern "C" NSString* const
+    NSWindowDidFailToEnterFullScreenNotification;
+
+BASE_EXPORT extern "C" NSString* const
+    NSWindowDidFailToExitFullScreenNotification;
 
 #endif  // MAC_OS_X_VERSION_10_7
 

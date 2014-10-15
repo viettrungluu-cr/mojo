@@ -7,10 +7,12 @@
 
 #include <limits>
 
+#include "base/cancelable_callback.h"
 #include "base/time/time.h"
 #include "cc/animation/animation_events.h"
 #include "cc/output/begin_frame_args.h"
 #include "cc/scheduler/scheduler.h"
+#include "cc/trees/blocking_task_runner.h"
 #include "cc/trees/layer_tree_host_impl.h"
 #include "cc/trees/proxy.h"
 #include "cc/trees/proxy_timing_history.h"
@@ -102,7 +104,7 @@ class CC_EXPORT SingleThreadProxy : public Proxy,
   virtual void PostDelayedScrollbarFadeOnImplThread(
       const base::Closure& start_fade,
       base::TimeDelta delay) override {}
-  virtual void DidActivateSyncTree() override {}
+  virtual void DidActivateSyncTree() override;
   virtual void DidManageTiles() override;
   virtual void SetDebugState(const LayerTreeDebugState& debug_state) override {}
 
@@ -119,14 +121,17 @@ class CC_EXPORT SingleThreadProxy : public Proxy,
 
   void BeginMainFrame();
   void BeginMainFrameAbortedOnImplThread();
-  void DoCommit(const BeginFrameArgs& begin_frame_args);
+  void DoBeginMainFrame(const BeginFrameArgs& begin_frame_args);
+  void DoCommit();
   DrawResult DoComposite(base::TimeTicks frame_begin_time,
                          LayerTreeHostImpl::FrameData* frame);
   void DoSwap();
   void DidCommitAndDrawFrame();
+  void CommitComplete();
 
   bool ShouldComposite() const;
   void UpdateBackgroundAnimateTicking();
+  void ScheduleRequestNewOutputSurface();
 
   // Accessed on main thread only.
   LayerTreeHost* layer_tree_host_;
@@ -141,12 +146,21 @@ class CC_EXPORT SingleThreadProxy : public Proxy,
   scoped_ptr<Scheduler> scheduler_on_impl_thread_;
   ProxyTimingHistory timing_history_;
 
+  scoped_ptr<BlockingTaskRunner::CapturePostTasks> commit_blocking_task_runner_;
+  scoped_ptr<ResourceUpdateQueue> queue_for_commit_;
   bool next_frame_is_newly_committed_frame_;
 
   bool inside_draw_;
   bool defer_commits_;
   bool commit_was_deferred_;
   bool commit_requested_;
+
+  // True if a request to the LayerTreeHostClient to create an output surface
+  // is still outstanding.
+  bool output_surface_creation_requested_;
+
+  // This is the callback for the scheduled RequestNewOutputSurface.
+  base::CancelableClosure output_surface_creation_callback_;
 
   base::WeakPtrFactory<SingleThreadProxy> weak_factory_;
 

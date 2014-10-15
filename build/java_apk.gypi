@@ -358,7 +358,7 @@
           'action_name': 'pack_arm_relocations',
           'variables': {
             'conditions': [
-              ['use_chromium_linker == 1 and use_relocation_packer == 1', {
+              ['use_chromium_linker == 1 and use_relocation_packer == 1 and profiling != 1', {
                 'enable_packing': 1,
               }, {
                 'enable_packing': 0,
@@ -436,6 +436,7 @@
           },
           'dependencies': [
             '<(DEPTH)/build/android/setup.gyp:get_build_device_configurations',
+            '<(DEPTH)/build/android/pylib/device/commands/commands.gyp:chromium_commands',
           ],
           'actions': [
             {
@@ -551,6 +552,7 @@
     }],
     ['is_test_apk == 1', {
       'dependencies': [
+        '<(DEPTH)/build/android/pylib/device/commands/commands.gyp:chromium_commands',
         '<(DEPTH)/tools/android/android_tools.gyp:android_tools',
       ]
     }],

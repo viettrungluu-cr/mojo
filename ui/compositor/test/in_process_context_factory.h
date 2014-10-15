@@ -5,6 +5,8 @@
 #ifndef UI_COMPOSITOR_TEST_IN_PROCESS_CONTEXT_FACTORY_H_
 #define UI_COMPOSITOR_TEST_IN_PROCESS_CONTEXT_FACTORY_H_
 
+#include "cc/test/test_gpu_memory_buffer_manager.h"
+#include "cc/test/test_shared_bitmap_manager.h"
 #include "ui/compositor/compositor.h"
 
 namespace base {
@@ -27,25 +29,30 @@ class InProcessContextFactory : public ContextFactory {
   // ContextFactory implementation
   virtual scoped_ptr<cc::OutputSurface> CreateOutputSurface(
       Compositor* compositor,
-      bool software_fallback) OVERRIDE;
+      bool software_fallback) override;
 
   virtual scoped_refptr<Reflector> CreateReflector(
       Compositor* mirrored_compositor,
-      Layer* mirroring_layer) OVERRIDE;
-  virtual void RemoveReflector(scoped_refptr<Reflector> reflector) OVERRIDE;
+      Layer* mirroring_layer) override;
+  virtual void RemoveReflector(scoped_refptr<Reflector> reflector) override;
 
   virtual scoped_refptr<cc::ContextProvider> SharedMainThreadContextProvider()
-      OVERRIDE;
-  virtual void RemoveCompositor(Compositor* compositor) OVERRIDE;
-  virtual bool DoesCreateTestContexts() OVERRIDE;
-  virtual cc::SharedBitmapManager* GetSharedBitmapManager() OVERRIDE;
-  virtual base::MessageLoopProxy* GetCompositorMessageLoop() OVERRIDE;
+      override;
+  virtual void RemoveCompositor(Compositor* compositor) override;
+  virtual bool DoesCreateTestContexts() override;
+  virtual cc::SharedBitmapManager* GetSharedBitmapManager() override;
+  virtual cc::GpuMemoryBufferManager* GetGpuMemoryBufferManager() override;
+  virtual base::MessageLoopProxy* GetCompositorMessageLoop() override;
+  virtual scoped_ptr<cc::SurfaceIdAllocator> CreateSurfaceIdAllocator()
+      override;
 
  private:
   scoped_ptr<base::Thread> compositor_thread_;
   scoped_refptr<webkit::gpu::ContextProviderInProcess>
       shared_main_thread_contexts_;
-  scoped_ptr<cc::SharedBitmapManager> shared_bitmap_manager_;
+  cc::TestSharedBitmapManager shared_bitmap_manager_;
+  cc::TestGpuMemoryBufferManager gpu_memory_buffer_manager_;
+  uint32_t next_surface_id_namespace_;
 
   DISALLOW_COPY_AND_ASSIGN(InProcessContextFactory);
 };

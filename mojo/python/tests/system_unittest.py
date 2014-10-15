@@ -3,12 +3,11 @@
 # found in the LICENSE file.
 
 import random
-import sys
 import time
-import unittest
 
-# pylint: disable=F0401
-import mojo.embedder
+import mojo_unittest
+
+# pylint: disable=E0611
 from mojo import system
 
 DATA_SIZE = 1024
@@ -19,13 +18,7 @@ def _GetRandomBuffer(size):
   return bytearray(''.join(chr(random.randint(0, 255)) for i in xrange(size)))
 
 
-class BaseMojoTest(unittest.TestCase):
-
-  def setUp(self):
-    mojo.embedder.Init()
-
-
-class CoreTest(BaseMojoTest):
+class CoreTest(mojo_unittest.MojoTestCase):
 
   def testResults(self):
     self.assertEquals(system.RESULT_OK, 0)
@@ -64,14 +57,12 @@ class CoreTest(BaseMojoTest):
     self.assertGreaterEqual(system.MAP_BUFFER_FLAG_NONE, 0)
 
   def testGetTimeTicksNow(self):
-    pt1 = time.time()
     v1 = system.GetTimeTicksNow()
     time.sleep(1e-3)
     v2 = system.GetTimeTicksNow()
-    pt2 = time.time()
     self.assertGreater(v1, 0)
-    self.assertGreater(v2, v1 + 1000)
-    self.assertGreater(1e6 * (pt2 - pt1), v2 - v1)
+    self.assertGreater(v2, v1 + 1e2)
+    self.assertLess(v2, v1 + 1e5)
 
   def _testHandlesCreation(self, *args):
     for handle in args:
@@ -300,11 +291,3 @@ class CoreTest(BaseMojoTest):
     self.assertEquals(data, buf1.buffer)
     self.assertEquals(data, buf2.buffer)
     self.assertEquals(buf1.buffer, buf2.buffer)
-
-
-if __name__ == '__main__':
-  suite = unittest.TestLoader().loadTestsFromTestCase(CoreTest)
-  test_results = unittest.TextTestRunner(verbosity=0).run(suite)
-  if not test_results.wasSuccessful():
-    sys.exit(1)
-  sys.exit(0)

@@ -6,6 +6,7 @@
 
 #include "cc/output/output_surface.h"
 #include "cc/resources/shared_bitmap_manager.h"
+#include "cc/surfaces/surface_id_allocator.h"
 #include "mojo/public/interfaces/application/shell.mojom.h"
 #include "mojo/services/public/cpp/view_manager/view.h"
 #include "ui/compositor/reflector.h"
@@ -51,7 +52,16 @@ cc::SharedBitmapManager* SurfaceContextFactory::GetSharedBitmapManager() {
   return nullptr;
 }
 
+cc::GpuMemoryBufferManager* SurfaceContextFactory::GetGpuMemoryBufferManager() {
+  return nullptr;
+}
+
 base::MessageLoopProxy* SurfaceContextFactory::GetCompositorMessageLoop() {
+  return nullptr;
+}
+
+scoped_ptr<cc::SurfaceIdAllocator>
+SurfaceContextFactory::CreateSurfaceIdAllocator() {
   return nullptr;
 }
 

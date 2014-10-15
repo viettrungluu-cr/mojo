@@ -88,7 +88,6 @@ LayerTreeImpl::LayerTreeImpl(LayerTreeHostImpl* layer_tree_host_impl)
       max_page_scale_factor_(0),
       scrolling_layer_id_from_previous_tree_(0),
       contents_textures_purged_(false),
-      requires_high_res_to_draw_(false),
       viewport_size_invalid_(false),
       needs_update_draw_properties_(true),
       needs_full_tree_sync_(true),
@@ -266,6 +265,12 @@ LayerImpl* LayerTreeImpl::InnerViewportContainerLayer() const {
              : NULL;
 }
 
+LayerImpl* LayerTreeImpl::OuterViewportContainerLayer() const {
+  return outer_viewport_scroll_layer_
+             ? outer_viewport_scroll_layer_->scroll_clip_layer()
+             : NULL;
+}
+
 LayerImpl* LayerTreeImpl::CurrentlyScrollingLayer() const {
   DCHECK(IsActiveTree());
   return currently_scrolling_layer_;
@@ -367,7 +372,7 @@ gfx::SizeF LayerTreeImpl::ScrollableViewportSize() const {
   if (!InnerViewportContainerLayer())
     return gfx::SizeF();
 
-  return gfx::ScaleSize(InnerViewportContainerLayer()->bounds(),
+  return gfx::ScaleSize(InnerViewportContainerLayer()->BoundsForScrolling(),
                         1.0f / total_page_scale_factor());
 }
 
@@ -628,7 +633,7 @@ void LayerTreeImpl::DidBecomeActive() {
 
   // Always reset this flag on activation, as we would only have activated
   // if we were in a good state.
-  ResetRequiresHighResToDraw();
+  layer_tree_host_impl_->ResetRequiresHighResToDraw();
 
   if (root_layer())
     DidBecomeActiveRecursive(root_layer());
@@ -655,16 +660,8 @@ void LayerTreeImpl::ResetContentsTexturesPurged() {
   layer_tree_host_impl_->OnCanDrawStateChangedForTree();
 }
 
-void LayerTreeImpl::SetRequiresHighResToDraw() {
-  requires_high_res_to_draw_ = true;
-}
-
-void LayerTreeImpl::ResetRequiresHighResToDraw() {
-  requires_high_res_to_draw_ = false;
-}
-
 bool LayerTreeImpl::RequiresHighResToDraw() const {
-  return requires_high_res_to_draw_;
+  return layer_tree_host_impl_->RequiresHighResToDraw();
 }
 
 bool LayerTreeImpl::ViewportSizeInvalid() const {
@@ -934,6 +931,16 @@ void LayerTreeImpl::SetRootLayerScrollOffsetDelegate(
       outer_viewport_scroll_layer_->SetScrollOffsetDelegate(
           outer_viewport_scroll_delegate_proxy_.get());
     }
+  }
+}
+
+void LayerTreeImpl::OnRootLayerDelegatedScrollOffsetChanged() {
+  DCHECK(root_layer_scroll_offset_delegate_);
+  if (inner_viewport_scroll_layer_) {
+    inner_viewport_scroll_layer_->DidScroll();
+  }
+  if (outer_viewport_scroll_layer_) {
+    outer_viewport_scroll_layer_->DidScroll();
   }
 }
 
@@ -1464,6 +1471,10 @@ void LayerTreeImpl::UnregisterPictureLayerImpl(PictureLayerImpl* layer) {
 
 void LayerTreeImpl::InputScrollAnimationFinished() {
   layer_tree_host_impl_->ScrollEnd();
+}
+
+bool LayerTreeImpl::SmoothnessTakesPriority() const {
+  return layer_tree_host_impl_->GetTreePriority() == SMOOTHNESS_TAKES_PRIORITY;
 }
 
 BlockingTaskRunner* LayerTreeImpl::BlockingMainThreadTaskRunner() const {

@@ -22,6 +22,8 @@
 #include "cc/resources/zero_copy_raster_worker_pool.h"
 #include "cc/test/fake_output_surface.h"
 #include "cc/test/fake_output_surface_client.h"
+#include "cc/test/fake_picture_pile_impl.h"
+#include "cc/test/test_gpu_memory_buffer_manager.h"
 #include "cc/test/test_shared_bitmap_manager.h"
 #include "cc/test/test_web_graphics_context_3d.h"
 #include "testing/gtest/include/gtest/gtest.h"
@@ -50,14 +52,15 @@ class TestRasterTaskImpl : public RasterTask {
   TestRasterTaskImpl(const Resource* resource,
                      const Reply& reply,
                      ImageDecodeTask::Vector* dependencies)
-      : RasterTask(resource, dependencies), reply_(reply) {}
+      : RasterTask(resource, dependencies),
+        reply_(reply),
+        picture_pile_(FakePicturePileImpl::CreateEmptyPile(gfx::Size(1, 1),
+                                                           gfx::Size(1, 1))) {}
 
   // Overridden from Task:
   virtual void RunOnWorkerThread() override {
-    skia::RefPtr<SkCanvas> canvas = raster_buffer_->AcquireSkCanvas();
-    DCHECK(canvas);
-    canvas->drawColor(SK_ColorWHITE);
-    raster_buffer_->ReleaseSkCanvas(canvas);
+    raster_buffer_->Playback(
+        picture_pile_.get(), gfx::Rect(0, 0, 1, 1), 1.0, NULL);
   }
 
   // Overridden from RasterizerTask:
@@ -77,6 +80,7 @@ class TestRasterTaskImpl : public RasterTask {
  private:
   const Reply reply_;
   scoped_ptr<RasterBuffer> raster_buffer_;
+  scoped_refptr<PicturePileImpl> picture_pile_;
 
   DISALLOW_COPY_AND_ASSIGN(TestRasterTaskImpl);
 };
@@ -269,9 +273,14 @@ class RasterWorkerPoolTest
     CHECK(output_surface_->BindToClient(&output_surface_client_));
     TestWebGraphicsContext3D* context3d = context_provider_->TestContext3d();
     context3d->set_support_sync_query(true);
-    resource_provider_ =
-        ResourceProvider::Create(
-            output_surface_.get(), NULL, NULL, 0, false, 1, false).Pass();
+    resource_provider_ = ResourceProvider::Create(output_surface_.get(),
+                                                  NULL,
+                                                  &gpu_memory_buffer_manager_,
+                                                  NULL,
+                                                  0,
+                                                  false,
+                                                  1,
+                                                  false).Pass();
   }
 
   void CreateSoftwareOutputSurfaceAndResourceProvider() {
@@ -280,6 +289,7 @@ class RasterWorkerPoolTest
     CHECK(output_surface_->BindToClient(&output_surface_client_));
     resource_provider_ = ResourceProvider::Create(output_surface_.get(),
                                                   &shared_bitmap_manager_,
+                                                  NULL,
                                                   NULL,
                                                   0,
                                                   false,
@@ -309,6 +319,7 @@ class RasterWorkerPoolTest
   scoped_ptr<ResourceProvider> resource_provider_;
   scoped_ptr<ResourcePool> staging_resource_pool_;
   scoped_ptr<RasterWorkerPool> raster_worker_pool_;
+  TestGpuMemoryBufferManager gpu_memory_buffer_manager_;
   TestSharedBitmapManager shared_bitmap_manager_;
   base::CancelableClosure timeout_;
   int timeout_seconds_;
@@ -334,7 +345,6 @@ TEST_P(RasterWorkerPoolTest, FailedMapResource) {
     return;
 
   TestWebGraphicsContext3D* context3d = context_provider_->TestContext3d();
-  context3d->set_times_map_image_chromium_succeeds(0);
   context3d->set_times_map_buffer_chromium_succeeds(0);
   AppendTask(0u);
   ScheduleTasks();

@@ -40,14 +40,12 @@ class ToolsQuicClientSessionTest
     : public ::testing::TestWithParam<QuicVersion> {
  protected:
   ToolsQuicClientSessionTest()
-      : connection_(new PacketSavingConnection(false,
-                                               SupportedVersions(GetParam()))) {
-    crypto_config_.SetDefaults();
+      : connection_(
+            new PacketSavingConnection(false, SupportedVersions(GetParam()))) {
     session_.reset(new QuicClientSession(DefaultQuicConfig(), connection_));
     session_->InitializeSession(
         QuicServerId(kServerHostname, kPort, false, PRIVACY_MODE_DISABLED),
         &crypto_config_);
-    session_->config()->SetDefaults();
   }
 
   void CompleteCryptoHandshake() {
@@ -74,8 +72,7 @@ TEST_P(ToolsQuicClientSessionTest, MaxNumStreams) {
   // Initialize crypto before the client session will create a stream.
   CompleteCryptoHandshake();
 
-  QuicSpdyClientStream* stream =
-      session_->CreateOutgoingDataStream();
+  QuicSpdyClientStream* stream = session_->CreateOutgoingDataStream();
   ASSERT_TRUE(stream);
   EXPECT_FALSE(session_->CreateOutgoingDataStream());
 

@@ -12,6 +12,7 @@
 #include "net/base/network_change_notifier.h"
 #include "net/quic/quic_connection.h"
 #include "net/quic/quic_protocol.h"
+#include "net/quic/quic_session.h"
 
 namespace net {
 namespace test {
@@ -26,51 +27,51 @@ class CertVerifyResult;
 class NET_EXPORT_PRIVATE QuicConnectionLogger
     : public QuicConnectionDebugVisitor {
  public:
-  explicit QuicConnectionLogger(const BoundNetLog& net_log);
+  QuicConnectionLogger(QuicSession* session, const BoundNetLog& net_log);
 
   virtual ~QuicConnectionLogger();
 
   // QuicPacketGenerator::DebugDelegateInterface
-  virtual void OnFrameAddedToPacket(const QuicFrame& frame) OVERRIDE;
+  virtual void OnFrameAddedToPacket(const QuicFrame& frame) override;
 
   // QuicConnectionDebugVisitorInterface
-  virtual void OnPacketSent(QuicPacketSequenceNumber sequence_number,
+  virtual void OnPacketSent(const SerializedPacket& serialized_packet,
                             QuicPacketSequenceNumber original_sequence_number,
                             EncryptionLevel level,
                             TransmissionType transmission_type,
                             const QuicEncryptedPacket& packet,
-                            WriteResult result) OVERRIDE;
+                            QuicTime sent_time) override;
   virtual void OnPacketReceived(const IPEndPoint& self_address,
                                 const IPEndPoint& peer_address,
-                                const QuicEncryptedPacket& packet) OVERRIDE;
+                                const QuicEncryptedPacket& packet) override;
   virtual void OnIncorrectConnectionId(
-      QuicConnectionId connection_id) OVERRIDE;
-  virtual void OnUndecryptablePacket() OVERRIDE;
+      QuicConnectionId connection_id) override;
+  virtual void OnUndecryptablePacket() override;
   virtual void OnDuplicatePacket(QuicPacketSequenceNumber sequence_number)
-      OVERRIDE;
-  virtual void OnProtocolVersionMismatch(QuicVersion version) OVERRIDE;
-  virtual void OnPacketHeader(const QuicPacketHeader& header) OVERRIDE;
-  virtual void OnStreamFrame(const QuicStreamFrame& frame) OVERRIDE;
-  virtual void OnAckFrame(const QuicAckFrame& frame) OVERRIDE;
+      override;
+  virtual void OnProtocolVersionMismatch(QuicVersion version) override;
+  virtual void OnPacketHeader(const QuicPacketHeader& header) override;
+  virtual void OnStreamFrame(const QuicStreamFrame& frame) override;
+  virtual void OnAckFrame(const QuicAckFrame& frame) override;
   virtual void OnCongestionFeedbackFrame(
-      const QuicCongestionFeedbackFrame& frame) OVERRIDE;
-  virtual void OnStopWaitingFrame(const QuicStopWaitingFrame& frame) OVERRIDE;
-  virtual void OnRstStreamFrame(const QuicRstStreamFrame& frame) OVERRIDE;
+      const QuicCongestionFeedbackFrame& frame) override;
+  virtual void OnStopWaitingFrame(const QuicStopWaitingFrame& frame) override;
+  virtual void OnRstStreamFrame(const QuicRstStreamFrame& frame) override;
   virtual void OnConnectionCloseFrame(
-      const QuicConnectionCloseFrame& frame) OVERRIDE;
-  virtual void OnWindowUpdateFrame(const QuicWindowUpdateFrame& frame) OVERRIDE;
-  virtual void OnBlockedFrame(const QuicBlockedFrame& frame) OVERRIDE;
-  virtual void OnGoAwayFrame(const QuicGoAwayFrame& frame) OVERRIDE;
-  virtual void OnPingFrame(const QuicPingFrame& frame) OVERRIDE;
+      const QuicConnectionCloseFrame& frame) override;
+  virtual void OnWindowUpdateFrame(const QuicWindowUpdateFrame& frame) override;
+  virtual void OnBlockedFrame(const QuicBlockedFrame& frame) override;
+  virtual void OnGoAwayFrame(const QuicGoAwayFrame& frame) override;
+  virtual void OnPingFrame(const QuicPingFrame& frame) override;
   virtual void OnPublicResetPacket(
-      const QuicPublicResetPacket& packet) OVERRIDE;
+      const QuicPublicResetPacket& packet) override;
   virtual void OnVersionNegotiationPacket(
-      const QuicVersionNegotiationPacket& packet) OVERRIDE;
+      const QuicVersionNegotiationPacket& packet) override;
   virtual void OnRevivedPacket(const QuicPacketHeader& revived_header,
-                               base::StringPiece payload) OVERRIDE;
-  virtual void OnConnectionClosed(QuicErrorCode error, bool from_peer) OVERRIDE;
+                               base::StringPiece payload) override;
+  virtual void OnConnectionClosed(QuicErrorCode error, bool from_peer) override;
   virtual void OnSuccessfulVersionNegotiation(
-      const QuicVersion& version) OVERRIDE;
+      const QuicVersion& version) override;
 
   void OnCryptoHandshakeMessageReceived(
       const CryptoHandshakeMessage& message);
@@ -119,6 +120,7 @@ class NET_EXPORT_PRIVATE QuicConnectionLogger
   void RecordLossHistograms() const;
 
   BoundNetLog net_log_;
+  QuicSession* session_;  // Unowned.
   // The last packet sequence number received.
   QuicPacketSequenceNumber last_received_packet_sequence_number_;
   // The size of the most recently received packet.

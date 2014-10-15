@@ -11,6 +11,21 @@
 NSString* const NSWindowWillEnterFullScreenNotification =
     @"NSWindowWillEnterFullScreenNotification";
 
+NSString* const NSWindowWillExitFullScreenNotification =
+    @"NSWindowWillExitFullScreenNotification";
+
+NSString* const NSWindowDidEnterFullScreenNotification =
+    @"NSWindowDidEnterFullScreenNotification";
+
+NSString* const NSWindowDidExitFullScreenNotification =
+    @"NSWindowDidExitFullScreenNotification";
+
+NSString* const NSWindowDidFailToEnterFullScreenNotification =
+    @"NSWindowDidFailToEnterFullScreenNotification";
+
+NSString* const NSWindowDidFailToExitFullScreenNotification =
+    @"NSWindowDidFailToExitFullScreenNotification";
+
 #endif  // MAC_OS_X_VERSION_10_7
 
 // Replicate specific 10.10 SDK declarations for building with prior SDKs.

@@ -1181,6 +1181,10 @@ class GLES2DecoderImpl : public GLES2Decoder,
   // attached. Generates GL error if not.
   bool CheckBoundReadFramebufferColorAttachment(const char* func_name);
 
+  // Check that the currently bound read framebuffer's color image
+  // isn't the target texture of the glCopyTex{Sub}Image2D.
+  bool FormsTextureCopyingFeedbackLoop(TextureRef* texture, GLint level);
+
   // Check if a framebuffer meets our requirements.
   bool CheckFramebufferValid(
       Framebuffer* framebuffer,
@@ -2746,6 +2750,7 @@ Capabilities GLES2DecoderImpl::GetCapabilities() {
   caps.post_sub_buffer = supports_post_sub_buffer_;
   caps.image = true;
 
+  caps.blend_minmax = feature_info_->feature_flags().ext_blend_minmax;
   return caps;
 }
 
@@ -2792,6 +2797,8 @@ bool GLES2DecoderImpl::InitializeShaderTranslator() {
     if (!draw_buffers_explicitly_enabled_)
       resources.MaxDrawBuffers = 1;
     resources.EXT_shader_texture_lod = shader_texture_lod_explicitly_enabled_;
+    resources.NV_draw_buffers =
+        draw_buffers_explicitly_enabled_ && features().nv_draw_buffers;
   } else {
     resources.OES_standard_derivatives =
         features().oes_standard_derivatives ? 1 : 0;
@@ -2805,6 +2812,8 @@ bool GLES2DecoderImpl::InitializeShaderTranslator() {
         features().ext_frag_depth ? 1 : 0;
     resources.EXT_shader_texture_lod =
         features().ext_shader_texture_lod ? 1 : 0;
+    resources.NV_draw_buffers =
+        features().nv_draw_buffers ? 1 : 0;
   }
 
   ShShaderSpec shader_spec = force_webgl_glsl_validation_ ? SH_WEBGL_SPEC
@@ -3225,6 +3234,20 @@ bool GLES2DecoderImpl::CheckBoundReadFramebufferColorAttachment(
     return false;
   }
   return true;
+}
+
+bool GLES2DecoderImpl::FormsTextureCopyingFeedbackLoop(
+    TextureRef* texture, GLint level) {
+  Framebuffer* framebuffer = features().chromium_framebuffer_multisample ?
+      framebuffer_state_.bound_read_framebuffer.get() :
+      framebuffer_state_.bound_draw_framebuffer.get();
+  if (!framebuffer)
+    return false;
+  const Framebuffer::Attachment* attachment = framebuffer->GetAttachment(
+      GL_COLOR_ATTACHMENT0);
+  if (!attachment)
+    return false;
+  return attachment->FormsFeedbackLoop(texture, level);
 }
 
 gfx::Size GLES2DecoderImpl::GetBoundReadFrameBufferSize() {
@@ -4859,7 +4882,13 @@ void GLES2DecoderImpl::DoBindAttribLocation(
   if (!program) {
     return;
   }
+  // At this point, the program's shaders may not be translated yet,
+  // therefore, we may not find the hashed attribute name.
+  // glBindAttribLocation call with original name is useless.
+  // So instead, we should simply cache the binding, and then call
+  // Program::ExecuteBindAttribLocationCalls() right before link.
   program->SetAttribLocationBinding(name, static_cast<GLint>(index));
+  // TODO(zmo): Get rid of the following glBindAttribLocation call.
   glBindAttribLocation(program->service_id(), index, name);
 }
 
@@ -8590,6 +8619,13 @@ void GLES2DecoderImpl::DoCopyTexImage2D(
     return;
   }
 
+  if (FormsTextureCopyingFeedbackLoop(texture_ref, level)) {
+    LOCAL_SET_GL_ERROR(
+        GL_INVALID_OPERATION,
+        "glCopyTexImage2D", "source and destination textures are the same");
+    return;
+  }
+
   if (!CheckBoundFramebuffersValid("glCopyTexImage2D")) {
     return;
   }
@@ -8705,6 +8741,13 @@ void GLES2DecoderImpl::DoCopyTexSubImage2D(
   }
 
   if (!CheckBoundReadFramebufferColorAttachment("glCopyTexSubImage2D")) {
+    return;
+  }
+
+  if (FormsTextureCopyingFeedbackLoop(texture_ref, level)) {
+    LOCAL_SET_GL_ERROR(
+        GL_INVALID_OPERATION,
+        "glCopyTexSubImage2D", "source and destination textures are the same");
     return;
   }
 
@@ -10084,6 +10127,8 @@ static GLenum ExtractFormatFromStorageFormat(GLenum internalformat) {
       return GL_LUMINANCE_ALPHA;
     case GL_BGRA8_EXT:
       return GL_BGRA_EXT;
+    case GL_SRGB8_ALPHA8_EXT:
+      return GL_SRGB_ALPHA_EXT;
     default:
       return GL_NONE;
   }

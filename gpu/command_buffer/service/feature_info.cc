@@ -132,6 +132,7 @@ FeatureInfo::FeatureFlags::FeatureFlags()
       enable_shader_name_hashing(false),
       enable_samplers(false),
       ext_draw_buffers(false),
+      nv_draw_buffers(false),
       ext_frag_depth(false),
       ext_shader_texture_lod(false),
       use_async_readpixels(false),
@@ -142,7 +143,8 @@ FeatureInfo::FeatureFlags::FeatureFlags()
       is_swiftshader(false),
       angle_texture_usage(false),
       ext_texture_storage(false),
-      chromium_path_rendering(false) {
+      chromium_path_rendering(false),
+      ext_blend_minmax(false) {
 }
 
 FeatureInfo::Workarounds::Workarounds() :
@@ -389,6 +391,20 @@ void FeatureInfo::InitializeFeatures() {
       gfx::HasDesktopGLFeatures()) {
     AddExtensionString("GL_OES_element_index_uint");
     validators_.index_type.AddValue(GL_UNSIGNED_INT);
+  }
+
+  if (is_es3 || extensions.Contains("GL_EXT_sRGB") ||
+      gfx::HasDesktopGLFeatures()) {
+    AddExtensionString("GL_EXT_sRGB");
+    texture_format_validators_[GL_SRGB_EXT].AddValue(GL_UNSIGNED_BYTE);
+    texture_format_validators_[GL_SRGB_ALPHA_EXT].AddValue(GL_UNSIGNED_BYTE);
+    validators_.texture_internal_format.AddValue(GL_SRGB_EXT);
+    validators_.texture_internal_format.AddValue(GL_SRGB_ALPHA_EXT);
+    validators_.texture_format.AddValue(GL_SRGB_EXT);
+    validators_.texture_format.AddValue(GL_SRGB_ALPHA_EXT);
+    validators_.render_buffer_format.AddValue(GL_SRGB8_ALPHA8_EXT);
+    validators_.frame_buffer_parameter.AddValue(
+        GL_FRAMEBUFFER_ATTACHMENT_COLOR_ENCODING_EXT);
   }
 
   bool enable_texture_format_bgra8888 = false;
@@ -760,11 +776,24 @@ void FeatureInfo::InitializeFeatures() {
     validators_.vertex_attribute.AddValue(GL_VERTEX_ATTRIB_ARRAY_DIVISOR_ANGLE);
   }
 
+  bool vendor_agnostic_draw_buffers =
+      extensions.Contains("GL_ARB_draw_buffers") ||
+      extensions.Contains("GL_EXT_draw_buffers");
   if (!workarounds_.disable_ext_draw_buffers &&
-      (extensions.Contains("GL_ARB_draw_buffers") ||
-       extensions.Contains("GL_EXT_draw_buffers"))) {
+      (vendor_agnostic_draw_buffers ||
+       (extensions.Contains("GL_NV_draw_buffers") && is_es3))) {
     AddExtensionString("GL_EXT_draw_buffers");
     feature_flags_.ext_draw_buffers = true;
+
+    // This flag is set to enable emulation of EXT_draw_buffers when we're
+    // running on GLES 3.0+, NV_draw_buffers extension is supported and
+    // glDrawBuffers from GLES 3.0 core has been bound. It toggles using the
+    // NV_draw_buffers extension directive instead of EXT_draw_buffers extension
+    // directive in ESSL 100 shaders translated by ANGLE, enabling them to write
+    // into multiple gl_FragData values, which is not by default possible in
+    // ESSL 100 with core GLES 3.0. For more information, see the
+    // NV_draw_buffers specification.
+    feature_flags_.nv_draw_buffers = !vendor_agnostic_draw_buffers;
 
     GLint max_color_attachments = 0;
     glGetIntegerv(GL_MAX_COLOR_ATTACHMENTS_EXT, &max_color_attachments);
@@ -789,6 +818,7 @@ void FeatureInfo::InitializeFeatures() {
 
   if (is_es3 || extensions.Contains("GL_EXT_blend_minmax") ||
       gfx::HasDesktopGLFeatures()) {
+    feature_flags_.ext_blend_minmax = true;
     AddExtensionString("GL_EXT_blend_minmax");
     validators_.equation.AddValue(GL_MIN_EXT);
     validators_.equation.AddValue(GL_MAX_EXT);

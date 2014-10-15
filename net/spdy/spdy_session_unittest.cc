@@ -121,7 +121,7 @@ class SpdySessionTest : public PlatformTest,
         HttpNetworkSession::NORMAL_SOCKET_POOL, old_max_group_sockets_);
   }
 
-  virtual void SetUp() OVERRIDE {
+  virtual void SetUp() override {
     g_time_delta = base::TimeDelta();
   }
 
@@ -885,7 +885,7 @@ TEST_P(SpdySessionTest, ClientPing) {
   session->CheckPingStatus(before_ping_time);
 
   EXPECT_EQ(0, session->pings_in_flight());
-  EXPECT_GE(session->next_ping_id(), static_cast<uint32>(1));
+  EXPECT_GE(session->next_ping_id(), 1U);
   EXPECT_FALSE(session->check_ping_status_pending());
   EXPECT_GE(session->last_activity_time(), before_ping_time);
 
@@ -1302,7 +1302,7 @@ TEST_P(SpdySessionTest, FailedPing) {
   // Send a PING frame.
   session->WritePingFrame(1, false);
   EXPECT_LT(0, session->pings_in_flight());
-  EXPECT_GE(session->next_ping_id(), static_cast<uint32>(1));
+  EXPECT_GE(session->next_ping_id(), 1U);
   EXPECT_TRUE(session->check_ping_status_pending());
 
   // Assert session is not closed.
@@ -2305,7 +2305,7 @@ class SessionClosingDelegate : public test::StreamDelegateDoNothing {
 
   virtual ~SessionClosingDelegate() {}
 
-  virtual void OnClose(int status) OVERRIDE {
+  virtual void OnClose(int status) override {
     session_to_close_->CloseSessionOnError(ERR_SPDY_PROTOCOL_ERROR, "Error");
   }
 
@@ -3381,7 +3381,7 @@ class StreamCreatingDelegate : public test::StreamDelegateDoNothing {
 
   virtual ~StreamCreatingDelegate() {}
 
-  virtual void OnClose(int status) OVERRIDE {
+  virtual void OnClose(int status) override {
     GURL url(kDefaultURL);
     ignore_result(
         CreateStreamSynchronously(SPDY_REQUEST_RESPONSE_STREAM,
@@ -3661,7 +3661,7 @@ class DropReceivedDataDelegate : public test::StreamDelegateSendImmediate {
   virtual ~DropReceivedDataDelegate() {}
 
   // Drop any received data.
-  virtual void OnDataReceived(scoped_ptr<SpdyBuffer> buffer) OVERRIDE {}
+  virtual void OnDataReceived(scoped_ptr<SpdyBuffer> buffer) override {}
 };
 
 // Send data back and forth but use a delegate that drops its received
@@ -4249,7 +4249,7 @@ class StreamClosingDelegate : public test::StreamDelegateWithBody {
     stream_to_close_ = stream_to_close;
   }
 
-  virtual void OnDataSent() OVERRIDE {
+  virtual void OnDataSent() override {
     test::StreamDelegateWithBody::OnDataSent();
     if (stream_to_close_.get()) {
       stream_to_close_->Close();

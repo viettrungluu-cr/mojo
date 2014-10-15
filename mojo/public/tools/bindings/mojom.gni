@@ -59,7 +59,9 @@ template("mojom") {
     "$generator_root/generators/java_templates/struct_definition.tmpl",
     "$generator_root/generators/js_templates/enum_definition.tmpl",
     "$generator_root/generators/js_templates/interface_definition.tmpl",
-    "$generator_root/generators/js_templates/module.js.tmpl",
+    "$generator_root/generators/js_templates/module.amd.tmpl",
+    "$generator_root/generators/js_templates/module.html.tmpl",
+    "$generator_root/generators/js_templates/module_definition.tmpl",
     "$generator_root/generators/js_templates/struct_definition.tmpl",
     "$generator_root/generators/python_templates/module_macros.tmpl",
     "$generator_root/generators/python_templates/module.py.tmpl",
@@ -120,7 +122,7 @@ template("mojom") {
       "--use_chromium_bundled_pylibs",
       "-d", rebase_path("//", root_build_dir),
       "-I", rebase_path("//", root_build_dir),
-      "-o", "{{source_gen_dir}}",
+      "-o", rebase_path(root_gen_dir),
     ]
   }
 

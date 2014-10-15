@@ -11,8 +11,10 @@
 #include <ostream>
 
 #include "base/containers/hash_tables.h"
+#include "base/gtest_prod_util.h"
 #include "base/macros.h"
 #include "build/build_config.h"
+#include "mojo/edk/system/system_impl_export.h"
 
 namespace mojo {
 namespace system {
@@ -20,21 +22,28 @@ namespace system {
 // ChannelEndpointId -----------------------------------------------------------
 
 class LocalChannelEndpointIdGenerator;
+FORWARD_DECLARE_TEST(LocalChannelEndpointIdGeneratorTest, WrapAround);
+FORWARD_DECLARE_TEST(RemoteChannelEndpointIdGeneratorTest, WrapAround);
 
 // Represents an ID for an endpoint (i.e., one side of a message pipe) on a
 // |Channel|. This class must be POD.
-class ChannelEndpointId {
+//
+// Note: The terminology "remote" for a |ChannelEndpointId| means a destination
+// ID that was actually allocated by the sender, or similarly a source ID that
+// was allocated by the receiver.
+//
+// From the standpoint of the |Channel| with such a remote ID in its endpoint
+// table, such an ID is a "remotely-allocated local ID". From the standpoint of
+// the |Channel| allocating such a remote ID (for its peer |Channel|), it's a
+// "locally-allocated remote ID".
+class MOJO_SYSTEM_IMPL_EXPORT ChannelEndpointId {
  public:
   ChannelEndpointId() : value_(0) {}
   ChannelEndpointId(const ChannelEndpointId& other) : value_(other.value_) {}
 
   // Returns the local ID to use for the first message pipe endpoint on a
   // channel.
-  static ChannelEndpointId GetBootstrap() {
-    ChannelEndpointId rv;
-    rv.value_ = 1;
-    return rv;
-  }
+  static ChannelEndpointId GetBootstrap() { return ChannelEndpointId(1); }
 
   bool operator==(const ChannelEndpointId& other) const {
     return value_ == other.value_;
@@ -48,10 +57,19 @@ class ChannelEndpointId {
   }
 
   bool is_valid() const { return !!value_; }
+  bool is_remote() const { return !!(value_ & kRemoteFlag); }
   uint32_t value() const { return value_; }
+
+  // Flag set in |value()| if this is a remote ID.
+  static const uint32_t kRemoteFlag = 0x80000000u;
 
  private:
   friend class LocalChannelEndpointIdGenerator;
+  FRIEND_TEST_ALL_PREFIXES(LocalChannelEndpointIdGeneratorTest, WrapAround);
+  friend class RemoteChannelEndpointIdGenerator;
+  FRIEND_TEST_ALL_PREFIXES(RemoteChannelEndpointIdGeneratorTest, WrapAround);
+
+  explicit ChannelEndpointId(uint32_t value) : value_(value) {}
 
   uint32_t value_;
 
@@ -71,27 +89,42 @@ inline std::ostream& operator<<(std::ostream& out,
 
 // LocalChannelEndpointIdGenerator ---------------------------------------------
 
-// A simple generator for "new" local |ChannelEndpointId|s. It does not track
+// A generator for "new" local |ChannelEndpointId|s. It does not track
 // used/existing IDs; that must be done separately. (This class is not
 // thread-safe.)
-class LocalChannelEndpointIdGenerator {
+class MOJO_SYSTEM_IMPL_EXPORT LocalChannelEndpointIdGenerator {
  public:
   LocalChannelEndpointIdGenerator()
-      : next_channel_endpoint_id_(ChannelEndpointId::GetBootstrap()) {}
+      : next_(ChannelEndpointId::GetBootstrap()) {}
 
-  ChannelEndpointId GetNext() {
-    ChannelEndpointId rv = next_channel_endpoint_id_;
-    next_channel_endpoint_id_.value_++;
-    // Skip over the invalid value, in case we wrap.
-    if (!next_channel_endpoint_id_.is_valid())
-      next_channel_endpoint_id_.value_++;
-    return rv;
-  }
+  ChannelEndpointId GetNext();
 
  private:
-  ChannelEndpointId next_channel_endpoint_id_;
+  FRIEND_TEST_ALL_PREFIXES(LocalChannelEndpointIdGeneratorTest, WrapAround);
+
+  ChannelEndpointId next_;
 
   DISALLOW_COPY_AND_ASSIGN(LocalChannelEndpointIdGenerator);
+};
+
+// RemoteChannelEndpointIdGenerator --------------------------------------------
+
+// A generator for "new" remote |ChannelEndpointId|s, for |Channel|s to
+// locally allocate remote IDs. (See the comment above |ChannelEndpointId| for
+// an explanatory note.) It does not track used/existing IDs; that must be done
+// separately. (This class is not thread-safe.)
+class MOJO_SYSTEM_IMPL_EXPORT RemoteChannelEndpointIdGenerator {
+ public:
+  RemoteChannelEndpointIdGenerator() : next_(ChannelEndpointId::kRemoteFlag) {}
+
+  ChannelEndpointId GetNext();
+
+ private:
+  FRIEND_TEST_ALL_PREFIXES(RemoteChannelEndpointIdGeneratorTest, WrapAround);
+
+  ChannelEndpointId next_;
+
+  DISALLOW_COPY_AND_ASSIGN(RemoteChannelEndpointIdGenerator);
 };
 
 }  // namespace system

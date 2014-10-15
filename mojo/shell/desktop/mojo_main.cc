@@ -2,6 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
+#include <algorithm>
+#include <iostream>
+
 #include "base/at_exit.h"
 #include "base/bind.h"
 #include "base/command_line.h"
@@ -12,6 +15,7 @@
 #include "mojo/shell/child_process.h"
 #include "mojo/shell/context.h"
 #include "mojo/shell/init.h"
+#include "mojo/shell/mojo_url_resolver.h"
 #include "mojo/shell/switches.h"
 
 #if defined(COMPONENT_BUILD)
@@ -35,14 +39,21 @@ void SplitString(const std::string& str, std::vector<std::string>* argv) {
 }
 #endif
 
+bool is_empty(const std::string& s) {
+  return s.empty();
+}
+
 // The value of app_url_and_args is "<mojo_app_url> [<args>...]", where args
 // is a list of "configuration" arguments separated by spaces. If one or more
 // arguments are specified they will be available when the Mojo application
 // is initialized. See ApplicationImpl::args().
 GURL GetAppURLAndSetArgs(const base::CommandLine::StringType& app_url_and_args,
                          mojo::shell::Context* context) {
+  // SplitString() returns empty strings for extra delimeter characters (' ').
   std::vector<std::string> argv;
   SplitString(app_url_and_args, &argv);
+  argv.erase(std::remove_if(argv.begin(), argv.end(), is_empty), argv.end());
+
   if (argv.empty())
     return GURL::EmptyGURL();
   GURL app_url(argv[0]);
@@ -57,11 +68,57 @@ void RunApps(mojo::shell::Context* context) {
     context->Run(GetAppURLAndSetArgs(arg, context));
 }
 
+void Usage() {
+  std::cerr << "Launch Mojo applications.\n";
+  std::cerr
+      << "Usage: mojo_shell"
+      << " [--" << switches::kArgsFor << "=<mojo-app>]"
+      << " [--" << switches::kContentHandlers << "=<handlers>]"
+      << " [--" << switches::kEnableExternalApplications << "]"
+      << " [--" << switches::kDisableCache << "]"
+      << " [--" << switches::kEnableMultiprocess << "]"
+      << " [--" << switches::kOrigin << "=<url-lib-path>]"
+      << " [--" << switches::kURLMappings << "=from1=to1,from2=to2]"
+      << " <mojo-app> ...\n\n"
+      << "A <mojo-app> is a Mojo URL or a Mojo URL and arguments within "
+      << "quotes.\n"
+      << "Example: mojo_shell \"mojo://mojo_js_standalone test.js\".\n"
+      << "<url-lib-path> is searched for shared libraries named by mojo URLs.\n"
+      << "The value of <handlers> is a comma separated list like:\n"
+      << "text/html,mojo://mojo_html_viewer,"
+      << "application/javascript,mojo://mojo_js_content_handler\n";
+}
+
+bool ConfigureURLMappings(const std::string& mappings,
+                          mojo::shell::MojoURLResolver* resolver) {
+  base::StringPairs pairs;
+  if (!base::SplitStringIntoKeyValuePairs(mappings, '=', ',', &pairs))
+    return false;
+  using StringPair = std::pair<std::string, std::string>;
+  for (const StringPair& pair : pairs) {
+    const GURL from(pair.first);
+    const GURL to(pair.second);
+    if (!from.is_valid() || !to.is_valid())
+      return false;
+    resolver->AddCustomMapping(from, to);
+  }
+  return true;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
   base::AtExitManager at_exit;
   base::CommandLine::Init(argc, argv);
+
+  const base::CommandLine& command_line =
+    *base::CommandLine::ForCurrentProcess();
+  if (command_line.HasSwitch(switches::kHelp) ||
+      command_line.GetArgs().empty()){
+    Usage();
+    return 0;
+  }
+
 #if defined(OS_LINUX)
   // We use gfx::RenderText from multiple threads concurrently and the pango
   // backend (currently the default on linux) is not close to threadsafe. Force
@@ -87,11 +144,17 @@ int main(int argc, char** argv) {
       base::MessageLoop message_loop;
       shell_context.Init();
 
-      const base::CommandLine& command_line =
-          *base::CommandLine::ForCurrentProcess();
       if (command_line.HasSwitch(switches::kOrigin)) {
         shell_context.mojo_url_resolver()->SetBaseURL(
             GURL(command_line.GetSwitchValueASCII(switches::kOrigin)));
+      }
+
+      if (command_line.HasSwitch(switches::kURLMappings) &&
+          !ConfigureURLMappings(
+              command_line.GetSwitchValueASCII(switches::kURLMappings),
+              shell_context.mojo_url_resolver())) {
+        Usage();
+        return 0;
       }
 
       for (const auto& kv : command_line.GetSwitches()) {

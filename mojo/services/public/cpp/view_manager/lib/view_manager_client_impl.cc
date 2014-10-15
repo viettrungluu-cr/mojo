@@ -5,7 +5,6 @@
 #include "mojo/services/public/cpp/view_manager/lib/view_manager_client_impl.h"
 
 #include "base/bind.h"
-#include "base/command_line.h"
 #include "base/message_loop/message_loop.h"
 #include "base/stl_util.h"
 #include "mojo/public/cpp/application/application_impl.h"
@@ -17,7 +16,6 @@
 #include "mojo/services/public/cpp/view_manager/util.h"
 #include "mojo/services/public/cpp/view_manager/view_manager_delegate.h"
 #include "mojo/services/public/cpp/view_manager/view_observer.h"
-#include "mojo/services/public/cpp/view_manager/window_manager_delegate.h"
 
 namespace mojo {
 
@@ -93,21 +91,9 @@ class RootObserver : public ViewObserver {
 
 ViewManagerClientImpl::ViewManagerClientImpl(ViewManagerDelegate* delegate,
                                              Shell* shell)
-    : connected_(false),
-      connection_id_(0),
-      next_id_(1),
-      delegate_(delegate),
-      window_manager_delegate_(NULL) {
-  // TODO(beng): Come up with a better way of establishing a configuration for
-  //             what the active window manager is.
-  std::string window_manager_url = "mojo:mojo_window_manager";
-  if (base::CommandLine::ForCurrentProcess()->HasSwitch("window-manager")) {
-    window_manager_url =
-        base::CommandLine::ForCurrentProcess()->GetSwitchValueASCII(
-            "window-manager");
-  }
+    : connected_(false), connection_id_(0), next_id_(1), delegate_(delegate) {
   InterfacePtr<ServiceProvider> sp;
-  shell->ConnectToApplication(window_manager_url, GetProxy(&sp));
+  shell->ConnectToApplication("mojo:mojo_window_manager", GetProxy(&sp));
   ConnectToService(sp.get(), &window_manager_);
   window_manager_.set_client(this);
 }
@@ -219,18 +205,6 @@ void ViewManagerClientImpl::RemoveView(Id view_id) {
 
 ////////////////////////////////////////////////////////////////////////////////
 // ViewManagerClientImpl, ViewManager implementation:
-
-void ViewManagerClientImpl::SetWindowManagerDelegate(
-    WindowManagerDelegate* window_manager_delegate) {
-  CHECK(NULL != GetViewById(1));
-  CHECK(!window_manager_delegate_);
-  window_manager_delegate_ = window_manager_delegate;
-}
-
-void ViewManagerClientImpl::DispatchEvent(View* target, EventPtr event) {
-  CHECK(window_manager_delegate_);
-  service_->DispatchOnViewInputEvent(target->id(), event.Pass());
-}
 
 const std::string& ViewManagerClientImpl::GetEmbedderURL() const {
   return creator_url_;
@@ -353,20 +327,8 @@ void ViewManagerClientImpl::OnViewInputEvent(
   ack_callback.Run();
 }
 
-void ViewManagerClientImpl::Embed(
-    const String& url,
-    InterfaceRequest<ServiceProvider> service_provider) {
-  if (window_manager_delegate_)
-    window_manager_delegate_->Embed(url, service_provider.Pass());
-}
-
-void ViewManagerClientImpl::DispatchOnViewInputEvent(EventPtr event) {
-  if (window_manager_delegate_)
-    window_manager_delegate_->DispatchEvent(event.Pass());
-}
-
 ////////////////////////////////////////////////////////////////////////////////
-// ViewManagerClientImpl, WindowManagerClient implementation:
+// ViewManagerClientImpl, WindowManagerClient2 implementation:
 
 void ViewManagerClientImpl::OnWindowManagerReady() {}
 

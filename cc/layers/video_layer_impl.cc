@@ -41,7 +41,9 @@ scoped_ptr<VideoLayerImpl> VideoLayerImpl::Create(
 VideoLayerImpl::VideoLayerImpl(LayerTreeImpl* tree_impl,
                                int id,
                                media::VideoRotation video_rotation)
-    : LayerImpl(tree_impl, id), frame_(NULL), video_rotation_(video_rotation) {
+    : LayerImpl(tree_impl, id),
+      frame_(nullptr),
+      video_rotation_(video_rotation) {
 }
 
 VideoLayerImpl::~VideoLayerImpl() {
@@ -351,7 +353,7 @@ void VideoLayerImpl::DidDraw(ResourceProvider* resource_provider) {
   }
 
   provider_client_impl_->PutCurrentFrame(frame_);
-  frame_ = NULL;
+  frame_ = nullptr;
 
   provider_client_impl_->ReleaseLock();
 }
@@ -361,7 +363,7 @@ void VideoLayerImpl::ReleaseResources() {
 }
 
 void VideoLayerImpl::SetNeedsRedraw() {
-  SetUpdateRect(gfx::UnionRects(update_rect(), gfx::RectF(bounds())));
+  SetUpdateRect(gfx::UnionRects(update_rect(), gfx::Rect(bounds())));
   layer_tree_impl()->SetNeedsRedraw();
 }
 

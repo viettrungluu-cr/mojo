@@ -8,6 +8,7 @@ group("services") {
   deps = [
     "//mojo/services/clipboard",
     "//mojo/services/gles2:lib",
+    "//mojo/services/html_viewer",
     "//mojo/services/network",
     "//mojo/services/public/interfaces/clipboard",
     "//mojo/services/public/interfaces/content_handler",
@@ -26,7 +27,7 @@ group("services") {
   if (use_aura) {
     deps += [
       "//mojo/services/public/interfaces/view_manager",
-      "//mojo/services/public/interfaces/window_manager",
+      "//mojo/services/public/interfaces/window_manager2",
       "//mojo/services/view_manager",
       "//mojo/services/window_manager",
     ]
