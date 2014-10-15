@@ -18,7 +18,6 @@
 #include "gpu/config/dx_diag_node.h"
 #include "gpu/config/gpu_performance_stats.h"
 #include "gpu/gpu_export.h"
-#include "media/video/video_encode_accelerator.h"
 
 namespace gpu {
 
@@ -178,8 +177,6 @@ struct GPU_EXPORT GPUInfo {
   DxDiagNode dx_diagnostics;
 #endif
 
-  std::vector<media::VideoEncodeAccelerator::SupportedProfile>
-      video_encode_accelerator_supported_profiles;
   // Note: when adding new members, please remember to update EnumerateFields
   // in gpu_info.cc.
 
