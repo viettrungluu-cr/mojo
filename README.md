@@ -17,10 +17,11 @@ solutions = [
     "safesync_url": "",
   },
 ]
+# Include the following line only if you're interested in building for android.
+target_os = ['android']
 ```
 
-
-then run 'gclient sync' from the directory containing the .gclient file.
+Then run 'gclient sync' from the directory containing the .gclient file.
 This will clone this repository into a subdirectory called 'src'.  From that
 directory, you can then build by running:
 
