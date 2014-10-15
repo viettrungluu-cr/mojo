@@ -30,16 +30,16 @@ vars = {
   'skia_git': 'https://skia.googlesource.com',
   'boringssl_git': 'https://boringssl.googlesource.com',
   'sfntly_revision': '1bdaae8fc788a5ac8936d68bf24f37d977a13dac',
-  'skia_revision': '47326ab5bb626ad0d4910a556889abf9f78bc273',
+  'skia_revision': '157f36d358814a2235aa6284b78a67b725076063',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling Skia
   # and V8 without interference from each other.
   'v8_branch': 'trunk',
-  'v8_revision': '5815eef91b345b01819b7866e9498e8f0fe00af1', # from svn revision 24398
+  'v8_revision': '86da2033a81f5e51ea57028027be6eac208b9dfb', # from svn revision 24398
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling ANGLE
   # and whatever else without interference from each other.
-  "angle_revision": "e0a2d1c5a8e55f26f1bff6b514733605f20b9f82",
+  "angle_revision": "ed13636ab93755d324d9366b2c41d343ecc5829c",
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling build tools
   # and whatever else without interference from each other.
@@ -47,7 +47,7 @@ vars = {
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling BoringSSL
   # and whatever else without interference from each other.
-  'boringssl_revision': '51fcd871028d1bb5f0a3b541e823cefd2f2aba63',
+  'boringssl_revision': '7ea848165b89577c6e9a1ef12a2cdff9d1beb71f',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling lss
   # and whatever else without interference from each other.
@@ -79,7 +79,7 @@ deps = {
    Var('chromium_git') + '/angle/angle.git' + '@' +  Var('angle_revision'),
 
   'src/third_party/icu':
-   Var('chromium_git') + '/chromium/deps/icu52.git' + '@' + 'd2abf6c1e1f986f4a8db0341b8a8c55c55ec1174', # from svn revision 292003
+   Var('chromium_git') + '/chromium/deps/icu52.git' + '@' + '8ac906faf7b66180f2208380c35ae1e07136c5cc', # from svn revision 292317
 
   'src/third_party/libc++/trunk':
    Var('chromium_git') + '/chromium/llvm-project/libcxx.git' + '@' +  Var('libcxx_revision'),
@@ -137,7 +137,7 @@ deps_os = {
 
     # Note that this is different from Android's freetype repo.
     'src/third_party/freetype2/src':
-     Var('chromium_git') + '/chromium/src/third_party/freetype2.git' + '@' + 'd699c2994ecc178c4ed05ac2086061b2034c2178',
+     Var('chromium_git') + '/chromium/src/third_party/freetype2.git' + '@' + '495a23fce9cd125f715dc20643d14fed226d76ac',
 
     # Used for embedded builds. CrOS & Linux use the system version.
     'src/third_party/fontconfig/src':
