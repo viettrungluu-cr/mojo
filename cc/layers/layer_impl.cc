@@ -349,9 +349,10 @@ RenderPassId LayerImpl::NextContributingRenderPassId(RenderPassId id) const {
   return RenderPassId(0, 0);
 }
 
-ResourceProvider::ResourceId LayerImpl::ContentsResourceId() const {
+void LayerImpl::GetContentsResourceId(ResourceProvider::ResourceId* resource_id,
+                                      gfx::Size* resource_size) const {
   NOTREACHED();
-  return 0;
+  *resource_id = 0;
 }
 
 void LayerImpl::SetSentScrollDelta(const gfx::Vector2dF& sent_scroll_delta) {
@@ -1579,7 +1580,8 @@ int LayerImpl::NumDescendantsThatDrawContent() const {
 
 void LayerImpl::NotifyAnimationFinished(
     base::TimeTicks monotonic_time,
-    Animation::TargetProperty target_property) {
+    Animation::TargetProperty target_property,
+    int group) {
   if (target_property == Animation::ScrollOffset)
     layer_tree_impl_->InputScrollAnimationFinished();
 }

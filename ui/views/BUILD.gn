@@ -104,8 +104,6 @@ component("views") {
   }
 }
 
-if (false) {
-
 static_library("test_support") {
   testonly = true
   sources = gypi_values.views_test_support_sources
@@ -115,6 +113,7 @@ static_library("test_support") {
   ]
   deps = [
     "//base",
+    "//ipc:test_support",
     "//skia",
     "//testing/gtest",
     "//ui/aura",
@@ -263,5 +262,3 @@ if (is_mac) {
     ]
   }
 }
-
-}  # if (false)

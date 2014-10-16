@@ -806,14 +806,18 @@ void PictureLayerImpl::SyncTiling(
   }
 }
 
-ResourceProvider::ResourceId PictureLayerImpl::ContentsResourceId() const {
-  gfx::Rect content_rect(content_bounds());
+void PictureLayerImpl::GetContentsResourceId(
+    ResourceProvider::ResourceId* resource_id,
+    gfx::Size* resource_size) const {
+  gfx::Rect content_rect(bounds());
   PictureLayerTilingSet::CoverageIterator iter(
       tilings_.get(), 1.f, content_rect, ideal_contents_scale_);
 
   // Mask resource not ready yet.
-  if (!iter || !*iter)
-    return 0;
+  if (!iter || !*iter) {
+    *resource_id = 0;
+    return;
+  }
 
   // Masks only supported if they fit on exactly one tile.
   DCHECK(iter.geometry_rect() == content_rect)
@@ -822,10 +826,13 @@ ResourceProvider::ResourceId PictureLayerImpl::ContentsResourceId() const {
 
   const ManagedTileState::DrawInfo& draw_info = iter->draw_info();
   if (!draw_info.IsReadyToDraw() ||
-      draw_info.mode() != ManagedTileState::DrawInfo::RESOURCE_MODE)
-    return 0;
+      draw_info.mode() != ManagedTileState::DrawInfo::RESOURCE_MODE) {
+    *resource_id = 0;
+    return;
+  }
 
-  return draw_info.get_resource_id();
+  *resource_id = draw_info.get_resource_id();
+  *resource_size = iter.texture_size();
 }
 
 void PictureLayerImpl::DoPostCommitInitialization() {
@@ -1362,6 +1369,8 @@ bool PictureLayerImpl::HasValidTilePriorities() const {
 }
 
 bool PictureLayerImpl::AllTilesRequiredForActivationAreReadyToDraw() const {
+  TRACE_EVENT0("cc",
+               "PictureLayerImpl::AllTilesRequiredForActivationAreReadyToDraw");
   if (!layer_tree_impl()->IsPendingTree())
     return true;
 
@@ -1396,8 +1405,14 @@ bool PictureLayerImpl::AllTilesRequiredForActivationAreReadyToDraw() const {
       // be out of date. It is updated in the raster/eviction iterators.
       // TODO(vmpstr): Remove the comment once you can't access this information
       // from the tile.
-      if (tiling->IsTileRequiredForActivation(tile) && !tile->IsReadyToDraw())
+      if (tiling->IsTileRequiredForActivation(tile) && !tile->IsReadyToDraw()) {
+        TRACE_EVENT_INSTANT0("cc",
+                             "PictureLayerImpl::"
+                             "AllTilesRequiredForActivationAreReadyToDraw not "
+                             "ready to activate",
+                             TRACE_EVENT_SCOPE_THREAD);
         return false;
+      }
     }
   }
 

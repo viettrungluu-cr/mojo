@@ -2412,19 +2412,6 @@
    fun:_ZN18chrome_browser_net27HttpServerPropertiesManager24UpdatePrefsFromCacheOnIOEv
 }
 {
-   bug_290407
-   Memcheck:Leak
-   fun:calloc
-   fun:_swrast_new_soft_renderbuffer
-   fun:_mesa_BindRenderbufferEXT
-   fun:shared_dispatch_stub_939
-   fun:_ZN3gfx9GLApiBase23glBindRenderbufferEXTFnEjj
-   fun:_ZN3gpu5gles216GLES2DecoderImpl18DoBindRenderbufferEjj
-   fun:_ZN3gpu5gles216GLES2DecoderImpl22HandleBindRenderbufferEjRKNS0_4cmds16BindRenderbufferE
-   fun:_ZN3gpu5gles216GLES2DecoderImpl9DoCommandEjjPKv
-   fun:_ZN3gpu13CommandParser14ProcessCommandEv
-}
-{
    bug_293024_b
    Memcheck:Leak
    fun:malloc
@@ -2539,17 +2526,6 @@
    fun:_ZN3net14URLFetcherCore30StartURLRequestWhenAppropriateEv
    fun:_ZN3net14URLFetcherCore19DidInitializeWriterEi
    fun:_ZN3net14URLFetcherCore15StartOnIOThreadEv
-}
-{
-   bug_332328
-   Memcheck:Leak
-   fun:malloc
-   fun:_ZN3WTF10fastMallocEm
-   fun:_ZN5blink14XMLHttpRequestnwEm
-   fun:_ZN5blink14XMLHttpRequest6createEPNS_16ExecutionContextEN3WTF10PassRefPtrINS_14SecurityOriginEEE
-   fun:_ZN5blink16V8XMLHttpRequest17constructorCustomERKN2v820FunctionCallbackInfoINS1_5ValueEEE
-   fun:_ZN5blink16V8XMLHttpRequest19constructorCallbackERKN2v820FunctionCallbackInfoINS1_5ValueEEE
-   fun:_ZN2v88internal25FunctionCallbackArguments4CallEPFvRKNS_20FunctionCallbackInfoINS_5ValueEEEE
 }
 {
    bug_332330
@@ -2796,15 +2772,6 @@
    Memcheck:Leak
    fun:_Znw*
    fun:_ZN7content27ServiceWorkerContextWrapper12InitInternalERKN4base8FilePathEPNS1_19SequencedTaskRunnerEPN5quota17QuotaManagerProxyE
-}
-{
-   bug_370206
-   Memcheck:Leak
-   fun:malloc
-   fun:_ZN3WTF16DefaultAllocator15backingAllocateEm
-   fun:_ZN3WTF16DefaultAllocator13backingMallocIPN7blink14InlineIteratorEvEET_m
-   ...
-   fun:_ZN3WTF17HashMapTranslatorINS_18HashMapValueTraitsINS_10HashTraitsIPN7blink7BidiRun*
 }
 {
   bug_371844
@@ -3327,23 +3294,9 @@
    ...
    fun:_ZNK5blink13RootInlineBox13maxLogicalTopEv
    fun:_ZN5blinkL22computeUnderlineOffsetENS_21TextUnderlinePositionERKNS_11FontMetricsEPKNS_13InlineTextBoxEf
-   fun:_ZN5blink13InlineTextBox15paintDecorationEPNS_15GraphicsContextERKNS_10FloatPointENS_14TextDecorationEPKNS_10ShadowListE
+   fun:_ZN5blink20InlineTextBoxPainter15paintDecorationEPNS_15GraphicsContextERKNS_10FloatPointENS_14TextDecorationE
+   fun:_ZN5blink20InlineTextBoxPainter5paintERNS_9PaintInfoERKNS_11LayoutPointE
    fun:_ZN5blink13InlineTextBox5paintERNS_9PaintInfoERKNS_11LayoutPointENS_10LayoutUnitES6_
-   fun:_ZN5blink13InlineFlowBox5paintERNS_9PaintInfoERKNS_11LayoutPointENS_10LayoutUnitES6_
-   fun:_ZN5blink13RootInlineBox5paintERNS_9PaintInfoERKNS_11LayoutPointENS_10LayoutUnitES6_
-   fun:_ZNK5blink17RenderLineBoxList5paintEPNS_20RenderBoxModelObjectERNS_9PaintInfoERKNS_11LayoutPointE
-   fun:_ZN5blink11RenderBlock13paintContentsERNS_9PaintInfoERKNS_11LayoutPointE
-   fun:_ZN5blink11RenderBlock11paintObjectERNS_9PaintInfoERKNS_11LayoutPointE
-   fun:_ZN5blink11RenderBlock5paintERNS_9PaintInfoERKNS_11LayoutPointE
-   fun:_ZN5blink11RenderBlock10paintChildEPNS_9RenderBoxERNS_9PaintInfoERKNS_11LayoutPointE
-   fun:_ZN5blink11RenderBlock13paintChildrenERNS_9PaintInfoERKNS_11LayoutPointE
-   fun:_ZN5blink11RenderBlock13paintContentsERNS_9PaintInfoERKNS_11LayoutPointE
-   fun:_ZN5blink11RenderBlock11paintObjectERNS_9PaintInfoERKNS_11LayoutPointE
-   fun:_ZN5blink11RenderBlock5paintERNS_9PaintInfoERKNS_11LayoutPointE
-   fun:_ZN5blink11RenderBlock10paintChildEPNS_9RenderBoxERNS_9PaintInfoERKNS_11LayoutPointE
-   fun:_ZN5blink11RenderBlock13paintChildrenERNS_9PaintInfoERKNS_11LayoutPointE
-   fun:_ZN5blink11RenderBlock13paintContentsERNS_9PaintInfoERKNS_11LayoutPointE
-   fun:_ZN5blink11RenderBlock11paintObjectERNS_9PaintInfoERKNS_11LayoutPointE
 }
 {
    bug_411235
@@ -3388,6 +3341,7 @@
    bug_417048b
    Memcheck:Uninitialized
    fun:_ZN5blink13InlineFlowBox45clearDescendantsHaveSameLineHeightAndBaselineEv
+   ...
    fun:_ZN5blinkL25setLogicalWidthForTextRunEPNS_13RootInlineBoxEPNS_7BidiRunEPNS_10RenderTextEfRKNS*
    fun:_ZN5blink15RenderBlockFlow41computeInlineDirectionPositionsForSegmentEPNS_13RootInlineBoxERKNS*
    fun:_ZN5blink15RenderBlockFlow38computeInlineDirectionPositionsForLineEPNS_13RootInlineBoxERKNS*
@@ -3453,9 +3407,6 @@
    fun:_ZN5blink20InlineFlowBoxPainter28paintBoxDecorationBackgroundERNS_9PaintInfoERKNS_11LayoutPointE
    fun:_ZN5blink20InlineFlowBoxPainter5paintERNS_9PaintInfoERKNS_11LayoutPointENS_10LayoutUnitES6_
    fun:_ZN5blink13InlineFlowBox5paintERNS_9PaintInfoERKNS_11LayoutPointENS_10LayoutUnitES6_
-   fun:_ZN5blink20InlineFlowBoxPainter5paintERNS_9PaintInfoERKNS_11LayoutPointENS_10LayoutUnitES6_
-   fun:_ZN5blink13InlineFlowBox5paintERNS_9PaintInfoERKNS_11LayoutPointENS_10LayoutUnitES6_
-   fun:_ZN5blink13RootInlineBox5paintERNS_9PaintInfoERKNS_11LayoutPointENS_10LayoutUnitES6_
 }
 {
    bug_422485
@@ -3467,4 +3418,24 @@
    fun:_ZN16SkImageGenerator9getPixelsERK11SkImageInfoPvmPjPi
    ...
    fun:_ZNK6SkDraw10drawBitmapERK8SkBitmapRK8SkMatrixRK7SkPaint
+}
+{
+   bug_424056a
+   Memcheck:Leak
+   fun:malloc
+   fun:_ZN3WTF13CStringBuffer19createUninitializedEm
+   fun:_ZN3WTF7CString16newUninitializedEmRPc
+   fun:_ZN3WTF15TextCodecLatin112encodeCommonIhEENS_7CStringEPKT_mNS_19UnencodableHandlingE
+   fun:_ZN3WTF15TextCodecLatin16encodeEPKhmNS_19UnencodableHandlingE
+}
+{
+   bug_424056b
+   Memcheck:Leak
+   fun:malloc
+   fun:_ZN3WTF13CStringBuffer19createUninitializedEm
+   fun:_ZN3WTF7CString4initEPKcm
+   fun:_ZN3WTF7CStringC1EPKcm
+   fun:_ZN3WTF13TextCodecUTF812encodeCommonIhEENS_7CStringEPKT_m
+   fun:_ZN3WTF13TextCodecUTF86encodeEPKhmNS_19UnencodableHandlingE
+   fun:_ZNK3WTF12TextEncoding6encodeERKNS_6StringENS_19UnencodableHandlingE
 }

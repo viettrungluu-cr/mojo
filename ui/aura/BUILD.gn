@@ -142,8 +142,6 @@ component("aura") {
   }
 }
 
-if (false) {
-
 source_set("test_support") {
   testonly = true
   sources = [
@@ -305,5 +303,3 @@ test("aura_unittests") {
     ]
   }
 }
-
-}  # if (false)

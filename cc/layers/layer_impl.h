@@ -111,12 +111,13 @@ class CC_EXPORT LayerImpl : public LayerAnimationValueObserver,
   virtual bool IsActive() const override;
 
   // AnimationDelegate implementation.
-  virtual void NotifyAnimationStarted(
-      base::TimeTicks monotonic_time,
-      Animation::TargetProperty target_property) override{};
+  virtual void NotifyAnimationStarted(base::TimeTicks monotonic_time,
+                                      Animation::TargetProperty target_property,
+                                      int group) override{};
   virtual void NotifyAnimationFinished(
       base::TimeTicks monotonic_time,
-      Animation::TargetProperty target_property) override;
+      Animation::TargetProperty target_property,
+      int group) override;
 
   // Tree structure.
   LayerImpl* parent() { return parent_; }
@@ -200,7 +201,8 @@ class CC_EXPORT LayerImpl : public LayerAnimationValueObserver,
                            AppendQuadsData* append_quads_data) {}
   virtual void DidDraw(ResourceProvider* resource_provider);
 
-  virtual ResourceProvider::ResourceId ContentsResourceId() const;
+  virtual void GetContentsResourceId(ResourceProvider::ResourceId* resource_id,
+                                     gfx::Size* resource_size) const;
 
   virtual bool HasDelegatedContent() const;
   virtual bool HasContributingDelegatedRenderPasses() const;
@@ -601,10 +603,10 @@ class CC_EXPORT LayerImpl : public LayerAnimationValueObserver,
   // used. If this pointer turns out to be too heavy, we could have this (and
   // the scroll parent above) be stored in a LayerImpl -> scroll_info
   // map somewhere.
-  scoped_ptr<std::set<LayerImpl*> > scroll_children_;
+  scoped_ptr<std::set<LayerImpl*>> scroll_children_;
 
   LayerImpl* clip_parent_;
-  scoped_ptr<std::set<LayerImpl*> > clip_children_;
+  scoped_ptr<std::set<LayerImpl*>> clip_children_;
 
   // mask_layer_ can be temporarily stolen during tree sync, we need this ID to
   // confirm newly assigned layer is still the previous one

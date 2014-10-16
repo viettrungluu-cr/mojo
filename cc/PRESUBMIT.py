@@ -150,6 +150,22 @@ def CheckTodos(input_api, output_api):
       items=errors)]
   return []
 
+def CheckDoubleAngles(input_api, output_api, white_list=CC_SOURCE_FILES,
+                      black_list=None):
+  errors = []
+
+  source_file_filter = lambda x: input_api.FilterSourceFile(x,
+                                                            white_list,
+                                                            black_list)
+  for f in input_api.AffectedSourceFiles(source_file_filter):
+    contents = input_api.ReadFile(f, 'rb')
+    if ('> >') in contents:
+      errors.append(f.LocalPath())
+
+  if errors:
+    return [output_api.PresubmitError('Use >> instead of > >:', items=errors)]
+  return []
+
 def CheckScopedPtr(input_api, output_api,
                    white_list=CC_SOURCE_FILES, black_list=None):
   black_list = tuple(black_list or input_api.DEFAULT_BLACK_LIST)
@@ -170,9 +186,8 @@ def CheckScopedPtr(input_api, output_api,
           ('%s:%d uses explicit scoped_ptr constructor. ' +
            'Use make_scoped_ptr() instead.') % (f.LocalPath(), line_number)))
       # Disallow:
-      # return scoped_ptr<T>();
-      # bar = scoped_ptr<T>();
-      if re.search(r'(=|\breturn)\s*scoped_ptr<.*?>\(\)', line):
+      # scoped_ptr<T>()
+      if re.search(r'\bscoped_ptr<.*?>\(\)', line):
         errors.append(output_api.PresubmitError(
           '%s:%d uses scoped_ptr<T>(). Use nullptr instead.' %
           (f.LocalPath(), line_number)))
@@ -360,6 +375,7 @@ def CheckChangeOnUpload(input_api, output_api):
   results += CheckPassByValue(input_api, output_api)
   results += CheckChangeLintsClean(input_api, output_api)
   results += CheckTodos(input_api, output_api)
+  results += CheckDoubleAngles(input_api, output_api)
   results += CheckScopedPtr(input_api, output_api)
   results += CheckNamespace(input_api, output_api)
   results += CheckForUseOfWrongClock(input_api, output_api)
@@ -372,10 +388,5 @@ def GetPreferredTryMasters(project, change):
   return {
     'tryserver.blink': {
       'linux_blink_rel': set(['defaulttests']),
-    },
-    'tryserver.chromium.gpu': {
-      'linux_gpu': set(['defaulttests']),
-      'mac_gpu': set(['defaulttests']),
-      'win_gpu': set(['defaulttests']),
     },
   }

@@ -1571,6 +1571,7 @@ class GLES2DecoderImpl : public GLES2Decoder,
       error::Error* error, GLint* real_location, GLuint* service_id,
       void** result, GLenum* result_type);
 
+  void MaybeExitOnContextLost();
   virtual bool WasContextLost() override;
   virtual bool WasContextLostByRobustnessExtension() override;
   virtual void LoseContext(uint32 reset_status) override;
@@ -3051,16 +3052,7 @@ bool GLES2DecoderImpl::MakeCurrent() {
   if (!context_->MakeCurrent(surface_.get()) || WasContextLost()) {
     LOG(ERROR) << "  GLES2DecoderImpl: Context lost during MakeCurrent.";
 
-    // Some D3D drivers cannot recover from device lost in the GPU process
-    // sandbox. Allow a new GPU process to launch.
-    if (workarounds().exit_on_context_lost) {
-      LOG(ERROR) << "Exiting GPU process because some drivers cannot reset"
-                 << " a D3D device in the Chrome GPU process sandbox.";
-#if defined(OS_WIN)
-      base::win::SetShouldCrashOnProcessDetach(false);
-#endif
-      exit(0);
-    }
+    MaybeExitOnContextLost();
 
     return false;
   }
@@ -4366,6 +4358,7 @@ void GLES2DecoderImpl::DoDiscardFramebufferEXT(GLenum target,
     translated_attachments[i] = attachment;
   }
 
+  ScopedRenderTo do_render(framebuffer);
   glDiscardFramebufferEXT(target, numAttachments, translated_attachments.get());
 }
 
@@ -5007,6 +5000,7 @@ error::Error GLES2DecoderImpl::DoClear(GLbitfield mask) {
   DCHECK(!ShouldDeferDraws());
   if (CheckBoundFramebuffersValid("glClear")) {
     ApplyDirtyState();
+    ScopedRenderTo do_render(framebuffer_state_.bound_draw_framebuffer.get());
     glClear(mask);
   }
   return error::kNoError;
@@ -5308,6 +5302,7 @@ void GLES2DecoderImpl::DoBlitFramebufferCHROMIUM(
   }
 
   state_.SetDeviceCapabilityState(GL_SCISSOR_TEST, false);
+  ScopedRenderTo do_render(framebuffer_state_.bound_draw_framebuffer.get());
   BlitFramebufferHelper(
       srcX0, srcY0, srcX1, srcY1, dstX0, dstY0, dstX1, dstY1, mask, filter);
   state_.SetDeviceCapabilityState(GL_SCISSOR_TEST,
@@ -9660,8 +9655,22 @@ error::ContextLostReason GLES2DecoderImpl::GetContextLostReason() {
   return error::kUnknown;
 }
 
+void GLES2DecoderImpl::MaybeExitOnContextLost() {
+  // Some D3D drivers cannot recover from device lost in the GPU process
+  // sandbox. Allow a new GPU process to launch.
+  if (workarounds().exit_on_context_lost) {
+    LOG(ERROR) << "Exiting GPU process because some drivers cannot reset"
+               << " a D3D device in the Chrome GPU process sandbox.";
+#if defined(OS_WIN)
+    base::win::SetShouldCrashOnProcessDetach(false);
+#endif
+    exit(0);
+  }
+}
+
 bool GLES2DecoderImpl::WasContextLost() {
   if (reset_status_ != GL_NO_ERROR) {
+    MaybeExitOnContextLost();
     return true;
   }
   if (context_->WasAllocatedUsingRobustnessExtension()) {
@@ -9675,6 +9684,7 @@ bool GLES2DecoderImpl::WasContextLost() {
       LOG(ERROR) << (surface_->IsOffscreen() ? "Offscreen" : "Onscreen")
                  << " context lost via ARB/EXT_robustness. Reset status = "
                  << GLES2Util::GetStringEnum(status);
+      MaybeExitOnContextLost();
       return true;
     }
   }

@@ -88,8 +88,6 @@ component("wm") {
   ]
 }
 
-if (false) {
-
 static_library("test_support") {
   testonly = true
   sources = [
@@ -142,5 +140,3 @@ test("wm_unittests") {
     "//ui/gl",
   ]
 }
-
-}  # if (false)

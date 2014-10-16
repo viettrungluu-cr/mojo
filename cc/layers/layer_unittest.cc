@@ -133,7 +133,7 @@ class LayerTest : public testing::Test {
   FakeLayerTreeHostImpl host_impl_;
 
   FakeLayerTreeHostClient fake_client_;
-  scoped_ptr<StrictMock<MockLayerTreeHost> > layer_tree_host_;
+  scoped_ptr<StrictMock<MockLayerTreeHost>> layer_tree_host_;
   scoped_refptr<Layer> parent_;
   scoped_refptr<Layer> child1_;
   scoped_refptr<Layer> child2_;
@@ -1141,12 +1141,8 @@ TEST(LayerLayerTreeHostTest, DestroyHostWithNonNullRootLayer) {
 static bool AddTestAnimation(Layer* layer) {
   scoped_ptr<KeyframedFloatAnimationCurve> curve =
       KeyframedFloatAnimationCurve::Create();
-  curve->AddKeyframe(FloatKeyframe::Create(0.0,
-                                           0.3f,
-                                           scoped_ptr<TimingFunction>()));
-  curve->AddKeyframe(FloatKeyframe::Create(1.0,
-                                           0.7f,
-                                           scoped_ptr<TimingFunction>()));
+  curve->AddKeyframe(FloatKeyframe::Create(0.0, 0.3f, nullptr));
+  curve->AddKeyframe(FloatKeyframe::Create(1.0, 0.7f, nullptr));
   scoped_ptr<Animation> animation =
       Animation::Create(curve.Pass(), 0, 0, Animation::Opacity);
 

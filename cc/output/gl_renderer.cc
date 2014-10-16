@@ -13,6 +13,7 @@
 #include "base/debug/trace_event.h"
 #include "base/logging.h"
 #include "cc/base/math_util.h"
+#include "cc/layers/video_layer_impl.h"
 #include "cc/output/compositor_frame.h"
 #include "cc/output/compositor_frame_metadata.h"
 #include "cc/output/context_provider.h"
@@ -660,10 +661,9 @@ static skia::RefPtr<SkImage> ApplyImageFilter(
   desc.fHeight = source.height();
   desc.fConfig = kSkia8888_GrPixelConfig;
   desc.fOrigin = kBottomLeft_GrSurfaceOrigin;
-  GrAutoScratchTexture scratch_texture(
-      use_gr_context->context(), desc, GrContext::kExact_ScratchTexMatch);
   skia::RefPtr<GrTexture> backing_store =
-      skia::AdoptRef(scratch_texture.detach());
+      skia::AdoptRef(use_gr_context->context()->refScratchTexture(
+          desc, GrContext::kExact_ScratchTexMatch));
   if (!backing_store) {
     TRACE_EVENT_INSTANT0("cc",
                          "ApplyImageFilter scratch texture allocation failed",
@@ -822,10 +822,9 @@ static skia::RefPtr<SkImage> ApplyBlendModeWithBackdrop(
   desc.fHeight = source.height();
   desc.fConfig = kSkia8888_GrPixelConfig;
   desc.fOrigin = kBottomLeft_GrSurfaceOrigin;
-  GrAutoScratchTexture scratch_texture(
-      use_gr_context->context(), desc, GrContext::kExact_ScratchTexMatch);
   skia::RefPtr<GrTexture> backing_store =
-      skia::AdoptRef(scratch_texture.detach());
+      skia::AdoptRef(use_gr_context->context()->refScratchTexture(
+          desc, GrContext::kExact_ScratchTexMatch));
   if (!backing_store) {
     TRACE_EVENT_INSTANT0(
         "cc",
@@ -1090,7 +1089,7 @@ void GLRenderer::DrawRenderPassQuad(DrawingFrame* frame,
 
   // TODO(senorblanco): Cache this value so that we don't have to do it for both
   // the surface and its replica.  Apply filters to the contents texture.
-  skia::RefPtr<SkImage> filter_bitmap;
+  skia::RefPtr<SkImage> filter_image;
   SkScalar color_matrix[20];
   bool use_color_matrix = false;
   if (!quad->filters.IsEmpty()) {
@@ -1110,13 +1109,12 @@ void GLRenderer::DrawRenderPassQuad(DrawingFrame* frame,
         // in the compositor.
         use_color_matrix = true;
       } else {
-        filter_bitmap =
-            ApplyImageFilter(ScopedUseGrContext::Create(this, frame),
-                             resource_provider_,
-                             quad->rect.origin(),
-                             quad->filters_scale,
-                             filter.get(),
-                             contents_texture);
+        filter_image = ApplyImageFilter(ScopedUseGrContext::Create(this, frame),
+                                        resource_provider_,
+                                        quad->rect.origin(),
+                                        quad->filters_scale,
+                                        filter.get(),
+                                        contents_texture);
       }
     }
   }
@@ -1143,10 +1141,10 @@ void GLRenderer::DrawRenderPassQuad(DrawingFrame* frame,
       // If blending is applied using shaders, the background texture with
       // filters will be used as backdrop for blending operation, so we don't
       // need to copy it to the frame buffer.
-      filter_bitmap =
+      filter_image =
           ApplyBlendModeWithBackdrop(ScopedUseGrContext::Create(this, frame),
                                      resource_provider_,
-                                     filter_bitmap,
+                                     filter_image,
                                      contents_texture,
                                      background_texture.get(),
                                      quad->shared_quad_state->blend_mode);
@@ -1169,20 +1167,22 @@ void GLRenderer::DrawRenderPassQuad(DrawingFrame* frame,
     device_layer_edges.InflateAntiAliasingDistance();
   }
 
-  scoped_ptr<ResourceProvider::ScopedReadLockGL> mask_resource_lock;
+  scoped_ptr<ResourceProvider::ScopedSamplerGL> mask_resource_lock;
   unsigned mask_texture_id = 0;
+  SamplerType mask_sampler = SamplerTypeNA;
   if (quad->mask_resource_id) {
-    mask_resource_lock.reset(new ResourceProvider::ScopedReadLockGL(
-        resource_provider_, quad->mask_resource_id));
+    mask_resource_lock.reset(new ResourceProvider::ScopedSamplerGL(
+        resource_provider_, quad->mask_resource_id, GL_TEXTURE1, GL_LINEAR));
     mask_texture_id = mask_resource_lock->texture_id();
+    mask_sampler = SamplerTypeFromTextureTarget(mask_resource_lock->target());
   }
 
   // TODO(danakj): use the background_texture and blend the background in with
   // this draw instead of having a separate copy of the background texture.
 
   scoped_ptr<ResourceProvider::ScopedSamplerGL> contents_resource_lock;
-  if (filter_bitmap) {
-    GrTexture* texture = filter_bitmap->getTexture();
+  if (filter_image) {
+    GrTexture* texture = filter_image->getTexture();
     DCHECK_EQ(GL_TEXTURE0, GetActiveTextureUnit(gl_));
     gl_->BindTexture(GL_TEXTURE_2D, texture->getTextureHandle());
   } else {
@@ -1369,29 +1369,22 @@ void GLRenderer::DrawRenderPassQuad(DrawingFrame* frame,
   if (shader_mask_sampler_location != -1) {
     DCHECK_NE(shader_mask_tex_coord_scale_location, 1);
     DCHECK_NE(shader_mask_tex_coord_offset_location, 1);
+    DCHECK_EQ(SamplerType2D, mask_sampler);
     GLC(gl_, gl_->Uniform1i(shader_mask_sampler_location, 1));
 
-    float mask_tex_scale_x = quad->mask_uv_rect.width() / tex_scale_x;
-    float mask_tex_scale_y = quad->mask_uv_rect.height() / tex_scale_y;
+    gfx::RectF mask_uv_rect = quad->MaskUVRect();
 
     // Mask textures are oriented vertically flipped relative to the framebuffer
     // and the RenderPass contents texture, so we flip the tex coords from the
     // RenderPass texture to find the mask texture coords.
     GLC(gl_,
         gl_->Uniform2f(shader_mask_tex_coord_offset_location,
-                       quad->mask_uv_rect.x(),
-                       quad->mask_uv_rect.y() + quad->mask_uv_rect.height()));
+                       mask_uv_rect.x(),
+                       mask_uv_rect.bottom()));
     GLC(gl_,
         gl_->Uniform2f(shader_mask_tex_coord_scale_location,
-                       mask_tex_scale_x,
-                       -mask_tex_scale_y));
-    shader_mask_sampler_lock = make_scoped_ptr(
-        new ResourceProvider::ScopedSamplerGL(resource_provider_,
-                                              quad->mask_resource_id,
-                                              GL_TEXTURE1,
-                                              GL_LINEAR));
-    DCHECK_EQ(static_cast<GLenum>(GL_TEXTURE_2D),
-              shader_mask_sampler_lock->target());
+                       mask_uv_rect.width() / tex_scale_x,
+                       -mask_uv_rect.height() / tex_scale_y));
   }
 
   if (shader_edge_location != -1) {
@@ -1440,7 +1433,7 @@ void GLRenderer::DrawRenderPassQuad(DrawingFrame* frame,
 
   // Flush the compositor context before the filter bitmap goes out of
   // scope, so the draw gets processed before the filter texture gets deleted.
-  if (filter_bitmap)
+  if (filter_image)
     GLC(gl_, gl_->Flush());
 
   if (CanApplyBlendModeUsingBlendFunc(blend_mode))

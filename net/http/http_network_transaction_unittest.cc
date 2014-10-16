@@ -7601,7 +7601,7 @@ TEST_P(HttpNetworkTransactionTest, GroupNameForDirectConnections) {
 
   session_deps_.use_alternate_protocols = true;
 
-  for (size_t i = 0; i < ARRAYSIZE_UNSAFE(tests); ++i) {
+  for (size_t i = 0; i < arraysize(tests); ++i) {
     session_deps_.proxy_service.reset(
         ProxyService::CreateFixed(tests[i].proxy_server));
     scoped_refptr<HttpNetworkSession> session(
@@ -7616,8 +7616,7 @@ TEST_P(HttpNetworkTransactionTest, GroupNameForDirectConnections) {
         new MockClientSocketPoolManager);
     mock_pool_manager->SetTransportSocketPool(transport_conn_pool);
     mock_pool_manager->SetSSLSocketPool(ssl_conn_pool);
-    peer.SetClientSocketPoolManager(
-        mock_pool_manager.PassAs<ClientSocketPoolManager>());
+    peer.SetClientSocketPoolManager(mock_pool_manager.Pass());
 
     EXPECT_EQ(ERR_IO_PENDING,
               GroupNameTransactionHelper(tests[i].url, session));
@@ -7665,7 +7664,7 @@ TEST_P(HttpNetworkTransactionTest, GroupNameForHTTPProxyConnections) {
 
   session_deps_.use_alternate_protocols = true;
 
-  for (size_t i = 0; i < ARRAYSIZE_UNSAFE(tests); ++i) {
+  for (size_t i = 0; i < arraysize(tests); ++i) {
     session_deps_.proxy_service.reset(
         ProxyService::CreateFixed(tests[i].proxy_server));
     scoped_refptr<HttpNetworkSession> session(
@@ -7683,8 +7682,7 @@ TEST_P(HttpNetworkTransactionTest, GroupNameForHTTPProxyConnections) {
         new MockClientSocketPoolManager);
     mock_pool_manager->SetSocketPoolForHTTPProxy(proxy_host, http_proxy_pool);
     mock_pool_manager->SetSocketPoolForSSLWithProxy(proxy_host, ssl_conn_pool);
-    peer.SetClientSocketPoolManager(
-        mock_pool_manager.PassAs<ClientSocketPoolManager>());
+    peer.SetClientSocketPoolManager(mock_pool_manager.Pass());
 
     EXPECT_EQ(ERR_IO_PENDING,
               GroupNameTransactionHelper(tests[i].url, session));
@@ -7736,7 +7734,7 @@ TEST_P(HttpNetworkTransactionTest, GroupNameForSOCKSConnections) {
 
   session_deps_.use_alternate_protocols = true;
 
-  for (size_t i = 0; i < ARRAYSIZE_UNSAFE(tests); ++i) {
+  for (size_t i = 0; i < arraysize(tests); ++i) {
     session_deps_.proxy_service.reset(
         ProxyService::CreateFixed(tests[i].proxy_server));
     scoped_refptr<HttpNetworkSession> session(
@@ -7754,8 +7752,7 @@ TEST_P(HttpNetworkTransactionTest, GroupNameForSOCKSConnections) {
         new MockClientSocketPoolManager);
     mock_pool_manager->SetSocketPoolForSOCKSProxy(proxy_host, socks_conn_pool);
     mock_pool_manager->SetSocketPoolForSSLWithProxy(proxy_host, ssl_conn_pool);
-    peer.SetClientSocketPoolManager(
-        mock_pool_manager.PassAs<ClientSocketPoolManager>());
+    peer.SetClientSocketPoolManager(mock_pool_manager.Pass());
 
     scoped_ptr<HttpTransaction> trans(
         new HttpNetworkTransaction(DEFAULT_PRIORITY, session.get()));
@@ -9655,7 +9652,7 @@ TEST_P(HttpNetworkTransactionTest, GenerateAuthToken) {
         TestRound(kGetAuth, kFailure, kAuthErr)}},
   };
 
-  for (size_t i = 0; i < ARRAYSIZE_UNSAFE(test_configs); ++i) {
+  for (size_t i = 0; i < arraysize(test_configs); ++i) {
     HttpAuthHandlerMock::Factory* auth_factory(
         new HttpAuthHandlerMock::Factory());
     session_deps_.http_auth_handler_factory.reset(auth_factory);
@@ -9808,8 +9805,7 @@ TEST_P(HttpNetworkTransactionTest, MultiRoundAuth) {
   scoped_ptr<MockClientSocketPoolManager> mock_pool_manager(
       new MockClientSocketPoolManager);
   mock_pool_manager->SetTransportSocketPool(transport_pool);
-  session_peer.SetClientSocketPoolManager(
-      mock_pool_manager.PassAs<ClientSocketPoolManager>());
+  session_peer.SetClientSocketPoolManager(mock_pool_manager.Pass());
 
   scoped_ptr<HttpTransaction> trans(
       new HttpNetworkTransaction(DEFAULT_PRIORITY, session.get()));
