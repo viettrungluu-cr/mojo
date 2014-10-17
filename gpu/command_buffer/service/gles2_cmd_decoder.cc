@@ -1202,6 +1202,11 @@ class GLES2DecoderImpl : public GLES2Decoder,
   // location is not -1.
   bool CheckCurrentProgramForUniform(GLint location, const char* function_name);
 
+  // Checks if the current program samples a texture that is also the color
+  // image of the current bound framebuffer, i.e., the source and destination
+  // of the draw operation are the same.
+  bool CheckDrawingFeedbackLoops();
+
   // Gets the type of a uniform for a location in the current program. Sets GL
   // errors if the current program is not valid. Returns true if the current
   // program is valid and the location exists. Adjusts count so it
@@ -2365,7 +2370,7 @@ bool GLES2DecoderImpl::Initialize(
   DCHECK(context->IsCurrent(surface.get()));
   DCHECK(!context_.get());
 
-  surfaceless_ = surface->IsSurfaceless();
+  surfaceless_ = surface->IsSurfaceless() && !offscreen;
 
   set_initialized();
   gpu_tracer_.reset(new GPUTracer(this));
@@ -3123,7 +3128,7 @@ bool GLES2DecoderImpl::CheckFramebufferValid(
       return false;
     if (backbuffer_needs_clear_bits_) {
       glClearColor(0, 0, 0, (GLES2Util::GetChannelsForFormat(
-          offscreen_target_color_format_) & 0x0008) != 0 ? 0 : 1);
+          offscreen_target_color_format_) & 0x0008) != 0 ? 0 : 1.f);
       state_.SetDeviceColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
       glClearStencil(0);
       state_.SetDeviceStencilMaskSeparate(GL_FRONT, kDefaultStencilMask);
@@ -3687,7 +3692,7 @@ bool GLES2DecoderImpl::ResizeOffscreenFrameBuffer(const gfx::Size& size) {
   {
     ScopedFrameBufferBinder binder(this, offscreen_target_frame_buffer_->id());
     glClearColor(0, 0, 0, (GLES2Util::GetChannelsForFormat(
-        offscreen_target_color_format_) & 0x0008) != 0 ? 0 : 1);
+        offscreen_target_color_format_) & 0x0008) != 0 ? 0 : 1.f);
     state_.SetDeviceColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
     glClearStencil(0);
     state_.SetDeviceStencilMaskSeparate(GL_FRONT, kDefaultStencilMask);
@@ -5750,6 +5755,38 @@ bool GLES2DecoderImpl::CheckCurrentProgramForUniform(
   return location != -1;
 }
 
+bool GLES2DecoderImpl::CheckDrawingFeedbackLoops() {
+  Framebuffer* framebuffer = GetFramebufferInfoForTarget(GL_FRAMEBUFFER);
+  if (!framebuffer)
+    return false;
+  const Framebuffer::Attachment* attachment =
+      framebuffer->GetAttachment(GL_COLOR_ATTACHMENT0);
+  if (!attachment)
+    return false;
+
+  DCHECK(state_.current_program.get());
+  const Program::SamplerIndices& sampler_indices =
+      state_.current_program->sampler_indices();
+  for (size_t ii = 0; ii < sampler_indices.size(); ++ii) {
+    const Program::UniformInfo* uniform_info =
+        state_.current_program->GetUniformInfo(sampler_indices[ii]);
+    DCHECK(uniform_info);
+    if (uniform_info->type != GL_SAMPLER_2D)
+      continue;
+    for (size_t jj = 0; jj < uniform_info->texture_units.size(); ++jj) {
+      GLuint texture_unit_index = uniform_info->texture_units[jj];
+      if (texture_unit_index >= state_.texture_units.size())
+        continue;
+      TextureUnit& texture_unit = state_.texture_units[texture_unit_index];
+      TextureRef* texture_ref =
+          texture_unit.GetInfoForSamplerType(GL_SAMPLER_2D).get();
+      if (attachment->IsTexture(texture_ref))
+        return true;
+    }
+  }
+  return false;
+}
+
 bool GLES2DecoderImpl::PrepForSetUniformByLocation(
     GLint fake_location,
     const char* function_name,
@@ -6243,6 +6280,13 @@ bool GLES2DecoderImpl::IsDrawValid(
     // The program does not exist.
     // But GL says no ERROR.
     LOCAL_RENDER_WARNING("Drawing with no current shader program.");
+    return false;
+  }
+
+  if (CheckDrawingFeedbackLoops()) {
+    LOCAL_SET_GL_ERROR(
+        GL_INVALID_OPERATION, function_name,
+        "Source and destination textures of the draw are the same.");
     return false;
   }
 
@@ -7210,7 +7254,7 @@ error::Error GLES2DecoderImpl::HandleVertexAttribPointer(
   GLuint indx = c.indx;
   GLint size = c.size;
   GLenum type = c.type;
-  GLboolean normalized = c.normalized;
+  GLboolean normalized = static_cast<GLboolean>(c.normalized);
   GLsizei stride = c.stride;
   GLsizei offset = c.offset;
   const void* ptr = reinterpret_cast<const void*>(offset);
@@ -7452,7 +7496,7 @@ error::Error GLES2DecoderImpl::HandleReadPixels(uint32 immediate_data_size,
   GLsizei height = c.height;
   GLenum format = c.format;
   GLenum type = c.type;
-  GLboolean async = c.async;
+  GLboolean async = static_cast<GLboolean>(c.async);
   if (width < 0 || height < 0) {
     LOCAL_SET_GL_ERROR(GL_INVALID_VALUE, "glReadPixels", "dimensions < 0");
     return error::kNoError;

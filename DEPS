@@ -30,12 +30,12 @@ vars = {
   'skia_git': 'https://skia.googlesource.com',
   'boringssl_git': 'https://boringssl.googlesource.com',
   'sfntly_revision': '1bdaae8fc788a5ac8936d68bf24f37d977a13dac',
-  'skia_revision': '5bb9700b7ef952f2664e059afb4f9f137f7d5a7d',
+  'skia_revision': '783991585be67da3286680d850a99c5410885965',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling Skia
   # and V8 without interference from each other.
   'v8_branch': 'trunk',
-  'v8_revision': '86da2033a81f5e51ea57028027be6eac208b9dfb', # from svn revision 24398
+  'v8_revision': 'b287d3641c8169c74f83a44b33ada13cf3cefaf2', # from svn revision 24398
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling ANGLE
   # and whatever else without interference from each other.
@@ -109,7 +109,7 @@ deps = {
    Var('chromium_git') + '/chromium/deps/libjpeg_turbo.git' + '@' + '034e9a9747e0983bc19808ea70e469bc8342081f',
 
   'src/third_party/libyuv':
-    Var('chromium_git') + '/external/libyuv.git' + '@' + '455c66b4375d72984b79249616d0a708ad568894',
+    Var('chromium_git') + '/external/libyuv.git' + '@' + '9107460c7f76a10cc4122d91e62b0580eacd376e',
 
   'src/third_party/smhasher/src':
     Var('chromium_git') + '/external/smhasher.git' + '@' + 'e87738e57558e0ec472b2fc3a643b838e5b6e88f',
