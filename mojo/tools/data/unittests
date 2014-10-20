@@ -21,8 +21,6 @@ mojo_view_manager_lib_unittests
 mojo_surfaces_lib_unittests
 
 # JavaScript tests:
-*mojo_apps_js_unittests
-*mojo_js_unittests
 
 # Shell integration tests:
 *mojo_shell_tests
