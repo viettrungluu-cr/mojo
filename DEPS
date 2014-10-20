@@ -30,16 +30,16 @@ vars = {
   'skia_git': 'https://skia.googlesource.com',
   'boringssl_git': 'https://boringssl.googlesource.com',
   'sfntly_revision': '1bdaae8fc788a5ac8936d68bf24f37d977a13dac',
-  'skia_revision': '783991585be67da3286680d850a99c5410885965',
+  'skia_revision': '43b8b36b20ae00e2d78421c4cda1f3f922983a20',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling Skia
   # and V8 without interference from each other.
   'v8_branch': 'trunk',
-  'v8_revision': 'b287d3641c8169c74f83a44b33ada13cf3cefaf2', # from svn revision 24398
+  'v8_revision': '2f51c28a975ceaa07ce8f8b2e42ac0f0c5a57802', # from svn revision 24723
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling ANGLE
   # and whatever else without interference from each other.
-  "angle_revision": "5e0c80adc9d9e7b4a7f5c89c4fe21be192c51774",
+  "angle_revision": "8e92923010c568a445c0f22e1a36f462fcabc8f3",
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling build tools
   # and whatever else without interference from each other.
@@ -151,7 +151,7 @@ deps_os = {
         Var('chromium_git') + '/external/jsr-305.git' + '@' + '642c508235471f7220af6d5df2d3210e3bfc0919',
 
     'src/third_party/android_tools':
-       Var('chromium_git') + '/android_tools.git' + '@' + 'd2b86205ff973a3844020feacb35ca6b1d82efbe',
+     Var('chromium_git') + '/android_tools.git' + '@' + '36bf7ac9a608f95f642ec64a743feea3b2e5a8d5',
 
     'src/third_party/freetype':
        Var('chromium_git') + '/chromium/src/third_party/freetype.git' + '@' + 'a2b9955b49034a51dfbc8bf9f4e9d312149cecac',
