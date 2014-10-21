@@ -10,7 +10,6 @@ group("resources") {
   deps = [
     ":ui_resources_grd",
     ":ui_unscaled_resources_grd",
-    ":webui_resources_grd",
   ]
 }
 
@@ -31,16 +30,6 @@ grit("ui_unscaled_resources_grd") {
   outputs = [
     "grit/ui_unscaled_resources.h",
     "ui_unscaled_resources.rc",
-  ]
-}
-
-grit("webui_resources_grd") {
-  source = "../webui/resources/webui_resources.grd"
-  outputs = [
-    "grit/webui_resources.h",
-    "grit/webui_resources_map.cc",
-    "grit/webui_resources_map.h",
-    "webui_resources.pak",
   ]
 }
 
@@ -74,7 +63,6 @@ repack("repack_ui_test_pak") {
 
   sources = [
     "$root_gen_dir/ui/resources/ui_resources_100_percent.pak",
-    "$root_gen_dir/ui/resources/webui_resources.pak",
     "$root_gen_dir/ui/strings/app_locale_settings_en-US.pak",
     "$root_gen_dir/ui/strings/ui_strings_en-US.pak",
   ]

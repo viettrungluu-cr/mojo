@@ -16,10 +16,6 @@
 #include "ui/views/painter.h"
 #include "ui/views/window/dialog_delegate.h"
 
-#if defined(OS_LINUX) && !defined(OS_CHROMEOS)
-#include "ui/views/linux_ui/linux_ui.h"
-#endif
-
 namespace {
 
 // The default spacing between the icon and text.
@@ -435,17 +431,7 @@ void LabelButton::UpdateThemedBorder() {
     return;
 
   scoped_ptr<LabelButtonBorder> label_button_border = CreateDefaultBorder();
-
-#if defined(OS_LINUX) && !defined(OS_CHROMEOS)
-  views::LinuxUI* linux_ui = views::LinuxUI::instance();
-  if (linux_ui) {
-    SetBorder(linux_ui->CreateNativeBorder(
-        this, label_button_border.Pass()));
-  } else
-#endif
-  {
-    SetBorder(label_button_border.Pass());
-  }
+  SetBorder(label_button_border.Pass());
 
   border_is_themed_border_ = true;
 }

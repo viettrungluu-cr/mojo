@@ -45,24 +45,6 @@ component("views") {
   if (use_x11 && !is_chromeos) {
     deps += [ "//ui/display/util" ]
   }
-  if (is_linux && !is_chromeos) {
-    sources -= [ "window/window_button_order_provider.cc" ]
-    deps += [ "//ui/shell_dialogs" ]
-  } else {
-    sources -= [
-      "linux_ui/linux_ui.h",
-      "linux_ui/linux_ui.cc",
-      "linux_ui/window_button_order_observer.h",
-      "linux_ui/window_button_order_provider.cc",
-    ]
-  }
-
-  if (is_chromeos) {
-    sources -= [
-      "linux_ui/status_icon_linux.h",
-      "linux_ui/status_icon_linux.cc",
-    ]
-  }
 
   if (is_win) {
     sources += gypi_values.views_win_sources

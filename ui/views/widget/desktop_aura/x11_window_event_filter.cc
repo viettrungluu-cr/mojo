@@ -19,7 +19,6 @@
 #include "ui/gfx/display.h"
 #include "ui/gfx/screen.h"
 #include "ui/gfx/x/x11_types.h"
-#include "ui/views/linux_ui/linux_ui.h"
 #include "ui/views/widget/desktop_aura/desktop_window_tree_host.h"
 #include "ui/views/widget/native_widget_aura.h"
 #include "ui/views/widget/widget.h"
@@ -97,32 +96,6 @@ void X11WindowEventFilter::OnMouseEvent(ui::MouseEvent* event) {
 void X11WindowEventFilter::OnClickedCaption(ui::MouseEvent* event,
                                             int previous_click_component) {
   aura::Window* target = static_cast<aura::Window*>(event->target());
-
-  if (event->IsMiddleMouseButton()) {
-    LinuxUI::NonClientMiddleClickAction action =
-        LinuxUI::MIDDLE_CLICK_ACTION_LOWER;
-    LinuxUI* linux_ui = LinuxUI::instance();
-    if (linux_ui)
-      action = linux_ui->GetNonClientMiddleClickAction();
-
-    switch (action) {
-      case LinuxUI::MIDDLE_CLICK_ACTION_NONE:
-        break;
-      case LinuxUI::MIDDLE_CLICK_ACTION_LOWER:
-        XLowerWindow(xdisplay_, xwindow_);
-        break;
-      case LinuxUI::MIDDLE_CLICK_ACTION_MINIMIZE:
-        window_tree_host_->Minimize();
-        break;
-      case LinuxUI::MIDDLE_CLICK_ACTION_TOGGLE_MAXIMIZE:
-        if (target->GetProperty(aura::client::kCanMaximizeKey))
-          ToggleMaximizedState();
-        break;
-    }
-
-    event->SetHandled();
-    return;
-  }
 
   if (event->IsLeftMouseButton() && event->flags() & ui::EF_IS_DOUBLE_CLICK) {
     click_component_ = HTNOWHERE;

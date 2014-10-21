@@ -40,7 +40,6 @@
 #include "ui/native_theme/native_theme.h"
 #include "ui/views/corewm/tooltip_aura.h"
 #include "ui/views/ime/input_method.h"
-#include "ui/views/linux_ui/linux_ui.h"
 #include "ui/views/views_delegate.h"
 #include "ui/views/views_switches.h"
 #include "ui/views/widget/desktop_aura/desktop_drag_drop_client_aurax11.h"
@@ -1939,13 +1938,6 @@ DesktopWindowTreeHost* DesktopWindowTreeHost::Create(
 
 // static
 ui::NativeTheme* DesktopWindowTreeHost::GetNativeTheme(aura::Window* window) {
-  const views::LinuxUI* linux_ui = views::LinuxUI::instance();
-  if (linux_ui) {
-    ui::NativeTheme* native_theme = linux_ui->GetNativeTheme(window);
-    if (native_theme)
-      return native_theme;
-  }
-
   return ui::NativeTheme::instance();
 }
 

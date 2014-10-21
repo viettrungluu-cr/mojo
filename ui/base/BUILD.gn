@@ -230,10 +230,6 @@ component("base") {
     "ui_base_types.h",
     "view_prop.cc",
     "view_prop.h",
-    "webui/jstemplate_builder.cc",
-    "webui/jstemplate_builder.h",
-    "webui/web_ui_util.cc",
-    "webui/web_ui_util.h",
     "win/accessibility_ids_win.h",
     "win/accessibility_misc_utils.cc",
     "win/accessibility_misc_utils.h",
@@ -275,7 +271,7 @@ component("base") {
     sources += [ "touch/touch_device_android.cc" ]
   } else if (use_ozone) {
     sources += [ "touch/touch_device_ozone.cc" ]
-  } else if (use_aura && use_x11) { 
+  } else if (use_aura && use_x11) {
     sources += [ "touch/touch_device_aurax11.cc" ]
   } else {
     # Empty implementation for all other cases.
@@ -756,7 +752,6 @@ test("ui_unittests") {
       "test/data/resource.h",
       "text/bytes_formatting_unittest.cc",
       "view_prop_unittest.cc",
-      "webui/web_ui_util_unittest.cc",
       "x/selection_requestor_unittest.cc",
     ]
 
