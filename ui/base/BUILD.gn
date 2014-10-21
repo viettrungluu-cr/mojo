@@ -9,7 +9,7 @@ if (is_android) {
   import("//build/config/android/rules.gni")
 }
 
-build_ime = false
+build_ime = !is_ios
 
 component("base") {
   output_name = "ui_base"
