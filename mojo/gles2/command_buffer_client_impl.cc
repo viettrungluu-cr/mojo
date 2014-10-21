@@ -187,7 +187,6 @@ void CommandBufferClientImpl::DestroyTransferBuffer(int32 id) {
 
 gpu::Capabilities CommandBufferClientImpl::GetCapabilities() {
   // TODO(piman)
-  NOTIMPLEMENTED();
   return gpu::Capabilities();
 }
 
@@ -235,7 +234,6 @@ void CommandBufferClientImpl::RetireSyncPoint(uint32 sync_point) {
 void CommandBufferClientImpl::SignalSyncPoint(uint32 sync_point,
                                               const base::Closure& callback) {
   // TODO(piman)
-  NOTIMPLEMENTED();
 }
 
 void CommandBufferClientImpl::SignalQuery(uint32 query,
