@@ -58,8 +58,8 @@ do_build() {
 
 do_unittests() {
   echo "Running unit tests in out/$1 ..."
-  mojo/tools/test_runner.py mojo/tools/data/unittests "out/$1" \
-      mojob_test_successes || exit 1
+  ./testing/xvfb.py "out/$1" mojo/tools/test_runner.py \
+      mojo/tools/data/unittests "out/$1" mojob_test_successes || exit 1
 }
 
 do_perftests() {

@@ -2,6 +2,7 @@ group("root") {
   testonly = true
 
   deps = [
-    "//mojo"
+    "//mojo",
+    "//tools/xdisplaycheck"
   ]
 }
