@@ -28,9 +28,9 @@ namespace shell {
 class ExternalApplicationListenerTest : public testing::Test {
  public:
   ExternalApplicationListenerTest() : io_thread_("io thread") {}
-  virtual ~ExternalApplicationListenerTest() {}
+  ~ExternalApplicationListenerTest() override {}
 
-  virtual void SetUp() override {
+  void SetUp() override {
     base::Thread::Options options;
     options.message_loop_type = base::MessageLoop::TYPE_IO;
     io_thread_.StartWithOptions(options);

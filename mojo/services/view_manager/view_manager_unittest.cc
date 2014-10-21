@@ -499,7 +499,7 @@ class ViewManagerTest : public testing::Test {
         connection2_(NULL),
         connection3_(NULL) {}
 
-  virtual void SetUp() override {
+  void SetUp() override {
     ASSERT_TRUE(ViewManagerProxy::IsInInitialState());
     test_helper_.Init();
     std::vector<std::string> native_viewport_args;
@@ -531,7 +531,7 @@ class ViewManagerTest : public testing::Test {
     connection_->DoRunLoopUntilChangesCount(1);
   }
 
-  virtual void TearDown() override {
+  void TearDown() override {
     if (connection3_)
       connection3_->Destroy();
     if (connection2_)

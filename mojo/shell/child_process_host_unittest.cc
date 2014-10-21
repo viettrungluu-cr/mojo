@@ -21,7 +21,7 @@ namespace {
 class TestChildProcessHostDelegate : public ChildProcessHost::Delegate {
  public:
   TestChildProcessHostDelegate() {}
-  virtual ~TestChildProcessHostDelegate() {}
+  ~TestChildProcessHostDelegate() {}
   void WillStart() override {
     VLOG(2) << "TestChildProcessHostDelegate::WillStart()";
   }

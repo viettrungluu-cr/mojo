@@ -62,8 +62,8 @@ class TestDynamicServiceRunnerFactory : public DynamicServiceRunnerFactory {
 class DynamicApplicationLoaderTest : public testing::Test {
  public:
   DynamicApplicationLoaderTest() {}
-  virtual ~DynamicApplicationLoaderTest() {}
-  virtual void SetUp() override {
+  ~DynamicApplicationLoaderTest() override {}
+  void SetUp() override {
     context_.Init();
     scoped_ptr<DynamicServiceRunnerFactory> factory(
         new TestDynamicServiceRunnerFactory(&state_));

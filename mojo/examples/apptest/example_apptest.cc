@@ -32,7 +32,7 @@ class Apptest : public testing::Test {
       : args_(args.Pass()),
         application_impl_(nullptr) {
   }
-  virtual ~Apptest() override {}
+  ~Apptest() override {}
 
  protected:
   ApplicationImpl* application_impl() { return application_impl_; }
@@ -41,7 +41,7 @@ class Apptest : public testing::Test {
   virtual ApplicationDelegate* GetApplicationDelegate() = 0;
 
   // testing::Test:
-  virtual void SetUp() override {
+  void SetUp() override {
     // New applications are constructed for each test to avoid persisting state.
     MOJO_CHECK(g_shell_message_pipe_handle_hack.is_valid());
     application_impl_ = new ApplicationImpl(
@@ -51,7 +51,7 @@ class Apptest : public testing::Test {
     // Fake application initialization with the given command line arguments.
     application_impl_->Initialize(args_.Clone());
   }
-  virtual void TearDown() override {
+  void TearDown() override {
     g_shell_message_pipe_handle_hack =
         application_impl_->UnbindShell().release();
     delete application_impl_;
@@ -75,14 +75,14 @@ class ExampleApptest : public Apptest {
  public:
   // TODO(msw): Exemplify the use of actual command line arguments.
   ExampleApptest() : Apptest(Array<String>()) {}
-  virtual ~ExampleApptest() override {}
+  ~ExampleApptest() override {}
 
  protected:
   // Apptest:
-  virtual ApplicationDelegate* GetApplicationDelegate() override {
+  ApplicationDelegate* GetApplicationDelegate() override {
     return &example_client_application_;
   }
-  virtual void SetUp() override {
+  void SetUp() override {
     Apptest::SetUp();
     application_impl()->ConnectToService("mojo:example_service",
                                          &example_service_);
@@ -117,8 +117,8 @@ TEST_F(ExampleApptest, PingServiceToPongClient) {
 template <typename T>
 struct SetCallback : public Callback<void()>::Runnable {
   SetCallback(T* val, T result) : val_(val), result_(result) {}
-  virtual ~SetCallback() {}
-  virtual void Run() const override { *val_ = result_; }
+  ~SetCallback() override {}
+  void Run() const override { *val_ = result_; }
   T* val_;
   T result_;
 };

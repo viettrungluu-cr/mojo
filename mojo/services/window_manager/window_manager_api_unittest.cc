@@ -143,7 +143,7 @@ class TestApplicationLoader : public ApplicationLoader,
 class WindowManagerApiTest : public testing::Test {
  public:
   WindowManagerApiTest() {}
-  virtual ~WindowManagerApiTest() {}
+  ~WindowManagerApiTest() override {}
 
  protected:
   typedef std::pair<Id, Id> TwoIds;
@@ -194,7 +194,7 @@ class WindowManagerApiTest : public testing::Test {
 
  private:
   // Overridden from testing::Test:
-  virtual void SetUp() override {
+  void SetUp() override {
     test_helper_.Init();
     test_helper_.SetLoaderForURL(
         scoped_ptr<ApplicationLoader>(new TestApplicationLoader(base::Bind(
@@ -206,7 +206,7 @@ class WindowManagerApiTest : public testing::Test {
         InitEmbed(view_manager_init_.get(), "mojo:core_window_manager"));
     ConnectToWindowManager();
   }
-  virtual void TearDown() override {}
+  void TearDown() override {}
 
   void ConnectToWindowManager() {
     test_helper_.application_manager()->ConnectToService(

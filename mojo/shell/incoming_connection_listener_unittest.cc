@@ -60,9 +60,9 @@ void OnConnect(base::Closure quit_callback, int rv) {
 class IncomingConnectionListenerTest : public testing::Test {
  public:
   IncomingConnectionListenerTest() {}
-  virtual ~IncomingConnectionListenerTest() {}
+  ~IncomingConnectionListenerTest() override {}
 
-  virtual void SetUp() override {
+  void SetUp() override {
     ASSERT_TRUE(temp_dir_.CreateUniqueTempDir());
     socket_path_ = temp_dir_.path().Append(FILE_PATH_LITERAL("socket"));
   }

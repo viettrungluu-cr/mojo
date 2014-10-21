@@ -80,7 +80,7 @@ class TestCallbackBase {
  protected:
   struct StateBase : public CallbackType::Runnable {
     StateBase() : test_callback_(nullptr) {}
-    virtual ~StateBase() {}
+    ~StateBase() override {}
 
     void set_test_callback(TestCallbackBase* test_callback) {
       test_callback_ = test_callback;
@@ -205,9 +205,9 @@ class TestCallbackWithUint32
 class UDPSocketTest : public testing::Test {
  public:
   UDPSocketTest() {}
-  virtual ~UDPSocketTest() {}
+  ~UDPSocketTest() override {}
 
-  virtual void SetUp() override {
+  void SetUp() override {
     test_helper_.Init();
 
     test_helper_.application_manager()->ConnectToService(

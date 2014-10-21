@@ -22,9 +22,9 @@ namespace test {
 class ShellTestBase : public testing::Test {
  public:
   ShellTestBase();
-  virtual ~ShellTestBase();
+  ~ShellTestBase() override;
 
-  virtual void SetUp() override;
+  void SetUp() override;
 
   // |application_url| should typically be a mojo: URL (the origin will be set
   // to an "appropriate" file: URL).

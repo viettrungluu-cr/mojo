@@ -47,9 +47,9 @@ namespace service {
 class ClipboardStandaloneTest : public testing::Test {
  public:
   ClipboardStandaloneTest() {}
-  virtual ~ClipboardStandaloneTest() {}
+  ~ClipboardStandaloneTest() override {}
 
-  virtual void SetUp() override {
+  void SetUp() override {
     test_helper_.Init();
 
     test_helper_.application_manager()->ConnectToService(GURL("mojo:clipboard"),

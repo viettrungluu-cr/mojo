@@ -121,7 +121,7 @@ class CallbackHelper {
 class HandleWatcherTest : public testing::TestWithParam<MessageLoopConfig> {
  public:
   HandleWatcherTest() : message_loop_(CreateMessageLoop(GetParam())) {}
-  virtual ~HandleWatcherTest() {
+  ~HandleWatcherTest() override {
     test::SetTickClockForTest(NULL);
   }
 

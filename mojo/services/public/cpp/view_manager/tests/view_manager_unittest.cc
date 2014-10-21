@@ -299,7 +299,7 @@ class ViewManagerTest : public testing::Test {
 
  private:
   // Overridden from testing::Test:
-  virtual void SetUp() override {
+  void SetUp() override {
     ConnectApplicationLoader::LoadedCallback ready_callback = base::Bind(
         &ViewManagerTest::OnViewManagerLoaded, base::Unretained(this));
     test_helper_.Init();

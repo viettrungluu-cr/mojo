@@ -408,9 +408,9 @@ class ApplicationManagerTest : public testing::Test {
  public:
   ApplicationManagerTest() : tester_context_(&loop_) {}
 
-  virtual ~ApplicationManagerTest() {}
+  ~ApplicationManagerTest() override {}
 
-  virtual void SetUp() override {
+  void SetUp() override {
     application_manager_.reset(new ApplicationManager);
     TestApplicationLoader* default_loader = new TestApplicationLoader;
     default_loader->set_context(&context_);
@@ -423,7 +423,7 @@ class ApplicationManagerTest : public testing::Test {
     test_client_.reset(new TestClientImpl(service_proxy.Pass()));
   }
 
-  virtual void TearDown() override {
+  void TearDown() override {
     test_client_.reset(NULL);
     application_manager_.reset(NULL);
   }
