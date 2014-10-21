@@ -58,8 +58,8 @@ source_set("lib") {
   ]
 }
 
-# GYP version: mojo/mojo_services.gypi:mojo_network_service_unittests
 test("unittests") {
+  output_name = "mojo_network_service_unittests"
   deps = [
     ":network",
     "//base",
@@ -68,6 +68,7 @@ test("unittests") {
     "//mojo/edk/system",
     "//mojo/edk/test:run_all_unittests",
     "//mojo/environment:chromium",
+    "//mojo/services/public/cpp/network",
     "//mojo/services/public/interfaces/network",
     "//mojo/shell:test_support",
     "//testing/gtest",
