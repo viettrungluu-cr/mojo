@@ -27,12 +27,11 @@ command should be one of:
 
 option (which will only apply to commands which follow) should be one of:
   General options (specify before everything):
-    --debug / --release / --debug-and-release - Debug (default) build /
-        Release build / Debug and Release builds.
+    --debug / --release - Debug (default) / Release build.
   gn options (specify before gn):
     --clang / --gcc - Use clang (default) / gcc.
-    --use-goma / --no-use-goma - Use goma (if \$GOMA_DIR is set or \$HOME/goma
-        exists; default) / don't use goma.
+    --goma / --no-goma - Use goma (if \$GOMA_DIR is set or \$HOME/goma exists;
+        default) / don't use goma.
 
 Note: It will abort on the first failure (if any).
 EOF
@@ -86,15 +85,8 @@ do_sync() {
   GYP_CHROMIUM_NO_ACTION=1 gclient sync || exit 1
 }
 
-# Valid values: Debug, Release, or Debug_and_Release.
-BUILD_TYPE=Debug_and_Release
-should_do_Debug() {
-  test "$BUILD_TYPE" = Debug -o "$BUILD_TYPE" = Debug_and_Release
-}
-should_do_Release() {
-  test "$BUILD_TYPE" = Release -o "$BUILD_TYPE" = Debug_and_Release
-}
-
+# Valid values: Debug or Release.
+BUILD_TYPE=Debug
 # Valid values: clang or gcc.
 COMPILER=clang
 # Valid values: auto or disabled.
@@ -106,7 +98,7 @@ make_gn_args() {
   # release" mode).
   case "$1" in
     Debug)
-      # (Default.)
+      args+=("is_debug=true")
       ;;
     Release)
       args+=("is_debug=false")
@@ -114,7 +106,7 @@ make_gn_args() {
   esac
   case "$COMPILER" in
     clang)
-      # (Default.)
+      args+=("is_clang=true")
       ;;
     gcc)
       args+=("is_clang=false")
@@ -127,11 +119,11 @@ make_gn_args() {
       elif [ -d "${HOME}/goma" ]; then
         args+=("use_goma=true" "goma_dir=\"${HOME}/goma\"")
       else
-        :  # (Default.)
+        args+=("use_goma=false")
       fi
       ;;
     disabled)
-      # (Default.)
+      args+=("use_goma=false")
       ;;
   esac
   echo "${args[*]}"
@@ -153,24 +145,19 @@ for arg in "$@"; do
       exit 0
       ;;
     build)
-      should_do_Debug && do_build Debug
-      should_do_Release && do_build Release
+      do_build "$BUILD_TYPE"
       ;;
     test)
-      should_do_Debug && do_unittests Debug
-      should_do_Release && do_unittests Release
+      do_unittests "$BUILD_TYPE"
       ;;
     perftest)
-      should_do_Debug && do_perftests Debug
-      should_do_Release && do_perftests Release
+      do_perftests "$BUILD_TYPE"
       ;;
     pytest)
-      should_do_Debug && do_pytests Debug
-      should_do_Release && do_pytests Release
+      do_pytests "$BUILD_TYPE"
       ;;
     gn)
-      should_do_Debug && do_gn Debug
-      should_do_Release && do_gn Release
+      do_gn "$BUILD_TYPE"
       ;;
     sync)
       do_sync
@@ -191,19 +178,16 @@ for arg in "$@"; do
     --release)
       BUILD_TYPE=Release
       ;;
-    --debug-and-release)
-      BUILD_TYPE=Debug_and_Release
-      ;;
     --clang)
       COMPILER=clang
       ;;
     --gcc)
       COMPILER=gcc
       ;;
-    --use-goma)
+    --goma)
       GOMA=auto
       ;;
-    --no-use-goma)
+    --no-goma)
       GOMA=disabled
       ;;
     *)
