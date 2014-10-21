@@ -1,0 +1,27 @@
+# Copyright 2014 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Watchlist Rules
+# Refer: http://dev.chromium.org/developers/contributing-code/watchlists
+
+# IMPORTANT: The regular expression filepath is tested against each path using
+# re.search, so it is not usually necessary to add .*.
+
+{
+  'WATCHLIST_DEFINITIONS': {
+    'mojo': {
+      'filepath': 'mojo',
+    },
+  },
+
+  'WATCHLISTS': {
+    'mojo': ['aa@chromium.org',
+             'abarth@chromium.org',
+             'ben+mojo@chromium.org',
+             'darin@chromium.org',
+             'qsr+mojo@chromium.org',
+             'viettrungluu+watch@chromium.org',
+             'yzshen+watch@chromium.org'],
+  },
+}
