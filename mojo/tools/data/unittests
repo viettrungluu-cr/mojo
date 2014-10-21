@@ -17,7 +17,8 @@ mojo_application_manager_unittests
 mojo_common_unittests
 # These tests currently crash. We should re-enable them when they pass.
 # mojo_view_manager_lib_unittests
-mojo_view_manager_unittests
+# Needs a real X connection to run.
+# mojo_view_manager_unittests
 mojo_surfaces_lib_unittests
 
 # JavaScript tests:
