@@ -50,9 +50,9 @@ do_build() {
     echo "Ensuring goma (in ${goma_dir}) started ..."
     "${goma_dir}/goma_ctl.py" ensure_start
 
-    ninja -j 1000 -l 100 -C "out/$1" mojo || exit 1
+    ninja -j 1000 -l 100 -C "out/$1" root || exit 1
   else
-    ninja -C "out/$1" mojo || exit 1
+    ninja -C "out/$1" root || exit 1
   fi
 }
 
