@@ -23,7 +23,14 @@ target_os = ['android']
 
 Then run 'gclient sync' from the directory containing the .gclient file.
 This will clone this repository into a subdirectory called 'src'.  From that
-directory, you can then build by running:
+directory, you can then ensure you have all the dependencies installed by
+running:
+
+```
+$ ./build/install-build-deps.sh
+```
+
+You can then build by running:
 
 ```
 $ gn gen out/Debug
