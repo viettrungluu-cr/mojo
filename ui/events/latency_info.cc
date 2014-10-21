@@ -76,11 +76,11 @@ class LatencyInfoTracedValue : public base::debug::ConvertableToTraceFormat {
   static scoped_refptr<ConvertableToTraceFormat> FromValue(
       scoped_ptr<base::Value> value);
 
-  virtual void AppendAsTraceFormat(std::string* out) const override;
+  void AppendAsTraceFormat(std::string* out) const override;
 
  private:
   explicit LatencyInfoTracedValue(base::Value* value);
-  virtual ~LatencyInfoTracedValue();
+  ~LatencyInfoTracedValue() override;
 
   scoped_ptr<base::Value> value_;
 
@@ -114,12 +114,13 @@ scoped_refptr<base::debug::ConvertableToTraceFormat> AsTraceableData(
            latency.latency_components.begin();
        it != latency.latency_components.end(); ++it) {
     base::DictionaryValue* component_info = new base::DictionaryValue();
-    component_info->SetDouble("comp_id", it->first.second);
-    component_info->SetDouble("time", it->second.event_time.ToInternalValue());
+    component_info->SetDouble("comp_id", static_cast<double>(it->first.second));
+    component_info->SetDouble(
+        "time", static_cast<double>(it->second.event_time.ToInternalValue()));
     component_info->SetDouble("count", it->second.event_count);
     record_data->Set(GetComponentName(it->first.first), component_info);
   }
-  record_data->SetDouble("trace_id", latency.trace_id);
+  record_data->SetDouble("trace_id", static_cast<double>(latency.trace_id));
 
   scoped_ptr<base::ListValue> coordinates(new base::ListValue());
   for (size_t i = 0; i < latency.input_coordinates_size; i++) {

@@ -44,12 +44,10 @@ class TestFieldTrialObserver : public FieldTrialList::Observer {
     FieldTrialList::AddObserver(this);
   }
 
-  virtual ~TestFieldTrialObserver() {
-    FieldTrialList::RemoveObserver(this);
-  }
+  ~TestFieldTrialObserver() override { FieldTrialList::RemoveObserver(this); }
 
-  virtual void OnFieldTrialGroupFinalized(const std::string& trial,
-                                          const std::string& group) override {
+  void OnFieldTrialGroupFinalized(const std::string& trial,
+                                  const std::string& group) override {
     trial_name_ = trial;
     group_name_ = group;
   }
@@ -78,8 +76,8 @@ class FieldTrialTest : public testing::Test {
 // Test registration, and also check that destructors are called for trials
 // (and that Valgrind doesn't catch us leaking).
 TEST_F(FieldTrialTest, Registration) {
-  const char* name1 = "name 1 test";
-  const char* name2 = "name 2 test";
+  const char name1[] = "name 1 test";
+  const char name2[] = "name 2 test";
   EXPECT_FALSE(FieldTrialList::Find(name1));
   EXPECT_FALSE(FieldTrialList::Find(name2));
 

@@ -20,14 +20,12 @@ namespace {
 
 class MockContentLayerClient : public ContentLayerClient {
  public:
-  virtual void PaintContents(
+  void PaintContents(
       SkCanvas* canvas,
       const gfx::Rect& clip,
       ContentLayerClient::GraphicsContextStatus gc_status) override {}
-  virtual void DidChangeLayerCanUseLCDText() override {}
-  virtual bool FillsBoundsCompletely() const override {
-    return false;
-  };
+  void DidChangeLayerCanUseLCDText() override {}
+  bool FillsBoundsCompletely() const override { return false; };
 };
 
 TEST(PictureLayerTest, NoTilesIfEmptyBounds) {
@@ -82,6 +80,24 @@ TEST(PictureLayerTest, SuitableForGpuRasterization) {
   pile->SetUnsuitableForGpuRasterizationForTesting();
   EXPECT_FALSE(pile->is_suitable_for_gpu_rasterization());
   EXPECT_FALSE(layer->IsSuitableForGpuRasterization());
+}
+
+TEST(PictureLayerTest, UseTileGridSize) {
+  LayerTreeSettings settings;
+  settings.default_tile_grid_size = gfx::Size(123, 123);
+
+  MockContentLayerClient client;
+  scoped_refptr<PictureLayer> layer = PictureLayer::Create(&client);
+  FakeLayerTreeHostClient host_client(FakeLayerTreeHostClient::DIRECT_3D);
+  scoped_ptr<FakeLayerTreeHost> host =
+      FakeLayerTreeHost::Create(&host_client, settings);
+  host->SetRootLayer(layer);
+
+  // Tile-grid is set according to its setting.
+  SkTileGridFactory::TileGridInfo info =
+      layer->GetPicturePileForTesting()->GetTileGridInfoForTesting();
+  EXPECT_EQ(info.fTileInterval.width(), 123 - 2 * info.fMargin.width());
+  EXPECT_EQ(info.fTileInterval.height(), 123 - 2 * info.fMargin.height());
 }
 
 }  // namespace

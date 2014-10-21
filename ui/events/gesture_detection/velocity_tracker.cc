@@ -51,13 +51,13 @@ struct Position {
 };
 
 struct Estimator {
-  enum { MAX_DEGREE = 4 };
+  static const uint8_t kMaxDegree = 4;
 
   // Estimator time base.
   TimeTicks time;
 
   // Polynomial coefficients describing motion in X and Y.
-  float xcoeff[MAX_DEGREE + 1], ycoeff[MAX_DEGREE + 1];
+  float xcoeff[kMaxDegree + 1], ycoeff[kMaxDegree + 1];
 
   // Polynomial degree (number of coefficients), or zero if no information is
   // available.
@@ -71,7 +71,7 @@ struct Estimator {
     time = TimeTicks();
     degree = 0;
     confidence = 0;
-    for (size_t i = 0; i <= MAX_DEGREE; i++) {
+    for (size_t i = 0; i <= kMaxDegree; i++) {
       xcoeff[i] = 0;
       ycoeff[i] = 0;
     }
@@ -114,26 +114,25 @@ class LeastSquaresVelocityTrackerStrategy : public VelocityTrackerStrategy {
   };
 
   // Number of samples to keep.
-  enum { HISTORY_SIZE = 20 };
+  static const uint8_t kHistorySize = 20;
 
-  // Degree must be no greater than Estimator::MAX_DEGREE.
+  // Degree must be no greater than Estimator::kMaxDegree.
   LeastSquaresVelocityTrackerStrategy(uint32_t degree,
                                       Weighting weighting = WEIGHTING_NONE);
-  virtual ~LeastSquaresVelocityTrackerStrategy();
+  ~LeastSquaresVelocityTrackerStrategy() override;
 
-  virtual void Clear() override;
-  virtual void ClearPointers(BitSet32 id_bits) override;
-  virtual void AddMovement(const TimeTicks& event_time,
-                           BitSet32 id_bits,
-                           const Position* positions) override;
-  virtual bool GetEstimator(uint32_t id,
-                            Estimator* out_estimator) const override;
+  void Clear() override;
+  void ClearPointers(BitSet32 id_bits) override;
+  void AddMovement(const TimeTicks& event_time,
+                   BitSet32 id_bits,
+                   const Position* positions) override;
+  bool GetEstimator(uint32_t id, Estimator* out_estimator) const override;
 
  private:
   // Sample horizon.
   // We don't use too much history by default since we want to react to quick
   // changes in direction.
-  enum { HORIZON_MS = 100 };
+  static const uint8_t kHorizonMS = 100;
 
   struct Movement {
     TimeTicks event_time;
@@ -150,7 +149,7 @@ class LeastSquaresVelocityTrackerStrategy : public VelocityTrackerStrategy {
   const uint32_t degree_;
   const Weighting weighting_;
   uint32_t index_;
-  Movement movements_[HISTORY_SIZE];
+  Movement movements_[kHistorySize];
 };
 
 // Velocity tracker algorithm that uses an IIR filter.
@@ -158,15 +157,14 @@ class IntegratingVelocityTrackerStrategy : public VelocityTrackerStrategy {
  public:
   // Degree must be 1 or 2.
   explicit IntegratingVelocityTrackerStrategy(uint32_t degree);
-  virtual ~IntegratingVelocityTrackerStrategy();
+  ~IntegratingVelocityTrackerStrategy() override;
 
-  virtual void Clear() override;
-  virtual void ClearPointers(BitSet32 id_bits) override;
-  virtual void AddMovement(const TimeTicks& event_time,
-                           BitSet32 id_bits,
-                           const Position* positions) override;
-  virtual bool GetEstimator(uint32_t id,
-                            Estimator* out_estimator) const override;
+  void Clear() override;
+  void ClearPointers(BitSet32 id_bits) override;
+  void AddMovement(const TimeTicks& event_time,
+                   BitSet32 id_bits,
+                   const Position* positions) override;
+  bool GetEstimator(uint32_t id, Estimator* out_estimator) const override;
 
  private:
   // Current state estimate for a particular pointer.
@@ -371,7 +369,7 @@ void LeastSquaresVelocityTrackerStrategy::AddMovement(
     const TimeTicks& event_time,
     BitSet32 id_bits,
     const Position* positions) {
-  if (++index_ == HISTORY_SIZE) {
+  if (++index_ == kHistorySize) {
     index_ = 0;
   }
 
@@ -395,7 +393,7 @@ LeastSquaresVelocityTrackerStrategy::LeastSquaresVelocityTrackerStrategy(
     uint32_t degree,
     Weighting weighting)
     : degree_(degree), weighting_(weighting) {
-  DCHECK_LT(degree_, static_cast<uint32_t>(Estimator::MAX_DEGREE));
+  DCHECK_LT(degree_, static_cast<uint32_t>(Estimator::kMaxDegree));
   Clear();
 }
 
@@ -469,12 +467,11 @@ static bool SolveLeastSquares(const float* x,
   // MSVC does not support variable-length arrays (used by the original Android
   // implementation of this function).
 #if defined(COMPILER_MSVC)
-  enum {
-    M_ARRAY_LENGTH = LeastSquaresVelocityTrackerStrategy::HISTORY_SIZE,
-    N_ARRAY_LENGTH = Estimator::MAX_DEGREE
-  };
-  DCHECK_LE(m, static_cast<uint32_t>(M_ARRAY_LENGTH));
-  DCHECK_LE(n, static_cast<uint32_t>(N_ARRAY_LENGTH));
+  const uint32_t M_ARRAY_LENGTH =
+      LeastSquaresVelocityTrackerStrategy::kHistorySize;
+  const uint32_t N_ARRAY_LENGTH = Estimator::kMaxDegree;
+  DCHECK_LE(m, M_ARRAY_LENGTH);
+  DCHECK_LE(n, N_ARRAY_LENGTH);
 #else
   const uint32_t M_ARRAY_LENGTH = m;
   const uint32_t N_ARRAY_LENGTH = n;
@@ -573,13 +570,13 @@ bool LeastSquaresVelocityTrackerStrategy::GetEstimator(
   out_estimator->Clear();
 
   // Iterate over movement samples in reverse time order and collect samples.
-  float x[HISTORY_SIZE];
-  float y[HISTORY_SIZE];
-  float w[HISTORY_SIZE];
-  float time[HISTORY_SIZE];
+  float x[kHistorySize];
+  float y[kHistorySize];
+  float w[kHistorySize];
+  float time[kHistorySize];
   uint32_t m = 0;
   uint32_t index = index_;
-  const base::TimeDelta horizon = base::TimeDelta::FromMilliseconds(HORIZON_MS);
+  const base::TimeDelta horizon = base::TimeDelta::FromMilliseconds(kHorizonMS);
   const Movement& newest_movement = movements_[index_];
   do {
     const Movement& movement = movements_[index];
@@ -594,9 +591,9 @@ bool LeastSquaresVelocityTrackerStrategy::GetEstimator(
     x[m] = position.x;
     y[m] = position.y;
     w[m] = ChooseWeight(index);
-    time[m] = -age.InSecondsF();
-    index = (index == 0 ? HISTORY_SIZE : index) - 1;
-  } while (++m < HISTORY_SIZE);
+    time[m] = -static_cast<float>(age.InSecondsF());
+    index = (index == 0 ? kHistorySize : index) - 1;
+  } while (++m < kHistorySize);
 
   if (m == 0)
     return false;  // no data
@@ -638,14 +635,14 @@ float LeastSquaresVelocityTrackerStrategy::ChooseWeight(uint32_t index) const {
       if (index == index_) {
         return 1.0f;
       }
-      uint32_t next_index = (index + 1) % HISTORY_SIZE;
+      uint32_t next_index = (index + 1) % kHistorySize;
       float delta_millis =
           static_cast<float>((movements_[next_index].event_time -
                               movements_[index].event_time).InMillisecondsF());
       if (delta_millis < 0)
         return 0.5f;
       if (delta_millis < 10)
-        return 0.5f + delta_millis * 0.05;
+        return 0.5f + delta_millis * 0.05f;
 
       return 1.0f;
     }
@@ -663,11 +660,11 @@ float LeastSquaresVelocityTrackerStrategy::ChooseWeight(uint32_t index) const {
       if (age_millis < 0)
         return 0.5f;
       if (age_millis < 10)
-        return 0.5f + age_millis * 0.05;
+        return 0.5f + age_millis * 0.05f;
       if (age_millis < 50)
         return 1.0f;
       if (age_millis < 60)
-        return 0.5f + (60 - age_millis) * 0.05;
+        return 0.5f + (60 - age_millis) * 0.05f;
 
       return 0.5f;
     }
@@ -700,7 +697,7 @@ float LeastSquaresVelocityTrackerStrategy::ChooseWeight(uint32_t index) const {
 IntegratingVelocityTrackerStrategy::IntegratingVelocityTrackerStrategy(
     uint32_t degree)
     : degree_(degree) {
-  DCHECK_LT(degree_, static_cast<uint32_t>(Estimator::MAX_DEGREE));
+  DCHECK_LT(degree_, static_cast<uint32_t>(Estimator::kMaxDegree));
 }
 
 IntegratingVelocityTrackerStrategy::~IntegratingVelocityTrackerStrategy() {}

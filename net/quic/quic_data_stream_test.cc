@@ -40,7 +40,7 @@ class TestStream : public QuicDataStream {
       : QuicDataStream(id, session),
         should_process_data_(should_process_data) {}
 
-  virtual uint32 ProcessData(const char* data, uint32 data_len) override {
+  uint32 ProcessData(const char* data, uint32 data_len) override {
     EXPECT_NE(0u, data_len);
     DVLOG(1) << "ProcessData data_len: " << data_len;
     data_ += string(data, data_len);
@@ -403,9 +403,6 @@ TEST_P(QuicDataStreamTest, ConnectionFlowControlWindowUpdate) {
   // Tests that on receipt of data, the connection updates its receive window
   // offset appropriately, and sends WINDOW_UPDATE frames when its receive
   // window drops too low.
-  if (GetParam() < QUIC_VERSION_19) {
-    return;
-  }
   Initialize(kShouldProcessData);
 
   // Set a small flow control limit for streams and connection.
@@ -484,9 +481,6 @@ TEST_P(QuicDataStreamTest, ConnectionFlowControlViolation) {
   // Tests that on if the peer sends too much data (i.e. violates the flow
   // control protocol), at the connection level (rather than the stream level)
   // then we terminate the connection.
-  if (GetParam() < QUIC_VERSION_19) {
-    return;
-  }
 
   // Stream should not process data, so that data gets buffered in the
   // sequencer, triggering flow control limits.

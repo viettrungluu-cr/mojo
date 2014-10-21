@@ -23,6 +23,7 @@
 #if defined(USE_EVDEV_GESTURES)
 #include "ui/events/ozone/evdev/libgestures_glue/event_reader_libevdev_cros.h"
 #include "ui/events/ozone/evdev/libgestures_glue/gesture_interpreter_libevdev_cros.h"
+#include "ui/events/ozone/evdev/libgestures_glue/gesture_property_provider.h"
 #endif
 
 #ifndef EVIOCSCLOCKID
@@ -50,6 +51,9 @@ struct OpenInputDeviceParams {
   EventModifiersEvdev* modifiers;
   KeyboardEvdev* keyboard;
   CursorDelegateEvdev* cursor;
+#if defined(USE_EVDEV_GESTURES)
+  GesturePropertyProvider* gesture_property_provider;
+#endif
 };
 
 #if defined(USE_EVDEV_GESTURES)
@@ -73,9 +77,11 @@ scoped_ptr<EventConverterEvdev> CreateConverter(
   // EventReaderLibevdevCros -> GestureInterpreterLibevdevCros -> DispatchEvent
   if (UseGesturesLibraryForDevice(devinfo)) {
     scoped_ptr<GestureInterpreterLibevdevCros> gesture_interp = make_scoped_ptr(
-        new GestureInterpreterLibevdevCros(params.modifiers,
+        new GestureInterpreterLibevdevCros(params.id,
+                                           params.modifiers,
                                            params.cursor,
                                            params.keyboard,
+                                           params.gesture_property_provider,
                                            params.dispatch_callback));
     return make_scoped_ptr(new EventReaderLibevdevCros(
           fd, params.path, params.id, gesture_interp.Pass()));
@@ -150,18 +156,28 @@ EventFactoryEvdev::EventFactoryEvdev(CursorDelegateEvdev* cursor,
     : last_device_id_(0),
       device_manager_(device_manager),
       dispatch_callback_(
-          base::Bind(base::IgnoreResult(&EventFactoryEvdev::DispatchUiEvent),
-                     base::Unretained(this))),
+          base::Bind(&EventFactoryEvdev::PostUiEvent, base::Unretained(this))),
       keyboard_(&modifiers_, dispatch_callback_),
       cursor_(cursor),
+#if defined(USE_EVDEV_GESTURES)
+      gesture_property_provider_(new GesturePropertyProvider),
+#endif
       weak_ptr_factory_(this) {
   DCHECK(device_manager_);
 }
 
 EventFactoryEvdev::~EventFactoryEvdev() { STLDeleteValues(&converters_); }
 
-void EventFactoryEvdev::DispatchUiEvent(Event* event) {
-  DispatchEvent(event);
+void EventFactoryEvdev::PostUiEvent(scoped_ptr<Event> event) {
+  base::ThreadTaskRunnerHandle::Get()->PostTask(
+      FROM_HERE,
+      base::Bind(&EventFactoryEvdev::DispatchUiEventTask,
+                 weak_ptr_factory_.GetWeakPtr(),
+                 base::Passed(&event)));
+}
+
+void EventFactoryEvdev::DispatchUiEventTask(scoped_ptr<Event> event) {
+  DispatchEvent(event.get());
 }
 
 void EventFactoryEvdev::AttachInputDevice(
@@ -199,6 +215,9 @@ void EventFactoryEvdev::OnDeviceEvent(const DeviceEvent& event) {
       params->modifiers = &modifiers_;
       params->keyboard = &keyboard_;
       params->cursor = cursor_;
+#if defined(USE_EVDEV_GESTURES)
+      params->gesture_property_provider = gesture_property_provider_.get();
+#endif
 
       OpenInputDeviceReplyCallback reply_callback =
           base::Bind(&EventFactoryEvdev::AttachInputDevice,
@@ -257,12 +276,11 @@ void EventFactoryEvdev::WarpCursorTo(gfx::AcceleratedWidget widget,
                                      const gfx::PointF& location) {
   if (cursor_) {
     cursor_->MoveCursorTo(widget, location);
-    MouseEvent mouse_event(ET_MOUSE_MOVED,
-                           cursor_->location(),
-                           cursor_->location(),
-                           modifiers_.GetModifierFlags(),
-                           /* changed_button_flags */ 0);
-    DispatchEvent(&mouse_event);
+    PostUiEvent(make_scoped_ptr(new MouseEvent(ET_MOUSE_MOVED,
+                                               cursor_->location(),
+                                               cursor_->location(),
+                                               modifiers_.GetModifierFlags(),
+                                               /* changed_button_flags */ 0)));
   }
 }
 

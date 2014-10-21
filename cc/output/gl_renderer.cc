@@ -55,8 +55,8 @@ class FallbackFence : public ResourceProvider::Fence {
       : gl_(gl), has_passed_(true) {}
 
   // Overridden from ResourceProvider::Fence:
-  virtual void Set() override { has_passed_ = false; }
-  virtual bool HasPassed() override {
+  void Set() override { has_passed_ = false; }
+  bool HasPassed() override {
     if (!has_passed_) {
       has_passed_ = true;
       Synchronize();
@@ -65,7 +65,7 @@ class FallbackFence : public ResourceProvider::Fence {
   }
 
  private:
-  virtual ~FallbackFence() {}
+  ~FallbackFence() override {}
 
   void Synchronize() {
     TRACE_EVENT0("cc", "FallbackFence::Synchronize");
@@ -250,16 +250,14 @@ class GLRenderer::SyncQuery {
         : query_(query) {}
 
     // Overridden from ResourceProvider::Fence:
-    virtual void Set() override {
+    void Set() override {
       DCHECK(query_);
       query_->Set();
     }
-    virtual bool HasPassed() override {
-      return !query_ || !query_->IsPending();
-    }
+    bool HasPassed() override { return !query_ || !query_->IsPending(); }
 
    private:
-    virtual ~Fence() {}
+    ~Fence() override {}
 
     base::WeakPtr<SyncQuery> query_;
 
