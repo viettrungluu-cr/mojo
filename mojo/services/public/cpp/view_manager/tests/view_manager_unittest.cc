@@ -25,7 +25,7 @@
 namespace mojo {
 namespace {
 
-const char kWindowManagerURL[] = "mojo:window_manager";
+const char kWindowManagerURL[] = "mojo:example_window_manager";
 const char kEmbeddedApp1URL[] = "mojo:embedded_app_1";
 
 base::RunLoop* current_run_loop = NULL;

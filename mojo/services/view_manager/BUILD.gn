@@ -94,6 +94,10 @@ test("mojo_view_manager_unittests") {
     deps += ["//ui/gl"]
   }
 
+  if (!is_android) {  # TODO(GYP) Enable on Android when osmesa links.
+    deps += [ "//third_party/mesa:osmesa" ]
+  }
+
   sources = [
     "test_change_tracker.cc",
     "test_change_tracker.h",

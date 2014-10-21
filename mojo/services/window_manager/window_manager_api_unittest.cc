@@ -203,14 +203,14 @@ class WindowManagerApiTest : public testing::Test {
     test_helper_.application_manager()->ConnectToService(
         GURL("mojo:view_manager"), &view_manager_init_);
     ASSERT_TRUE(
-        InitEmbed(view_manager_init_.get(), "mojo:core_window_manager"));
+        InitEmbed(view_manager_init_.get(), "mojo:window_manager"));
     ConnectToWindowManager();
   }
   void TearDown() override {}
 
   void ConnectToWindowManager() {
     test_helper_.application_manager()->ConnectToService(
-        GURL("mojo:core_window_manager"), &window_manager_);
+        GURL("mojo:window_manager"), &window_manager_);
     base::RunLoop connect_loop;
     window_manager_client_.reset(new TestWindowManagerClient(&connect_loop));
     window_manager_.set_client(window_manager_client());

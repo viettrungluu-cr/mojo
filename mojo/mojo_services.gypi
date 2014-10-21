@@ -400,12 +400,12 @@
         'public/mojo_public.gyp:mojo_application_base',
         'public/mojo_public.gyp:mojo_application_bindings',
         'public/mojo_public.gyp:mojo_cpp_bindings',
-        'services/public/mojo_services_public.gyp:mojo_core_window_manager_bindings',
         'services/public/mojo_services_public.gyp:mojo_geometry_bindings',
         'services/public/mojo_services_public.gyp:mojo_input_events_bindings',
         'services/public/mojo_services_public.gyp:mojo_surface_id_bindings',
         'services/public/mojo_services_public.gyp:mojo_view_manager_bindings',
         'services/public/mojo_services_public.gyp:mojo_view_manager_common',
+        'services/public/mojo_services_public.gyp:mojo_window_manager2_bindings',
       ],
       'includes': [
         'mojo_public_gles2_for_loadable_module.gypi',
@@ -619,7 +619,7 @@
         },
         {
           # GN version: //mojo/services/window_manager:lib
-          'target_name': 'mojo_core_window_manager_lib',
+          'target_name': 'mojo_window_manager_lib',
           'type': 'static_library',
           'dependencies': [
             '../base/base.gyp:base',
@@ -633,8 +633,8 @@
             'mojo_input_events_lib',
             'mojo_view_manager_lib',
             'public/mojo_public.gyp:mojo_application_bindings',
-            'services/public/mojo_services_public.gyp:mojo_core_window_manager_bindings',
             'services/public/mojo_services_public.gyp:mojo_window_manager_bindings',
+            'services/public/mojo_services_public.gyp:mojo_window_manager2_bindings',
           ],
           'sources': [
             'services/window_manager/window_manager_app.cc',
@@ -648,10 +648,10 @@
         },
         {
           # GN version: //mojo/services/window_manager
-          'target_name': 'mojo_core_window_manager',
+          'target_name': 'mojo_window_manager',
           'type': 'loadable_module',
           'dependencies': [
-            'mojo_core_window_manager_lib',
+            'mojo_window_manager_lib',
             '<(mojo_system_for_loadable_module)',
           ],
           'sources': [
@@ -659,8 +659,8 @@
           ],
         },
         {
-          # GN version: //mojo/services/window_manager:mojo_core_window_manager_unittests
-          'target_name': 'mojo_core_window_manager_unittests',
+          # GN version: //mojo/services/window_manager:mojo_window_manager_unittests
+          'target_name': 'mojo_window_manager_unittests',
           'type': 'executable',
           'dependencies': [
             '../base/base.gyp:test_support_base',
@@ -668,9 +668,9 @@
             'edk/mojo_edk.gyp:mojo_system_impl',
             'mojo_application_manager',
             'mojo_base.gyp:mojo_environment_chromium',
-            'services/public/mojo_services_public.gyp:mojo_core_window_manager_bindings',
             'mojo_shell_test_support',
             'services/public/mojo_services_public.gyp:mojo_view_manager_bindings',
+            'services/public/mojo_services_public.gyp:mojo_window_manager_bindings',
             'mojo_view_manager_lib',
           ],
           'sources': [

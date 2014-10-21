@@ -18,7 +18,7 @@ class DemoLauncher : public mojo::ApplicationDelegate {
  private:
   virtual void Initialize(mojo::ApplicationImpl* app) override {
     context_.reset(new mojo::ViewManagerContext(app));
-    context_->Embed("mojo:window_manager");
+    context_->Embed("mojo:example_window_manager");
   }
 
   scoped_ptr<mojo::ViewManagerContext> context_;
