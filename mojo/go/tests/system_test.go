@@ -5,8 +5,7 @@
 package tests
 
 import "mojo/go/system/embedder"
-import "mojo/go/system/impl"
-import "mojo/public/go/mojo/edk/system"
+import "mojo/public/go/system"
 import "testing"
 
 func Init() {
@@ -15,8 +14,8 @@ func Init() {
 
 func TestGetTimeTicksNow(t *testing.T) {
 	Init()
-	var c system.Core = impl.GetCore()
-	x := c.GetTimeTicksNow()
+	core := system.GetCore()
+	x := core.GetTimeTicksNow()
 	if x < 10 {
 		t.Error("Invalid GetTimeTicksNow return value")
 	}

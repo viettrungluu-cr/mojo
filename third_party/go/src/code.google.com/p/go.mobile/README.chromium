@@ -1,0 +1,17 @@
+Name: go.mobile
+URL: https://code.google.com/p/go.mobile/
+Version: 62eb99d1c46b9138454c060bead35ddd5fd23f1a
+Security Critical: No
+License: NEW BSD
+License Android Compatible: yes
+
+Description:
+The go.mobile repository holds libraries and build tools for Go on Android.
+
+Local Modifications:
+We need go apps built for android to use the app package. We removed unnecessary
+directories that are not needed.
+ - removed bind/
+ - removed cmd/
+ - removed example/
+ - removed sprite/

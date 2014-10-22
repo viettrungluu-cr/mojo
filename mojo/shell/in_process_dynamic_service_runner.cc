@@ -89,7 +89,15 @@ void InProcessDynamicServiceRunner::Run() {
                  << ")";
       break;
     }
-
+    // Go shared library support requires us to initialize the runtime before we
+    // start running any go code. This is a temporary patch.
+    typedef void (*InitGoRuntimeFn)();
+    InitGoRuntimeFn runtime = reinterpret_cast<InitGoRuntimeFn>(
+        app_library_.GetFunctionPointer("InitGoRuntime"));
+    if (runtime) {
+      DVLOG(2) << "InitGoRuntime: Initializing Go Runtime found in app";
+      runtime();
+    }
     if (!SetThunks(
             &MojoMakeSystemThunks, "MojoSetSystemThunks", &app_library_)) {
       // In the component build, Mojo Apps link against mojo_system_impl.
