@@ -9,7 +9,7 @@ if (is_android) {
   import("//build/config/android/rules.gni")
 }
 
-build_ime = !is_ios
+build_ime = true
 
 component("base") {
   output_name = "ui_base"
@@ -21,8 +21,6 @@ component("base") {
     "accelerators/menu_label_accelerator_util_linux.cc",
     "accelerators/menu_label_accelerator_util_linux.h",
     "accelerators/platform_accelerator.h",
-    "accelerators/platform_accelerator_cocoa.h",
-    "accelerators/platform_accelerator_cocoa.mm",
     "android/system_ui_resource_manager.h",
     "android/ui_base_jni_registrar.cc",
     "android/ui_base_jni_registrar.h",
@@ -52,55 +50,6 @@ component("base") {
     "clipboard/custom_data_helper_mac.mm",
     "clipboard/scoped_clipboard_writer.cc",
     "clipboard/scoped_clipboard_writer.h",
-    "cocoa/animation_utils.h",
-    "cocoa/appkit_utils.h",
-    "cocoa/appkit_utils.mm",
-    "cocoa/base_view.h",
-    "cocoa/base_view.mm",
-    "cocoa/cocoa_base_utils.h",
-    "cocoa/cocoa_base_utils.mm",
-    "cocoa/controls/blue_label_button.h",
-    "cocoa/controls/blue_label_button.mm",
-    "cocoa/controls/hover_image_menu_button.h",
-    "cocoa/controls/hover_image_menu_button.mm",
-    "cocoa/controls/hover_image_menu_button_cell.h",
-    "cocoa/controls/hover_image_menu_button_cell.mm",
-    "cocoa/controls/hyperlink_button_cell.h",
-    "cocoa/controls/hyperlink_button_cell.mm",
-    "cocoa/controls/hyperlink_text_view.h",
-    "cocoa/controls/hyperlink_text_view.mm",
-    "cocoa/find_pasteboard.h",
-    "cocoa/find_pasteboard.mm",
-    "cocoa/flipped_view.h",
-    "cocoa/flipped_view.mm",
-    "cocoa/focus_tracker.h",
-    "cocoa/focus_tracker.mm",
-    "cocoa/focus_window_set.h",
-    "cocoa/focus_window_set.mm",
-    "cocoa/fullscreen_window_manager.h",
-    "cocoa/fullscreen_window_manager.mm",
-    "cocoa/hover_button.h",
-    "cocoa/hover_button.mm",
-    "cocoa/hover_image_button.h",
-    "cocoa/hover_image_button.mm",
-    "cocoa/menu_controller.h",
-    "cocoa/menu_controller.mm",
-    "cocoa/nib_loading.h",
-    "cocoa/nib_loading.mm",
-    "cocoa/nsgraphics_context_additions.h",
-    "cocoa/nsgraphics_context_additions.mm",
-    "cocoa/nsview_additions.h",
-    "cocoa/nsview_additions.mm",
-    "cocoa/remote_layer_api.h",
-    "cocoa/remote_layer_api.mm",
-    "cocoa/tracking_area.h",
-    "cocoa/tracking_area.mm",
-    "cocoa/underlay_opengl_hosting_window.h",
-    "cocoa/underlay_opengl_hosting_window.mm",
-    "cocoa/view_description.h",
-    "cocoa/view_description.mm",
-    "cocoa/window_size_constants.h",
-    "cocoa/window_size_constants.mm",
     "cursor/cursor.cc",
     "cursor/cursor.h",
     "cursor/cursor_android.cc",
@@ -115,13 +64,6 @@ component("base") {
     "default_theme_provider.cc",
     "default_theme_provider.h",
     "default_theme_provider_mac.mm",
-    "device_form_factor_android.cc",
-    "device_form_factor_android.h",
-    "device_form_factor_desktop.cc",
-    "device_form_factor_ios.mm",
-    "device_form_factor.h",
-    "dragdrop/cocoa_dnd_util.h",
-    "dragdrop/cocoa_dnd_util.mm",
     "dragdrop/drag_drop_types.h",
     "dragdrop/drag_drop_types_win.cc",
     "dragdrop/drag_source_win.cc",
@@ -193,9 +135,6 @@ component("base") {
     "models/tree_node_model.h",
     "nine_image_painter_factory.cc",
     "nine_image_painter_factory.h",
-    "page_transition_types.cc",
-    "page_transition_types.h",
-    "page_transition_types_list.h",
     "resource/data_pack.cc",
     "resource/data_pack.h",
     "resource/resource_bundle.cc",
@@ -260,9 +199,6 @@ component("base") {
     "win/touch_input.h",
     "win/window_event_target.cc",
     "win/window_event_target.h",
-    "window_open_disposition.cc",
-    "window_open_disposition.h",
-    "work_area_watcher_observer.h",
   ]
 
   if (is_win) {
@@ -402,13 +338,6 @@ component("base") {
         "ime/composition_text_util_pango.h",
       ]
     }
-  }
-
-  if (is_ios) {
-    sources += [
-      "l10n/l10n_util_mac.h",
-      "l10n/l10n_util_mac.mm",
-    ]
   }
 
   if (toolkit_views) {
@@ -640,12 +569,6 @@ component("base") {
       sources += [ "clipboard/clipboard_aura.cc" ]
     }
   }
-
-  if (is_android || is_ios) {
-    sources -= [
-      "device_form_factor_desktop.cc",
-    ]
-  }
 }
 
 source_set("test_support") {
@@ -722,47 +645,27 @@ test("ui_unittests") {
     "test/run_all_unittests.cc",
   ]
 
-  if (is_ios) {
-    # Compile this Mac file on iOS as well.
-    set_sources_assignment_filter([])
-    sources += [ "l10n/l10n_util_mac_unittest.mm" ]
-    set_sources_assignment_filter(sources_assignment_filter)
-  } else {  # !is_ios
-    sources += [
-      "accelerators/accelerator_manager_unittest.cc",
-      "accelerators/menu_label_accelerator_util_linux_unittest.cc",
-      "clipboard/custom_data_helper_unittest.cc",
-      "cocoa/base_view_unittest.mm",
-      "cocoa/cocoa_base_utils_unittest.mm",
-      "cocoa/controls/blue_label_button_unittest.mm",
-      "cocoa/controls/hover_image_menu_button_unittest.mm",
-      "cocoa/controls/hyperlink_button_cell_unittest.mm",
-      "cocoa/controls/hyperlink_text_view_unittest.mm",
-      "cocoa/focus_tracker_unittest.mm",
-      "cocoa/fullscreen_window_manager_unittest.mm",
-      "cocoa/hover_image_button_unittest.mm",
-      "cocoa/menu_controller_unittest.mm",
-      "cocoa/nsgraphics_context_additions_unittest.mm",
-      "cocoa/nsview_additions_unittest.mm",
-      "cocoa/tracking_area_unittest.mm",
-      "dragdrop/os_exchange_data_provider_aurax11_unittest.cc",
-      "models/list_model_unittest.cc",
-      "models/list_selection_model_unittest.cc",
-      "models/tree_node_model_unittest.cc",
-      "test/data/resource.h",
-      "text/bytes_formatting_unittest.cc",
-      "view_prop_unittest.cc",
-      "x/selection_requestor_unittest.cc",
-    ]
+  sources += [
+    "accelerators/accelerator_manager_unittest.cc",
+    "accelerators/menu_label_accelerator_util_linux_unittest.cc",
+    "clipboard/custom_data_helper_unittest.cc",
+    "dragdrop/os_exchange_data_provider_aurax11_unittest.cc",
+    "models/list_model_unittest.cc",
+    "models/list_selection_model_unittest.cc",
+    "models/tree_node_model_unittest.cc",
+    "test/data/resource.h",
+    "text/bytes_formatting_unittest.cc",
+    "view_prop_unittest.cc",
+    "x/selection_requestor_unittest.cc",
+  ]
 
-    if (!use_x11) {
-      if (is_chromeos) {
-        # These were already removed in the chromeos case.
-        sources -= [
-          "ime/chromeos/character_composer_unittest.cc",
-          "ime/input_method_chromeos_unittest.cc",
-        ]
-      }
+  if (!use_x11) {
+    if (is_chromeos) {
+      # These were already removed in the chromeos case.
+      sources -= [
+        "ime/chromeos/character_composer_unittest.cc",
+        "ime/input_method_chromeos_unittest.cc",
+      ]
     }
   }
 
@@ -800,10 +703,6 @@ test("ui_unittests") {
     "//ui/strings",
     "//url",
   ]
-
-  if (is_ios) {
-    # TODO(GYP) lots of iOS-only steps for ui_unittests
-  }
 
   if (is_win) {
     sources += [
