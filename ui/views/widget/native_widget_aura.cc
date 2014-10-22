@@ -47,16 +47,6 @@
 #include "base/win/scoped_gdi_object.h"
 #include "base/win/win_util.h"
 #include "ui/base/l10n/l10n_util_win.h"
-#include "ui/views/widget/desktop_aura/desktop_window_tree_host_win.h"
-#endif
-
-#if defined(USE_X11) && !defined(OS_CHROMEOS)
-#include "ui/views/widget/desktop_aura/desktop_window_tree_host_x11.h"
-#endif
-
-#if !defined(OS_CHROMEOS)
-#include "ui/views/widget/desktop_aura/desktop_native_widget_aura.h"
-#include "ui/views/widget/desktop_aura/desktop_window_tree_host.h"
 #endif
 
 namespace views {
@@ -683,11 +673,7 @@ void NativeWidgetAura::SetVisibilityChangedAnimationsEnabled(bool value) {
 }
 
 ui::NativeTheme* NativeWidgetAura::GetNativeTheme() const {
-#if !defined(OS_CHROMEOS)
-  return DesktopWindowTreeHost::GetNativeTheme(window_);
-#else
   return ui::NativeThemeAura::instance();
-#endif
 }
 
 void NativeWidgetAura::OnRootViewLayout() {
@@ -1002,43 +988,8 @@ void NativeWidgetAura::SetInitialFocus(ui::WindowShowState show_state) {
 ////////////////////////////////////////////////////////////////////////////////
 // Widget, public:
 
-namespace {
-#if defined(OS_WIN) || (defined(USE_X11) && !defined(OS_CHROMEOS))
-void CloseWindow(aura::Window* window) {
-  if (window) {
-    Widget* widget = Widget::GetWidgetForNativeView(window);
-    if (widget && widget->is_secondary_widget())
-      // To avoid the delay in shutdown caused by using Close which may wait
-      // for animations, use CloseNow. Because this is only used on secondary
-      // widgets it seems relatively safe to skip the extra processing of
-      // Close.
-      widget->CloseNow();
-  }
-}
-#endif
-
-#if defined(OS_WIN)
-BOOL CALLBACK WindowCallbackProc(HWND hwnd, LPARAM lParam) {
-  aura::Window* root_window =
-      DesktopWindowTreeHostWin::GetContentWindowForHWND(hwnd);
-  CloseWindow(root_window);
-  return TRUE;
-}
-#endif
-}  // namespace
-
 // static
 void Widget::CloseAllSecondaryWidgets() {
-#if defined(OS_WIN)
-  EnumThreadWindows(GetCurrentThreadId(), WindowCallbackProc, 0);
-#endif
-
-#if defined(USE_X11) && !defined(OS_CHROMEOS)
-  std::vector<aura::Window*> open_windows =
-      DesktopWindowTreeHostX11::GetAllOpenWindows();
-  std::for_each(open_windows.begin(), open_windows.end(), CloseWindow);
-  DesktopWindowTreeHostX11::CleanUpWindowList();
-#endif
 }
 
 bool Widget::ConvertRect(const Widget* source,
