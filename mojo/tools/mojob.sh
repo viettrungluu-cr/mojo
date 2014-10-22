@@ -149,6 +149,7 @@ for arg in "$@"; do
       ;;
     test)
       do_unittests "$BUILD_TYPE"
+      do_pytests "$BUILD_TYPE"
       ;;
     perftest)
       do_perftests "$BUILD_TYPE"
