@@ -2,35 +2,23 @@ Mojo
 ====
 
 This repo uses gclient to manage dependencies, so to build things from this
-repo you have to first download depot_tools and make sure it is in your path
+repo you have to first download depot_tools and make sure it is in your path:
 
 http://www.chromium.org/developers/how-tos/install-depot-tools
 
-then create a file called '.gclient' that has the following contents:
+Then, create a directory somewhere for your checkout, cd into it,
+and run the following commands:
 
 ```
-solutions = [
-  { "name"        : "src",
-    "url"         : "https://github.com/domokit/mojo.git",
-    "deps_file"   : "DEPS",
-    "managed"     : False,
-    "safesync_url": "",
-  },
-]
-# Include the following line only if you're interested in building for android.
-target_os = ['android']
-```
-
-Then run 'gclient sync' from the directory containing the .gclient file.
-This will clone this repository into a subdirectory called 'src'.  From that
-directory, you can then ensure you have all the dependencies installed by
-running:
-
-```
+$ fetch mojo # use --target-os=android if you want an Android build.
+$ cd src
 $ ./build/install-build-deps.sh
 ```
 
-You can then build by running:
+This creates a directory called 'src' under your checkout directory, clones
+the repository and its dependencies, and installs any packages needed to build.
+
+You can then build Mojo by running:
 
 ```
 $ gn gen out/Debug
