@@ -3,13 +3,15 @@
 # found in the LICENSE file.
 
 # GYP version: mojo/mojo_services.gypi:mojo_clipboard
-component("clipboard") {
+shared_library("clipboard") {
+  output_name = "mojo_clipboard"
+
   deps = [
     "//base",
     "//mojo/application",
     "//mojo/common",
     "//mojo/environment:chromium",
-    "//mojo/public/c/system:for_component",
+    "//mojo/public/c/system:for_shared_library",
     "//mojo/public/cpp/bindings",
     "//mojo/services/public/interfaces/clipboard",
     "//ui/base",
