@@ -9,7 +9,9 @@ if (is_android) {
   import("//build/config/android/rules.gni")
 }
 
-build_ime = true
+declare_args() {
+  ui_base_build_ime = true
+}
 
 component("base") {
   output_name = "ui_base"
@@ -235,7 +237,7 @@ component("base") {
     "//url",
   ]
 
-  if (build_ime) {
+  if (ui_base_build_ime) {
     if (!is_android) {
       deps += [
         "//ui/events",
@@ -594,7 +596,7 @@ source_set("test_support") {
     "//ui/gfx/geometry",
   ]
 
-  if (build_ime) {
+  if (ui_base_build_ime) {
     sources += [
       "ime/dummy_input_method.cc",
       "ime/dummy_input_method.h",
@@ -669,7 +671,7 @@ test("ui_unittests") {
     }
   }
 
-  if (build_ime) {
+  if (ui_base_build_ime) {
     sources += [
       "ime/candidate_window_unittest.cc",
       "ime/chromeos/character_composer_unittest.cc",
