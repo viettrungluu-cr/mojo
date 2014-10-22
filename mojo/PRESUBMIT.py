@@ -31,9 +31,7 @@ def CheckChangeOnUpload(input_api, output_api):
       (r".*\bpublic[\\\/]tools[\\\/]bindings[\\\/]pylib[\\\/]mojom[\\\/]"
            r"generate[\\\/].+\.py$",
        r".*\bpublic[\\\/]tools[\\\/]bindings[\\\/]generators[\\\/].+\.py$",
-       r".*\bspy[\\\/]ui[\\\/].+\.py$",
-       r".*\btools[\\\/]pylib[\\\/]transitive_hash\.py$",
-       r".*\btools[\\\/]test_runner\.py$")
+       r".*\bspy[\\\/]ui[\\\/].+\.py$")
 
   results = []
   pylint_extra_paths = [

@@ -6,14 +6,18 @@ import logging
 import subprocess
 import sys
 
+# pylint: disable=E0611
 from hashlib import sha256
+# pylint: enable=E0611
 from os.path import basename, realpath
 
 _logging = logging.getLogger()
 
+# pylint: disable=C0301
 # Based on/taken from
 #   http://code.activestate.com/recipes/578231-probably-the-fastest-memoization-decorator-in-the-/
 # (with cosmetic changes).
+# pylint: enable=C0301
 def _memoize(f):
   """Memoization decorator for a function taking a single argument."""
   class Memoize(dict):
@@ -80,7 +84,7 @@ depends (done in an order-independent way).""" % basename(argv[0])
   for filename in argv[1:]:
     try:
       print transitive_hash(filename), filename
-    except:
+    except subprocess.CalledProcessError:
       print "ERROR", filename
       rv = 1
   return rv

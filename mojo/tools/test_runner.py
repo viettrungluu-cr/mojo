@@ -52,7 +52,7 @@ def main(argv):
       with open(argv[3], 'rb') as f:
         successes = set([x.strip() for x in f.readlines()])
       _logging.debug("Successes: %s", successes)
-    except:
+    except IOError:
       # Just assume that it didn't exist, or whatever.
       print "Failed to read successes cache file %s (will create)" % argv[3]
       successes = set()
@@ -78,7 +78,7 @@ def main(argv):
       _logging.debug("Getting transitive hash for %s ... " % gtest)
       try:
         gtest_hash = transitive_hash(gtest)
-      except:
+      except subprocess.CalledProcessError:
         print "Failed to get transitive hash for %s" % gtest
         return 1
       _logging.debug("  Transitive hash: %s" % gtest_hash)
