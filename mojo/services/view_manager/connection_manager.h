@@ -9,17 +9,16 @@
 #include <set>
 
 #include "base/basictypes.h"
+#include "mojo/public/cpp/application/interface_factory.h"
 #include "mojo/public/cpp/bindings/array.h"
+#include "mojo/public/cpp/bindings/error_handler.h"
+#include "mojo/services/public/interfaces/view_manager/view_manager.mojom.h"
+#include "mojo/services/public/interfaces/window_manager/window_manager.mojom.h"
 #include "mojo/services/view_manager/display_manager.h"
 #include "mojo/services/view_manager/ids.h"
 #include "mojo/services/view_manager/server_view.h"
 #include "mojo/services/view_manager/server_view_delegate.h"
 #include "mojo/services/view_manager/view_manager_export.h"
-#include "mojo/services/view_manager/window_manager_client_impl.h"
-
-namespace ui {
-class Event;
-}
 
 namespace mojo {
 
@@ -31,7 +30,11 @@ class ViewManagerServiceImpl;
 
 // ConnectionManager manages the set of connections to the ViewManager (all the
 // ViewManagerServiceImpls) as well as providing the root of the hierarchy.
-class MOJO_VIEW_MANAGER_EXPORT ConnectionManager : public ServerViewDelegate {
+class MOJO_VIEW_MANAGER_EXPORT ConnectionManager
+    : public ServerViewDelegate,
+      public WindowManagerInternalClient,
+      public InterfaceFactory<ViewManagerService>,
+      public ErrorHandler {
  public:
   // Create when a ViewManagerServiceImpl is about to make a change. Ensures
   // clients are notified correctly.
@@ -75,13 +78,6 @@ class MOJO_VIEW_MANAGER_EXPORT ConnectionManager : public ServerViewDelegate {
 
   void AddConnection(ViewManagerServiceImpl* connection);
   void RemoveConnection(ViewManagerServiceImpl* connection);
-
-  // Used in two cases:
-  // . Establishes the client for the root.
-  // . Requests to Embed() at an unspecified view. For this case the request
-  //   is passed on to the WindowManagerService.
-  void Embed(const std::string& url,
-             InterfaceRequest<ServiceProvider> service_provider);
 
   // See description of ViewManagerService::Embed() for details. This assumes
   // |transport_view_id| is valid.
@@ -180,9 +176,20 @@ class MOJO_VIEW_MANAGER_EXPORT ConnectionManager : public ServerViewDelegate {
                        OrderDirection direction) override;
   void OnWillChangeViewVisibility(const ServerView* view) override;
 
+  // WindowManagerInternalClient:
+  virtual void DispatchInputEventToView(Id transport_view_id,
+                                        EventPtr event) override;
+
+  // InterfaceFactory<ViewManagerService>:
+  virtual void Create(ApplicationConnection* connection,
+                      InterfaceRequest<ViewManagerService> request) override;
+
+  // ErrorHandler:
+  void OnConnectionError() override;
+
   ApplicationConnection* app_connection_;
 
-  WindowManagerClientImpl wm_client_impl_;
+  WindowManagerInternalServicePtr window_manager_;
 
   // ID to use for next ViewManagerServiceImpl.
   ConnectionSpecificId next_connection_id_;

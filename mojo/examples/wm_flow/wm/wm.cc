@@ -141,6 +141,7 @@ class SimpleWM : public mojo::ApplicationDelegate,
   virtual void Embed(
       const mojo::String& url,
       mojo::InterfaceRequest<mojo::ServiceProvider> service_provider) override {
+    DCHECK(view_manager_);
     mojo::View* app_view = NULL;
     mojo::View* frame_view = CreateTopLevelWindow(&app_view);
     window_container_->AddChild(frame_view);

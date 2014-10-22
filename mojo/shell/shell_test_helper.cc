@@ -11,6 +11,7 @@
 #include "base/path_service.h"
 #include "mojo/shell/filename_util.h"
 #include "mojo/shell/init.h"
+#include "mojo/shell/mojo_url_resolver.h"
 
 namespace mojo {
 namespace shell {
@@ -35,6 +36,11 @@ void ShellTestHelper::Init() {
 void ShellTestHelper::SetLoaderForURL(scoped_ptr<ApplicationLoader> loader,
                                       const GURL& url) {
   context_.application_manager()->SetLoaderForURL(loader.Pass(), url);
+}
+
+void ShellTestHelper::AddCustomMapping(const GURL& mojo_url,
+                                       const GURL& resolved_url) {
+  context_.mojo_url_resolver()->AddCustomMapping(mojo_url, resolved_url);
 }
 
 }  // namespace shell

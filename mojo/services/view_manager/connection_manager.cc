@@ -31,11 +31,16 @@ ConnectionManager::ConnectionManager(
     ApplicationConnection* app_connection,
     const Callback<void()>& native_viewport_closed_callback)
     : app_connection_(app_connection),
-      wm_client_impl_(this),
       next_connection_id_(1),
       display_manager_(app_connection, this, native_viewport_closed_callback),
       root_(new ServerView(this, RootViewId())),
       current_change_(NULL) {
+  app_connection->ConnectToService(&window_manager_);
+  window_manager_.set_client(this);
+  window_manager_.set_error_handler(this);
+  // |app_connection| originates from the WindowManager. Let it connect
+  // directly to the ViewManager.
+  app_connection->AddService(this);
   root_->SetBounds(gfx::Rect(800, 600));
 }
 
@@ -68,21 +73,6 @@ void ConnectionManager::RemoveConnection(ViewManagerServiceImpl* connection) {
        ++i) {
     i->second->OnViewManagerServiceImplDestroyed(connection->id());
   }
-}
-
-void ConnectionManager::Embed(
-    const std::string& url,
-    InterfaceRequest<ServiceProvider> service_provider) {
-  if (connection_map_.empty()) {
-    // TODO(sky): this is unsafe and racy. Need a better way to determine the
-    // window manager.
-    EmbedImpl(kInvalidConnectionId,
-              String::From(url),
-              RootViewId(),
-              service_provider.Pass());
-    return;
-  }
-  wm_client_impl_.client()->Embed(url, service_provider.Pass());
 }
 
 void ConnectionManager::EmbedAtView(
@@ -131,8 +121,7 @@ const ViewManagerServiceImpl* ConnectionManager::GetConnectionWithRoot(
 }
 
 void ConnectionManager::DispatchViewInputEventToDelegate(EventPtr event) {
-  if (wm_client_impl_.client())
-    wm_client_impl_.client()->OnViewInputEvent(event.Pass());
+  window_manager_->OnViewInputEvent(event.Pass());
 }
 
 void ConnectionManager::ProcessViewBoundsChanged(const ServerView* view,
@@ -214,13 +203,6 @@ ViewManagerServiceImpl* ConnectionManager::EmbedImpl(
   view_manager_service_provider->ConnectToService(
       ViewManagerServiceImpl::Client::Name_, pipe.handle1.Pass());
 
-  if (root_id == RootViewId()) {
-    MessagePipe wm_pipe;
-    view_manager_service_provider->ConnectToService(
-        WindowManagerClientImpl::Client::Name_, wm_pipe.handle1.Pass());
-    WeakBindToPipe(&wm_client_impl_, wm_pipe.handle0.Pass());
-  }
-
   std::string creator_url;
   ConnectionMap::const_iterator it = connection_map_.find(creator_id);
   if (it != connection_map_.end())
@@ -295,6 +277,36 @@ void ConnectionManager::OnWillChangeViewVisibility(const ServerView* view) {
        ++i) {
     i->second->ProcessWillChangeViewVisibility(view, IsChangeSource(i->first));
   }
+}
+
+void ConnectionManager::DispatchInputEventToView(Id transport_view_id,
+                                                 EventPtr event) {
+  const ViewId view_id(ViewIdFromTransportId(transport_view_id));
+
+  ViewManagerServiceImpl* connection = GetConnectionWithRoot(view_id);
+  if (!connection)
+    connection = GetConnection(view_id.connection_id);
+  if (connection) {
+    connection->client()->OnViewInputEvent(
+        transport_view_id, event.Pass(), base::Bind(&base::DoNothing));
+  }
+}
+
+void ConnectionManager::Create(ApplicationConnection* connection,
+                               InterfaceRequest<ViewManagerService> request) {
+  // TODO(sky): If we lose this connection we should tear down.
+  ViewManagerServiceImpl* service =
+      new ViewManagerServiceImpl(this,
+                                 kInvalidConnectionId,
+                                 std::string(),
+                                 std::string("mojo:window_manager"),
+                                 RootViewId(),
+                                 InterfaceRequest<ServiceProvider>());
+  BindToRequest(service, &request);
+}
+
+void ConnectionManager::OnConnectionError() {
+  // We've lost the connection to the WindowManager.
 }
 
 }  // namespace service

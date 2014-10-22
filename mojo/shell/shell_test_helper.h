@@ -38,6 +38,10 @@ class ShellTestHelper {
   // the thread this class spawns.
   void SetLoaderForURL(scoped_ptr<ApplicationLoader> loader, const GURL& url);
 
+  // Adds a mapping that is used when resolving mojo urls. See MojoURLResolver
+  // for details.
+  void AddCustomMapping(const GURL& mojo_url, const GURL& resolved_url);
+
  private:
   Context context_;
   base::MessageLoop shell_loop_;

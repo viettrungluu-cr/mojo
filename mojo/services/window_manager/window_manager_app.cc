@@ -13,6 +13,7 @@
 #include "mojo/public/interfaces/application/shell.mojom.h"
 #include "mojo/services/public/cpp/view_manager/view.h"
 #include "mojo/services/public/cpp/view_manager/view_manager.h"
+#include "mojo/services/window_manager/window_manager_delegate.h"
 #include "ui/aura/window.h"
 #include "ui/aura/window_delegate.h"
 #include "ui/aura/window_property.h"
@@ -76,6 +77,13 @@ Id GetIdForWindow(aura::Window* window) {
 
 }  // namespace
 
+// Used for calls to Embed() that occur before we've connected to the
+// ViewManager.
+struct WindowManagerApp::PendingEmbed {
+  String url;
+  InterfaceRequest<mojo::ServiceProvider> service_provider;
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 // WindowManagerApp, public:
 
@@ -84,7 +92,8 @@ WindowManagerApp::WindowManagerApp(
     WindowManagerDelegate* window_manager_delegate)
     : shell_(nullptr),
       window_manager_service2_factory_(this),
-      window_manager_service_factory_(this),
+      window_manager_factory_(this),
+      window_manager_internal_service_factory_(this),
       wrapped_view_manager_delegate_(view_manager_delegate),
       window_manager_delegate_(window_manager_delegate),
       view_manager_(NULL),
@@ -149,21 +158,32 @@ void WindowManagerApp::InitFocus(wm::FocusRules* rules) {
   activation_client_->AddObserver(this);
 }
 
+void WindowManagerApp::Embed(
+    const String& url,
+    InterfaceRequest<ServiceProvider> service_provider) {
+  if (view_manager_) {
+    window_manager_delegate_->Embed(url, service_provider.Pass());
+    return;
+  }
+  scoped_ptr<PendingEmbed> pending_embed(new PendingEmbed);
+  pending_embed->url = url;
+  pending_embed->service_provider = service_provider.Pass();
+  pending_embeds_.push_back(pending_embed.release());
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // WindowManagerApp, ApplicationDelegate implementation:
 
 void WindowManagerApp::Initialize(ApplicationImpl* impl) {
   shell_ = impl->shell();
   aura_init_.reset(new AuraInit);
-  view_manager_client_factory_.reset(
-      new ViewManagerClientFactory(shell_, this));
+  LaunchViewManager(impl);
 }
 
 bool WindowManagerApp::ConfigureIncomingConnection(
     ApplicationConnection* connection) {
   connection->AddService(&window_manager_service2_factory_);
-  connection->AddService(view_manager_client_factory_.get());
-  connection->AddService(&window_manager_service_factory_);
+  connection->AddService(&window_manager_factory_);
   return true;
 }
 
@@ -196,6 +216,10 @@ void WindowManagerApp::OnEmbed(ViewManager* view_manager,
        it != connections_.end(); ++it) {
     (*it)->NotifyReady();
   }
+
+  for (PendingEmbed* pending_embed : pending_embeds_)
+    Embed(pending_embed->url, pending_embed->service_provider.Pass());
+  pending_embeds_.clear();
 }
 
 void WindowManagerApp::OnViewManagerDisconnected(
@@ -339,6 +363,24 @@ void WindowManagerApp::Unregister(View* view) {
   // for window.
   delete it->second;
   view_id_to_window_map_.erase(it);
+}
+
+void WindowManagerApp::LaunchViewManager(ApplicationImpl* app) {
+  // TODO(sky): figure out logic if this connection goes away.
+  view_manager_client_factory_.reset(
+      new ViewManagerClientFactory(shell_, this));
+
+  MessagePipe pipe;
+  ApplicationConnection* view_manager_app =
+      app->ConnectToApplication("mojo:view_manager");
+  ServiceProvider* view_manager_service_provider =
+      view_manager_app->GetServiceProvider();
+  view_manager_service_provider->ConnectToService(ViewManagerService::Name_,
+                                                  pipe.handle1.Pass());
+  view_manager_client_ = ViewManagerClientFactory::WeakBindViewManagerToPipe(
+                             pipe.handle0.Pass(), shell_, this).Pass();
+
+  view_manager_app->AddService(&window_manager_internal_service_factory_);
 }
 
 }  // namespace mojo

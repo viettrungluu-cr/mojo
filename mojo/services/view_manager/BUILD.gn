@@ -51,22 +51,17 @@ shared_library("view_manager") {
     "server_view.h",
     "server_view_delegate.h",
     "view_manager_export.h",
-    "view_manager_init_service_context.cc",
-    "view_manager_init_service_context.h",
-    "view_manager_init_service_impl.cc",
-    "view_manager_init_service_impl.h",
     "view_manager_service_impl.cc",
     "view_manager_service_impl.h",
     "window_manager_access_policy.cc",
     "window_manager_access_policy.h",
-    "window_manager_client_impl.cc",
-    "window_manager_client_impl.h",
   ]
 }
 
 # GYP version: mojo/mojo_services.gypi:mojo_view_manager_unittests
 test("mojo_view_manager_unittests") {
   deps = [
+    ":view_manager",
     "//base",
     "//base/test:test_support",
     "//mojo/application",
@@ -103,4 +98,8 @@ test("mojo_view_manager_unittests") {
     "test_change_tracker.h",
     "view_manager_unittest.cc",
   ]
+
+  if (!is_android) {  # TODO(GYP) Enable on Android when osmesa links.
+    deps += [ "//third_party/mesa:osmesa" ]
+  }
 }

@@ -8,6 +8,7 @@
 #include <set>
 
 #include "base/memory/scoped_ptr.h"
+#include "base/memory/scoped_vector.h"
 #include "mojo/aura/window_tree_host_mojo.h"
 #include "mojo/public/cpp/application/application_delegate.h"
 #include "mojo/public/cpp/application/interface_factory_impl.h"
@@ -16,8 +17,9 @@
 #include "mojo/services/public/cpp/view_manager/view_manager_client_factory.h"
 #include "mojo/services/public/cpp/view_manager/view_manager_delegate.h"
 #include "mojo/services/public/cpp/view_manager/view_observer.h"
+#include "mojo/services/window_manager/window_manager_impl.h"
+#include "mojo/services/window_manager/window_manager_internal_service_impl.h"
 #include "mojo/services/window_manager/window_manager_service2_impl.h"
-#include "mojo/services/window_manager/window_manager_service_impl.h"
 #include "ui/aura/client/focus_change_observer.h"
 #include "ui/events/event_handler.h"
 #include "ui/wm/public/activation_change_observer.h"
@@ -84,15 +86,17 @@ class WindowManagerApp
   // aura::Window hierarchy and attach event handlers.
   WindowTreeHostMojo* host() { return window_tree_host_.get(); }
 
-  WindowManagerDelegate* window_manager_delegate() {
-    return window_manager_delegate_;
-  }
-
   void InitFocus(wm::FocusRules* rules);
 
-  void set_window_manager_client(WindowManagerClient* client) {
+  void set_window_manager_client(WindowManagerInternalClient* client) {
     window_manager_client_ = client;
   }
+
+  // WindowManagerImpl::Embed() forwards to this. If connected to ViewManager
+  // then forwards to delegate, otherwise waits for connection to establish then
+  // forwards.
+  void Embed(const String& url,
+             InterfaceRequest<ServiceProvider> service_provider);
 
   // Overridden from ApplicationDelegate:
   void Initialize(ApplicationImpl* impl) override;
@@ -101,6 +105,8 @@ class WindowManagerApp
  private:
   typedef std::set<WindowManagerService2Impl*> Connections;
   typedef std::map<Id, aura::Window*> ViewIdToWindowMap;
+
+  struct PendingEmbed;
 
   // Overridden from ViewManagerDelegate:
   void OnEmbed(ViewManager* view_manager,
@@ -138,13 +144,20 @@ class WindowManagerApp
   // and removes from the registry.
   void Unregister(View* view);
 
+  // Creates the connection to the ViewManager.
+  void LaunchViewManager(ApplicationImpl* app);
+
   Shell* shell_;
 
   InterfaceFactoryImplWithContext<WindowManagerService2Impl, WindowManagerApp>
       window_manager_service2_factory_;
 
-  InterfaceFactoryImplWithContext<WindowManagerServiceImpl, WindowManagerApp>
-      window_manager_service_factory_;
+  InterfaceFactoryImplWithContext<WindowManagerImpl, WindowManagerApp>
+      window_manager_factory_;
+
+  InterfaceFactoryImplWithContext<WindowManagerInternalServiceImpl,
+                                  WindowManagerApp>
+      window_manager_internal_service_factory_;
 
   ViewManagerDelegate* wrapped_view_manager_delegate_;
   WindowManagerDelegate* window_manager_delegate_;
@@ -165,7 +178,11 @@ class WindowManagerApp
 
   scoped_ptr<DummyDelegate> dummy_delegate_;
 
-  WindowManagerClient* window_manager_client_;
+  WindowManagerInternalClient* window_manager_client_;
+
+  ScopedVector<PendingEmbed> pending_embeds_;
+
+  scoped_ptr<ViewManagerClient> view_manager_client_;
 
   DISALLOW_COPY_AND_ASSIGN(WindowManagerApp);
 };

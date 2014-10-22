@@ -6,34 +6,32 @@
 #include "mojo/public/c/system/main.h"
 #include "mojo/public/cpp/application/application_connection.h"
 #include "mojo/public/cpp/application/application_delegate.h"
-#include "mojo/services/view_manager/view_manager_init_service_context.h"
-#include "mojo/services/view_manager/view_manager_init_service_impl.h"
+#include "mojo/services/view_manager/connection_manager.h"
 
 namespace mojo {
 namespace service {
 
-class ViewManagerApp : public ApplicationDelegate,
-                       public InterfaceFactory<ViewManagerInitService> {
+class ViewManagerApp : public ApplicationDelegate {
  public:
   ViewManagerApp() {}
   ~ViewManagerApp() override {}
 
   bool ConfigureIncomingConnection(ApplicationConnection* connection) override {
-    context_.ConfigureIncomingConnection(connection);
-    // TODO(sky): this needs some sort of authentication as well as making sure
-    // we only ever have one active at a time.
-    connection->AddService(this);
+    if (!connection_manager_.get()) {
+      connection_manager_.reset(new ConnectionManager(
+          connection,
+          base::Bind(&ViewManagerApp::OnNativeViewportDeleted,
+                     base::Unretained(this))));
+    }
     return true;
   }
 
-  void Create(ApplicationConnection* connection,
-              InterfaceRequest<ViewManagerInitService> request) override {
-    BindToRequest(new ViewManagerInitServiceImpl(connection, &context_),
-                  &request);
+ private:
+  void OnNativeViewportDeleted() {
+    // TODO(sky): Need to tear down here.
   }
 
- private:
-  ViewManagerInitServiceContext context_;
+  scoped_ptr<ConnectionManager> connection_manager_;
 
   DISALLOW_COPY_AND_ASSIGN(ViewManagerApp);
 };

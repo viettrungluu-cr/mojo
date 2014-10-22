@@ -23,7 +23,7 @@ class WindowManagerService2Impl : public InterfaceImpl<WindowManagerService2> {
   void NotifyWindowActivated(Id new_active_id, Id old_active_id);
 
  private:
-  // Overridden from WindowManagerService:
+  // Overridden from WindowManagerService2:
   void SetCapture(Id view, const Callback<void(bool)>& callback) override;
   void FocusWindow(Id view, const Callback<void(bool)>& callback) override;
   void ActivateWindow(Id view, const Callback<void(bool)>& callback) override;

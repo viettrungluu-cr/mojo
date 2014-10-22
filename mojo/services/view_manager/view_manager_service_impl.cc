@@ -480,11 +480,6 @@ void ViewManagerServiceImpl::Embed(
   InterfaceRequest<ServiceProvider> spir;
   spir.Bind(service_provider.PassMessagePipe());
 
-  if (ViewIdFromTransportId(transport_view_id) == InvalidViewId()) {
-    connection_manager_->Embed(url, spir.Pass());
-    callback.Run(true);
-    return;
-  }
   const ServerView* view = GetView(ViewIdFromTransportId(transport_view_id));
   if (!view || !access_policy_->CanEmbed(view)) {
     callback.Run(false);

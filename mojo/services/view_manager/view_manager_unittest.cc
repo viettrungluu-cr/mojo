@@ -62,7 +62,6 @@ class ViewManagerProxy : public TestChangeTracker::Delegate {
         window_manager_client_(nullptr),
         quit_count_(0),
         router_(nullptr) {
-    SetInstance(this);
   }
 
   ~ViewManagerProxy() override {}
@@ -74,7 +73,7 @@ class ViewManagerProxy : public TestChangeTracker::Delegate {
 
   // Runs a message loop until the single instance has been created.
   static ViewManagerProxy* WaitForInstance() {
-    if (!instance_)
+    if (!instance_ || !instance_->view_manager())
       RunMainLoop();
     ViewManagerProxy* instance = instance_;
     instance_ = NULL;
@@ -82,7 +81,7 @@ class ViewManagerProxy : public TestChangeTracker::Delegate {
   }
 
   ViewManagerService* view_manager() { return view_manager_; }
-  WindowManagerClient* window_manager_client() {
+  WindowManagerInternalClient* window_manager_client() {
     return window_manager_client_;
   }
 
@@ -228,17 +227,18 @@ class ViewManagerProxy : public TestChangeTracker::Delegate {
     return result;
   }
 
+  void set_view_manager(ViewManagerService* view_manager) {
+    view_manager_ = view_manager;
+    SetInstance(this);
+  }
+
  private:
   friend class TestViewManagerClientConnection;
-  friend class WindowManagerServiceImpl;
+  friend class WindowManagerInternalServiceImpl;
 
   void set_router(mojo::internal::Router* router) { router_ = router; }
 
-  void set_view_manager(ViewManagerService* view_manager) {
-    view_manager_ = view_manager;
-  }
-
-  void set_window_manager_client(WindowManagerClient* client) {
+  void set_window_manager_client(WindowManagerInternalClient* client) {
     window_manager_client_ = client;
   }
 
@@ -302,7 +302,7 @@ class ViewManagerProxy : public TestChangeTracker::Delegate {
   base::MessageLoop* main_loop_;
 
   ViewManagerService* view_manager_;
-  WindowManagerClient* window_manager_client_;
+  WindowManagerInternalClient* window_manager_client_;
 
   // Number of changes we're waiting on until we quit the current loop.
   size_t quit_count_;
@@ -336,8 +336,8 @@ class TestViewManagerClientConnection
 
   // InterfaceImpl:
   void OnConnectionEstablished() override {
-    proxy_.set_router(internal_state()->router());
-    proxy_.set_view_manager(client());
+    proxy()->set_router(internal_state()->router());
+    proxy()->set_view_manager(client());
   }
 
   // ViewManagerClient:
@@ -345,35 +345,37 @@ class TestViewManagerClientConnection
                const String& creator_url,
                ViewDataPtr root,
                InterfaceRequest<ServiceProvider> services) override {
-    tracker_.OnEmbed(connection_id, creator_url, root.Pass());
+    tracker()->OnEmbed(connection_id, creator_url, root.Pass());
   }
   void OnViewBoundsChanged(Id view_id,
                            RectPtr old_bounds,
                            RectPtr new_bounds) override {
-    tracker_.OnViewBoundsChanged(view_id, old_bounds.Pass(), new_bounds.Pass());
+    tracker()->OnViewBoundsChanged(
+        view_id, old_bounds.Pass(), new_bounds.Pass());
   }
   void OnViewHierarchyChanged(Id view,
                               Id new_parent,
                               Id old_parent,
                               Array<ViewDataPtr> views) override {
-    tracker_.OnViewHierarchyChanged(view, new_parent, old_parent, views.Pass());
+    tracker()->OnViewHierarchyChanged(
+        view, new_parent, old_parent, views.Pass());
   }
   void OnViewReordered(Id view_id,
                        Id relative_view_id,
                        OrderDirection direction) override {
-    tracker_.OnViewReordered(view_id, relative_view_id, direction);
+    tracker()->OnViewReordered(view_id, relative_view_id, direction);
   }
-  void OnViewDeleted(Id view) override { tracker_.OnViewDeleted(view); }
+  void OnViewDeleted(Id view) override { tracker()->OnViewDeleted(view); }
   void OnViewVisibilityChanged(uint32_t view, bool visible) override {
-    tracker_.OnViewVisibilityChanged(view, visible);
+    tracker()->OnViewVisibilityChanged(view, visible);
   }
   void OnViewDrawnStateChanged(uint32_t view, bool drawn) override {
-    tracker_.OnViewDrawnStateChanged(view, drawn);
+    tracker()->OnViewDrawnStateChanged(view, drawn);
   }
   void OnViewInputEvent(Id view_id,
                         EventPtr event,
                         const Callback<void()>& callback) override {
-    tracker_.OnViewInputEvent(view_id, event.Pass());
+    tracker()->OnViewInputEvent(view_id, event.Pass());
   }
 
  private:
@@ -383,36 +385,34 @@ class TestViewManagerClientConnection
   DISALLOW_COPY_AND_ASSIGN(TestViewManagerClientConnection);
 };
 
-class WindowManagerServiceImpl : public InterfaceImpl<WindowManagerService> {
+class WindowManagerInternalServiceImpl
+    : public InterfaceImpl<WindowManagerInternalService> {
  public:
-  explicit WindowManagerServiceImpl(TestViewManagerClientConnection* connection)
+  explicit WindowManagerInternalServiceImpl(
+      TestViewManagerClientConnection* connection)
       : connection_(connection) {}
-  ~WindowManagerServiceImpl() override {}
+  ~WindowManagerInternalServiceImpl() override {}
 
   // InterfaceImpl:
   void OnConnectionEstablished() override {
     connection_->proxy()->set_window_manager_client(client());
   }
 
-  // WindowManagerService:
-  void Embed(const String& url,
-             InterfaceRequest<ServiceProvider> service_provider) override {
-    connection_->tracker()->DelegateEmbed(url);
-  }
   void OnViewInputEvent(mojo::EventPtr event) override {}
 
  private:
   TestViewManagerClientConnection* connection_;
 
-  DISALLOW_COPY_AND_ASSIGN(WindowManagerServiceImpl);
+  DISALLOW_COPY_AND_ASSIGN(WindowManagerInternalServiceImpl);
 };
 
 // Used with ViewManagerService::Embed(). Creates a
 // TestViewManagerClientConnection, which creates and owns the ViewManagerProxy.
-class EmbedApplicationLoader : public ApplicationLoader,
-                               ApplicationDelegate,
-                               public InterfaceFactory<ViewManagerClient>,
-                               public InterfaceFactory<WindowManagerService> {
+class EmbedApplicationLoader
+    : public ApplicationLoader,
+      ApplicationDelegate,
+      public InterfaceFactory<ViewManagerClient>,
+      public InterfaceFactory<WindowManagerInternalService> {
  public:
   EmbedApplicationLoader() : last_view_manager_client_(nullptr) {}
   ~EmbedApplicationLoader() override {}
@@ -434,29 +434,130 @@ class EmbedApplicationLoader : public ApplicationLoader,
   // ApplicationDelegate implementation:
   bool ConfigureIncomingConnection(ApplicationConnection* connection) override {
     connection->AddService<ViewManagerClient>(this);
-    connection->AddService<WindowManagerService>(this);
+    connection->AddService<WindowManagerInternalService>(this);
     return true;
   }
 
   // InterfaceFactory<ViewManagerClient> implementation:
   void Create(ApplicationConnection* connection,
               InterfaceRequest<ViewManagerClient> request) override {
-    last_view_manager_client_ = new TestViewManagerClientConnection;
+    last_view_manager_client_ = new TestViewManagerClientConnection();
     BindToRequest(last_view_manager_client_, &request);
   }
   void Create(ApplicationConnection* connection,
-              InterfaceRequest<WindowManagerService> request) override {
-    BindToRequest(new WindowManagerServiceImpl(last_view_manager_client_),
-                  &request);
+              InterfaceRequest<WindowManagerInternalService> request) override {
+    BindToRequest(
+        new WindowManagerInternalServiceImpl(last_view_manager_client_),
+        &request);
   }
 
  private:
   // Used so that TestViewManagerClientConnection and
-  // WindowManagerServiceImpl can share the same TestChangeTracker.
+  // WindowManagerInternalServiceImpl can share the same TestChangeTracker.
   TestViewManagerClientConnection* last_view_manager_client_;
   ScopedVector<ApplicationImpl> apps_;
 
   DISALLOW_COPY_AND_ASSIGN(EmbedApplicationLoader);
+};
+
+class TestWindowManagerImpl
+    : public InterfaceImpl<WindowManager>,
+      public InterfaceFactory<WindowManagerInternalService> {
+ public:
+  explicit TestWindowManagerImpl(ApplicationConnection* connection)
+      : view_manager_client_(nullptr), got_initial_embed_(false) {
+    // WindowManager is expected to establish initial connection to VM.
+    ApplicationConnection* view_manager_app =
+        connection->ConnectToApplication("mojo:view_manager");
+    view_manager_app->AddService<WindowManagerInternalService>(this);
+    view_manager_app->ConnectToService(&view_manager_);
+
+    view_manager_client_ = new TestViewManagerClientConnection();
+    view_manager_.set_client(view_manager_client_);
+    view_manager_client_->proxy()->set_view_manager(view_manager_.get());
+  }
+
+  virtual ~TestWindowManagerImpl() {}
+
+  TestViewManagerClientConnection* view_manager_client() {
+    return view_manager_client_;
+  }
+
+  // InterfaceImpl:
+  virtual void OnConnectionEstablished() override {}
+
+  // WindowManager:
+  virtual void Embed(
+      const String& url,
+      InterfaceRequest<ServiceProvider> service_provider) override {
+    if (!got_initial_embed_) {
+      got_initial_embed_ = true;
+      return;
+    }
+    view_manager_client_->tracker()->DelegateEmbed(url);
+  }
+
+  // InterfaceFactory<>:
+  virtual void Create(
+      ApplicationConnection* connection,
+      InterfaceRequest<WindowManagerInternalService> request) override {
+    BindToRequest(new WindowManagerInternalServiceImpl(view_manager_client_),
+                  &request);
+  }
+
+ private:
+  ViewManagerServicePtr view_manager_;
+  TestViewManagerClientConnection* view_manager_client_;
+
+  // Did we get Embed() yet?
+  bool got_initial_embed_;
+
+  DISALLOW_COPY_AND_ASSIGN(TestWindowManagerImpl);
+};
+
+class WindowManagerLoader : public ApplicationLoader,
+                            public ApplicationDelegate,
+                            public InterfaceFactory<WindowManager> {
+ public:
+  explicit WindowManagerLoader(EmbedApplicationLoader* app_loader)
+      : app_loader_(app_loader) {}
+  virtual ~WindowManagerLoader() {}
+
+  // ApplicationLoader implementation:
+  virtual void Load(ApplicationManager* manager,
+                    const GURL& url,
+                    scoped_refptr<LoadCallbacks> callbacks) override {
+    ScopedMessagePipeHandle shell_handle = callbacks->RegisterApplication();
+    if (!shell_handle.is_valid())
+      return;
+    scoped_ptr<ApplicationImpl> app(
+        new ApplicationImpl(this, shell_handle.Pass()));
+    apps_.push_back(app.release());
+  }
+  virtual void OnApplicationError(ApplicationManager* manager,
+                                  const GURL& url) override {}
+
+  // ApplicationDelegate implementation:
+  virtual bool ConfigureIncomingConnection(
+      ApplicationConnection* connection) override {
+    connection->AddService<WindowManager>(this);
+    return true;
+  }
+
+  // InterfaceFactory<WindowManagerService>:
+  virtual void Create(ApplicationConnection* connection,
+                      InterfaceRequest<WindowManager> request) override {
+    TestWindowManagerImpl* window_manager =
+        new TestWindowManagerImpl(connection);
+    BindToRequest(window_manager, &request);
+  }
+
+ private:
+  // TODO: unused.
+  EmbedApplicationLoader* app_loader_;
+  ScopedVector<ApplicationImpl> apps_;
+
+  DISALLOW_COPY_AND_ASSIGN(WindowManagerLoader);
 };
 
 // Creates an id used for transport from the specified parameters.
@@ -465,27 +566,15 @@ Id BuildViewId(ConnectionSpecificId connection_id,
   return (connection_id << 16) | view_id;
 }
 
-// Callback from Embed(). |result| is the result of the
-// Embed() call and |run_loop| the nested RunLoop.
-void EmbedCallback(bool* result_cache, base::RunLoop* run_loop, bool result) {
-  *result_cache = result;
-  run_loop->Quit();
-}
-
-// Embed from an application that does not yet have a view manager connection.
-// Blocks until result is determined.
-bool InitEmbed(ViewManagerInitService* view_manager_init,
-               const std::string& url,
-               size_t number_of_calls) {
-  bool result = false;
-  base::RunLoop run_loop;
+// Asks the window manager to Embed() the specified URL.
+void WindowManagerEmbed(WindowManager* window_manager,
+                        const std::string& url,
+                        size_t number_of_calls) {
   for (size_t i = 0; i < number_of_calls; ++i) {
     ServiceProviderPtr sp;
-    view_manager_init->Embed(url, sp.Pass(),
-                             base::Bind(&EmbedCallback, &result, &run_loop));
+    window_manager->Embed(url,
+                          MakeRequest<ServiceProvider>(sp.PassMessagePipe()));
   }
-  run_loop.Run();
-  return result;
 }
 
 }  // namespace
@@ -518,13 +607,17 @@ class ViewManagerTest : public testing::Test {
         scoped_ptr<ApplicationLoader>(new EmbedApplicationLoader()),
         GURL(kTestServiceURL));
 
+    EmbedApplicationLoader* embed_loader = new EmbedApplicationLoader;
+    test_helper_.SetLoaderForURL(scoped_ptr<ApplicationLoader>(embed_loader),
+                                 GURL(kTestServiceURL2));
+
     test_helper_.SetLoaderForURL(
-        scoped_ptr<ApplicationLoader>(new EmbedApplicationLoader()),
-        GURL(kTestServiceURL2));
+        scoped_ptr<ApplicationLoader>(new WindowManagerLoader(embed_loader)),
+        GURL("mojo:window_manager"));
 
     test_helper_.application_manager()->ConnectToService(
-        GURL("mojo:view_manager"), &view_manager_init_);
-    ASSERT_TRUE(InitEmbed(view_manager_init_.get(), kTestServiceURL, 1));
+        GURL("mojo:window_manager"), &window_manager_);
+    WindowManagerEmbed(window_manager_.get(), kTestServiceURL, 1);
 
     connection_ = ViewManagerProxy::WaitForInstance();
     ASSERT_TRUE(connection_ != NULL);
@@ -536,8 +629,7 @@ class ViewManagerTest : public testing::Test {
       connection3_->Destroy();
     if (connection2_)
       connection2_->Destroy();
-    if (connection_)
-      connection_->Destroy();
+    // |connection_| is owned by |window_manager_|, no need to destroy it.
   }
 
  protected:
@@ -557,7 +649,7 @@ class ViewManagerTest : public testing::Test {
         EstablishSecondConnectionWithRoot(BuildViewId(1, 1)));
     const std::vector<Change>& changes(connection2_->changes());
     ASSERT_EQ(1u, changes.size());
-    EXPECT_EQ("OnEmbed creator=mojo:test_url",
+    EXPECT_EQ("OnEmbed creator=mojo:window_manager",
               ChangesToDescription1(changes)[0]);
     if (create_initial_view)
       EXPECT_EQ("[view=1,1 parent=null]", ChangeViewDescription(changes));
@@ -570,7 +662,9 @@ class ViewManagerTest : public testing::Test {
     ASSERT_TRUE(connection3_ != NULL);
     connection3_->DoRunLoopUntilChangesCount(1);
     ASSERT_EQ(1u, connection3_->changes().size());
-    EXPECT_EQ("OnEmbed creator=mojo:test_url",
+    const std::string expected_creator =
+        owner == connection_ ? "mojo:window_manager" : kTestServiceURL;
+    EXPECT_EQ("OnEmbed creator=" + expected_creator,
               ChangesToDescription1(connection3_->changes())[0]);
   }
 
@@ -582,7 +676,7 @@ class ViewManagerTest : public testing::Test {
   base::ShadowingAtExitManager at_exit_;
   shell::ShellTestHelper test_helper_;
 
-  ViewManagerInitServicePtr view_manager_init_;
+  WindowManagerPtr window_manager_;
 
   // NOTE: this connection is the root. As such, it has special permissions.
   ViewManagerProxy* connection_;
@@ -593,19 +687,13 @@ class ViewManagerTest : public testing::Test {
 };
 
 TEST_F(ViewManagerTest, SecondEmbedRoot_InitService) {
-  ASSERT_TRUE(InitEmbed(view_manager_init_.get(), kTestServiceURL, 1));
-  connection_->DoRunLoopUntilChangesCount(1);
-  EXPECT_EQ(kTestServiceURL, connection_->changes()[0].embed_url);
-}
-
-TEST_F(ViewManagerTest, SecondEmbedRoot_Service) {
-  ASSERT_TRUE(connection_->Embed(BuildViewId(0, 0), kTestServiceURL));
+  WindowManagerEmbed(window_manager_.get(), kTestServiceURL, 1);
   connection_->DoRunLoopUntilChangesCount(1);
   EXPECT_EQ(kTestServiceURL, connection_->changes()[0].embed_url);
 }
 
 TEST_F(ViewManagerTest, MultipleEmbedRootsBeforeWTHReady) {
-  ASSERT_TRUE(InitEmbed(view_manager_init_.get(), kTestServiceURL, 2));
+  WindowManagerEmbed(window_manager_.get(), kTestServiceURL, 2);
   connection_->DoRunLoopUntilChangesCount(2);
   EXPECT_EQ(kTestServiceURL, connection_->changes()[0].embed_url);
   EXPECT_EQ(kTestServiceURL, connection_->changes()[1].embed_url);
@@ -627,7 +715,7 @@ TEST_F(ViewManagerTest, DISABLED_ValidId) {
 // Verifies two clients/connections get different ids.
 TEST_F(ViewManagerTest, TwoClientsGetDifferentConnectionIds) {
   ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(true));
-  EXPECT_EQ("OnEmbed creator=mojo:test_url",
+  EXPECT_EQ("OnEmbed creator=mojo:window_manager",
             ChangesToDescription1(connection2_->changes())[0]);
 
   // It isn't strictly necessary that the second connection gets 2, but these
@@ -1299,7 +1387,7 @@ TEST_F(ViewManagerTest, EmbedWithSameViewId2) {
     connection4->DoRunLoopUntilChangesCount(1);
     const std::vector<Change>& changes(connection4->changes());
     ASSERT_EQ(1u, changes.size());
-    EXPECT_EQ("OnEmbed creator=mojo:test_url",
+    EXPECT_EQ("OnEmbed creator=mojo:window_manager",
               ChangesToDescription1(changes)[0]);
     EXPECT_EQ("[view=1,1 parent=null]", ChangeViewDescription(changes));
 

@@ -29,8 +29,10 @@ source_set("lib") {
     "window_manager_app.cc",
     "window_manager_app.h",
     "window_manager_delegate.h",
-    "window_manager_service_impl.cc",
-    "window_manager_service_impl.h",
+    "window_manager_internal_service_impl.cc",
+    "window_manager_internal_service_impl.h",
+    "window_manager_impl.cc",
+    "window_manager_impl.h",
     "window_manager_service2_impl.cc",
     "window_manager_service2_impl.h",
   ]
