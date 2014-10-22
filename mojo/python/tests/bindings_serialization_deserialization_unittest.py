@@ -3,7 +3,8 @@
 # found in the LICENSE file.
 
 import math
-import unittest
+
+import mojo_unittest
 
 # pylint: disable=E0611,F0401
 import mojo.system
@@ -58,7 +59,7 @@ def _NewFoo():
   return foo_instance
 
 
-class SerializationDeserializationTest(unittest.TestCase):
+class SerializationDeserializationTest(mojo_unittest.MojoTestCase):
 
   def testFooSerialization(self):
     (data, _) = _NewFoo().Serialize()
