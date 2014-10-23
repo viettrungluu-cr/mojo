@@ -93,8 +93,8 @@ class PNGView : public ViewManagerDelegate, public ViewObserver {
 
   // Overridden from ViewObserver:
   virtual void OnViewBoundsChanged(View* view,
-                                   const gfx::Rect& old_bounds,
-                                   const gfx::Rect& new_bounds) override {
+                                   const Rect& old_bounds,
+                                   const Rect& new_bounds) override {
     DCHECK_EQ(view, root_);
     DrawBitmap();
   }
@@ -135,7 +135,7 @@ class PNGView : public ViewManagerDelegate, public ViewObserver {
       return;
 
     skia::RefPtr<SkCanvas> canvas(skia::AdoptRef(skia::CreatePlatformCanvas(
-        root_->bounds().width(), root_->bounds().height(), true)));
+        root_->bounds().width, root_->bounds().height, true)));
     canvas->drawColor(SK_ColorGRAY);
     SkPaint paint;
     SkScalar scale =

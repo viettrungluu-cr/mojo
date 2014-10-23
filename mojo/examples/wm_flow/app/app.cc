@@ -93,8 +93,10 @@ class WMFlowApp : public mojo::ApplicationDelegate,
 
     mojo::View* embed = mojo::View::Create(view_manager);
     root->AddChild(embed);
-    gfx::Rect bounds = gfx::Rect(root->bounds().size());
-    bounds.Inset(25, 25);
+    mojo::Rect bounds;
+    bounds.x = bounds.y = 25;
+    bounds.width = root->bounds().width - 50;
+    bounds.height = root->bounds().height - 50;
     embed->SetBounds(bounds);
 
     scoped_ptr<mojo::ServiceProviderImpl> registry(

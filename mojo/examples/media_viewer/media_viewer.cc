@@ -164,7 +164,7 @@ class ControlPanel : public views::ButtonListener {
         views::Widget::InitParams::TYPE_WINDOW_FRAMELESS);
     params.native_widget = new NativeWidgetViewManager(widget, shell, view);
     params.delegate = widget_delegate;
-    params.bounds = gfx::Rect(view->bounds().width(), view->bounds().height());
+    params.bounds = gfx::Rect(view->bounds().width, view->bounds().height);
     params.opacity = views::Widget::InitParams::OPAQUE_WINDOW;
     widget->Init(params);
     widget->Show();
@@ -232,10 +232,14 @@ class MediaViewer
 
   void LayoutViews() {
     View* root = content_view_->parent();
-    gfx::Rect control_bounds(root->bounds().width(), 28);
+    Rect control_bounds;
+    control_bounds.width = root->bounds().width;
+    control_bounds.height = 28;
     control_view_->SetBounds(control_bounds);
-    gfx::Rect content_bounds(0, control_bounds.height(), root->bounds().width(),
-                             root->bounds().height() - control_bounds.height());
+    Rect content_bounds;
+    content_bounds.y = control_bounds.height;
+    content_bounds.width = root->bounds().width;
+    content_bounds.height = root->bounds().height - control_bounds.height;
     content_view_->SetBounds(content_bounds);
   }
 
@@ -287,8 +291,8 @@ class MediaViewer
 
   // ViewObserver:
   virtual void OnViewBoundsChanged(View* view,
-                                   const gfx::Rect& old_bounds,
-                                   const gfx::Rect& new_bounds) override {
+                                   const Rect& old_bounds,
+                                   const Rect& new_bounds) override {
     LayoutViews();
   }
   virtual void OnViewDestroyed(View* view) override {

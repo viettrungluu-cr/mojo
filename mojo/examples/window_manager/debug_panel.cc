@@ -65,7 +65,7 @@ DebugPanel::DebugPanel(Delegate* delegate, Shell* shell, View* view)
       views::Widget::InitParams::TYPE_WINDOW_FRAMELESS);
   params.native_widget = new NativeWidgetViewManager(widget, shell, view);
   params.delegate = widget_delegate;
-  params.bounds = gfx::Rect(view->bounds().size());
+  params.bounds = gfx::Rect(0, 0, view->bounds().width, view->bounds().height);
   widget->Init(params);
   widget->Show();
 }

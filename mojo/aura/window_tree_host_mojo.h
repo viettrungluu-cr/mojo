@@ -56,8 +56,8 @@ class WindowTreeHostMojo : public aura::WindowTreeHost,
 
   // ViewObserver:
   void OnViewBoundsChanged(View* view,
-                           const gfx::Rect& old_bounds,
-                           const gfx::Rect& new_bounds) override;
+                           const Rect& old_bounds,
+                           const Rect& new_bounds) override;
 
   View* view_;
 

@@ -84,7 +84,7 @@ void BitmapUploader::SetBitmap(const SkBitmap& bitmap) {
 }
 
 void BitmapUploader::Upload() {
-  const gfx::Size& size(view_->bounds().size());
+  const gfx::Size size(view_->bounds().width, view_->bounds().height);
   if (size.IsEmpty()) {
     view_->SetSurfaceId(SurfaceId::New());
     return;

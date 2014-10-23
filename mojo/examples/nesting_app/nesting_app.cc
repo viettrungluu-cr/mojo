@@ -69,7 +69,10 @@ class NestingApp
 
     nested_ = View::Create(view_manager);
     root->AddChild(nested_);
-    nested_->SetBounds(gfx::Rect(20, 20, 50, 50));
+    Rect rect;
+    rect.x = rect.y = 20;
+    rect.width = rect.height = 50;
+    nested_->SetBounds(rect);
     nested_->Embed(kEmbeddedAppURL);
   }
   virtual void OnViewManagerDisconnected(ViewManager* view_manager) override {

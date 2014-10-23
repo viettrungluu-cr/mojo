@@ -9,7 +9,6 @@
 #include "base/callback.h"
 #include "base/memory/scoped_vector.h"
 #include "base/memory/weak_ptr.h"
-#include "mojo/converters/geometry/geometry_type_converters.h"
 #include "mojo/services/public/cpp/view_manager/types.h"
 #include "mojo/services/public/cpp/view_manager/view.h"
 #include "mojo/services/public/cpp/view_manager/view_manager.h"
@@ -49,7 +48,7 @@ class ViewManagerClientImpl : public ViewManager,
   // Returns true if the specified view was created by this connection.
   bool OwnsView(Id id) const;
 
-  void SetBounds(Id view_id, const gfx::Rect& bounds);
+  void SetBounds(Id view_id, const Rect& bounds);
   void SetSurfaceId(Id view_id, SurfaceIdPtr surface_id);
   void SetFocus(Id view_id);
   void SetVisible(Id view_id, bool visible);

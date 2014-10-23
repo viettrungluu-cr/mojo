@@ -109,4 +109,19 @@ gfx::Transform TypeConverter<gfx::Transform, TransformPtr>::Convert(
   return transform;
 }
 
+// static
+Rect TypeConverter<Rect, gfx::Rect>::Convert(const gfx::Rect& input) {
+  Rect rect;
+  rect.x = input.x();
+  rect.y = input.y();
+  rect.width = input.width();
+  rect.height = input.height();
+  return rect;
+}
+
+// static
+gfx::Rect TypeConverter<gfx::Rect, Rect>::Convert(const Rect& input) {
+  return gfx::Rect(input.x, input.y, input.width, input.height);
+}
+
 }  // namespace mojo

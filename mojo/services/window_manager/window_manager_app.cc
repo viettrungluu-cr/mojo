@@ -7,6 +7,7 @@
 #include "base/message_loop/message_loop.h"
 #include "base/stl_util.h"
 #include "mojo/aura/aura_init.h"
+#include "mojo/converters/geometry/geometry_type_converters.h"
 #include "mojo/converters/input_events/input_events_type_converters.h"
 #include "mojo/public/cpp/application/application_connection.h"
 #include "mojo/public/cpp/application/application_impl.h"
@@ -199,7 +200,7 @@ void WindowManagerApp::OnEmbed(ViewManager* view_manager,
   root_ = root;
 
   window_tree_host_.reset(new WindowTreeHostMojo(shell_, root_));
-  window_tree_host_->window()->SetBounds(root->bounds());
+  window_tree_host_->window()->SetBounds(root->bounds().To<gfx::Rect>());
   window_tree_host_->window()->Show();
 
   RegisterSubtree(root_, window_tree_host_->window());
@@ -272,10 +273,10 @@ void WindowManagerApp::OnViewDestroying(View* view) {
 }
 
 void WindowManagerApp::OnViewBoundsChanged(View* view,
-                                           const gfx::Rect& old_bounds,
-                                           const gfx::Rect& new_bounds) {
+                                           const Rect& old_bounds,
+                                           const Rect& new_bounds) {
   aura::Window* window = GetWindowForViewId(view->id());
-  window->SetBounds(new_bounds);
+  window->SetBounds(new_bounds.To<gfx::Rect>());
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -336,7 +337,7 @@ void WindowManagerApp::RegisterSubtree(View* view, aura::Window* parent) {
   if (view == root_)
     window->AddPreTargetHandler(this);
   parent->AddChild(window);
-  window->SetBounds(view->bounds());
+  window->SetBounds(view->bounds().To<gfx::Rect>());
   window->Show();
   view_id_to_window_map_[view->id()] = window;
   View::Children::const_iterator it = view->children().begin();

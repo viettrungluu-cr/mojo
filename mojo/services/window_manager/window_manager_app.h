@@ -119,8 +119,8 @@ class WindowManagerApp
   void OnTreeChanged(const ViewObserver::TreeChangeParams& params) override;
   void OnViewDestroying(View* view) override;
   void OnViewBoundsChanged(View* view,
-                           const gfx::Rect& old_bounds,
-                           const gfx::Rect& new_bounds) override;
+                           const Rect& old_bounds,
+                           const Rect& new_bounds) override;
 
   // Overridden from ui::EventHandler:
   void OnEvent(ui::Event* event) override;

@@ -6,6 +6,7 @@
 
 #include "base/macros.h"
 #include "base/strings/utf_string_conversions.h"
+#include "mojo/converters/geometry/geometry_type_converters.h"
 #include "mojo/services/public/cpp/view_manager/view.h"
 #include "mojo/services/window_manager/window_manager_app.h"
 #include "mojo/views/native_widget_view_manager.h"
@@ -50,7 +51,7 @@ class FrameController::LayoutManager : public views::LayoutManager,
     bounds.Inset(kFrameSize,
                  close_button_->bounds().bottom() + kButtonFrameMargin,
                  kFrameSize, kFrameSize);
-    controller_->app_view_->SetBounds(bounds);
+    controller_->app_view_->SetBounds(*mojo::Rect::From(bounds));
   }
   virtual gfx::Size GetPreferredSize(const views::View* host) const override {
     return gfx::Size();
@@ -120,7 +121,8 @@ FrameController::FrameController(
       views::Widget::InitParams::TYPE_WINDOW_FRAMELESS);
   params.native_widget =
       new mojo::NativeWidgetViewManager(widget_, shell, view_);
-  params.bounds = gfx::Rect(view_->bounds().size());
+  params.bounds = gfx::Rect(
+      0, 0, view_->bounds().width, view_->bounds().height);
   widget_->Init(params);
   widget_->SetContentsView(frame_view_);
   widget_->Show();
@@ -135,12 +137,12 @@ void FrameController::CloseWindow() {
 
 void FrameController::ToggleMaximize() {
   if (!maximized_)
-    restored_bounds_ = view_->bounds();
+    restored_bounds_ = view_->bounds().To<gfx::Rect>();
   maximized_ = !maximized_;
   if (maximized_)
     view_->SetBounds(view_->parent()->bounds());
   else
-    view_->SetBounds(restored_bounds_);
+    view_->SetBounds(*mojo::Rect::From(restored_bounds_));
 }
 
 void FrameController::ActivateWindow() {

@@ -176,7 +176,11 @@ class SimpleWM : public mojo::ApplicationDelegate,
 
   mojo::View* CreateTopLevelWindow(mojo::View** app_view) {
     mojo::View* frame_view = mojo::View::Create(view_manager_);
-    frame_view->SetBounds(gfx::Rect(next_window_origin_, gfx::Size(400, 400)));
+    mojo::Rect rect;
+    rect.x = next_window_origin_.x();
+    rect.y = next_window_origin_.y();
+    rect.width = rect.height = 400;
+    frame_view->SetBounds(rect);
     next_window_origin_.Offset(50, 50);
 
     aura::client::ActivationClient* client = aura::client::GetActivationClient(

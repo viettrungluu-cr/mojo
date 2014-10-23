@@ -5,6 +5,7 @@
 #include "mojo/views/native_widget_view_manager.h"
 
 #include "mojo/aura/window_tree_host_mojo.h"
+#include "mojo/converters/geometry/geometry_type_converters.h"
 #include "mojo/converters/input_events/input_events_type_converters.h"
 #include "ui/aura/client/aura_constants.h"
 #include "ui/aura/client/default_capture_client.h"
@@ -139,9 +140,10 @@ void NativeWidgetViewManager::OnViewDestroyed(View* view) {
 }
 
 void NativeWidgetViewManager::OnViewBoundsChanged(View* view,
-                                                  const gfx::Rect& old_bounds,
-                                                  const gfx::Rect& new_bounds) {
-  GetWidget()->SetBounds(gfx::Rect(view->bounds().size()));
+                                                  const Rect& old_bounds,
+                                                  const Rect& new_bounds) {
+  gfx::Rect view_rect = view->bounds().To<gfx::Rect>();
+  GetWidget()->SetBounds(gfx::Rect(view_rect.size()));
 }
 
 void NativeWidgetViewManager::OnViewInputEvent(View* view,

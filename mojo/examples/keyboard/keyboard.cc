@@ -92,7 +92,7 @@ class Keyboard : public ApplicationDelegate,
         views::Widget::InitParams::TYPE_WINDOW_FRAMELESS);
     params.native_widget = new NativeWidgetViewManager(widget, shell_, view);
     params.delegate = widget_delegate;
-    params.bounds = gfx::Rect(view->bounds().width(), view->bounds().height());
+    params.bounds = gfx::Rect(view->bounds().width, view->bounds().height);
     widget->Init(params);
     widget->Show();
   }

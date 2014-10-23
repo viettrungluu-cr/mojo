@@ -5,6 +5,7 @@
 #include "mojo/aura/window_tree_host_mojo.h"
 
 #include "mojo/aura/surface_context_factory.h"
+#include "mojo/converters/geometry/geometry_type_converters.h"
 #include "mojo/public/interfaces/application/shell.mojom.h"
 #include "mojo/services/public/cpp/view_manager/view_manager.h"
 #include "ui/aura/env.h"
@@ -19,7 +20,7 @@ namespace mojo {
 // WindowTreeHostMojo, public:
 
 WindowTreeHostMojo::WindowTreeHostMojo(Shell* shell, View* view)
-    : view_(view), bounds_(view->bounds()) {
+    : view_(view), bounds_(view->bounds().To<gfx::Rect>()) {
   view_->AddObserver(this);
 
   context_factory_.reset(new SurfaceContextFactory(shell, view_));
@@ -107,12 +108,14 @@ ui::EventProcessor* WindowTreeHostMojo::GetEventProcessor() {
 
 void WindowTreeHostMojo::OnViewBoundsChanged(
     View* view,
-    const gfx::Rect& old_bounds,
-    const gfx::Rect& new_bounds) {
-  bounds_ = new_bounds;
-  if (old_bounds.origin() != new_bounds.origin())
+    const Rect& old_bounds,
+    const Rect& new_bounds) {
+  gfx::Rect old_bounds2 = old_bounds.To<gfx::Rect>();
+  gfx::Rect new_bounds2 = new_bounds.To<gfx::Rect>();
+  bounds_ = new_bounds2;
+  if (old_bounds2.origin() != new_bounds2.origin())
     OnHostMoved(bounds_.origin());
-  if (old_bounds.size() != new_bounds.size())
+  if (old_bounds2.size() != new_bounds2.size())
     OnHostResized(bounds_.size());
 }
 

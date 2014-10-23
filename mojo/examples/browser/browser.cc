@@ -194,7 +194,7 @@ class Browser : public ApplicationDelegate,
         views::Widget::InitParams::TYPE_WINDOW_FRAMELESS);
     params.native_widget = new NativeWidgetViewManager(widget_, shell_, view);
     params.delegate = widget_delegate;
-    params.bounds = gfx::Rect(view->bounds().width(), view->bounds().height());
+    params.bounds = gfx::Rect(view->bounds().width, view->bounds().height);
     widget_->Init(params);
     // KeyboardManager handles deleting itself when the widget is destroyed.
     new KeyboardManager(widget_, window_manager_.get(), view);

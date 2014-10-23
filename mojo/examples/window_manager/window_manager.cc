@@ -155,7 +155,7 @@ class KeyboardManager : public KeyboardClient,
   void Init(ApplicationImpl* application,
             ViewManager* view_manager,
             View* parent,
-            const gfx::Rect& bounds) {
+            const Rect& bounds) {
     view_manager_ = view_manager;
     view_ = View::Create(view_manager);
     view_->SetBounds(bounds);
@@ -166,7 +166,7 @@ class KeyboardManager : public KeyboardClient,
     parent->AddObserver(this);
   }
 
-  void Show(Id view_id, const gfx::Rect& bounds) {
+  void Show(Id view_id, const Rect& bounds) {
     keyboard_service_->SetTarget(view_id);
     view_->SetVisible(true);
   }
@@ -188,12 +188,13 @@ class KeyboardManager : public KeyboardClient,
 
   // Overridden from ViewObserver:
   virtual void OnViewBoundsChanged(View* parent,
-                                   const gfx::Rect& old_bounds,
-                                   const gfx::Rect& new_bounds) override {
-    gfx::Rect keyboard_bounds(view_->bounds());
-    keyboard_bounds.set_y(new_bounds.bottom() - keyboard_bounds.height());
-    keyboard_bounds.set_width(keyboard_bounds.width() +
-                              new_bounds.width() - old_bounds.width());
+                                   const Rect& old_bounds,
+                                   const Rect& new_bounds) override {
+    Rect keyboard_bounds(view_->bounds());
+    keyboard_bounds.y =
+        new_bounds.y + new_bounds.height - keyboard_bounds.height;
+    keyboard_bounds.width =
+        keyboard_bounds.width + new_bounds.width - old_bounds.width;
     view_->SetBounds(keyboard_bounds);
   }
   virtual void OnViewDestroyed(View* parent) override {
@@ -231,26 +232,26 @@ class RootLayoutManager : public ViewObserver {
  private:
   // Overridden from ViewObserver:
   virtual void OnViewBoundsChanged(View* view,
-                                   const gfx::Rect& old_bounds,
-                                   const gfx::Rect& new_bounds) override {
+                                   const Rect& old_bounds,
+                                   const Rect& new_bounds) override {
     DCHECK_EQ(view, root_);
 
     View* content_view = view_manager_->GetViewById(content_view_id_);
     content_view->SetBounds(new_bounds);
 
-    int delta_width = new_bounds.width() - old_bounds.width();
-    int delta_height = new_bounds.height() - old_bounds.height();
+    int delta_width = new_bounds.width - old_bounds.width;
+    int delta_height = new_bounds.height - old_bounds.height;
 
     View* launcher_ui_view =
         view_manager_->GetViewById(launcher_ui_view_id_);
-    gfx::Rect launcher_ui_bounds(launcher_ui_view->bounds());
-    launcher_ui_bounds.set_width(launcher_ui_bounds.width() + delta_width);
+    Rect launcher_ui_bounds(launcher_ui_view->bounds());
+    launcher_ui_bounds.width += delta_width;
     launcher_ui_view->SetBounds(launcher_ui_bounds);
 
     View* control_panel_view =
         view_manager_->GetViewById(control_panel_view_id_);
-    gfx::Rect control_panel_bounds(control_panel_view->bounds());
-    control_panel_bounds.set_x(control_panel_bounds.x() + delta_width);
+    Rect control_panel_bounds(control_panel_view->bounds());
+    control_panel_bounds.x += delta_width;
     control_panel_view->SetBounds(control_panel_bounds);
 
     const View::Children& content_views = content_view->children();
@@ -260,9 +261,9 @@ class RootLayoutManager : public ViewObserver {
       if (view->id() == control_panel_view->id() ||
           view->id() == launcher_ui_view->id())
         continue;
-      gfx::Rect view_bounds(view->bounds());
-      view_bounds.set_width(view_bounds.width() + delta_width);
-      view_bounds.set_height(view_bounds.height() + delta_height);
+      Rect view_bounds(view->bounds());
+      view_bounds.width += delta_width;
+      view_bounds.height += delta_height;
       view->SetBounds(view_bounds);
     }
   }
@@ -339,7 +340,7 @@ class WindowManager
     window->view()->Destroy();
   }
 
-  void ShowKeyboard(Id view_id, const gfx::Rect& bounds) {
+  void ShowKeyboard(Id view_id, const Rect& bounds) {
     // TODO: this needs to validate |view_id|. That is, it shouldn't assume
     // |view_id| is valid and it also needs to make sure the client that sent
     // this really owns |view_id|.
@@ -350,9 +351,11 @@ class WindowManager
       int ideal_height = 200;
       // TODO(sky): 10 is a bit of a hack here. There is a bug that causes
       // white strips to appear when 0 is used. Figure this out!
-      const gfx::Rect keyboard_bounds(
-          10, parent->bounds().height() - ideal_height,
-          parent->bounds().width() - 20, ideal_height);
+      Rect keyboard_bounds;
+      keyboard_bounds.x =  10;
+      keyboard_bounds.y = parent->bounds().height - ideal_height;
+      keyboard_bounds.width = parent->bounds().width - 20;
+      keyboard_bounds.height = ideal_height;
       keyboard_manager_->Init(app_, view_manager_, parent, keyboard_bounds);
     }
     keyboard_manager_->Show(view_id, bounds);
@@ -409,7 +412,10 @@ class WindowManager
 
     View* view = View::Create(view_manager_);
     root->AddChild(view);
-    view->SetBounds(gfx::Rect(root->bounds().size()));
+    Rect rect;
+    rect.width = root->bounds().width;
+    rect.height = root->bounds().height;
+    view->SetBounds(rect);
     content_view_id_ = view->id();
 
     Id launcher_ui_id = CreateLauncherUI();
@@ -486,9 +492,11 @@ class WindowManager
   // TODO(beng): proper layout manager!!
   Id CreateLauncherUI() {
     View* view = view_manager_->GetViewById(content_view_id_);
-    gfx::Rect bounds = view->bounds();
-    bounds.Inset(kBorderInset, kBorderInset);
-    bounds.set_height(kTextfieldHeight);
+    Rect bounds = view->bounds();
+    bounds.x += kBorderInset;
+    bounds.y += kBorderInset;
+    bounds.width -= 2 * kBorderInset;
+    bounds.height = kTextfieldHeight;
     launcher_ui_ = CreateWindow(bounds);
     launcher_ui_->Embed("mojo:browser");
     return launcher_ui_->view()->id();
@@ -496,21 +504,20 @@ class WindowManager
 
   Window* CreateWindow() {
     View* view = view_manager_->GetViewById(content_view_id_);
-    gfx::Rect bounds(kBorderInset,
-                     2 * kBorderInset + kTextfieldHeight,
-                     view->bounds().width() - 3 * kBorderInset -
-                         kControlPanelWidth,
-                     view->bounds().height() -
-                         (3 * kBorderInset + kTextfieldHeight));
+    Rect bounds;
+    bounds.x = kBorderInset;
+    bounds.y = 2 * kBorderInset + kTextfieldHeight;
+    bounds.width = view->bounds().width - 3 * kBorderInset - kControlPanelWidth;
+    bounds.height =
+        view->bounds().height - (3 * kBorderInset + kTextfieldHeight);
     if (!windows_.empty()) {
-      gfx::Point position = windows_.back()->view()->bounds().origin();
-      position.Offset(35, 35);
-      bounds.set_origin(position);
+      bounds.x = windows_.back()->view()->bounds().x + 35;
+      bounds.y = windows_.back()->view()->bounds().y + 35;
     }
     return CreateWindow(bounds);
   }
 
-  Window* CreateWindow(const gfx::Rect& bounds) {
+  Window* CreateWindow(const Rect& bounds) {
     View* content = view_manager_->GetViewById(content_view_id_);
     View* view = View::Create(view_manager_);
     content->AddChild(view);
@@ -528,12 +535,12 @@ class WindowManager
     View* view = View::Create(view_manager_);
     root->AddChild(view);
 
-    gfx::Rect bounds(root->bounds().width() - kControlPanelWidth -
-                         kBorderInset,
-                     kBorderInset * 2 + kTextfieldHeight,
-                     kControlPanelWidth,
-                     root->bounds().height() - kBorderInset * 3 -
-                         kTextfieldHeight);
+    Rect bounds;
+    bounds.x = root->bounds().width - kControlPanelWidth - kBorderInset;
+    bounds.y = kBorderInset * 2 + kTextfieldHeight;
+    bounds.width = kControlPanelWidth;
+    bounds.height =
+        root->bounds().height - kBorderInset * 3 - kTextfieldHeight;
     view->SetBounds(bounds);
 
     debug_panel_ = new DebugPanel(this, shell_, view);
@@ -579,7 +586,7 @@ void WindowManagerConnection::CloseWindow(Id view_id) {
 }
 
 void WindowManagerConnection::ShowKeyboard(Id view_id, RectPtr bounds) {
-  window_manager_->ShowKeyboard(view_id, bounds.To<gfx::Rect>());
+  window_manager_->ShowKeyboard(view_id, *bounds);
 }
 
 void WindowManagerConnection::HideKeyboard(Id view_id) {

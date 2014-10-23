@@ -486,9 +486,9 @@ std::string ViewIdToString(Id id) {
       base::StringPrintf("%d,%d", HiWord(id), LoWord(id));
 }
 
-std::string RectToString(const gfx::Rect& rect) {
+std::string RectToString(const Rect& rect) {
   return base::StringPrintf("%d,%d %dx%d",
-                            rect.x(), rect.y(), rect.width(), rect.height());
+                            rect.x, rect.y, rect.width, rect.height);
 }
 
 class BoundsChangeObserver : public ViewObserver {
@@ -507,8 +507,8 @@ class BoundsChangeObserver : public ViewObserver {
  private:
   // Overridden from ViewObserver:
   void OnViewBoundsChanging(View* view,
-                            const gfx::Rect& old_bounds,
-                            const gfx::Rect& new_bounds) override {
+                            const Rect& old_bounds,
+                            const Rect& new_bounds) override {
     changes_.push_back(
         base::StringPrintf(
             "view=%s old_bounds=%s new_bounds=%s phase=changing",
@@ -517,8 +517,8 @@ class BoundsChangeObserver : public ViewObserver {
             RectToString(new_bounds).c_str()));
   }
   void OnViewBoundsChanged(View* view,
-                           const gfx::Rect& old_bounds,
-                           const gfx::Rect& new_bounds) override {
+                           const Rect& old_bounds,
+                           const Rect& new_bounds) override {
     changes_.push_back(
         base::StringPrintf(
             "view=%s old_bounds=%s new_bounds=%s phase=changed",
@@ -539,7 +539,9 @@ TEST_F(ViewObserverTest, SetBounds) {
   TestView v1;
   {
     BoundsChangeObserver observer(&v1);
-    v1.SetBounds(gfx::Rect(0, 0, 100, 100));
+    Rect rect;
+    rect.width = rect.height = 100;
+    v1.SetBounds(rect);
 
     Changes changes = observer.GetAndClearChanges();
     ASSERT_EQ(2U, changes.size());
