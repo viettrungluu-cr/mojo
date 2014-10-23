@@ -1,0 +1,38 @@
+diff --git a/net/BUILD.gn b/net/BUILD.gn
+index 05da14c..00d47f4 100644
+--- a/net/BUILD.gn
++++ b/net/BUILD.gn
+@@ -564,6 +564,8 @@ grit("net_resources") {
+   ]
+ }
+ 
++if (false) {
++
+ static_library("extras") {
+   sources = gypi_values.net_extras_sources
+   configs += [ "//build/config/compiler:wexit_time_destructors" ]
+@@ -573,6 +575,8 @@ static_library("extras") {
+   ]
+ }
+ 
++} # if (false)
++
+ static_library("http_server") {
+   sources = [
+     "server/http_connection.cc",
+@@ -1120,11 +1124,14 @@ source_set("quic_tools") {
+ test("net_unittests") {
+   sources = gypi_values.net_test_sources
+ 
++  sources -= [
++    "extras/sqlite/sqlite_channel_id_store_unittest.cc",
++  ]
++
+   configs += [ ":net_win_size_truncation" ]
+   defines = []
+ 
+   deps = [
+-    ":extras",
+     ":http_server",
+     ":net",
+     ":quic_tools",

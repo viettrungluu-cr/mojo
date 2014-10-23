@@ -1,0 +1,92 @@
+diff --git a/gpu/config/gpu_info.cc b/gpu/config/gpu_info.cc
+index c7951f9..f560dcb 100644
+--- a/gpu/config/gpu_info.cc
++++ b/gpu/config/gpu_info.cc
+@@ -17,19 +17,6 @@ void EnumerateGPUDevice(gpu::GPUInfo::Enumerator* enumerator,
+   enumerator->EndGPUDevice();
+ }
+ 
+-void EnumerateVideoEncodeAcceleratorSupportedProfile(
+-    gpu::GPUInfo::Enumerator* enumerator,
+-    const media::VideoEncodeAccelerator::SupportedProfile profile) {
+-  enumerator->BeginVideoEncodeAcceleratorSupportedProfile();
+-  enumerator->AddInt("profile", profile.profile);
+-  enumerator->AddInt("maxResolutionWidth", profile.max_resolution.width());
+-  enumerator->AddInt("maxResolutionHeight", profile.max_resolution.height());
+-  enumerator->AddInt("maxFramerateNumerator", profile.max_framerate_numerator);
+-  enumerator->AddInt("maxFramerateDenominator",
+-                     profile.max_framerate_denominator);
+-  enumerator->EndVideoEncodeAcceleratorSupportedProfile();
+-}
+-
+ }  // namespace
+ 
+ namespace gpu {
+@@ -101,8 +88,6 @@ void GPUInfo::EnumerateFields(Enumerator* enumerator) const {
+     CollectInfoResult dx_diagnostics_info_state;
+     DxDiagNode dx_diagnostics;
+ #endif
+-    std::vector<media::VideoEncodeAccelerator::SupportedProfile>
+-        video_encode_accelerator_supported_profiles;
+   };
+ 
+   // If this assert fails then most likely something below needs to be updated.
+@@ -157,12 +142,6 @@ void GPUInfo::EnumerateFields(Enumerator* enumerator) const {
+ #if defined(OS_WIN)
+   enumerator->AddInt("DxDiagnosticsInfoState", dx_diagnostics_info_state);
+ #endif
+-  // TODO(kbr): add dx_diagnostics on Windows.
+-  for (size_t ii = 0; ii < video_encode_accelerator_supported_profiles.size();
+-       ++ii) {
+-    EnumerateVideoEncodeAcceleratorSupportedProfile(
+-        enumerator, video_encode_accelerator_supported_profiles[ii]);
+-  }
+   enumerator->EndAuxAttributes();
+ }
+ 
+diff --git a/gpu/config/gpu_info.h b/gpu/config/gpu_info.h
+index bdbb205..8f5479b 100644
+--- a/gpu/config/gpu_info.h
++++ b/gpu/config/gpu_info.h
+@@ -18,7 +18,6 @@
+ #include "gpu/config/dx_diag_node.h"
+ #include "gpu/config/gpu_performance_stats.h"
+ #include "gpu/gpu_export.h"
+-#include "media/video/video_encode_accelerator.h"
+ 
+ namespace gpu {
+ 
+@@ -178,8 +177,6 @@ struct GPU_EXPORT GPUInfo {
+   DxDiagNode dx_diagnostics;
+ #endif
+ 
+-  std::vector<media::VideoEncodeAccelerator::SupportedProfile>
+-      video_encode_accelerator_supported_profiles;
+   // Note: when adding new members, please remember to update EnumerateFields
+   // in gpu_info.cc.
+ 
+diff --git a/gpu/config/gpu_info_collector.cc b/gpu/config/gpu_info_collector.cc
+index 5d25546..78dfe22 100644
+--- a/gpu/config/gpu_info_collector.cc
++++ b/gpu/config/gpu_info_collector.cc
+@@ -156,8 +156,6 @@ void MergeGPUInfoGL(GPUInfo* basic_gpu_info,
+   basic_gpu_info->direct_rendering = context_gpu_info.direct_rendering;
+   basic_gpu_info->context_info_state = context_gpu_info.context_info_state;
+   basic_gpu_info->initialization_time = context_gpu_info.initialization_time;
+-  basic_gpu_info->video_encode_accelerator_supported_profiles =
+-      context_gpu_info.video_encode_accelerator_supported_profiles;
+ }
+ 
+ }  // namespace gpu
+diff --git a/gpu/config/gpu_info_unittest.cc b/gpu/config/gpu_info_unittest.cc
+index 71d4e5c..48d476f 100644
+--- a/gpu/config/gpu_info_unittest.cc
++++ b/gpu/config/gpu_info_unittest.cc
+@@ -32,7 +32,6 @@ TEST(GPUInfoBasicTest, EmptyGPUInfo) {
+ #if defined(OS_WIN)
+   EXPECT_EQ(gpu_info.dx_diagnostics_info_state, kCollectInfoNone);
+ #endif
+-  EXPECT_EQ(gpu_info.video_encode_accelerator_supported_profiles.size(), 0u);
+ }
+ 
+ }  // namespace gpu

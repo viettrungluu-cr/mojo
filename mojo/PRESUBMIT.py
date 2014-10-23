@@ -25,6 +25,9 @@ def CheckChangeOnUpload(input_api, output_api):
   # For the python bindings tests:
   mojo_python_bindings_tests_path = os.path.join(
       input_api.PresubmitLocalPath(), "python", "tests")
+  # For the roll tools scripts:
+  mojo_roll_tools_path = os.path.join(
+      input_api.PresubmitLocalPath(), "tools", "roll")
   # TODO(vtl): Don't lint these files until the (many) problems are fixed
   # (possibly by deleting/rewriting some files).
   temporary_black_list = input_api.DEFAULT_BLACK_LIST + \
@@ -39,6 +42,7 @@ def CheckChangeOnUpload(input_api, output_api):
       mojo_public_bindings_pylib_path,
       mojo_python_bindings_path,
       mojo_python_bindings_tests_path,
+      mojo_roll_tools_path,
   ]
   results += input_api.canned_checks.RunPylint(
       input_api, output_api, extra_paths_list=pylint_extra_paths,
