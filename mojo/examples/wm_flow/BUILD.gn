@@ -16,7 +16,7 @@ group("wm_flow") {
 }
 
 shared_library("wm") {
-  output_name = "mojo_wm_flow_wm"
+  output_name = "wm_flow_wm"
 
   sources = [
     "wm/wm.cc",
@@ -40,7 +40,7 @@ shared_library("wm") {
 }
 
 shared_library("app") {
-  output_name = "mojo_wm_flow_app"
+  output_name = "wm_flow_app"
 
   sources = [
     "app/app.cc",
@@ -60,7 +60,7 @@ shared_library("app") {
 }
 
 shared_library("embedded") {
-  output_name = "mojo_wm_flow_embedded"
+  output_name = "wm_flow_embedded"
 
   sources = [
     "embedded/embedded.cc",

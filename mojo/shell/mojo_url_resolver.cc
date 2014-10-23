@@ -8,7 +8,6 @@
 #include "base/files/file_path.h"
 #include "base/logging.h"
 #include "base/path_service.h"
-#include "base/strings/string_util.h"
 #include "mojo/shell/filename_util.h"
 #include "url/url_util.h"
 
@@ -16,14 +15,7 @@ namespace mojo {
 namespace shell {
 namespace {
 
-std::string MakeSharedLibraryName(std::string host_name) {
-  // TODO(aa): This should go away soon. In the Chromium repo, all the app
-  // target names start with "mojo_" by convention. But when we have an SDK,
-  // one would assume the libraries would have names that don't have this bit.
-  std::string prefix = "mojo_";
-  if (!StartsWithASCII(host_name, prefix, true))
-    host_name = prefix + host_name;
-
+std::string MakeSharedLibraryName(const std::string& host_name) {
 #if defined(OS_WIN)
   return host_name + ".dll";
 #elif defined(OS_LINUX) || defined(OS_ANDROID)

@@ -4,7 +4,7 @@
 
 # GYP version: mojo/mojo_services.gypi:mojo_surfaces_service
 shared_library("surfaces") {
-  output_name = "mojo_surfaces_service"
+  output_name = "surfaces_service"
 
   deps = [
     "//base",

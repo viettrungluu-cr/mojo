@@ -3,8 +3,6 @@
 # found in the LICENSE file.
 
 shared_library("content_handler_demo") {
-  output_name = "mojo_content_handler_demo"
-
   sources = [
     "content_handler_demo.cc"
   ]

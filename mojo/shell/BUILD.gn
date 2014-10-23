@@ -148,8 +148,8 @@ test("mojo_shell_tests") {
   ]
 
   datadeps = [
-    "//mojo/services/test_service:mojo_test_app",
-    "//mojo/services/test_service:mojo_test_request_tracker_app",
+    "//mojo/services/test_service:test_app",
+    "//mojo/services/test_service:test_request_tracker_app",
   ]
 
   sources = [

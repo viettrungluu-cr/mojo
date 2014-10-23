@@ -8,8 +8,6 @@ import("//mojo/public/tools/bindings/mojom.gni")
 assert(use_aura)
 
 shared_library("keyboard") {
-  output_name = "mojo_keyboard"
-
   sources = [
     "keyboard_delegate.h",
     "keyboard_view.cc",

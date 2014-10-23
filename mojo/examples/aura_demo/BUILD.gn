@@ -6,9 +6,7 @@ import("//build/config/ui.gni")
 
 assert(use_aura)
 
-shared_library("mojo_aura_demo") {
-  output_name = "mojo_aura_demo"
-
+shared_library("aura_demo") {
   sources = [
     "aura_demo.cc"
   ]
@@ -34,7 +32,7 @@ shared_library("mojo_aura_demo") {
 }
 
 shared_library("init") {
-  output_name = "mojo_aura_demo_init"
+  output_name = "aura_demo_init"
 
   sources = [
     "view_manager_init.cc",

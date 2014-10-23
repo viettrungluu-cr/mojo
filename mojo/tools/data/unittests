@@ -15,11 +15,11 @@ mojo_public_utility_unittests
 # Non-system, non-public tests:
 mojo_application_manager_unittests
 mojo_common_unittests
-mojo_network_service_unittests
 # These tests currently crash. We should re-enable them when they pass.
 # mojo_view_manager_lib_unittests
-mojo_view_manager_unittests
 mojo_surfaces_lib_unittests
+network_service_unittests
+view_manager_unittests
 
 # JavaScript tests:
 
