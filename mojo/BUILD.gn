@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import("//build/config/ui.gni")
-import("//mojo/public/mojo.gni")
 
 group("mojo") {
   # Meta-target, don't link into production code.
@@ -17,14 +16,9 @@ group("mojo") {
     "//mojo/examples",
     "//mojo/public",
     "//mojo/services",
+    "//mojo/shell:mojo_shell",
     "//mojo/tools/package_manager",
   ]
-
-  if (use_prebuilt_mojo_shell) {
-    deps += [ "//mojo/public/tools:copy_mojo_shell" ]
-  } else {
-    deps += [ "//mojo/shell:mojo_shell" ]
-  }
 
   if (is_android) {
     deps += [
@@ -58,7 +52,7 @@ group("tests") {
     "//mojo/public/cpp/environment/tests:mojo_public_environment_unittests",
     "//mojo/public/cpp/system/tests:mojo_public_system_unittests",
     "//mojo/public/cpp/utility/tests:mojo_public_utility_unittests",
-    "//mojo/services/clipboard:mojo_clipboard_unittests",
+    "//mojo/services/clipboard:clipboard_unittests",
     "//mojo/services/network:unittests",
     "//mojo/shell:mojo_external_application_tests",
     "//mojo/shell:mojo_shell_tests",
@@ -68,8 +62,8 @@ group("tests") {
   if (use_aura) {
     deps += [
       "//mojo/services/public/cpp/view_manager/tests:mojo_view_manager_lib_unittests",
-      "//mojo/services/view_manager:mojo_view_manager_unittests",
-      "//mojo/services/window_manager:mojo_window_manager_unittests",
+      "//mojo/services/view_manager:view_manager_unittests",
+      "//mojo/services/window_manager:window_manager_unittests",
     ]
   }
 }

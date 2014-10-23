@@ -3,8 +3,6 @@
 # found in the LICENSE file.
 
 shared_library("nesting_app") {
-  output_name = "mojo_nesting_app"
-
   sources = [
     "nesting_app.cc"
   ]

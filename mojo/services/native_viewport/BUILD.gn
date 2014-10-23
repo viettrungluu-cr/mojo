@@ -6,7 +6,7 @@ import("//build/config/ui.gni")
 
 if (!is_android) {
   shared_library("native_viewport") {
-    output_name = "mojo_native_viewport_service"
+    output_name = "native_viewport_service"
 
     deps = [
       ":lib",

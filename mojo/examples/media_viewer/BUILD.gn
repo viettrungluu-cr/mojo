@@ -8,8 +8,6 @@ import("//mojo/public/tools/bindings/mojom.gni")
 if (use_aura) {
 
 shared_library("media_viewer") {
-  output_name = "mojo_media_viewer"
-
   sources = [
     "media_viewer.cc"
   ]

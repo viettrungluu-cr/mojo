@@ -6,8 +6,6 @@ import("//build/config/ui.gni")
 
 # GYP version: mojo/mojo_services.gypi:mojo_view_manager
 shared_library("view_manager") {
-  output_name = "mojo_view_manager"
-
   deps = [
     "//base",
     "//cc/surfaces",
@@ -59,7 +57,7 @@ shared_library("view_manager") {
 }
 
 # GYP version: mojo/mojo_services.gypi:mojo_view_manager_unittests
-test("mojo_view_manager_unittests") {
+test("view_manager_unittests") {
   deps = [
     ":view_manager",
     "//base",
