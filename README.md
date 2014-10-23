@@ -10,7 +10,7 @@ Then, create a directory somewhere for your checkout, cd into it,
 and run the following commands:
 
 ```
-$ fetch mojo # use --target-os=android if you want an Android build.
+$ fetch mojo # use --target_os=android if you want an Android build.
 $ cd src
 $ ./build/install-build-deps.sh
 ```
