@@ -1649,15 +1649,6 @@ def GetDefaultTryConfigs(bots=None):
 def CheckChangeOnCommit(input_api, output_api):
   results = []
   results.extend(_CommonChecks(input_api, output_api))
-  # TODO(thestig) temporarily disabled, doesn't work in third_party/
-  #results.extend(input_api.canned_checks.CheckSvnModifiedDirectories(
-  #    input_api, output_api, sources))
-  # Make sure the tree is 'open'.
-  results.extend(input_api.canned_checks.CheckTreeIsOpen(
-      input_api,
-      output_api,
-      json_url='http://chromium-status.appspot.com/current?format=json'))
-
   results.extend(input_api.canned_checks.CheckChangeHasBugField(
       input_api, output_api))
   results.extend(input_api.canned_checks.CheckChangeHasDescription(
