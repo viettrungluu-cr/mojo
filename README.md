@@ -22,5 +22,23 @@ You can then build Mojo by running:
 
 ```
 $ gn gen out/Debug
-$ ninja -C out/Debug mojo
+$ ninja -C out/Debug root
+```
+
+If you're a Googler and want to use Goma:
+```
+$ gn args out/Debug
+```
+
+and add
+```
+use_goma = true
+```
+
+Assuming Goma is installed in the default location (~/goma).
+
+
+Run the tests:
+```
+mojo/tools/mojob.sh test
 ```
