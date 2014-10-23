@@ -13,7 +13,7 @@ mojom("bindings") {
 }
 
 # GYP version: mojo/mojo_services.gypi:mojo_test_app
-shared_library("test_app") {
+shared_library("mojo_test_app") {
   deps = [
     ":bindings",
     "//base",
@@ -37,7 +37,7 @@ shared_library("test_app") {
 }
 
 # GYP version: //mojo/mojo_services.gypi:mojo_test_request_tracker_app
-shared_library("test_request_tracker_app") {
+shared_library("mojo_test_request_tracker_app") {
   deps = [
     ":bindings",
     "//base",

@@ -3,6 +3,8 @@
 # found in the LICENSE file.
 
 shared_library("wget") {
+  output_name = "mojo_wget"
+
   deps = [
     "//mojo/public/c/system:for_shared_library",
     "//mojo/public/cpp/application:standalone",

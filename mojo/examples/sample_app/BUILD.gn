@@ -3,6 +3,8 @@
 # found in the LICENSE file.
 
 shared_library("sample_app") {
+  output_name = "mojo_sample_app"
+
   sources = [
     "gles2_client_impl.cc",
     "gles2_client_impl.h",

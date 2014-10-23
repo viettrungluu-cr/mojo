@@ -8,6 +8,8 @@ if (use_aura) {
 
 # GYP version: mojo/mojo_services.gypi:mojo_core_window_manager
 shared_library("window_manager") {
+  output_name = "mojo_window_manager"
+
   sources = [ "main.cc" ]
 
   public_deps = [
@@ -56,7 +58,7 @@ source_set("lib") {
 }
 
 # GYP version: mojo/mojo_services.gypi:mojo_core_window_manager_unittests
-test("window_manager_unittests") {
+test("mojo_window_manager_unittests") {
   sources = [
     "window_manager_api_unittest.cc",
     "window_manager_unittests.cc",

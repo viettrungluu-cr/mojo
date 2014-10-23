@@ -3,6 +3,8 @@
 # found in the LICENSE file.
 
 shared_library("http_server") {
+  output_name = "mojo_http_server"
+
   sources = [
     "http_server.cc",
   ]

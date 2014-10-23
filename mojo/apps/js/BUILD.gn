@@ -6,8 +6,8 @@ group("js") {
   # Meta-target, don't link into production code.
   testonly = true
   deps = [
-    ":js_content_handler",
-    ":js_standalone"
+    ":mojo_js_content_handler",
+    ":mojo_js_standalone"
   ]
 }
 
@@ -49,7 +49,7 @@ source_set("js_apps") {
   ]
 }
 
-shared_library("js_content_handler") {
+shared_library("mojo_js_content_handler") {
   sources = [
     "content_handler_impl.cc",
     "content_handler_main.cc",
@@ -64,7 +64,7 @@ shared_library("js_content_handler") {
   ]
 }
 
-shared_library("js_standalone") {
+shared_library("mojo_js_standalone") {
   sources = [
     "standalone_main.cc"
   ]

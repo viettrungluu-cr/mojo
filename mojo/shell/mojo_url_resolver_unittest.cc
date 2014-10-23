@@ -22,8 +22,13 @@ TEST_F(MojoURLResolverTest, MojoURLsFallThrough) {
   std::string resolved(resolver.Resolve(GURL("mojo:test")).spec());
   // Resolved must start with |base_url|.
   EXPECT_EQ(base_url.spec(), resolved.substr(0, base_url.spec().size()));
-  // And must contain foo.
-  EXPECT_NE(std::string::npos, resolved.find("foo"));
+  // And must contain mojo_foo (we got mapped to foo, and all libraries are
+  // prefixed with mojo_).
+  EXPECT_NE(std::string::npos, resolved.find("mojo_foo"));
+
+  // Make sure we don't double-mojo.
+  resolved = resolver.Resolve(GURL("mojo:mojo_test")).spec();
+  EXPECT_EQ(std::string::npos, resolved.find("mojo:mojo_mojo_foo"));
 }
 
 }  // namespace

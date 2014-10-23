@@ -15,7 +15,7 @@
 namespace examples {
 
 // ViewManagerInit is responsible for establishing the initial connection to
-// the view manager. When established it loads |aura_demo|.
+// the view manager. When established it loads |mojo_aura_demo|.
 class ViewManagerInit : public mojo::ApplicationDelegate {
  public:
   ViewManagerInit() {}

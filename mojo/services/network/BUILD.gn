@@ -4,7 +4,7 @@
 
 # GYP version: mojo/mojo_services.gypi:mojo_network_service
 shared_library("network") {
-  output_name = "network_service"
+  output_name = "mojo_network_service"
 
   deps = [
     ":lib",
@@ -59,7 +59,7 @@ source_set("lib") {
 }
 
 test("unittests") {
-  output_name = "network_service_unittests"
+  output_name = "mojo_network_service_unittests"
   deps = [
     ":network",
     "//base",

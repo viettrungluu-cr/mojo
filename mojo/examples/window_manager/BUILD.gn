@@ -8,7 +8,7 @@ import("//mojo/public/tools/bindings/mojom.gni")
 assert(use_aura)
 
 shared_library("window_manager") {
-  output_name = "example_window_manager"
+  output_name = "mojo_example_window_manager"
 
   sources = [
     "debug_panel.cc",

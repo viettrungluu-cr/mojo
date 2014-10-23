@@ -3,6 +3,8 @@
 # found in the LICENSE file.
 
 shared_library("png_viewer") {
+  output_name = "mojo_png_viewer"
+
   sources = [
     "png_viewer.cc"
   ]

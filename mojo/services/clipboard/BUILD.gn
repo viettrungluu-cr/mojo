@@ -4,6 +4,8 @@
 
 # GYP version: mojo/mojo_services.gypi:mojo_clipboard
 shared_library("clipboard") {
+  output_name = "mojo_clipboard"
+
   deps = [
     "//base",
     "//mojo/application",
@@ -23,7 +25,7 @@ shared_library("clipboard") {
 }
 
 # GYP version: mojo/mojo_services.gypi:mojo_clipboard_unittests
-test("clipboard_unittests") {
+test("mojo_clipboard_unittests") {
   deps = [
     "//base",
     "//base/test:test_support",
