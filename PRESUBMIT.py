@@ -31,6 +31,10 @@ _TESTRUNNER_PATHS = (
     r"^content[\\\/]shell[\\\/]tools[\\\/]plugin[\\\/].*",
 )
 
+_SKY_PATHS = (
+    r"^sky[\\\/].*",
+)
+
 # Fragment of a regular expression that matches C++ and Objective-C++
 # implementation files.
 _IMPLEMENTATION_EXTENSIONS = r'\.(cc|cpp|cxx|mm)$'
@@ -1279,7 +1283,7 @@ def _CommonChecks(input_api, output_api):
   results = []
   results.extend(input_api.canned_checks.PanProjectChecks(
       input_api, output_api,
-      excluded_paths=_EXCLUDED_PATHS + _TESTRUNNER_PATHS))
+      excluded_paths=_EXCLUDED_PATHS + _TESTRUNNER_PATHS + _SKY_PATHS))
   results.extend(_CheckAuthorizedAuthor(input_api, output_api))
   results.extend(
       _CheckNoProductionCodeUsingTestOnlyFunctions(input_api, output_api))
