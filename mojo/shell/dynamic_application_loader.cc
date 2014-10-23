@@ -173,6 +173,9 @@ class DynamicApplicationLoader::NetworkLoader : public Loader {
       load_callbacks_->LoadWithContentHandler(iter->second, response.Pass());
       return;
     }
+    LOG(ERROR) << "Failed to find content handler for " << response->mime_type
+               << " from " << response->url << std::endl
+               << "INSECURELY LOADING AS EXECUTABLE CODE INSTEAD" << std::endl;
 
     base::CreateTemporaryFile(&file_);
     common::CopyToFile(
