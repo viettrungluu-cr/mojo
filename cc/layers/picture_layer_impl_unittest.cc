@@ -2194,15 +2194,19 @@ TEST_F(PictureLayerImplTest, HighResCreatedWhenBoundsShrink) {
 
   SetupDrawPropertiesAndUpdateTiles(
       active_layer_, 0.5f, 0.5f, 0.5f, 0.5f, false);
+  pending_layer_->tilings()->RemoveAllTilings();
   active_layer_->tilings()->RemoveAllTilings();
-  PictureLayerTiling* tiling = active_layer_->tilings()->AddTiling(0.5f);
-  active_layer_->tilings()->AddTiling(1.5f);
-  active_layer_->tilings()->AddTiling(0.25f);
+  PictureLayerTiling* tiling = active_layer_->AddTiling(0.5f);
+  active_layer_->AddTiling(1.5f);
+  active_layer_->AddTiling(0.25f);
   tiling->set_resolution(HIGH_RESOLUTION);
 
   // Sanity checks.
   ASSERT_EQ(3u, active_layer_->tilings()->num_tilings());
   ASSERT_EQ(tiling, active_layer_->tilings()->TilingAtScale(0.5f));
+
+  pending_layer_->tilings()->RemoveAllTilings();
+  ASSERT_EQ(0u, pending_layer_->tilings()->num_tilings());
 
   // Now, set the bounds to be 1x1 (so that minimum contents scale becomes
   // 1.0f). Note that we should also ensure that the pending layer needs post
@@ -2602,8 +2606,9 @@ TEST_F(PictureLayerImplTest, HighResTilingDuringAnimationForGpuRasterization) {
   static_cast<FakePicturePileImpl*>(pending_layer_->pile())->set_has_text(true);
   static_cast<FakePicturePileImpl*>(active_layer_->pile())->set_has_text(true);
 
-  // Since we're GPU-rasterizing but have text, starting an animation should
-  // cause tiling resolution to get set to the maximum animation scale.
+  // When we're GPU-rasterizing, even if we have text, starting an animation
+  // should cause tiling resolution to get set to the content scale, since we
+  // render animating text at content scale using distance fields.
   animating_transform = true;
   contents_scale = 2.f;
   maximum_animation_scale = 3.f;
@@ -2613,10 +2618,10 @@ TEST_F(PictureLayerImplTest, HighResTilingDuringAnimationForGpuRasterization) {
                                page_scale,
                                maximum_animation_scale,
                                animating_transform);
-  EXPECT_BOTH_EQ(HighResTiling()->contents_scale(), 3.f);
+  EXPECT_BOTH_EQ(HighResTiling()->contents_scale(), 2.f);
 
-  // Further changes to scale during the animation should not cause a new
-  // high-res tiling to get created.
+  // Further changes to scale during the animation should still cause a new
+  // high-res tiling to get created at content scale.
   contents_scale = 4.f;
   maximum_animation_scale = 5.f;
 
@@ -2625,7 +2630,7 @@ TEST_F(PictureLayerImplTest, HighResTilingDuringAnimationForGpuRasterization) {
                                page_scale,
                                maximum_animation_scale,
                                animating_transform);
-  EXPECT_BOTH_EQ(HighResTiling()->contents_scale(), 3.f);
+  EXPECT_BOTH_EQ(HighResTiling()->contents_scale(), 4.f);
 
   // Once we stop animating, a new high-res tiling should be created.
   animating_transform = false;
@@ -2704,7 +2709,7 @@ TEST_F(PictureLayerImplTest, LayerRasterTileIterator) {
 
   EXPECT_TRUE(reached_prepaint);
   EXPECT_EQ(0u, non_ideal_tile_count);
-  EXPECT_EQ(1u, low_res_tile_count);
+  EXPECT_EQ(0u, low_res_tile_count);
   EXPECT_EQ(16u, high_res_tile_count);
   EXPECT_EQ(low_res_tile_count + high_res_tile_count + non_ideal_tile_count,
             unique_tiles.size());
@@ -2761,8 +2766,7 @@ TEST_F(PictureLayerImplTest, LayerRasterTileIterator) {
   non_ideal_tile_count = 0;
   low_res_tile_count = 0;
   high_res_tile_count = 0;
-  for (it = PictureLayerImpl::LayerRasterTileIterator(pending_layer_, false);
-       it;
+  for (it = PictureLayerImpl::LayerRasterTileIterator(pending_layer_, true); it;
        ++it) {
     Tile* tile = *it;
     TilePriority priority = tile->priority(PENDING_TREE);
@@ -3794,7 +3798,7 @@ TEST_F(OcclusionTrackingPictureLayerImplTest,
     if (tile_is_visible)
       unoccluded_tile_count++;
   }
-  EXPECT_EQ(unoccluded_tile_count, 25 + 4);
+  EXPECT_EQ(unoccluded_tile_count, 25);
 
   // Partial occlusion.
   pending_layer_->AddChild(LayerImpl::Create(host_impl_.pending_tree(), 1));
@@ -3824,7 +3828,7 @@ TEST_F(OcclusionTrackingPictureLayerImplTest,
     if (tile_is_visible)
       unoccluded_tile_count++;
   }
-  EXPECT_EQ(20 + 2, unoccluded_tile_count);
+  EXPECT_EQ(20, unoccluded_tile_count);
 
   // Full occlusion.
   layer1->SetPosition(gfx::Point(0, 0));
@@ -4488,6 +4492,65 @@ TEST_F(PictureLayerImplTest, NonSolidToSolidNoTilings) {
   // We've switched to a solid color, so we should end up with no tilings.
   ASSERT_TRUE(active_layer_->tilings());
   EXPECT_EQ(0u, active_layer_->tilings()->num_tilings());
+}
+
+TEST_F(PictureLayerImplTest, ChangeInViewportAllowsTilingUpdates) {
+  base::TimeTicks time_ticks;
+  time_ticks += base::TimeDelta::FromMilliseconds(1);
+  host_impl_.SetCurrentBeginFrameArgs(
+      CreateBeginFrameArgsForTesting(time_ticks));
+
+  gfx::Size tile_size(100, 100);
+  gfx::Size layer_bounds(400, 4000);
+
+  scoped_refptr<FakePicturePileImpl> pending_pile =
+      FakePicturePileImpl::CreateFilledPile(tile_size, layer_bounds);
+  scoped_refptr<FakePicturePileImpl> active_pile =
+      FakePicturePileImpl::CreateFilledPile(tile_size, layer_bounds);
+
+  SetupTrees(pending_pile, active_pile);
+
+  Region invalidation;
+  gfx::Rect viewport = gfx::Rect(0, 0, 100, 100);
+  gfx::Transform transform;
+
+  host_impl_.SetRequiresHighResToDraw();
+
+  // Update tiles.
+  pending_layer_->draw_properties().visible_content_rect = viewport;
+  pending_layer_->draw_properties().screen_space_transform = transform;
+  SetupDrawPropertiesAndUpdateTiles(pending_layer_, 1.f, 1.f, 1.f, 1.f, false);
+  pending_layer_->HighResTiling()->UpdateAllTilePrioritiesForTesting();
+
+  // Ensure we can't activate.
+  EXPECT_FALSE(pending_layer_->AllTilesRequiredForActivationAreReadyToDraw());
+
+  // Now in the same frame, move the viewport (this can happen during
+  // animation).
+  viewport = gfx::Rect(0, 2000, 100, 100);
+
+  // Update tiles.
+  pending_layer_->draw_properties().visible_content_rect = viewport;
+  pending_layer_->draw_properties().screen_space_transform = transform;
+  SetupDrawPropertiesAndUpdateTiles(pending_layer_, 1.f, 1.f, 1.f, 1.f, false);
+  pending_layer_->HighResTiling()->UpdateAllTilePrioritiesForTesting();
+
+  // Make sure all viewport tiles (viewport from the tiling) are ready to draw.
+  std::vector<Tile*> tiles;
+  for (PictureLayerTiling::CoverageIterator iter(
+           pending_layer_->HighResTiling(),
+           1.f,
+           pending_layer_->HighResTiling()->GetCurrentVisibleRectForTesting());
+       iter;
+       ++iter) {
+    if (*iter)
+      tiles.push_back(*iter);
+  }
+
+  host_impl_.tile_manager()->InitializeTilesWithResourcesForTesting(tiles);
+
+  // Ensure we can activate.
+  EXPECT_TRUE(pending_layer_->AllTilesRequiredForActivationAreReadyToDraw());
 }
 
 class TileSizeSettings : public ImplSidePaintingSettings {

@@ -8,10 +8,6 @@ See http://dev.chromium.org/developers/how-tos/depottools/presubmit-scripts
 for more details on the presubmit API built into gcl.
 """
 
-import re
-
-BASE_SOURCE_FILES=(r'^base/.*\.(cc|h|mm)$',)
-
 def _CheckNoInterfacesInBase(input_api, output_api):
   """Checks to make sure no files in libbase.a have |@interface|."""
   pattern = input_api.re.compile(r'^\s*@interface', input_api.re.MULTILINE)
@@ -40,45 +36,8 @@ def _CommonChecks(input_api, output_api):
   results.extend(_CheckNoInterfacesInBase(input_api, output_api))
   return results
 
-def _CheckOverrideFinal(input_api, output_api,
-                       whitelist=BASE_SOURCE_FILES, blacklist=None):
-  """Make sure new lines of code don't use the OVERRIDE or FINAL macros."""
-
-  # TODO(mostynb): remove this check once the macros are removed
-  # from base/compiler_specific.h.
-
-  errors = []
-
-  source_file_filter = lambda x: input_api.FilterSourceFile(
-    x, white_list=BASE_SOURCE_FILES, black_list=None)
-
-  override_files = []
-  final_files = []
-
-  for f in input_api.AffectedSourceFiles(source_file_filter):
-    contents = input_api.ReadFile(f, 'rb')
-
-    # "override" and "final" should be used instead of OVERRIDE/FINAL now.
-    if re.search(r"\bOVERRIDE\b", contents):
-      override_files.append(f.LocalPath())
-
-    if re.search(r"\bFINAL\b", contents):
-      final_files.append(f.LocalPath())
-
-  if override_files:
-    return [output_api.PresubmitError(
-      'These files use OVERRIDE instead of using override:',
-      items=override_files)]
-  if final_files:
-    return [output_api.PresubmitError(
-      'These files use FINAL instead of using final:',
-      items=final_files)]
-
-  return []
-
 def CheckChangeOnUpload(input_api, output_api):
   results = []
-  results.extend(_CheckOverrideFinal(input_api, output_api))
   results.extend(_CommonChecks(input_api, output_api))
   return results
 
@@ -92,12 +51,12 @@ def CheckChangeOnCommit(input_api, output_api):
 def GetPreferredTryMasters(project, change):
   return {
     'tryserver.chromium.linux': {
-      'linux_chromium_rel_swarming': set(['defaulttests']),
+      'linux_chromium_rel': set(['defaulttests']),
     },
     'tryserver.chromium.mac': {
-      'mac_chromium_rel_swarming': set(['defaulttests']),
+      'mac_chromium_rel': set(['defaulttests']),
     },
     'tryserver.chromium.win': {
-      'win_chromium_rel_swarming': set(['defaulttests']),
+      'win_chromium_rel': set(['defaulttests']),
     }
   }

@@ -30,16 +30,16 @@ vars = {
   'skia_git': 'https://skia.googlesource.com',
   'boringssl_git': 'https://boringssl.googlesource.com',
   'sfntly_revision': '1bdaae8fc788a5ac8936d68bf24f37d977a13dac',
-  'skia_revision': 'dd5a1e094c19fa10202c37c50a1f799e5af5dac0',
+  'skia_revision': '22b5ab644e0381e672c6fcf8aff26bf82ee71989',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling Skia
   # and V8 without interference from each other.
   'v8_branch': 'trunk',
-  'v8_revision': '233fccf1872781e1f8ac2314511de15ca7a232ad', # from svn revision 24772
+  'v8_revision': 'b404893cc89fe7419e614abccb1fddf69d308abc', # from svn revision 24791
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling ANGLE
   # and whatever else without interference from each other.
-  "angle_revision": "8e92923010c568a445c0f22e1a36f462fcabc8f3",
+  "angle_revision": "d2f756be4fd198d630b64dc6c3568184363e6d14",
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling build tools
   # and whatever else without interference from each other.
@@ -79,7 +79,7 @@ deps = {
    Var('chromium_git') + '/angle/angle.git' + '@' +  Var('angle_revision'),
 
   'src/third_party/icu':
-   Var('chromium_git') + '/chromium/deps/icu52.git' + '@' + '8ac906faf7b66180f2208380c35ae1e07136c5cc', # from svn revision 292317
+   Var('chromium_git') + '/chromium/deps/icu52.git' + '@' + 'd8b2a9d7b0039a4950ee008c5b1d998902c44c60', # from svn revision 292476
 
   'src/third_party/libc++/trunk':
    Var('chromium_git') + '/chromium/llvm-project/libcxx.git' + '@' +  Var('libcxx_revision'),

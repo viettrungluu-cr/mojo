@@ -483,6 +483,9 @@ void PictureLayerImpl::UpdateTiles(const Occlusion& occlusion_in_content_space,
   was_screen_space_transform_animating_ =
       draw_properties().screen_space_transform_is_animating;
 
+  if (draw_transform_is_animating())
+    pile_->set_likely_to_be_used_for_transform_animation();
+
   should_update_tile_priorities_ = true;
 
   UpdateTilePriorities(occlusion_in_content_space);
@@ -790,7 +793,7 @@ void PictureLayerImpl::SyncTiling(
     const PictureLayerTiling* tiling) {
   if (!CanHaveTilingWithScale(tiling->contents_scale()))
     return;
-  tilings_->AddTiling(tiling->contents_scale());
+  tilings_->AddTiling(tiling->contents_scale(), bounds());
 
   // If this tree needs update draw properties, then the tiling will
   // get updated prior to drawing or activation.  If this tree does not
@@ -840,7 +843,7 @@ void PictureLayerImpl::DoPostCommitInitialization() {
   DCHECK(layer_tree_impl()->IsPendingTree());
 
   if (!tilings_)
-    tilings_.reset(new PictureLayerTilingSet(this, bounds()));
+    tilings_ = make_scoped_ptr(new PictureLayerTilingSet(this));
 
   DCHECK(!twin_layer_);
   twin_layer_ = static_cast<PictureLayerImpl*>(
@@ -861,7 +864,7 @@ PictureLayerTiling* PictureLayerImpl::AddTiling(float contents_scale) {
   DCHECK(CanHaveTilingWithScale(contents_scale)) <<
       "contents_scale: " << contents_scale;
 
-  PictureLayerTiling* tiling = tilings_->AddTiling(contents_scale);
+  PictureLayerTiling* tiling = tilings_->AddTiling(contents_scale, bounds());
 
   DCHECK(pile_->HasRecordings());
 
@@ -1239,19 +1242,7 @@ void PictureLayerImpl::SanityCheckTilingState() const {
 }
 
 bool PictureLayerImpl::ShouldAdjustRasterScaleDuringScaleAnimations() const {
-  if (!layer_tree_impl()->use_gpu_rasterization())
-    return false;
-
-  // Re-rastering text at different scales using GPU rasterization causes
-  // texture uploads for glyphs at each scale (see crbug.com/366225). To
-  // workaround this performance issue, we don't re-rasterize layers with
-  // text during scale animations.
-  // TODO(ajuma): Remove this workaround once text can be efficiently
-  // re-rastered at different scales (e.g. by using distance-field fonts).
-  if (pile_->has_text())
-    return false;
-
-  return true;
+  return layer_tree_impl()->use_gpu_rasterization();
 }
 
 float PictureLayerImpl::MaximumTilingContentsScale() const {
@@ -1450,7 +1441,7 @@ PictureLayerImpl::LayerRasterTileIterator::LayerRasterTileIterator(
           PictureLayerTiling::TilingRasterTileIterator(tiling);
     }
 
-    if (tiling->resolution() == LOW_RESOLUTION) {
+    if (prioritize_low_res && tiling->resolution() == LOW_RESOLUTION) {
       iterators_[LOW_RES] =
           PictureLayerTiling::TilingRasterTileIterator(tiling);
     }

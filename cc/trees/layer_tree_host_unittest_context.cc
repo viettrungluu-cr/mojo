@@ -912,8 +912,7 @@ class LayerTreeHostContextTestDontUseLostResources
                                  NULL,
                                  0,
                                  false,
-                                 1,
-                                 false);
+                                 1);
   }
 
   static void EmptyReleaseCallback(unsigned sync_point, bool lost) {}

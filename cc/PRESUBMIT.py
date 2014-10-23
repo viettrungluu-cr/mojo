@@ -191,12 +191,6 @@ def CheckScopedPtr(input_api, output_api,
         errors.append(output_api.PresubmitError(
           '%s:%d uses scoped_ptr<T>(). Use nullptr instead.' %
           (f.LocalPath(), line_number)))
-      # Disallow:
-      # foo.PassAs<T>();
-      if re.search(r'\bPassAs<.*?>\(\)', line):
-        errors.append(output_api.PresubmitError(
-          '%s:%d uses PassAs<T>(). Use Pass() instead.' %
-          (f.LocalPath(), line_number)))
   return errors
 
 def FindUnquotedQuote(contents, pos):
@@ -332,42 +326,6 @@ def CheckForUseOfWrongClock(input_api,
   else:
     return []
 
-def CheckOverrideFinal(input_api, output_api,
-                       whitelist=CC_SOURCE_FILES, blacklist=None):
-  """Make sure new lines of code don't use the OVERRIDE or FINAL macros."""
-
-  # TODO(mostynb): remove this check once the macros are removed
-  # from base/compiler_specific.h.
-
-  errors = []
-
-  source_file_filter = lambda x: input_api.FilterSourceFile(
-    x, white_list=CC_SOURCE_FILES, black_list=None)
-
-  override_files = []
-  final_files = []
-
-  for f in input_api.AffectedSourceFiles(source_file_filter):
-    contents = input_api.ReadFile(f, 'rb')
-
-    # "override" and "final" should be used instead of OVERRIDE/FINAL now.
-    if re.search(r"\bOVERRIDE\b", contents):
-      override_files.append(f.LocalPath())
-
-    if re.search(r"\bFINAL\b", contents):
-      final_files.append(f.LocalPath())
-
-  if override_files:
-    return [output_api.PresubmitError(
-      'These files use OVERRIDE instead of using override:',
-      items=override_files)]
-  if final_files:
-    return [output_api.PresubmitError(
-      'These files use FINAL instead of using final:',
-      items=final_files)]
-
-  return []
-
 def CheckChangeOnUpload(input_api, output_api):
   results = []
   results += CheckAsserts(input_api, output_api)
@@ -380,7 +338,6 @@ def CheckChangeOnUpload(input_api, output_api):
   results += CheckNamespace(input_api, output_api)
   results += CheckForUseOfWrongClock(input_api, output_api)
   results += FindUselessIfdefs(input_api, output_api)
-  results += CheckOverrideFinal(input_api, output_api)
   results += input_api.canned_checks.CheckPatchFormatted(input_api, output_api)
   return results
 
