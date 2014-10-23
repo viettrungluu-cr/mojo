@@ -13,6 +13,9 @@
     'mojo': {
       'filepath': 'mojo',
     },
+    'sky': {
+      'filepath': 'sky',
+    },
   },
 
   'WATCHLISTS': {
@@ -23,5 +26,8 @@
              'qsr+mojo@chromium.org',
              'viettrungluu+watch@chromium.org',
              'yzshen+watch@chromium.org'],
+    'sky': ['abarth@chromium.org',
+            'esprehn@chromium.org',
+            'ojan@chromium.org'],
   },
 }
