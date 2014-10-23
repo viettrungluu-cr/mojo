@@ -3,6 +3,7 @@ group("root") {
 
   deps = [
     "//mojo",
+    "//sky",
     "//tools/xdisplaycheck"
   ]
 }
