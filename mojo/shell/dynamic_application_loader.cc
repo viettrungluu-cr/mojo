@@ -56,8 +56,8 @@ class DynamicApplicationLoader::Loader {
     }
 
     if (!path_exists) {
-      DVLOG(1) << "Library not started because library path '" << path.value()
-               << "' does not exist.";
+      LOG(ERROR) << "Library not started because library path '" << path.value()
+                 << "' does not exist.";
       LoaderComplete();
       return;
     }
