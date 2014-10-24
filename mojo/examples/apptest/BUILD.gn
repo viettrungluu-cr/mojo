@@ -46,11 +46,12 @@ shared_library("apptests") {
 
    deps = [
     ":bindings",
-    "//testing/gtest",
     "//mojo/public/c/system:for_shared_library",
     "//mojo/public/cpp/application:standalone",
-    "//mojo/public/cpp/utility",
+    "//mojo/public/cpp/application:test_support",
    ]
+
+   datadeps = [ ":service", ]
 }
 
 mojom("bindings") {
