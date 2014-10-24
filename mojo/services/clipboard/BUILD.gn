@@ -4,6 +4,12 @@
 
 # GYP version: mojo/mojo_services.gypi:mojo_clipboard
 shared_library("clipboard") {
+  sources = [
+    "clipboard_standalone_impl.cc",
+    "clipboard_standalone_impl.h",
+    "main.cc",
+  ]
+
   deps = [
     "//base",
     "//mojo/application",
@@ -14,16 +20,14 @@ shared_library("clipboard") {
     "//mojo/services/public/interfaces/clipboard",
     "//ui/base",
   ]
-
-  sources = [
-    "clipboard_standalone_impl.cc",
-    "clipboard_standalone_impl.h",
-    "main.cc",
-  ]
 }
 
 # GYP version: mojo/mojo_services.gypi:mojo_clipboard_unittests
 test("clipboard_unittests") {
+  sources = [
+    "clipboard_standalone_unittest.cc",
+  ]
+
   deps = [
     "//base",
     "//base/test:test_support",
@@ -36,9 +40,5 @@ test("clipboard_unittests") {
     "//mojo/services/public/interfaces/clipboard:clipboard",
     "//mojo/shell:test_support",
     "//testing/gtest",
-  ]
-
-  sources = [
-    "clipboard_standalone_unittest.cc",
   ]
 }

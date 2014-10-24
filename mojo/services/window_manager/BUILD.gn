@@ -13,6 +13,7 @@ shared_library("window_manager") {
   public_deps = [
     ":lib",
   ]
+
   deps = [
     "//base",
     "//mojo/application",
@@ -38,6 +39,7 @@ source_set("lib") {
   public_deps = [
     "//mojo/aura",
   ]
+
   deps = [
     "//base",
     "//ui/base",
@@ -75,6 +77,7 @@ test("window_manager_unittests") {
     "//testing/gtest",
     "//ui/gl",
   ]
+
   if (use_x11) {
     deps += [ "//ui/gfx/x" ]
   }

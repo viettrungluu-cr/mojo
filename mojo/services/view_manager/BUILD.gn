@@ -6,6 +6,30 @@ import("//build/config/ui.gni")
 
 # GYP version: mojo/mojo_services.gypi:mojo_view_manager
 shared_library("view_manager") {
+  sources = [
+    "access_policy.h",
+    "access_policy_delegate.h",
+    "connection_manager.cc",
+    "connection_manager.h",
+    "default_access_policy.cc",
+    "default_access_policy.h",
+    "display_manager.cc",
+    "display_manager.h",
+    "main.cc",
+    "server_view.cc",
+    "server_view.h",
+    "server_view_delegate.h",
+    "view_manager_export.h",
+    "view_manager_service_impl.cc",
+    "view_manager_service_impl.h",
+    "window_manager_access_policy.cc",
+    "window_manager_access_policy.h",
+  ]
+
+  defines = [
+    "MOJO_VIEW_MANAGER_IMPLEMENTATION",
+  ]
+
   deps = [
     "//base",
     "//cc/surfaces",
@@ -30,34 +54,16 @@ shared_library("view_manager") {
     "//ui/gfx",
     "//ui/gfx/geometry",
   ]
-
-  defines = [
-    "MOJO_VIEW_MANAGER_IMPLEMENTATION",
-  ]
-
-  sources = [
-    "access_policy.h",
-    "access_policy_delegate.h",
-    "connection_manager.cc",
-    "connection_manager.h",
-    "default_access_policy.cc",
-    "default_access_policy.h",
-    "display_manager.cc",
-    "display_manager.h",
-    "main.cc",
-    "server_view.cc",
-    "server_view.h",
-    "server_view_delegate.h",
-    "view_manager_export.h",
-    "view_manager_service_impl.cc",
-    "view_manager_service_impl.h",
-    "window_manager_access_policy.cc",
-    "window_manager_access_policy.h",
-  ]
 }
 
 # GYP version: mojo/mojo_services.gypi:mojo_view_manager_unittests
 test("view_manager_unittests") {
+  sources = [
+    "test_change_tracker.cc",
+    "test_change_tracker.h",
+    "view_manager_unittest.cc",
+  ]
+
   deps = [
     ":view_manager",
     "//base",
@@ -86,16 +92,6 @@ test("view_manager_unittests") {
   if (is_component_build) {
     deps += ["//ui/gl"]
   }
-
-  if (!is_android) {  # TODO(GYP) Enable on Android when osmesa links.
-    deps += [ "//third_party/mesa:osmesa" ]
-  }
-
-  sources = [
-    "test_change_tracker.cc",
-    "test_change_tracker.h",
-    "view_manager_unittest.cc",
-  ]
 
   if (!is_android) {  # TODO(GYP) Enable on Android when osmesa links.
     deps += [ "//third_party/mesa:osmesa" ]

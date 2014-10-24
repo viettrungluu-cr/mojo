@@ -6,20 +6,18 @@ import("//mojo/public/tools/bindings/mojom.gni")
 
 # GYP version: mojo/mojo_services.gypi:mojo_gles2_service
 source_set("gles2") {
-  public_deps = [
-    ":lib",
+  sources = [
+    "command_buffer_impl.cc",
+    "command_buffer_impl.h",
   ]
+
+  public_deps = [ ":lib" ]
   deps = [
     "//base",
     "//gpu/command_buffer/service",
     "//ui/gfx",
     "//ui/gfx/geometry",
     "//ui/gl",
-  ]
-
-  sources = [
-    "command_buffer_impl.cc",
-    "command_buffer_impl.h",
   ]
 }
 

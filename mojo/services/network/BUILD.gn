@@ -5,7 +5,7 @@
 # GYP version: mojo/mojo_services.gypi:mojo_network_service
 shared_library("network") {
   output_name = "network_service"
-
+  sources = [ "main.cc" ]
   deps = [
     ":lib",
     "//base",
@@ -15,23 +15,10 @@ shared_library("network") {
     "//mojo/services/public/cpp/network",
     "//mojo/services/public/interfaces/network",
   ]
-
-  sources = [ "main.cc" ]
 }
 
 # GYP version: mojo/mojo_services.gypi:mojo_network_service_lib
 source_set("lib") {
-  deps = [
-    "//base",
-    "//mojo/application",
-    "//mojo/common",
-    "//mojo/environment:chromium",
-    "//mojo/services/public/cpp/network",
-    "//mojo/services/public/interfaces/network",
-    "//net",
-    "//url",
-  ]
-
   sources = [
     "cookie_store_impl.cc",
     "cookie_store_impl.h",
@@ -55,6 +42,17 @@ source_set("lib") {
     "url_loader_impl.h",
     "web_socket_impl.cc",
     "web_socket_impl.h",
+  ]
+
+  deps = [
+    "//base",
+    "//mojo/application",
+    "//mojo/common",
+    "//mojo/environment:chromium",
+    "//mojo/services/public/cpp/network",
+    "//mojo/services/public/interfaces/network",
+    "//net",
+    "//url",
   ]
 }
 
