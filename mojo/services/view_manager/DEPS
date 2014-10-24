@@ -1,7 +1,6 @@
 include_rules = [
   "+cc",
   "-cc/blink",
-  "+gpu/command_buffer/service/mailbox_manager.h",
   "+mojo/application",
   "+mojo/cc",
   "+mojo/converters/geometry",
@@ -9,14 +8,7 @@ include_rules = [
   "+mojo/converters/surfaces",
   "+mojo/geometry",
   "+mojo/services",
-  "+third_party/skia",
-  "+ui/base/cursor/cursor.h",
-  "+ui/base/hit_test.h",
-  "+ui/compositor",
-  "+ui/events",
   "+ui/gfx",
-  "+ui/gl",
-  "+webkit/common/gpu",
 ]
 
 specific_include_rules = {

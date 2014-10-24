@@ -48,10 +48,6 @@ shared_library("view_manager") {
     "//mojo/services/public/interfaces/surfaces",
     "//mojo/services/public/interfaces/view_manager",
     "//mojo/services/public/interfaces/window_manager",
-    "//ui/base",
-    "//ui/events",
-    "//ui/events:events_base",
-    "//ui/gfx",
     "//ui/gfx/geometry",
   ]
 }
@@ -84,14 +80,6 @@ test("view_manager_unittests") {
     "//testing/gtest",
     "//ui/gfx/geometry",
   ]
-
-  if (use_x11) {
-    deps += ["//ui/gfx/x"]
-  }
-
-  if (is_component_build) {
-    deps += ["//ui/gl"]
-  }
 
   if (!is_android) {  # TODO(GYP) Enable on Android when osmesa links.
     deps += [ "//third_party/mesa:osmesa" ]
