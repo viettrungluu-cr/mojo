@@ -74,7 +74,8 @@ MojoResult MojoMain(MojoHandle shell_handle) {
     // It also removes GTEST arguments from |argv| and updates the |argc| count.
     // TODO(msw): Provide tests access to these actual command line arguments.
     const std::vector<std::string>& args = app.args();
-    MOJO_CHECK(args.size() < std::numeric_limits<int>::max());
+    MOJO_CHECK(args.size() <
+               static_cast<size_t>(std::numeric_limits<int>::max()));
     int argc = static_cast<int>(args.size());
     std::vector<const char*> argv(argc + 1);
     for (int i = 0; i < argc; ++i)
