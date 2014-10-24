@@ -49,6 +49,12 @@ class View {
   bool visible() const { return visible_; }
   void SetVisible(bool value);
 
+  const std::map<std::string, std::vector<uint8_t>>& properties() const {
+    return properties_;
+  }
+  // Sets a property. If |data| is null, this property is deleted.
+  void SetProperty(const std::string& name, const std::vector<uint8_t>* data);
+
   // A View is drawn if the View and all its ancestors are visible and the
   // View is attached to the root.
   bool IsDrawn() const;
@@ -113,6 +119,8 @@ class View {
   Rect bounds_;
 
   bool visible_;
+
+  std::map<std::string, std::vector<uint8_t>> properties_;
 
   // Drawn state is derived from the visible state and the parent's visible
   // state. This field is only used if the view has no parent (eg it's a root).

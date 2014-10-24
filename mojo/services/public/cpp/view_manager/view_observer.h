@@ -63,6 +63,11 @@ class ViewObserver {
   virtual void OnViewVisibilityChanging(View* view) {}
   virtual void OnViewVisibilityChanged(View* view) {}
 
+  virtual void OnViewPropertyChanged(View* view,
+                                     const std::string& name,
+                                     const std::vector<uint8_t>* old_data,
+                                     const std::vector<uint8_t>* new_data) {}
+
   // Sent when the drawn state changes. This is only sent for the root nodes
   // when embedded.
   virtual void OnViewDrawnChanging(View* view) {}

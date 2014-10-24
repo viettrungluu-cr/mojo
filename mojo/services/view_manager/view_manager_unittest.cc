@@ -226,6 +226,22 @@ class ViewManagerProxy : public TestChangeTracker::Delegate {
     RunMainLoop();
     return result;
   }
+  bool SetViewProperty(Id view_id, const std::string& name,
+                       const std::vector<uint8_t>* data) {
+    changes_.clear();
+    bool result = false;
+    Array<uint8_t> mojo_data;
+    if (data)
+      mojo_data = Array<uint8_t>::From(*data);
+    view_manager_->SetViewProperty(
+        view_id,
+        name,
+        mojo_data.Pass(),
+        base::Bind(
+            &ViewManagerProxy::GotResult, base::Unretained(this), &result));
+    RunMainLoop();
+    return result;
+  }
 
   void set_view_manager(ViewManagerService* view_manager) {
     view_manager_ = view_manager;
@@ -376,6 +392,11 @@ class TestViewManagerClientConnection
                         EventPtr event,
                         const Callback<void()>& callback) override {
     tracker()->OnViewInputEvent(view_id, event.Pass());
+  }
+  void OnViewPropertyChanged(uint32_t view,
+                             const String& name,
+                             Array<uint8_t> new_data) override {
+    tracker_.OnViewPropertyChanged(view, name, new_data.Pass());
   }
 
  private:
@@ -1554,6 +1575,59 @@ TEST_F(ViewManagerTest, SetViewVisibilityNotifications) {
     connection2_->DoRunLoopUntilChangesCount(1);
     ASSERT_EQ(1u, connection2_->changes().size());
     EXPECT_EQ("DrawnStateChanged view=1,2 drawn=true",
+              ChangesToDescription1(connection2_->changes())[0]);
+  }
+}
+
+TEST_F(ViewManagerTest, SetViewProperty) {
+  // Create 1 and 2 in the first connection and parent both to the root.
+  ASSERT_TRUE(connection_->CreateView(BuildViewId(1, 1)));
+
+  ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(false));
+
+  ASSERT_TRUE(connection_->AddView(BuildViewId(0, 1), BuildViewId(1, 1)));
+  {
+    std::vector<TestView> views;
+    connection_->GetViewTree(BuildViewId(0, 1), &views);
+    ASSERT_EQ(2u, views.size());
+    EXPECT_EQ("view=0,1 parent=null visible=true drawn=true",
+              views[0].ToString2());
+    EXPECT_EQ("view=1,1 parent=0,1 visible=true drawn=true",
+              views[1].ToString2());
+
+    ASSERT_EQ(0u, views[1].properties.size());
+
+    connection2_->DoRunLoopUntilChangesCount(1);
+    ASSERT_EQ(1u, connection2_->changes().size());
+    EXPECT_EQ("DrawnStateChanged view=1,1 drawn=true",
+              ChangesToDescription1(connection2_->changes())[0]);
+  }
+
+  // Set properties on 1.
+  std::vector<uint8_t> one(1, '1');
+  ASSERT_TRUE(connection_->SetViewProperty(BuildViewId(1, 1), "one", &one));
+  {
+    connection2_->DoRunLoopUntilChangesCount(1);
+    ASSERT_EQ(1u, connection2_->changes().size());
+    EXPECT_EQ("PropertyChanged view=1,1 key=one value=1",
+              ChangesToDescription1(connection2_->changes())[0]);
+  }
+
+  // Test that our properties exist in the view tree
+  {
+    std::vector<TestView> views;
+    connection_->GetViewTree(BuildViewId(1, 1), &views);
+    ASSERT_EQ(1u, views.size());
+    ASSERT_EQ(1u, views[0].properties.size());
+    EXPECT_EQ(one, views[0].properties["one"]);
+  }
+
+  // Set back to null.
+  ASSERT_TRUE(connection_->SetViewProperty(BuildViewId(1, 1), "one", NULL));
+  {
+    connection2_->DoRunLoopUntilChangesCount(1);
+    ASSERT_EQ(1u, connection2_->changes().size());
+    EXPECT_EQ("PropertyChanged view=1,1 key=one value=NULL",
               ChangesToDescription1(connection2_->changes())[0]);
   }
 }

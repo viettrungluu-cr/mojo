@@ -36,6 +36,10 @@ class ViewPrivate {
     view_->manager_ = manager;
   }
 
+  void set_properties(const std::map<std::string, std::vector<uint8_t>>& data) {
+    view_->properties_ = data;
+  }
+
   void LocalDestroy() {
     view_->LocalDestroy();
   }

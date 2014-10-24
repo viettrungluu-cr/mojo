@@ -279,6 +279,16 @@ void ConnectionManager::OnWillChangeViewVisibility(const ServerView* view) {
   }
 }
 
+void ConnectionManager::OnViewPropertyChanged(
+    const ServerView* view,
+    const std::string& name,
+    const std::vector<uint8_t>* new_data) {
+  for (auto& pair : connection_map_) {
+    pair.second->ProcessViewPropertyChanged(
+        view, name, new_data, IsChangeSource(pair.first));
+  }
+}
+
 void ConnectionManager::DispatchInputEventToView(Id transport_view_id,
                                                  EventPtr event) {
   const ViewId view_id(ViewIdFromTransportId(transport_view_id));

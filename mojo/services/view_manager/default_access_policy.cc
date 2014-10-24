@@ -78,6 +78,10 @@ bool DefaultAccessPolicy::CanSetViewBounds(const ServerView* view) const {
   return WasCreatedByThisConnection(view);
 }
 
+bool DefaultAccessPolicy::CanSetViewProperties(const ServerView* view) const {
+  return WasCreatedByThisConnection(view);
+}
+
 bool DefaultAccessPolicy::ShouldNotifyOnHierarchyChange(
     const ServerView* view,
     const ServerView** new_parent,

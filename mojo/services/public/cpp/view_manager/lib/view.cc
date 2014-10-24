@@ -225,6 +225,33 @@ void View::SetVisible(bool value) {
   FOR_EACH_OBSERVER(ViewObserver, observers_, OnViewVisibilityChanged(this));
 }
 
+void View::SetProperty(const std::string& name,
+                       const std::vector<uint8_t>* value) {
+  std::vector<uint8_t> old_value;
+  std::vector<uint8_t>* old_value_ptr = nullptr;
+  auto it = properties_.find(name);
+  if (it != properties_.end()) {
+    old_value = it->second;
+    old_value_ptr = &old_value;
+
+    if (value && old_value == *value)
+      return;
+  } else if (!value) {
+    // This property isn't set in |properties_| and |value| is NULL, so there's
+    // no change.
+    return;
+  }
+
+  if (value) {
+    properties_[name] = *value;
+  } else if (it != properties_.end()) {
+    properties_.erase(it);
+  }
+
+  FOR_EACH_OBSERVER(ViewObserver, observers_,
+                    OnViewPropertyChanged(this, name, old_value_ptr, value));
+}
+
 bool View::IsDrawn() const {
   if (!visible_)
     return false;

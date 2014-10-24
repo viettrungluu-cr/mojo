@@ -42,6 +42,10 @@ class MOJO_VIEW_MANAGER_EXPORT ServerViewDelegate {
 
   virtual void OnWillChangeViewVisibility(const ServerView* view) = 0;
 
+  virtual void OnViewPropertyChanged(const ServerView* view,
+                                     const std::string& name,
+                                     const std::vector<uint8_t>* new_data) = 0;
+
  protected:
   virtual ~ServerViewDelegate() {}
 };

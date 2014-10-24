@@ -96,6 +96,24 @@ void ViewManagerServiceImpl::ProcessWillChangeViewHierarchy(
   NotifyDrawnStateChanged(view, new_drawn);
 }
 
+void ViewManagerServiceImpl::ProcessViewPropertyChanged(
+    const ServerView* view,
+    const std::string& name,
+    const std::vector<uint8_t>* new_data,
+    bool originated_change) {
+  if (originated_change)
+    return;
+
+  Array<uint8_t> data;
+  if (new_data)
+    data = Array<uint8_t>::From(*new_data);
+
+  client()->OnViewPropertyChanged(
+      ViewIdToTransportId(view->id()),
+      String(name),
+      data.Pass());
+}
+
 void ViewManagerServiceImpl::ProcessViewHierarchyChanged(
     const ServerView* view,
     const ServerView* new_parent,
@@ -304,6 +322,7 @@ ViewDataPtr ViewManagerServiceImpl::ViewToViewData(const ServerView* view) {
   view_data->parent_id = ViewIdToTransportId(parent ? parent->id() : ViewId());
   view_data->view_id = ViewIdToTransportId(view->id());
   view_data->bounds = Rect::From(view->bounds());
+  view_data->properties = Map<String, Array<uint8_t>>::From(view->properties());
   view_data->visible = view->visible();
   view_data->drawn = view->IsDrawn(connection_manager_->root());
   return view_data.Pass();
@@ -470,6 +489,26 @@ void ViewManagerServiceImpl::SetViewVisibility(
     view->SetVisible(visible);
   }
   callback.Run(true);
+}
+
+void ViewManagerServiceImpl::SetViewProperty(
+    uint32_t view_id,
+    const mojo::String& name,
+    mojo::Array<uint8_t> value,
+    const mojo::Callback<void(bool)>& callback) {
+  ServerView* view = GetView(ViewIdFromTransportId(view_id));
+  const bool success = view && access_policy_->CanSetViewProperties(view);
+  if (success) {
+    ConnectionManager::ScopedChange change(this, connection_manager_, false);
+
+    if (value.is_null()) {
+      view->SetProperty(name, nullptr);
+    } else {
+      std::vector<uint8_t> data = value.To<std::vector<uint8_t>>();
+      view->SetProperty(name, &data);
+    }
+  }
+  callback.Run(success);
 }
 
 void ViewManagerServiceImpl::Embed(

@@ -74,6 +74,11 @@ bool WindowManagerAccessPolicy::CanSetViewBounds(const ServerView* view) const {
   return view->id().connection_id == connection_id_;
 }
 
+bool WindowManagerAccessPolicy::CanSetViewProperties(
+    const ServerView* view) const {
+  return view->id().connection_id == connection_id_;
+}
+
 bool WindowManagerAccessPolicy::ShouldNotifyOnHierarchyChange(
     const ServerView* view,
     const ServerView** new_parent,

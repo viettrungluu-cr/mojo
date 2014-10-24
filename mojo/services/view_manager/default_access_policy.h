@@ -34,6 +34,7 @@ class DefaultAccessPolicy : public AccessPolicy {
   bool CanChangeViewVisibility(const ServerView* view) const override;
   bool CanSetViewSurfaceId(const ServerView* view) const override;
   bool CanSetViewBounds(const ServerView* view) const override;
+  bool CanSetViewProperties(const ServerView* view) const override;
   bool ShouldNotifyOnHierarchyChange(
       const ServerView* view,
       const ServerView** new_parent,

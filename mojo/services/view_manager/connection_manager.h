@@ -175,6 +175,9 @@ class MOJO_VIEW_MANAGER_EXPORT ConnectionManager
                        const ServerView* relative,
                        OrderDirection direction) override;
   void OnWillChangeViewVisibility(const ServerView* view) override;
+  void OnViewPropertyChanged(const ServerView* view,
+                             const std::string& name,
+                             const std::vector<uint8_t>* new_data) override;
 
   // WindowManagerInternalClient:
   virtual void DispatchInputEventToView(Id transport_view_id,

@@ -61,6 +61,11 @@ class MOJO_VIEW_MANAGER_EXPORT ServerView {
   bool visible() const { return visible_; }
   void SetVisible(bool value);
 
+  const std::map<std::string, std::vector<uint8_t>>& properties() const {
+    return properties_;
+  }
+  void SetProperty(const std::string& name, const std::vector<uint8_t>* value);
+
   // Returns true if this view is attached to |root| and all ancestors are
   // visible.
   bool IsDrawn(const ServerView* root) const;
@@ -81,6 +86,7 @@ class MOJO_VIEW_MANAGER_EXPORT ServerView {
   bool visible_;
   gfx::Rect bounds_;
   cc::SurfaceId surface_id_;
+  std::map<std::string, std::vector<uint8_t>> properties_;
 
   DISALLOW_COPY_AND_ASSIGN(ServerView);
 };

@@ -52,6 +52,9 @@ class ViewManagerClientImpl : public ViewManager,
   void SetSurfaceId(Id view_id, SurfaceIdPtr surface_id);
   void SetFocus(Id view_id);
   void SetVisible(Id view_id, bool visible);
+  void SetProperty(Id view_id,
+                   const std::string& name,
+                   const std::vector<uint8_t>& data);
 
   void Embed(const String& url, Id view_id);
   void Embed(const String& url,
@@ -101,11 +104,14 @@ class ViewManagerClientImpl : public ViewManager,
   void OnViewDeleted(Id view_id) override;
   void OnViewVisibilityChanged(Id view_id, bool visible) override;
   void OnViewDrawnStateChanged(Id view_id, bool drawn) override;
+  void OnViewPropertyChanged(Id view_id,
+                             const String& name,
+                             Array<uint8_t> new_data) override;
   void OnViewInputEvent(Id view_id,
                         EventPtr event,
                         const Callback<void()>& callback) override;
 
-    // Overridden from WindowManagerClient2:
+  // Overridden from WindowManagerClient2:
   void OnWindowManagerReady() override;
   void OnCaptureChanged(Id old_capture_view_id,
                         Id new_capture_view_id) override;

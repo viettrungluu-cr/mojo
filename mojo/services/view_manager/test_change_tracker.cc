@@ -74,6 +74,12 @@ std::string ChangeToDescription1(const Change& change) {
                                 ViewIdToString(change.view_id).c_str(),
                                 change.event_action);
 
+    case CHANGE_TYPE_PROPERTY_CHANGED:
+      return base::StringPrintf("PropertyChanged view=%s key=%s value=%s",
+                                ViewIdToString(change.view_id).c_str(),
+                                change.property_key.c_str(),
+                                change.property_value.c_str());
+
     case CHANGE_TYPE_DELEGATE_EMBED:
       return base::StringPrintf("DelegateEmbed url=%s",
                                 change.embed_url.data());
@@ -106,6 +112,8 @@ TestView ViewDataToTestView(const ViewDataPtr& data) {
   view.view_id = data->view_id;
   view.visible = data->visible;
   view.drawn = data->drawn;
+  view.properties =
+      data->properties.To<std::map<std::string, std::vector<uint8_t>>>();
   return view;
 }
 
@@ -213,6 +221,20 @@ void TestChangeTracker::OnViewInputEvent(Id view_id, EventPtr event) {
   AddChange(change);
 }
 
+void TestChangeTracker::OnViewPropertyChanged(Id view_id,
+                                              String name,
+                                              Array<uint8_t> data) {
+  Change change;
+  change.type = CHANGE_TYPE_PROPERTY_CHANGED;
+  change.view_id = view_id;
+  change.property_key = name;
+  if (data.is_null())
+    change.property_value = "NULL";
+  else
+    change.property_value = data.To<std::string>();
+  AddChange(change);
+}
+
 void TestChangeTracker::DelegateEmbed(const String& url) {
   Change change;
   change.type = CHANGE_TYPE_DELEGATE_EMBED;
@@ -225,6 +247,10 @@ void TestChangeTracker::AddChange(const Change& change) {
   if (delegate_)
     delegate_->OnChangeAdded();
 }
+
+TestView::TestView() {}
+
+TestView::~TestView() {}
 
 std::string TestView::ToString() const {
   return base::StringPrintf("view=%s parent=%s",

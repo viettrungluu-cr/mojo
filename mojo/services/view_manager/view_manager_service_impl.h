@@ -81,6 +81,10 @@ class MOJO_VIEW_MANAGER_EXPORT ViewManagerServiceImpl
                                       const ServerView* new_parent,
                                       const ServerView* old_parent,
                                       bool originated_change);
+  void ProcessViewPropertyChanged(const ServerView* view,
+                                  const std::string& name,
+                                  const std::vector<uint8_t>* new_data,
+                                  bool originated_change);
   void ProcessViewHierarchyChanged(const ServerView* view,
                                    const ServerView* new_parent,
                                    const ServerView* old_parent,
@@ -92,6 +96,8 @@ class MOJO_VIEW_MANAGER_EXPORT ViewManagerServiceImpl
   void ProcessViewDeleted(const ViewId& view, bool originated_change);
   void ProcessWillChangeViewVisibility(const ServerView* view,
                                        bool originated_change);
+  void ProcessViewPropertiesChanged(const ServerView* view,
+                                    bool originated_change);
 
   // TODO(sky): move this to private section (currently can't because of
   // bindings).
@@ -171,6 +177,10 @@ class MOJO_VIEW_MANAGER_EXPORT ViewManagerServiceImpl
   void SetViewVisibility(Id view_id,
                          bool visible,
                          const Callback<void(bool)>& callback) override;
+  void SetViewProperty(Id view_id,
+                       const String& name,
+                       Array<uint8_t> value,
+                       const Callback<void(bool)>& callback) override;
   void Embed(const String& url,
              Id view_id,
              ServiceProviderPtr service_provider,

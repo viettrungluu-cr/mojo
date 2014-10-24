@@ -612,4 +612,91 @@ TEST_F(ViewObserverTest, SetVisible) {
   }
 }
 
+namespace {
+
+class PropertyChangeObserver : public ViewObserver {
+ public:
+  explicit PropertyChangeObserver(View* view) : view_(view) {
+    view_->AddObserver(this);
+  }
+  virtual ~PropertyChangeObserver() { view_->RemoveObserver(this); }
+
+  Changes GetAndClearChanges() {
+    Changes changes;
+    changes.swap(changes_);
+    return changes;
+  }
+
+ private:
+  // Overridden from ViewObserver:
+  void OnViewPropertyChanged(View* view,
+                             const std::string& name,
+                             const std::vector<uint8_t>* old_data,
+                             const std::vector<uint8_t>* new_data) override {
+    changes_.push_back(base::StringPrintf(
+        "view=%s property changed key=%s old_value=%s new_value=%s",
+        ViewIdToString(view->id()).c_str(),
+        name.c_str(),
+        VectorToString(old_data).c_str(),
+        VectorToString(new_data).c_str()));
+  }
+
+  std::string VectorToString(const std::vector<uint8_t>* data) {
+    if (!data)
+      return "NULL";
+    std::string s;
+    for (char c : *data)
+      s += c;
+    return s;
+  }
+
+  View* view_;
+  Changes changes_;
+
+  DISALLOW_COPY_AND_ASSIGN(PropertyChangeObserver);
+};
+
+}  // namespace
+
+TEST_F(ViewObserverTest, SetProperty) {
+  TestView v1;
+  std::vector<uint8_t> one(1, '1');
+
+  {
+    // Change visibility from true to false and make sure we get notifications.
+    PropertyChangeObserver observer(&v1);
+    v1.SetProperty("one", &one);
+    Changes changes = observer.GetAndClearChanges();
+    ASSERT_EQ(1U, changes.size());
+    EXPECT_EQ("view=0,1 property changed key=one old_value=NULL new_value=1",
+              changes[0]);
+    EXPECT_EQ(1U, v1.properties().size());
+  }
+  {
+    // Set visible to existing value and verify no notifications.
+    PropertyChangeObserver observer(&v1);
+    v1.SetProperty("one", &one);
+    EXPECT_TRUE(observer.GetAndClearChanges().empty());
+    EXPECT_EQ(1U, v1.properties().size());
+  }
+  {
+    // Set the value to NULL to delete it.
+    // Change visibility from true to false and make sure we get notifications.
+    PropertyChangeObserver observer(&v1);
+    v1.SetProperty("one", NULL);
+    Changes changes = observer.GetAndClearChanges();
+    ASSERT_EQ(1U, changes.size());
+    EXPECT_EQ("view=0,1 property changed key=one old_value=1 new_value=NULL",
+              changes[0]);
+    EXPECT_EQ(0U, v1.properties().size());
+  }
+  {
+    // Setting a null property to null shouldn't update us.
+    PropertyChangeObserver observer(&v1);
+    v1.SetProperty("one", NULL);
+    EXPECT_TRUE(observer.GetAndClearChanges().empty());
+    EXPECT_EQ(0U, v1.properties().size());
+  }
+}
+
 }  // namespace mojo

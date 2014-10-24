@@ -121,6 +121,27 @@ void ServerView::SetVisible(bool value) {
   visible_ = value;
 }
 
+void ServerView::SetProperty(const std::string& name,
+                             const std::vector<uint8_t>* value) {
+  auto it = properties_.find(name);
+  if (it != properties_.end()) {
+    if (value && it->second == *value)
+      return;
+  } else if (!value) {
+    // This property isn't set in |properties_| and |value| is NULL, so there's
+    // no change.
+    return;
+  }
+
+  if (value) {
+    properties_[name] = *value;
+  } else if (it != properties_.end()) {
+    properties_.erase(it);
+  }
+
+  delegate_->OnViewPropertyChanged(this, name, value);
+}
+
 bool ServerView::IsDrawn(const ServerView* root) const {
   if (!root->visible_)
     return false;

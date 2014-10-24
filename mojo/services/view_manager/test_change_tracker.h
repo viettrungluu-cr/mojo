@@ -26,11 +26,15 @@ enum ChangeType {
   CHANGE_TYPE_NODE_DRAWN_STATE_CHANGED,
   CHANGE_TYPE_NODE_DELETED,
   CHANGE_TYPE_INPUT_EVENT,
+  CHANGE_TYPE_PROPERTY_CHANGED,
   CHANGE_TYPE_DELEGATE_EMBED,
 };
 
 // TODO(sky): consider nuking and converting directly to ViewData.
 struct TestView {
+  TestView();
+  ~TestView();
+
   // Returns a string description of this.
   std::string ToString() const;
 
@@ -41,6 +45,7 @@ struct TestView {
   Id view_id;
   bool visible;
   bool drawn;
+  std::map<std::string, std::vector<uint8_t>> properties;
 };
 
 // Tracks a call to ViewManagerClient. See the individual functions for the
@@ -62,6 +67,8 @@ struct Change {
   String embed_url;
   OrderDirection direction;
   bool bool_value;
+  std::string property_key;
+  std::string property_value;
 };
 
 // Converts Changes to string descriptions.
@@ -116,6 +123,9 @@ class TestChangeTracker {
   void OnViewVisibilityChanged(Id view_id, bool visible);
   void OnViewDrawnStateChanged(Id view_id, bool drawn);
   void OnViewInputEvent(Id view_id, EventPtr event);
+  void OnViewPropertyChanged(Id view_id,
+                             String name,
+                             Array<uint8_t> data);
   void DelegateEmbed(const String& url);
 
  private:
