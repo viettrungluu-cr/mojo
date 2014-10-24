@@ -17,9 +17,9 @@
 #include "base/threading/thread_checker.h"
 #include "mojo/edk/embedder/channel_init.h"
 #include "mojo/public/interfaces/application/shell.mojom.h"
+#include "mojo/shell/domain_socket/socket_descriptor.h"
 #include "mojo/shell/external_application_registrar.mojom.h"
 #include "mojo/shell/incoming_connection_listener_posix.h"
-#include "net/socket/socket_descriptor.h"
 #include "url/gurl.h"
 
 namespace mojo {
@@ -90,7 +90,7 @@ class ExternalApplicationListenerPosix
 
   // Implementation of IncomingConnectionListener::Delegate
   void OnListening(int rv) override;
-  void OnConnection(net::SocketDescriptor incoming) override;
+  void OnConnection(SocketDescriptor incoming) override;
 
   // If listener_ fails to start listening, this method is run on shell_runner_
   // to report the error.
@@ -99,7 +99,7 @@ class ExternalApplicationListenerPosix
   // When a connection succeeds, it is passed to this method running
   // on shell_runner_, where it is "promoted" to a Mojo MessagePipe and
   // bound to a RegistrarImpl.
-  void CreatePipeAndBindToRegistrarImpl(net::SocketDescriptor incoming_socket);
+  void CreatePipeAndBindToRegistrarImpl(SocketDescriptor incoming_socket);
 
   scoped_refptr<base::SequencedTaskRunner> shell_runner_;
   scoped_refptr<base::SequencedTaskRunner> io_runner_;

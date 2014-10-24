@@ -11,7 +11,7 @@
 #include "base/memory/scoped_ptr.h"
 #include "base/sequenced_task_runner.h"
 #include "mojo/public/cpp/system/message_pipe.h"
-#include "net/socket/socket_descriptor.h"
+#include "mojo/shell/domain_socket/socket_descriptor.h"
 #include "url/gurl.h"
 
 namespace mojo {

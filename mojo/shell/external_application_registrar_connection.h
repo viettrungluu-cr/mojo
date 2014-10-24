@@ -13,9 +13,9 @@
 #include "mojo/public/cpp/bindings/error_handler.h"
 #include "mojo/public/interfaces/application/application.mojom.h"
 #include "mojo/public/interfaces/application/shell.mojom.h"
+#include "mojo/shell/domain_socket/socket_descriptor.h"
+#include "mojo/shell/domain_socket/unix_domain_client_socket_posix.h"
 #include "mojo/shell/external_application_registrar.mojom.h"
-#include "net/socket/socket_descriptor.h"
-#include "net/socket/unix_domain_client_socket_posix.h"
 #include "url/gurl.h"
 
 namespace mojo {
@@ -38,7 +38,7 @@ class ExternalApplicationRegistrarConnection : public ErrorHandler {
   // Status code is passed to callback upon success or failure.
   // May return either synchronously or asynchronously, depending on the
   // status of the underlying socket.
-  void Connect(const net::CompletionCallback& callback);
+  void Connect(const CompletionCallback& callback);
 
   // Registers this app with the shell at the provided URL.
   // shell is not ready for use until register_complete_callback fires.
@@ -52,9 +52,9 @@ class ExternalApplicationRegistrarConnection : public ErrorHandler {
   // Handles the result of Connect(). If it was successful, promotes the socket
   // to a MessagePipe and binds it to registrar_.
   // Hands rv to callback regardless.
-  void OnConnect(net::CompletionCallback callback, int rv);
+  void OnConnect(CompletionCallback callback, int rv);
 
-  scoped_ptr<net::UnixDomainClientSocket> client_socket_;
+  scoped_ptr<UnixDomainClientSocket> client_socket_;
   mojo::embedder::ChannelInit channel_init_;
   ExternalApplicationRegistrarPtr registrar_;
 };

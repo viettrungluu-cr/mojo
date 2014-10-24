@@ -1,0 +1,39 @@
+# Copyright 2014 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+source_set("domain_socket") {
+  sources = [
+    "completion_callback.h",
+    "net_errors.cc",
+    "net_errors.h",
+    "net_error_list.h",
+    "socket_descriptor.h",
+    "socket_libevent.cc",
+    "socket_libevent.h",
+    "unix_domain_client_socket_posix.cc",
+    "unix_domain_client_socket_posix.h",
+    "unix_domain_server_socket_posix.cc",
+    "unix_domain_server_socket_posix.h",
+  ]
+
+  deps = [ "//base" ]
+}
+
+source_set("tests") {
+  testonly = true
+
+  sources = [
+    "test_completion_callback.cc",
+    "test_completion_callback.h",
+    "unix_domain_client_socket_posix_unittest.cc",
+    "unix_domain_server_socket_posix_unittest.cc",
+  ]
+
+  deps = [
+    ":domain_socket",
+    "//base",
+    "//base/test:test_support",
+    "//testing/gtest",
+  ]
+}

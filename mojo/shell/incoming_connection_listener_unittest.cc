@@ -9,12 +9,12 @@
 #include "base/run_loop.h"
 #include "mojo/edk/embedder/channel_init.h"
 #include "mojo/edk/embedder/platform_channel_pair.h"
+#include "mojo/shell/domain_socket/net_errors.h"
+#include "mojo/shell/domain_socket/socket_descriptor.h"
+#include "mojo/shell/domain_socket/test_completion_callback.h"
+#include "mojo/shell/domain_socket/unix_domain_client_socket_posix.h"
 #include "mojo/shell/external_application_registrar_connection.h"
 #include "mojo/shell/incoming_connection_listener_posix.h"
-#include "net/base/net_errors.h"
-#include "net/base/test_completion_callback.h"
-#include "net/socket/socket_descriptor.h"
-#include "net/socket/unix_domain_client_socket_posix.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace mojo {
@@ -28,8 +28,8 @@ class TestDelegate : public IncomingConnectionListenerPosix::Delegate {
   ~TestDelegate() override {}
 
   void OnListening(int rv) override { EXPECT_EQ(net::OK, rv); }
-  void OnConnection(net::SocketDescriptor incoming) override {
-    EXPECT_NE(net::kInvalidSocket, incoming);
+  void OnConnection(SocketDescriptor incoming) override {
+    EXPECT_NE(kInvalidSocket, incoming);
   }
 };
 
@@ -41,7 +41,7 @@ class ListeningFailsDelegate
   ~ListeningFailsDelegate() override {}
 
   void OnListening(int rv) override { EXPECT_EQ(expected_error_, rv); }
-  void OnConnection(net::SocketDescriptor incoming) override {
+  void OnConnection(SocketDescriptor incoming) override {
     FAIL() << "No connection should be attempted.";
   }
 

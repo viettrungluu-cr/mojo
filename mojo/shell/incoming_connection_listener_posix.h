@@ -8,8 +8,8 @@
 #include "base/files/file_path.h"
 #include "base/memory/weak_ptr.h"
 #include "base/threading/thread_checker.h"
-#include "net/socket/socket_descriptor.h"
-#include "net/socket/unix_domain_server_socket_posix.h"
+#include "mojo/shell/domain_socket/socket_descriptor.h"
+#include "mojo/shell/domain_socket/unix_domain_server_socket_posix.h"
 
 namespace mojo {
 namespace shell {
@@ -23,12 +23,13 @@ class IncomingConnectionListenerPosix {
    public:
     virtual ~Delegate() {}  // Abstract base class, so this is safe.
 
-    // Called when listening has started. rv is from net/base/net_error_list.h
+    // Called when listening has started. rv is from
+    // mojo/shell/domain_socket/net_error_list.h
     virtual void OnListening(int rv) = 0;
 
     // Called every time an incoming connection is accepted. The delegate
     // takes ownership of incoming.
-    virtual void OnConnection(net::SocketDescriptor incoming) = 0;
+    virtual void OnConnection(SocketDescriptor incoming) = 0;
   };
 
   IncomingConnectionListenerPosix(const base::FilePath& socket_path,
@@ -58,10 +59,10 @@ class IncomingConnectionListenerPosix {
   Delegate* const delegate_;
 
   const base::FilePath socket_path_;
-  net::UnixDomainServerSocket listen_socket_;
+  UnixDomainServerSocket listen_socket_;
   base::ThreadChecker listen_thread_checker_;
 
-  net::SocketDescriptor incoming_socket_;
+  SocketDescriptor incoming_socket_;
 
   base::WeakPtrFactory<IncomingConnectionListenerPosix> weak_ptr_factory_;
 };

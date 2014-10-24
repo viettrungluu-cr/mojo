@@ -13,12 +13,12 @@
 #include "mojo/public/interfaces/application/application.mojom.h"
 #include "mojo/public/interfaces/application/service_provider.mojom.h"
 #include "mojo/public/interfaces/application/shell.mojom.h"
+#include "mojo/shell/domain_socket/net_errors.h"
+#include "mojo/shell/domain_socket/test_completion_callback.h"
+#include "mojo/shell/domain_socket/unix_domain_client_socket_posix.h"
 #include "mojo/shell/external_application_listener_posix.h"
 #include "mojo/shell/external_application_registrar.mojom.h"
 #include "mojo/shell/external_application_registrar_connection.h"
-#include "net/base/net_errors.h"
-#include "net/base/test_completion_callback.h"
-#include "net/socket/unix_domain_client_socket_posix.h"
 #include "testing/gtest/include/gtest/gtest.h"
 #include "url/gurl.h"
 
@@ -125,7 +125,7 @@ class FakeExternalApplication {
 
   void ConnectSynchronously(const base::FilePath& socket_path) {
     connection_.reset(new ExternalApplicationRegistrarConnection(socket_path));
-    net::TestCompletionCallback connect_callback;
+    TestCompletionCallback connect_callback;
     connection_->Connect(connect_callback.callback());
     connect_callback.WaitForResult();
   }

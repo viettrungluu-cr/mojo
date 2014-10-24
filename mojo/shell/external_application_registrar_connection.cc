@@ -12,10 +12,10 @@
 #include "mojo/public/cpp/bindings/error_handler.h"
 #include "mojo/public/interfaces/application/application.mojom.h"
 #include "mojo/public/interfaces/application/shell.mojom.h"
+#include "mojo/shell/domain_socket/net_errors.h"
+#include "mojo/shell/domain_socket/socket_descriptor.h"
+#include "mojo/shell/domain_socket/unix_domain_client_socket_posix.h"
 #include "mojo/shell/external_application_registrar.mojom.h"
-#include "net/base/net_errors.h"
-#include "net/socket/socket_descriptor.h"
-#include "net/socket/unix_domain_client_socket_posix.h"
 #include "url/gurl.h"
 
 namespace mojo {
@@ -23,8 +23,7 @@ namespace shell {
 
 ExternalApplicationRegistrarConnection::ExternalApplicationRegistrarConnection(
     const base::FilePath& socket_path)
-    : client_socket_(
-          new net::UnixDomainClientSocket(socket_path.value(), false)) {
+    : client_socket_(new UnixDomainClientSocket(socket_path.value(), false)) {
 }
 
 ExternalApplicationRegistrarConnection::
@@ -37,7 +36,7 @@ void ExternalApplicationRegistrarConnection::OnConnectionError() {
 }
 
 void ExternalApplicationRegistrarConnection::Connect(
-    const net::CompletionCallback& callback) {
+    const CompletionCallback& callback) {
   DCHECK(client_socket_) << "Single use only.";
   int rv = client_socket_->Connect(
       base::Bind(&ExternalApplicationRegistrarConnection::OnConnect,
@@ -61,7 +60,7 @@ void ExternalApplicationRegistrarConnection::Register(
 }
 
 void ExternalApplicationRegistrarConnection::OnConnect(
-    net::CompletionCallback callback,
+    CompletionCallback callback,
     int rv) {
   DVLOG(1) << "OnConnect called: " << net::ErrorToString(rv);
   if (rv != net::OK) {

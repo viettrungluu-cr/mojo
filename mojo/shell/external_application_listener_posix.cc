@@ -18,10 +18,10 @@
 #include "mojo/common/common_type_converters.h"
 #include "mojo/edk/embedder/channel_init.h"
 #include "mojo/public/cpp/bindings/error_handler.h"
+#include "mojo/shell/domain_socket/net_errors.h"
+#include "mojo/shell/domain_socket/socket_descriptor.h"
 #include "mojo/shell/external_application_registrar.mojom.h"
 #include "mojo/shell/incoming_connection_listener_posix.h"
-#include "net/base/net_errors.h"
-#include "net/socket/socket_descriptor.h"
 #include "url/gurl.h"
 
 namespace mojo {
@@ -144,8 +144,7 @@ void ExternalApplicationListenerPosix::OnListening(int rv) {
           rv));
 }
 
-void ExternalApplicationListenerPosix::OnConnection(
-    net::SocketDescriptor incoming) {
+void ExternalApplicationListenerPosix::OnConnection(SocketDescriptor incoming) {
   DCHECK(listener_thread_checker_.CalledOnValidThread());
   shell_runner_->PostTask(
       FROM_HERE,
@@ -164,7 +163,7 @@ void ExternalApplicationListenerPosix::RunErrorCallbackIfListeningFailed(
 }
 
 void ExternalApplicationListenerPosix::CreatePipeAndBindToRegistrarImpl(
-    net::SocketDescriptor incoming_socket) {
+    SocketDescriptor incoming_socket) {
   DCHECK(register_thread_checker_.CalledOnValidThread());
 
   DVLOG(1) << "Accepted incoming connection";

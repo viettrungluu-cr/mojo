@@ -11,9 +11,9 @@
 #include "base/memory/scoped_ptr.h"
 #include "base/sequenced_task_runner.h"
 #include "base/tracked_objects.h"
-#include "net/base/net_errors.h"
-#include "net/socket/socket_descriptor.h"
-#include "net/socket/unix_domain_server_socket_posix.h"
+#include "mojo/shell/domain_socket/net_errors.h"
+#include "mojo/shell/domain_socket/socket_descriptor.h"
+#include "mojo/shell/domain_socket/unix_domain_server_socket_posix.h"
 
 namespace mojo {
 namespace shell {
@@ -21,7 +21,7 @@ namespace shell {
 namespace {
 // TODO(cmasone): Figure out what we should be doing about "authenticating" the
 // process trying to connect.
-bool Yes(const net::UnixDomainServerSocket::Credentials& ignored) {
+bool Yes(const UnixDomainServerSocket::Credentials& ignored) {
   return true;
 }
 }  // anonymous namespace
@@ -32,7 +32,7 @@ IncomingConnectionListenerPosix::IncomingConnectionListenerPosix(
     : delegate_(delegate),
       socket_path_(socket_path),
       listen_socket_(base::Bind(&Yes), false),
-      incoming_socket_(net::kInvalidSocket),
+      incoming_socket_(kInvalidSocket),
       weak_ptr_factory_(this) {
   DCHECK(delegate_);
 }
@@ -58,7 +58,7 @@ void IncomingConnectionListenerPosix::StartListening() {
     rv = net::ERR_FILE_EXISTS;
   } else {
     const std::string& socket_address = socket_path_.value();
-    rv = listen_socket_.ListenWithAddressAndPort(socket_address, 0, 100);
+    rv = listen_socket_.ListenWithPath(socket_address, 100);
   }
 
   // Call OnListening() before Accept(), so that the delegate is certain to
@@ -70,7 +70,7 @@ void IncomingConnectionListenerPosix::StartListening() {
 
 void IncomingConnectionListenerPosix::Accept() {
   DCHECK(listen_thread_checker_.CalledOnValidThread());
-  int rv = listen_socket_.AcceptSocketDescriptor(
+  int rv = listen_socket_.Accept(
       &incoming_socket_,
       base::Bind(&IncomingConnectionListenerPosix::OnAccept,
                  weak_ptr_factory_.GetWeakPtr()));
@@ -86,13 +86,13 @@ void IncomingConnectionListenerPosix::Accept() {
 void IncomingConnectionListenerPosix::OnAccept(int rv) {
   DCHECK(listen_thread_checker_.CalledOnValidThread());
 
-  if (rv != net::OK || incoming_socket_ == net::kInvalidSocket) {
+  if (rv != net::OK || incoming_socket_ == kInvalidSocket) {
     LOG_IF(ERROR, rv != net::OK) << "Accept failed " << net::ErrorToString(rv);
     PLOG_IF(ERROR, rv == net::OK) << "Socket invalid";
   } else {
     // Passes ownership of incoming_socket_ to delegate_.
     delegate_->OnConnection(incoming_socket_);
-    incoming_socket_ = net::kInvalidSocket;
+    incoming_socket_ = kInvalidSocket;
   }
 
   // Continue waiting to accept incoming connections...
