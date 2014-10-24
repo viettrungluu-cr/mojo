@@ -12,9 +12,7 @@ import zipfile
 
 root_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                             "..", "..")
-version_path = os.path.join(root_path, "mojo", "public", "VERSION")
-version_file = open(version_path)
-version = version_file.read().strip()
+version = subprocess.check_output(["git", "show-ref", "-s", "HEAD"]).strip()
 
 sys.path.insert(0, os.path.join(root_path, "tools"))
 
