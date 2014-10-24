@@ -16,6 +16,7 @@ dirs_to_snapshot = [
     "cc",
     "gpu",
     "ppapi/generators",
+    "sandbox/linux",
     "sdch",
     "skia",
     "testing",
@@ -24,6 +25,7 @@ dirs_to_snapshot = [
     "third_party/binutils",
     "third_party/boringssl",
     "third_party/brotli",
+    "third_party/checkstyle",
     "third_party/cython",
     "third_party/fontconfig",
     "third_party/freetype2",
@@ -63,10 +65,12 @@ dirs_to_snapshot = [
     "tools/lsan",
     "tools/msan",
     "tools/protoc_wrapper",
+    "tools/relocation_packer",
     "tools/valgrind",
     "tools/vim",
     "tools/xdisplaycheck",
     "url",
+    "ui/gl",
     ]
 
 # These directories are temporarily cloned in order to support the network
@@ -75,6 +79,8 @@ net_dirs = ["crypto",
     "gin",
     "net",
     ]
+
+files_to_copy = ["sandbox/sandbox_export.h"]
 
 dirs = dirs_to_snapshot + net_dirs
 
@@ -87,7 +93,7 @@ def rev(source_dir):
     os.chdir(mojo_root_dir)
     try:
       system(["git", "rm", "-r", d])
-    except subprocess.CheckProcessError:
+    except subprocess.CalledProcessError:
       print "Could not remove %s" % d
     print "cloning directory %s" % d
     os.chdir(source_dir)
@@ -98,6 +104,9 @@ def rev(source_dir):
       system(["cp", os.path.join(source_dir, f), dest_path])
     os.chdir(mojo_root_dir)
     system(["git", "add", d])
+
+  for f in files_to_copy:
+    system(["cp", os.path.join(source_dir, f), os.path.join(mojo_root_dir, f)])
 
   os.chdir(mojo_root_dir)
   system(["git", "add", "."])
