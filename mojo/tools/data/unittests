@@ -22,6 +22,8 @@ network_service_unittests
 view_manager_unittests
 
 # JavaScript tests:
+*apps_js_unittests
+*js_unittests
 
 # Shell integration tests:
 *mojo_shell_tests

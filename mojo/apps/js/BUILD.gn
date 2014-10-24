@@ -11,7 +11,6 @@ group("js") {
   ]
 }
 
-# GYP version: part of mojo/mojo_apps.gypi:mojo_js_lib
 source_set("mojo_runner") {
   sources = [
     "mojo_runner_delegate.cc",
@@ -30,7 +29,6 @@ source_set("mojo_runner") {
   ]
 }
 
-# GYP version: mojo/mojo_apps.gypi:mojo_js_apps_lib
 source_set("js_apps") {
   sources = [
     "application_delegate_impl.cc",

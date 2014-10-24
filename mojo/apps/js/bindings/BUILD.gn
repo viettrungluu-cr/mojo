@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# GYP version: part of mojo/mojo_apps.gypi:mojo_js_lib
 source_set("bindings") {
   deps = [
     "//base",
