@@ -25,7 +25,6 @@
 #
 #  gpu.gyp:gpu_config => //gpu/config
 #
-#  gpu.gyp:gpu_ipc => //gpu/ipc
 #
 #  gpu.gyp:disk_cache_proto => //gpu/command_buffer/service:disk_cache_proto
 #

@@ -868,6 +868,13 @@ GL_FUNCTIONS = [
                  'gl_versions': ['es3'],
                  'extensions': ['GL_NV_path_rendering'] }],
   'arguments': 'GLenum matrixMode' },
+  { 'return_type': 'void',
+    'known_as': 'glBlendBarrierKHR',
+    'versions': [{ 'name': 'glBlendBarrierNV',
+                   'extensions': ['GL_NV_blend_equation_advanced'] },
+                 { 'name': 'glBlendBarrierKHR',
+                   'extensions': ['GL_KHR_blend_equation_advanced'] }],
+    'arguments': 'void' },
 ]
 
 OSMESA_FUNCTIONS = [
@@ -1079,7 +1086,7 @@ EGL_FUNCTIONS = [
       'EGLuint64CHROMIUM* sbc', },
 { 'return_type': 'EGLint',
   'versions': [{ 'name': 'eglWaitSyncKHR',
-                 'extensions': ['EGL_KHR_fence_sync'] }],
+                 'extensions': ['EGL_KHR_fence_sync', 'EGL_KHR_wait_sync'] }],
   'arguments': 'EGLDisplay dpy, EGLSyncKHR sync, EGLint flags' }
 ]
 

@@ -4,7 +4,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# Script to install everything needed to build mojo (well, ideally, anyway)
+# Script to install everything needed to build chromium (well, ideally, anyway)
 # See http://code.google.com/p/chromium/wiki/LinuxBuildInstructions
 # and http://code.google.com/p/chromium/wiki/LinuxBuild64Bit
 
@@ -248,7 +248,7 @@ yes_no() {
 
 if test "$do_inst_syms" = "" && test 0 -eq ${do_quick_check-0}
 then
-  echo "This script installs all tools and libraries needed to build Mojo."
+  echo "This script installs all tools and libraries needed to build Chromium."
   echo ""
   echo "For most of the libraries, it can also install debugging symbols, which"
   echo "will allow you to debug code in the system libraries. Most developers"

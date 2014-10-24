@@ -72,8 +72,8 @@
 #include "gpu/GLES2/gl2extchromium.h"
 #include "ui/gfx/frame_time.h"
 #include "ui/gfx/geometry/rect_conversions.h"
-#include "ui/gfx/size_conversions.h"
-#include "ui/gfx/vector2d_conversions.h"
+#include "ui/gfx/geometry/size_conversions.h"
+#include "ui/gfx/geometry/vector2d_conversions.h"
 
 namespace cc {
 namespace {
@@ -2079,7 +2079,8 @@ void LayerTreeHostImpl::CreateAndSetTileManager() {
                                       task_runner,
                                       resource_pool_.get(),
                                       raster_worker_pool_->AsRasterizer(),
-                                      rendering_stats_instrumentation_);
+                                      rendering_stats_instrumentation_,
+                                      settings().scheduled_raster_task_limit);
 
   UpdateTileManagerMemoryPolicy(ActualManagedMemoryPolicy());
   need_to_update_visible_tiles_before_draw_ = false;
