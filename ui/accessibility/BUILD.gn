@@ -6,6 +6,8 @@ import("//build/json_schema_api.gni")
 
 component("accessibility") {
   sources = [
+    "ax_enums.cc",
+    "ax_enums.h",
     "ax_node.cc",
     "ax_node.h",
     "ax_node_data.cc",
@@ -35,7 +37,6 @@ component("accessibility") {
   defines = [ "ACCESSIBILITY_IMPLEMENTATION" ]
 
   public_deps = [
-    ":ax_gen",
     "//base",
     "//ui/gfx",
     "//ui/gfx/geometry",
@@ -69,11 +70,4 @@ test("accessibility_unittests") {
     "//ui/gfx",
     "//ui/gfx/geometry",
   ]
-}
-
-json_schema_api("ax_gen") {
-  sources = [ "ax_enums.idl" ]
-  deps = [ "//base/third_party/dynamic_annotations" ]
-  root_namespace = "ui"
-  schemas = true
 }

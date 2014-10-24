@@ -480,7 +480,6 @@
         '../../third_party/icu/icu.gyp:icuuc',
         '../../url/url.gyp:url_lib',
         '../accessibility/accessibility.gyp:accessibility',
-        '../accessibility/accessibility.gyp:ax_gen',
         '../base/ui_base.gyp:ui_base',
         '../compositor/compositor.gyp:compositor',
         '../events/events.gyp:events',
@@ -491,9 +490,6 @@
         '../native_theme/native_theme.gyp:native_theme',
         '../resources/ui_resources.gyp:ui_resources',
         '../strings/ui_strings.gyp:ui_strings',
-      ],
-      'export_dependent_settings': [
-        '../accessibility/accessibility.gyp:ax_gen',
       ],
       'defines': [
         'VIEWS_IMPLEMENTATION',

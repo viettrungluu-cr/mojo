@@ -15,7 +15,6 @@ dirs_to_snapshot = [
     "build",
     "cc",
     "gpu",
-    "ppapi/generators",
     "sandbox/linux",
     "sdch",
     "skia",

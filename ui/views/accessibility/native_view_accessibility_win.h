@@ -348,15 +348,15 @@ NativeViewAccessibilityWin
 
   // Static methods
 
-  // Returns a conversion from the event (as defined in ax_enums.idl)
+  // Returns a conversion from the event (as defined in ax_enums.h)
   // to an MSAA event.
   static int32 MSAAEvent(ui::AXEvent event);
 
-  // Returns a conversion from the Role (as defined in ax_enums.idl)
+  // Returns a conversion from the Role (as defined in ax_enums.h)
   // to an MSAA role.
   static int32 MSAARole(ui::AXRole role);
 
-  // Returns a conversion from the State (as defined in ax_enums.idl)
+  // Returns a conversion from the State (as defined in ax_enums.h)
   // to MSAA states set.
   static int32 MSAAState(const ui::AXViewState& state);
 

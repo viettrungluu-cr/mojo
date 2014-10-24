@@ -32,7 +32,6 @@ component("views") {
 
   public_deps = [
     "//base",
-    "//ui/accessibility:ax_gen",
     "//ui/base",
     "//ui/compositor",
     "//ui/events",
