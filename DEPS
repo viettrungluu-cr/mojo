@@ -277,12 +277,6 @@ hooks = [
                 '-s', 'src/build/linux/bin/eu-strip.sha1',
     ],
   },
-  # Pull the mojo_shell binary, used for mojo development
-  {
-    'name': 'download_mojo_shell',
-    'pattern': '',
-    'action': [ 'python', 'src/mojo/public/tools/download_shell_binary.py' ],
-  },
   {
     # Ensure that we don't accidentally reference any .pyc files whose
     # corresponding .py files have already been deleted.
