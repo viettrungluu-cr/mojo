@@ -9,7 +9,6 @@
 #include "ui/base/android/view_android.h"
 #include "ui/base/android/window_android.h"
 #include "ui/base/clipboard/clipboard_android.h"
-#include "ui/base/device_form_factor_android.h"
 #include "ui/base/l10n/l10n_util_android.h"
 #include "ui/base/resource/resource_bundle_android.h"
 #include "ui/base/touch/touch_device.h"
@@ -19,7 +18,6 @@ namespace android {
 
 static base::android::RegistrationMethod kUiRegisteredMethods[] = {
   { "Clipboard", RegisterClipboardAndroid },
-  { "DeviceFormFactor", RegisterDeviceFormFactorAndroid },
   { "LocalizationUtils", l10n_util::RegisterLocalizationUtil },
   { "ResourceBundle", RegisterResourceBundleAndroid },
   { "TouchDevice", RegisterTouchDeviceAndroid },
