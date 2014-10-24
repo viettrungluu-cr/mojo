@@ -36,7 +36,7 @@ def rev(source_dir, chromium_dir):
   os.chdir(chromium_dir)
   with open("mojo/public/VERSION", "w") as version_file:
     version_file.write(src_commit)
-  system(["git", "add", "."])
+  system(["git", "add", "mojo/public/VERSION"])
   commit("Update mojo sdk to rev " + src_commit)
 
 if len(sys.argv) != 2:
