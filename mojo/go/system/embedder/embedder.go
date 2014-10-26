@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package embedder;
+package embedder
 
 /*
 #include "mojo/go/c_embedder/c_embedder.h"
@@ -10,5 +10,5 @@ package embedder;
 import "C"
 
 func InitializeMojoEmbedder() {
-	C.InitializeMojoEmbedder();
+	C.InitializeMojoEmbedder()
 }

@@ -8,9 +8,76 @@ package impl
 //#include "mojo/public/c/system/main.h"
 import "C"
 
+var core *CoreImpl
+
+func init() {
+	core = &CoreImpl{}
+}
+
+// CoreImpl is an implementation of the Mojo system APIs.
 type CoreImpl struct {
 }
 
-func (c *CoreImpl) GetTimeTicksNow() int64 {
-  return (int64)(C.MojoGetTimeTicksNow())
+func GetCore() *CoreImpl {
+	return core
+}
+
+func (c *CoreImpl) GetTimeTicksNow() MojoTimeTicks {
+	return (MojoTimeTicks)(C.MojoGetTimeTicksNow())
+}
+
+func (c *CoreImpl) Close(handle MojoHandle) MojoResult {
+	return (MojoResult)(C.MojoClose(handle.cType()))
+}
+
+func (c *CoreImpl) Wait(handle MojoHandle, signal MojoHandleSignals, deadline MojoDeadline) MojoResult {
+	return (MojoResult)(C.MojoWait(handle.cType(), signal.cType(), deadline.cType()))
+}
+
+func (c *CoreImpl) WaitMany(handles []MojoHandle, signals []MojoHandleSignals, deadline MojoDeadline) MojoResult {
+	return (MojoResult)(C.MojoWaitMany(cArrayMojoHandle(handles), cArrayMojoHandleSignals(signals), (C.uint32_t)(len(handles)), deadline.cType()))
+}
+
+func (c *CoreImpl) CreateMessagePipe(opts *MessagePipeOptions) (MojoResult, MojoHandle, MojoHandle) {
+	var handle0, handle1 C.MojoHandle
+	result := C.MojoCreateMessagePipe(opts.cType(), &handle0, &handle1)
+	return (MojoResult)(result), (MojoHandle)(handle0), (MojoHandle)(handle1)
+}
+
+func (c *CoreImpl) WriteMessage(handle MojoHandle, msg []byte, attached []MojoHandle, flags MojoWriteMessageFlags) MojoResult {
+	return (MojoResult)(C.MojoWriteMessage(handle.cType(), cArrayBytes(msg), (C.uint32_t)(len(msg)), cArrayMojoHandle(attached), (C.uint32_t)(len(attached)), flags.cType()))
+}
+
+func (c *CoreImpl) ReadMessage(handle MojoHandle, flags MojoReadMessageFlags) (MojoResult, []byte, []MojoHandle, uint32, uint32) {
+	var num_bytes, num_handles C.uint32_t
+	if result := C.MojoReadMessage(handle.cType(), nil, &num_bytes, nil, &num_handles, flags.cType()); result != C.MOJO_RESULT_RESOURCE_EXHAUSTED {
+		return (MojoResult)(result), nil, nil, 0, 0
+	}
+	msg := make([]byte, (uint32)(num_bytes))
+	attached := make([]MojoHandle, (uint32)(num_handles))
+	result := C.MojoReadMessage(handle.cType(), cArrayBytes(msg), &num_bytes, cArrayMojoHandle(attached), &num_handles, (C.MojoReadMessageFlags)(flags))
+	return (MojoResult)(result), msg, attached, (uint32)(num_bytes), (uint32)(num_handles)
+}
+
+func (c *CoreImpl) CreateDataPipe(opts *DataPipeOptions) (MojoResult, MojoHandle, MojoHandle) {
+	var producer, consumer C.MojoHandle
+	result := C.MojoCreateDataPipe(opts.cType(), &producer, &consumer)
+	return (MojoResult)(result), (MojoHandle)(producer), (MojoHandle)(consumer)
+}
+
+func (c *CoreImpl) WriteData(producer MojoHandle, data []byte, flags MojoWriteDataFlags) (MojoResult, uint32) {
+	num_bytes := (C.uint32_t)(len(data))
+	result := C.MojoWriteData(producer.cType(), cArrayBytes(data), &num_bytes, flags.cType())
+	return (MojoResult)(result), (uint32)(num_bytes)
+}
+
+func (c *CoreImpl) ReadData(consumer MojoHandle, flags MojoReadDataFlags) (MojoResult, []byte) {
+	var num_bytes C.uint32_t
+	var result C.MojoResult
+	if result = C.MojoReadData(consumer.cType(), nil, &num_bytes, C.MOJO_READ_DATA_FLAG_QUERY); result != C.MOJO_RESULT_OK {
+		return (MojoResult)(result), nil
+	}
+	data := make([]byte, (uint32)(num_bytes))
+	result = C.MojoReadData(consumer.cType(), cArrayBytes(data), &num_bytes, flags.cType())
+	return (MojoResult)(result), data
 }
