@@ -28,6 +28,9 @@ type MojoWriteDataFlags uint32
 type MojoReadDataFlags uint32
 type MojoCreateDataPipeOptionsFlags uint32
 type MojoCreateMessagePipeOptionsFlags uint32
+type MojoCreateSharedBufferOptionsFlags uint32
+type MojoDuplicateBufferHandleOptionsFlags uint32
+type MojoMapBufferFlags uint32
 
 const (
 	MOJO_DEADLINE_INDEFINITE        MojoDeadline = math.MaxUint64
@@ -69,6 +72,10 @@ const (
 	MOJO_CREATE_DATA_PIPE_OPTIONS_FLAG_NONE        MojoCreateDataPipeOptionsFlags    = 0
 	MOJO_CREATE_DATA_PIPE_OPTIONS_FLAG_MAY_DISCARD                                   = 1 << 0
 	MOJO_CREATE_MESSAGE_PIPE_OPTIONS_FLAG_NONE     MojoCreateMessagePipeOptionsFlags = 0
+
+	MOJO_CREATE_SHARED_BUFFER_OPTIONS_FLAG_NONE    MojoCreateSharedBufferOptionsFlags    = 0
+	MOJO_DUPLICATE_BUFFER_HANDLE_OPTIONS_FLAG_NONE MojoDuplicateBufferHandleOptionsFlags = 0
+	MOJO_MAP_BUFFER_FLAG_NONE                      MojoMapBufferFlags                    = 0
 )
 
 // DataPipeOptions is used to specify creation parameters for a data pipe.
@@ -112,6 +119,42 @@ func (opts *MessagePipeOptions) cType() *C.struct_MojoCreateMessagePipeOptions {
 	return &cOpts
 }
 
+// SharedBufferOptions is used to specify creation parameters for a
+// shared buffer.
+type SharedBufferOptions struct {
+	flags MojoCreateSharedBufferOptionsFlags
+}
+
+func (opts *SharedBufferOptions) cType() *C.struct_MojoCreateSharedBufferOptions {
+	if opts == nil {
+		return nil
+	}
+	var cOpts C.struct_MojoCreateSharedBufferOptions
+	cOpts = C.struct_MojoCreateSharedBufferOptions{
+		(C.uint32_t)(unsafe.Sizeof(cOpts)),
+		opts.flags.cType(),
+	}
+	return &cOpts
+}
+
+// DuplicateBufferHandleOptions is used to specify parameters in
+// duplicating access to a shared buffer.
+type DuplicateBufferHandleOptions struct {
+	flags MojoDuplicateBufferHandleOptionsFlags
+}
+
+func (opts *DuplicateBufferHandleOptions) cType() *C.struct_MojoDuplicateBufferHandleOptions {
+	if opts == nil {
+		return nil
+	}
+	var cOpts C.struct_MojoDuplicateBufferHandleOptions
+	cOpts = C.struct_MojoDuplicateBufferHandleOptions{
+		(C.uint32_t)(unsafe.Sizeof(cOpts)),
+		opts.flags.cType(),
+	}
+	return &cOpts
+}
+
 // Convenience functions to convert Go types to their equivalent C types.
 func (m MojoHandle) cType() C.MojoHandle {
 	return (C.MojoHandle)(m)
@@ -139,6 +182,15 @@ func (m MojoCreateDataPipeOptionsFlags) cType() C.MojoCreateDataPipeOptionsFlags
 }
 func (m MojoCreateMessagePipeOptionsFlags) cType() C.MojoCreateMessagePipeOptionsFlags {
 	return (C.MojoCreateMessagePipeOptionsFlags)(m)
+}
+func (m MojoCreateSharedBufferOptionsFlags) cType() C.MojoCreateSharedBufferOptionsFlags {
+	return (C.MojoCreateSharedBufferOptionsFlags)(m)
+}
+func (m MojoDuplicateBufferHandleOptionsFlags) cType() C.MojoDuplicateBufferHandleOptionsFlags {
+	return (C.MojoDuplicateBufferHandleOptionsFlags)(m)
+}
+func (m MojoMapBufferFlags) cType() C.MojoMapBufferFlags {
+	return (C.MojoMapBufferFlags)(m)
 }
 func cArrayMojoHandle(m []MojoHandle) *C.MojoHandle {
 	if len(m) == 0 {

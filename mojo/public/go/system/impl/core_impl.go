@@ -7,6 +7,7 @@ package impl
 //#include "mojo/public/platform/native/system_thunks.h"
 //#include "mojo/public/c/system/main.h"
 import "C"
+import "unsafe"
 
 var core *CoreImpl
 
@@ -80,4 +81,29 @@ func (c *CoreImpl) ReadData(consumer MojoHandle, flags MojoReadDataFlags) (MojoR
 	data := make([]byte, (uint32)(num_bytes))
 	result = C.MojoReadData(consumer.cType(), cArrayBytes(data), &num_bytes, flags.cType())
 	return (MojoResult)(result), data
+}
+
+func (c *CoreImpl) CreateSharedBuffer(opts *SharedBufferOptions, numBytes uint64) (MojoResult, MojoHandle) {
+	var handle C.MojoHandle
+	result := C.MojoCreateSharedBuffer(opts.cType(), (C.uint64_t)(numBytes), &handle)
+	return (MojoResult)(result), (MojoHandle)(handle)
+}
+
+func (c *CoreImpl) DuplicateBufferHandle(handle MojoHandle, opts *DuplicateBufferHandleOptions) (MojoResult, MojoHandle) {
+	var duplicate C.MojoHandle
+	result := C.MojoDuplicateBufferHandle(handle.cType(), opts.cType(), &duplicate)
+	return (MojoResult)(result), (MojoHandle)(duplicate)
+}
+
+func (c *CoreImpl) MapBuffer(handle MojoHandle, offset uint64, numBytes uint64, flags MojoMapBufferFlags) (MojoResult, unsafe.Pointer) {
+	var bufPtr unsafe.Pointer
+	result := C.MojoMapBuffer(handle.cType(), (C.uint64_t)(offset), (C.uint64_t)(numBytes), &bufPtr, flags.cType())
+	if result != C.MOJO_RESULT_OK {
+		return (MojoResult)(result), nil
+	}
+	return MOJO_RESULT_OK, bufPtr
+}
+
+func (c *CoreImpl) UnmapBuffer(buffer unsafe.Pointer) MojoResult {
+	return (MojoResult)(C.MojoUnmapBuffer(buffer))
 }

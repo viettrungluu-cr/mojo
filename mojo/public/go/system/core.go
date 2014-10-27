@@ -5,6 +5,8 @@
 package system
 
 import (
+	"unsafe"
+
 	t "mojo/public/go/system/impl"
 )
 
@@ -58,4 +60,20 @@ type Core interface {
 	// ReadData reads data from the data pipe consumer handle with the
 	// given flags. On success, returns the data that was read.
 	ReadData(consumer t.MojoHandle, flags t.MojoReadDataFlags) (result t.MojoResult, data []byte)
+
+	// CreateSharedBuffer creates a buffer of size numBytes that can be
+	// shared between applications. One must call MapBuffer to access
+	// the buffer.
+	CreateSharedBuffer(opts *t.SharedBufferOptions, numBytes uint64) (result t.MojoResult, handle t.MojoHandle)
+
+	// DuplicateBufferHandle duplicates the handle to a buffer.
+	DuplicateBufferHandle(handle t.MojoHandle, opts *t.DuplicateBufferHandleOptions) (result t.MojoResult, duplicate t.MojoHandle)
+
+	// MapBuffer maps the requested part of the shared buffer given by
+	// handle into memory with specified flags. On success, it returns
+	// a pointer to the requested shared buffer.
+	MapBuffer(handle t.MojoHandle, offset uint64, numBytes uint64, flags t.MojoMapBufferFlags) (result t.MojoResult, buffer unsafe.Pointer)
+
+	// UnmapBuffer unmaps a buffer pointer that was returned by MapBuffer.
+	UnmapBuffer(buffer unsafe.Pointer) (result t.MojoResult)
 }

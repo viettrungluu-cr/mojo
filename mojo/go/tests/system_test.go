@@ -6,10 +6,12 @@ package tests
 
 import (
 	"bytes"
+	"testing"
+	"unsafe"
+
 	"mojo/go/system/embedder"
 	"mojo/public/go/system"
 	m "mojo/public/go/system/impl"
-	"testing"
 )
 
 var core system.Core
@@ -112,5 +114,49 @@ func TestDataPipe(t *testing.T) {
 	}
 	if r = core.Close(hc); r != m.MOJO_RESULT_OK {
 		t.Fatalf("Close on hc failed:%v", r)
+	}
+}
+
+func TestSharedBuffer(t *testing.T) {
+	var h0, h1 m.MojoHandle
+	var bufPtr unsafe.Pointer
+	var r m.MojoResult
+
+	if r, h0 = core.CreateSharedBuffer(nil, 100); r != m.MOJO_RESULT_OK {
+		t.Fatalf("CreateSharedBuffer failed:%v", r)
+	}
+	if h0 == m.MOJO_HANDLE_INVALID {
+		t.Fatalf("CreateSharedBuffer returned an invalid handle h0:%v", h0)
+	}
+	if r, bufPtr = core.MapBuffer(h0, 0, 100, m.MOJO_MAP_BUFFER_FLAG_NONE); r != m.MOJO_RESULT_OK {
+		t.Fatalf("MapBuffer failed to map buffer with h0:%v", r)
+	}
+	bufArrayh0 := (*[100]byte)(bufPtr)
+	bufArrayh0[50] = 'x'
+	if r, h1 = core.DuplicateBufferHandle(h0, nil); r != m.MOJO_RESULT_OK {
+		t.Fatalf("DuplicateBufferHandle of h0 failed:%v", r)
+	}
+	if h1 == m.MOJO_HANDLE_INVALID {
+		t.Fatalf("DuplicateBufferHandle returned an invalid handle h1:%v", h1)
+	}
+	if r = core.Close(h0); r != m.MOJO_RESULT_OK {
+		t.Fatalf("Close on h0 failed:%v", r)
+	}
+	bufArrayh0[51] = 'y'
+	if r = core.UnmapBuffer(bufPtr); r != m.MOJO_RESULT_OK {
+		t.Fatalf("UnmapBuffer failed:%v", r)
+	}
+	if r, bufPtr = core.MapBuffer(h1, 50, 50, m.MOJO_MAP_BUFFER_FLAG_NONE); r != m.MOJO_RESULT_OK {
+		t.Fatalf("MapBuffer failed to map buffer with h1:%v", r)
+	}
+	bufArrayh1 := (*[50]byte)(bufPtr)
+	if bufArrayh1[0] != 'x' || bufArrayh1[1] != 'y' {
+		t.Fatalf("Failed to validate shared buffer. expected:x,y got:%s,%s", bufArrayh1[0], bufArrayh1[1])
+	}
+	if r = core.UnmapBuffer(bufPtr); r != m.MOJO_RESULT_OK {
+		t.Fatalf("UnmapBuffer failed:%v", r)
+	}
+	if r = core.Close(h1); r != m.MOJO_RESULT_OK {
+		t.Fatalf("Close on h1 failed:%v", r)
 	}
 }
