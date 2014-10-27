@@ -63,6 +63,13 @@ int MapConnectError(int os_error) {
   }
 }
 
+int SetNonBlocking(int fd) {
+  int flags = fcntl(fd, F_GETFL, 0);
+  if (-1 == flags)
+    return flags;
+  return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
+}
+
 }  // namespace
 
 SocketLibevent::SocketLibevent()
@@ -79,9 +86,19 @@ int SocketLibevent::Open(int address_family) {
   DCHECK(address_family == AF_INET || address_family == AF_INET6 ||
          address_family == AF_UNIX);
 
+  int socket_type = SOCK_STREAM;
+#ifdef SOCK_NONBLOCK
+  socket_type |= SOCK_NONBLOCK;
+#endif
   socket_fd_ = ::socket(address_family,
-                        SOCK_STREAM | SOCK_NONBLOCK,
+                        socket_type,
                         address_family == AF_UNIX ? 0 : IPPROTO_TCP);
+#ifndef SOCK_NONBLOCK
+  if (SetNonBlocking(socket_fd_) != 0) {
+    PLOG(ERROR) << "SetNonBlocking() returned an error, errno=" << errno;
+    return net::MapSystemError(errno);
+  }
+#endif
   if (socket_fd_ < 0) {
     PLOG(ERROR) << "CreatePlatformSocket() returned an error, errno=" << errno;
     return net::MapSystemError(errno);
@@ -89,15 +106,6 @@ int SocketLibevent::Open(int address_family) {
 
   return net::OK;
 }
-
-namespace {
-int SetNonBlocking(int fd) {
-  int flags = fcntl(fd, F_GETFL, 0);
-  if (-1 == flags)
-    return flags;
-  return fcntl(fd, F_SETFL, flags | O_NONBLOCK);
-}
-}  // namespace
 
 int SocketLibevent::AdoptConnectedSocket(SocketDescriptor socket,
                                          const SockaddrStorage& address) {
