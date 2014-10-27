@@ -13,7 +13,7 @@
 #include "mojo/public/cpp/bindings/array.h"
 #include "mojo/public/cpp/bindings/error_handler.h"
 #include "mojo/services/public/interfaces/view_manager/view_manager.mojom.h"
-#include "mojo/services/public/interfaces/window_manager/window_manager.mojom.h"
+#include "mojo/services/public/interfaces/window_manager/window_manager_internal.mojom.h"
 #include "mojo/services/view_manager/display_manager.h"
 #include "mojo/services/view_manager/ids.h"
 #include "mojo/services/view_manager/server_view.h"

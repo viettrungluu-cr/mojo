@@ -28,6 +28,7 @@
 #include "mojo/services/public/cpp/view_manager/util.h"
 #include "mojo/services/public/interfaces/view_manager/view_manager.mojom.h"
 #include "mojo/services/public/interfaces/window_manager/window_manager.mojom.h"
+#include "mojo/services/public/interfaces/window_manager/window_manager_internal.mojom.h"
 #include "mojo/services/view_manager/ids.h"
 #include "mojo/services/view_manager/test_change_tracker.h"
 #include "mojo/shell/shell_test_helper.h"

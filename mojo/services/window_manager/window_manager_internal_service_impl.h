@@ -6,7 +6,7 @@
 #define MOJO_SERVICES_WINDOW_MANAGER_WINDOW_MANAGER_INTERNAL_SERVICE_IMPL_H_
 
 #include "base/basictypes.h"
-#include "mojo/services/public/interfaces/window_manager/window_manager.mojom.h"
+#include "mojo/services/public/interfaces/window_manager/window_manager_internal.mojom.h"
 
 namespace mojo {
 
