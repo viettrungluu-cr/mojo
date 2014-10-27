@@ -13,6 +13,7 @@ mojo_public_system_unittests
 mojo_public_utility_unittests
 
 # Non-system, non-public tests:
+clipboard_unittests
 mojo_application_manager_unittests
 mojo_common_unittests
 # These tests currently crash. We should re-enable them when they pass.
