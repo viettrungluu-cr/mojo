@@ -38,6 +38,7 @@ class DiscardableMemoryAshmem
   virtual bool AllocateAndAcquireLock() override;
   virtual void ReleaseLock() override;
   virtual void Purge() override;
+  virtual bool IsMemoryResident() const override;
 
  private:
   const size_t bytes_;
