@@ -5,6 +5,7 @@
 import("//build/config/ui.gni")
 import("//mojo/public/mojo.gni")
 
+# TODO(beng): this meta target should probably move to the root dir's BUILD.gn.
 group("mojo") {
   # Meta-target, don't link into production code.
   testonly = true
@@ -13,10 +14,10 @@ group("mojo") {
   }
   deps = [
     ":tests",
+    "//examples",
     "//mojo/apps/js:js_content_handler",
     "//mojo/apps/js:js_standalone",
     "//mojo/common",
-    "//mojo/examples",
     "//mojo/public",
     "//mojo/services",
     "//mojo/tools/package_manager",
