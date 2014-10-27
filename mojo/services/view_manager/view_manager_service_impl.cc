@@ -5,6 +5,7 @@
 #include "mojo/services/view_manager/view_manager_service_impl.h"
 
 #include "base/bind.h"
+#include "base/stl_util.h"
 #include "mojo/converters/geometry/geometry_type_converters.h"
 #include "mojo/converters/input_events/input_events_type_converters.h"
 #include "mojo/converters/surfaces/surfaces_type_converters.h"
@@ -28,7 +29,6 @@ ViewManagerServiceImpl::ViewManagerServiceImpl(
       url_(url),
       creator_id_(creator_id),
       creator_url_(creator_url),
-      delete_on_connection_error_(false),
       service_provider_(service_provider.Pass()) {
   CHECK(GetView(root_id));
   roots_.insert(ViewIdToTransportId(root_id));
@@ -39,14 +39,7 @@ ViewManagerServiceImpl::ViewManagerServiceImpl(
 }
 
 ViewManagerServiceImpl::~ViewManagerServiceImpl() {
-  // Delete any views we created.
-  if (!view_map_.empty()) {
-    ConnectionManager::ScopedChange change(this, connection_manager_, true);
-    while (!view_map_.empty())
-      delete view_map_.begin()->second;
-  }
-
-  connection_manager_->RemoveConnection(this);
+  DestroyViews();
 }
 
 const ServerView* ViewManagerServiceImpl::GetView(const ViewId& id) const {
@@ -201,8 +194,7 @@ void ViewManagerServiceImpl::ProcessWillChangeViewVisibility(
 }
 
 void ViewManagerServiceImpl::OnConnectionError() {
-  if (delete_on_connection_error_)
-    delete this;
+  connection_manager_->OnConnectionError(this);
 }
 
 bool ViewManagerServiceImpl::IsViewKnown(const ServerView* view) const {
@@ -358,6 +350,18 @@ void ViewManagerServiceImpl::NotifyDrawnStateChanged(const ServerView* view,
       client()->OnViewDrawnStateChanged(ViewIdToTransportId(root->id()),
                                         new_drawn_value);
     }
+  }
+}
+
+void ViewManagerServiceImpl::DestroyViews() {
+  if (!view_map_.empty()) {
+    ConnectionManager::ScopedChange change(this, connection_manager_, true);
+    // If we get here from the destructor we're not going to get
+    // ProcessViewDeleted(). Copy the map and delete from the copy so that we
+    // don't have to worry about whether |view_map_| changes or not.
+    ViewMap view_map_copy;
+    view_map_.swap(view_map_copy);
+    STLDeleteValues(&view_map_copy);
   }
 }
 
@@ -542,8 +546,6 @@ void ViewManagerServiceImpl::Embed(
 }
 
 void ViewManagerServiceImpl::OnConnectionEstablished() {
-  connection_manager_->AddConnection(this);
-
   std::vector<const ServerView*> to_send;
   for (ViewIdSet::const_iterator i = roots_.begin(); i != roots_.end(); ++i)
     GetUnknownViewsFrom(GetView(ViewIdFromTransportId(*i)), &to_send);

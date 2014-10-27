@@ -5,9 +5,11 @@
 #include "mojo/services/view_manager/connection_manager.h"
 
 #include "base/logging.h"
+#include "base/stl_util.h"
 #include "mojo/converters/input_events/input_events_type_converters.h"
 #include "mojo/public/cpp/application/application_connection.h"
 #include "mojo/public/interfaces/application/service_provider.mojom.h"
+#include "mojo/services/view_manager/connection_manager_delegate.h"
 #include "mojo/services/view_manager/view_manager_service_impl.h"
 
 namespace mojo {
@@ -27,14 +29,20 @@ ConnectionManager::ScopedChange::~ScopedChange() {
   connection_manager_->FinishChange();
 }
 
-ConnectionManager::ConnectionManager(
-    ApplicationConnection* app_connection,
-    const Callback<void()>& native_viewport_closed_callback)
+ConnectionManager::ConnectionManager(ApplicationConnection* app_connection,
+                                     ConnectionManagerDelegate* delegate)
     : app_connection_(app_connection),
+      delegate_(delegate),
+      window_manager_vm_service_(nullptr),
       next_connection_id_(1),
-      display_manager_(app_connection, this, native_viewport_closed_callback),
+      display_manager_(
+          app_connection,
+          this,
+          base::Bind(&ConnectionManagerDelegate::OnNativeViewportDestroyed,
+                     base::Unretained(delegate))),
       root_(new ServerView(this, RootViewId())),
-      current_change_(NULL) {
+      current_change_(NULL),
+      in_destructor_(false) {
   app_connection->ConnectToService(&window_manager_);
   window_manager_.set_client(this);
   window_manager_.set_error_handler(this);
@@ -45,8 +53,9 @@ ConnectionManager::ConnectionManager(
 }
 
 ConnectionManager::~ConnectionManager() {
-  while (!connections_created_by_connect_.empty())
-    delete *(connections_created_by_connect_.begin());
+  in_destructor_ = true;
+
+  STLDeleteValues(&connection_map_);
   // All the connections should have been destroyed.
   DCHECK(connection_map_.empty());
   root_.reset();
@@ -58,20 +67,21 @@ ConnectionSpecificId ConnectionManager::GetAndAdvanceNextConnectionId() {
   return id;
 }
 
-void ConnectionManager::AddConnection(ViewManagerServiceImpl* connection) {
-  DCHECK_EQ(0u, connection_map_.count(connection->id()));
-  connection_map_[connection->id()] = connection;
-}
+void ConnectionManager::OnConnectionError(ViewManagerServiceImpl* connection) {
+  scoped_ptr<ViewManagerServiceImpl> connection_owner(connection);
 
-void ConnectionManager::RemoveConnection(ViewManagerServiceImpl* connection) {
   connection_map_.erase(connection->id());
-  connections_created_by_connect_.erase(connection);
 
   // Notify remaining connections so that they can cleanup.
   for (ConnectionMap::const_iterator i = connection_map_.begin();
        i != connection_map_.end();
        ++i) {
     i->second->OnViewManagerServiceImplDestroyed(connection->id());
+  }
+
+  if (connection == window_manager_vm_service_) {
+    window_manager_vm_service_ = nullptr;
+    delegate_->OnLostConnectionToWindowManager();
   }
 }
 
@@ -80,10 +90,29 @@ void ConnectionManager::EmbedAtView(
     const String& url,
     Id transport_view_id,
     InterfaceRequest<ServiceProvider> service_provider) {
-  EmbedImpl(creator_id,
-            url,
-            ViewIdFromTransportId(transport_view_id),
-            service_provider.Pass())->set_delete_on_connection_error();
+  MessagePipe pipe;
+
+  ServiceProvider* view_manager_service_provider =
+      app_connection_->ConnectToApplication(url)->GetServiceProvider();
+
+  view_manager_service_provider->ConnectToService(
+      ViewManagerServiceImpl::Client::Name_, pipe.handle1.Pass());
+
+  std::string creator_url;
+  ConnectionMap::const_iterator it = connection_map_.find(creator_id);
+  if (it != connection_map_.end())
+    creator_url = it->second->url();
+
+  ViewManagerServiceImpl* connection =
+      new ViewManagerServiceImpl(this,
+                                 creator_id,
+                                 creator_url,
+                                 url.To<std::string>(),
+                                 ViewIdFromTransportId(transport_view_id),
+                                 service_provider.Pass());
+  AddConnection(connection);
+  WeakBindToPipe(connection, pipe.handle0.Pass());
+  OnConnectionMessagedClient(connection->id());
 }
 
 ViewManagerServiceImpl* ConnectionManager::GetConnection(
@@ -190,54 +219,33 @@ void ConnectionManager::FinishChange() {
   current_change_ = NULL;
 }
 
-ViewManagerServiceImpl* ConnectionManager::EmbedImpl(
-    const ConnectionSpecificId creator_id,
-    const String& url,
-    const ViewId& root_id,
-    InterfaceRequest<ServiceProvider> service_provider) {
-  MessagePipe pipe;
-
-  ServiceProvider* view_manager_service_provider =
-      app_connection_->ConnectToApplication(url)->GetServiceProvider();
-
-  view_manager_service_provider->ConnectToService(
-      ViewManagerServiceImpl::Client::Name_, pipe.handle1.Pass());
-
-  std::string creator_url;
-  ConnectionMap::const_iterator it = connection_map_.find(creator_id);
-  if (it != connection_map_.end())
-    creator_url = it->second->url();
-
-  ViewManagerServiceImpl* connection =
-      new ViewManagerServiceImpl(this,
-                                 creator_id,
-                                 creator_url,
-                                 url.To<std::string>(),
-                                 root_id,
-                                 service_provider.Pass());
-  WeakBindToPipe(connection, pipe.handle0.Pass());
-  connections_created_by_connect_.insert(connection);
-  OnConnectionMessagedClient(connection->id());
-  return connection;
+void ConnectionManager::AddConnection(ViewManagerServiceImpl* connection) {
+  DCHECK_EQ(0u, connection_map_.count(connection->id()));
+  connection_map_[connection->id()] = connection;
 }
 
 void ConnectionManager::OnViewDestroyed(const ServerView* view) {
-  ProcessViewDeleted(view->id());
+  if (!in_destructor_)
+    ProcessViewDeleted(view->id());
 }
 
 void ConnectionManager::OnWillChangeViewHierarchy(
     const ServerView* view,
     const ServerView* new_parent,
     const ServerView* old_parent) {
-  if (!display_manager_.in_setup())
+  if (!in_destructor_ && !display_manager_.in_setup())
     ProcessWillChangeViewHierarchy(view, new_parent, old_parent);
 }
 
 void ConnectionManager::OnViewHierarchyChanged(const ServerView* view,
                                                const ServerView* new_parent,
                                                const ServerView* old_parent) {
+  if (in_destructor_)
+    return;
+
   if (!display_manager_.in_setup())
     ProcessViewHierarchyChanged(view, new_parent, old_parent);
+
   // TODO(beng): optimize.
   if (old_parent) {
     display_manager_.SchedulePaint(old_parent,
@@ -252,6 +260,9 @@ void ConnectionManager::OnViewHierarchyChanged(const ServerView* view,
 void ConnectionManager::OnViewBoundsChanged(const ServerView* view,
                                             const gfx::Rect& old_bounds,
                                             const gfx::Rect& new_bounds) {
+  if (in_destructor_)
+    return;
+
   ProcessViewBoundsChanged(view, old_bounds, new_bounds);
   if (!view->parent())
     return;
@@ -262,16 +273,21 @@ void ConnectionManager::OnViewBoundsChanged(const ServerView* view,
 }
 
 void ConnectionManager::OnViewSurfaceIdChanged(const ServerView* view) {
-  display_manager_.SchedulePaint(view, gfx::Rect(view->bounds().size()));
+  if (!in_destructor_)
+    display_manager_.SchedulePaint(view, gfx::Rect(view->bounds().size()));
 }
 
 void ConnectionManager::OnViewReordered(const ServerView* view,
                                         const ServerView* relative,
                                         OrderDirection direction) {
-  display_manager_.SchedulePaint(view, gfx::Rect(view->bounds().size()));
+  if (!in_destructor_)
+    display_manager_.SchedulePaint(view, gfx::Rect(view->bounds().size()));
 }
 
 void ConnectionManager::OnWillChangeViewVisibility(const ServerView* view) {
+  if (in_destructor_)
+    return;
+
   for (ConnectionMap::iterator i = connection_map_.begin();
        i != connection_map_.end();
        ++i) {
@@ -304,19 +320,24 @@ void ConnectionManager::DispatchInputEventToView(Id transport_view_id,
 
 void ConnectionManager::Create(ApplicationConnection* connection,
                                InterfaceRequest<ViewManagerService> request) {
-  // TODO(sky): If we lose this connection we should tear down.
-  ViewManagerServiceImpl* service =
+  if (window_manager_vm_service_) {
+    VLOG(1) << "ViewManager interface requested more than once.";
+    return;
+  }
+
+  window_manager_vm_service_ =
       new ViewManagerServiceImpl(this,
                                  kInvalidConnectionId,
                                  std::string(),
                                  std::string("mojo:window_manager"),
                                  RootViewId(),
                                  InterfaceRequest<ServiceProvider>());
-  BindToRequest(service, &request);
+  AddConnection(window_manager_vm_service_);
+  WeakBindToRequest(window_manager_vm_service_, &request);
 }
 
 void ConnectionManager::OnConnectionError() {
-  // We've lost the connection to the WindowManager.
+  delegate_->OnLostConnectionToWindowManager();
 }
 
 }  // namespace service

@@ -26,6 +26,7 @@ class ApplicationConnection;
 
 namespace service {
 
+class ConnectionManagerDelegate;
 class ViewManagerServiceImpl;
 
 // ConnectionManager manages the set of connections to the ViewManager (all the
@@ -70,14 +71,14 @@ class MOJO_VIEW_MANAGER_EXPORT ConnectionManager
   };
 
   ConnectionManager(ApplicationConnection* app_connection,
-                    const Callback<void()>& native_viewport_closed_callback);
+                    ConnectionManagerDelegate* delegate);
   ~ConnectionManager() override;
 
   // Returns the id for the next ViewManagerServiceImpl.
   ConnectionSpecificId GetAndAdvanceNextConnectionId();
 
-  void AddConnection(ViewManagerServiceImpl* connection);
-  void RemoveConnection(ViewManagerServiceImpl* connection);
+  // Invoked when a ViewManagerServiceImpl's connection encounters an error.
+  void OnConnectionError(ViewManagerServiceImpl* connection);
 
   // See description of ViewManagerService::Embed() for details. This assumes
   // |transport_view_id| is valid.
@@ -152,12 +153,8 @@ class MOJO_VIEW_MANAGER_EXPORT ConnectionManager
     return current_change_ && current_change_->connection_id() == connection_id;
   }
 
-  // Implementation of the two embed variants.
-  ViewManagerServiceImpl* EmbedImpl(
-      ConnectionSpecificId creator_id,
-      const String& url,
-      const ViewId& root_id,
-      InterfaceRequest<ServiceProvider> service_provider);
+  // Adds |connection| to internal maps.
+  void AddConnection(ViewManagerServiceImpl* connection);
 
   // Overridden from ServerViewDelegate:
   void OnViewDestroyed(const ServerView* view) override;
@@ -192,6 +189,13 @@ class MOJO_VIEW_MANAGER_EXPORT ConnectionManager
 
   ApplicationConnection* app_connection_;
 
+  ConnectionManagerDelegate* delegate_;
+
+  // The ViewManager implementation provided to the initial connection (the
+  // WindowManager).
+  // NOTE: |window_manager_vm_service_| is also in |connection_map_|.
+  ViewManagerServiceImpl* window_manager_vm_service_;
+
   WindowManagerInternalServicePtr window_manager_;
 
   // ID to use for next ViewManagerServiceImpl.
@@ -204,13 +208,11 @@ class MOJO_VIEW_MANAGER_EXPORT ConnectionManager
 
   scoped_ptr<ServerView> root_;
 
-  // Set of ViewManagerServiceImpls created by way of Connect(). These have to
-  // be explicitly destroyed.
-  std::set<ViewManagerServiceImpl*> connections_created_by_connect_;
-
   // If non-null we're processing a change. The ScopedChange is not owned by us
   // (it's created on the stack by ViewManagerServiceImpl).
   ScopedChange* current_change_;
+
+  bool in_destructor_;
 
   DISALLOW_COPY_AND_ASSIGN(ConnectionManager);
 };

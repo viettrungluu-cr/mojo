@@ -49,10 +49,6 @@ class MOJO_VIEW_MANAGER_EXPORT ViewManagerServiceImpl
                          InterfaceRequest<ServiceProvider> service_provider);
   ~ViewManagerServiceImpl() override;
 
-  // Used to mark this connection as originating from a call to
-  // ViewManagerService::Connect(). When set OnConnectionError() deletes |this|.
-  void set_delete_on_connection_error() { delete_on_connection_error_ = true; }
-
   ConnectionSpecificId id() const { return id_; }
   ConnectionSpecificId creator_id() const { return creator_id_; }
   const std::string& url() const { return url_; }
@@ -152,6 +148,9 @@ class MOJO_VIEW_MANAGER_EXPORT ViewManagerServiceImpl
   // |view| is the view that is changing to the drawn state |new_drawn_value|.
   void NotifyDrawnStateChanged(const ServerView* view, bool new_drawn_value);
 
+  // Deletes all Views we own.
+  void DestroyViews();
+
   // ViewManagerService:
   void CreateView(Id transport_view_id,
                   const Callback<void(ErrorCode)>& callback) override;
@@ -226,9 +225,6 @@ class MOJO_VIEW_MANAGER_EXPORT ViewManagerServiceImpl
   // information can be found by looking through the |roots_| of all
   // connections.
   ViewIdSet roots_;
-
-  // See description above setter.
-  bool delete_on_connection_error_;
 
   InterfaceRequest<ServiceProvider> service_provider_;
 

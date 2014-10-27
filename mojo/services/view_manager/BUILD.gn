@@ -11,6 +11,7 @@ shared_library("view_manager") {
     "access_policy_delegate.h",
     "connection_manager.cc",
     "connection_manager.h",
+    "connection_manager_delegate.h",
     "default_access_policy.cc",
     "default_access_policy.h",
     "display_manager.cc",

@@ -6,29 +6,33 @@
 #include "mojo/public/c/system/main.h"
 #include "mojo/public/cpp/application/application_connection.h"
 #include "mojo/public/cpp/application/application_delegate.h"
+#include "mojo/public/cpp/application/application_impl.h"
 #include "mojo/services/view_manager/connection_manager.h"
+#include "mojo/services/view_manager/connection_manager_delegate.h"
 
 namespace mojo {
 namespace service {
 
-class ViewManagerApp : public ApplicationDelegate {
+class ViewManagerApp : public ApplicationDelegate,
+                       public ConnectionManagerDelegate {
  public:
   ViewManagerApp() {}
   ~ViewManagerApp() override {}
 
   bool ConfigureIncomingConnection(ApplicationConnection* connection) override {
     if (!connection_manager_.get()) {
-      connection_manager_.reset(new ConnectionManager(
-          connection,
-          base::Bind(&ViewManagerApp::OnNativeViewportDeleted,
-                     base::Unretained(this))));
+      connection_manager_.reset(new ConnectionManager(connection, this));
+      return true;
     }
-    return true;
+    VLOG(1) << "ViewManager allows only one connection.";
+    return false;
   }
 
  private:
-  void OnNativeViewportDeleted() {
-    // TODO(sky): Need to tear down here.
+  // ConnectionManagerDelegate:
+  void OnNativeViewportDestroyed() override { ApplicationImpl::Terminate(); }
+  void OnLostConnectionToWindowManager() override {
+    ApplicationImpl::Terminate();
   }
 
   scoped_ptr<ConnectionManager> connection_manager_;
