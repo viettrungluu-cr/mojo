@@ -42,3 +42,11 @@ Run the tests:
 ```
 mojo/tools/mojob.sh test
 ```
+
+
+To land a patch:
+```
+$ git cl land
+```
+
+Don't break build! Waterfall is here: http://build.chromium.org/p/client.mojo/waterfall .
