@@ -1117,28 +1117,9 @@ def _GetJSONParseError(input_api, filename, eat_comments=True):
   return None
 
 
-def _GetIDLParseError(input_api, filename):
-  try:
-    contents = input_api.ReadFile(filename)
-    idl_schema = input_api.os_path.join(
-        input_api.PresubmitLocalPath(),
-        'tools', 'json_schema_compiler', 'idl_schema.py')
-    process = input_api.subprocess.Popen(
-        [input_api.python_executable, idl_schema],
-        stdin=input_api.subprocess.PIPE,
-        stdout=input_api.subprocess.PIPE,
-        stderr=input_api.subprocess.PIPE,
-        universal_newlines=True)
-    (_, error) = process.communicate(input=contents)
-    return error or None
-  except ValueError as e:
-    return e
-
-
 def _CheckParseErrors(input_api, output_api):
-  """Check that IDL and JSON files do not contain syntax errors."""
+  """Check that JSON files do not contain syntax errors."""
   actions = {
-    '.idl': _GetIDLParseError,
     '.json': _GetJSONParseError,
   }
   # These paths contain test data and other known invalid JSON files.
@@ -1149,11 +1130,6 @@ def _CheckParseErrors(input_api, output_api):
   # Most JSON files are preprocessed and support comments, but these do not.
   json_no_comments_patterns = [
     r'^testing[\\\/]',
-  ]
-  # Only run IDL checker on files in these directories.
-  idl_included_patterns = [
-    r'^chrome[\\\/]common[\\\/]extensions[\\\/]api[\\\/]',
-    r'^extensions[\\\/]common[\\\/]api[\\\/]',
   ]
 
   def get_action(affected_file):
@@ -1173,10 +1149,6 @@ def _CheckParseErrors(input_api, output_api):
     path = affected_file.LocalPath()
 
     if MatchesFile(excluded_patterns, path):
-      return False
-
-    if (action == _GetIDLParseError and
-        not MatchesFile(idl_included_patterns, path)):
       return False
     return True
 

@@ -59,7 +59,6 @@ dirs_to_snapshot = [
     "tools/gritsettings",
     "tools/idl_parser",
     "tools/json_comment_eater",
-    "tools/json_schema_compiler",
     "tools/linux",
     "tools/lsan",
     "tools/msan",
