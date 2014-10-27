@@ -42,53 +42,67 @@ get_gn_arg_value() {
       sed -n 's/.* = "\?\([^"]*\)"\?$/\1/p'
 }
 
+get_outdir() {
+  if [ $TARGET != linux ]; then
+    echo "out/${TARGET}_$1"
+  else
+    echo "out/$1"
+  fi
+}
+
 do_build() {
-  echo "Building in out/$1 ..."
-  if [ "$(get_gn_arg_value "out/$1" use_goma)" = "true" ]; then
+  local out_dir=$(get_outdir $1)
+  echo "Building in ${out_dir} ..."
+  if [ "$(get_gn_arg_value ${out_dir} use_goma)" = "true" ]; then
     # Use the configured goma directory.
-    local goma_dir="$(get_gn_arg_value "out/$1" goma_dir)"
+    local goma_dir="$(get_gn_arg_value ${out_dir} goma_dir)"
     echo "Ensuring goma (in ${goma_dir}) started ..."
     "${goma_dir}/goma_ctl.py" ensure_start
 
-    ninja -j 1000 -l 100 -C "out/$1" root || exit 1
+    ninja -j 1000 -l 100 -C "${out_dir}" root || exit 1
   else
-    ninja -C "out/$1" root || exit 1
+    ninja -C "${out_dir}" root || exit 1
   fi
 }
 
 do_unittests() {
-  echo "Running unit tests in out/$1 ..."
-  ./testing/xvfb.py "out/$1" mojo/tools/test_runner.py \
-      mojo/tools/data/unittests "out/$1" mojob_test_successes || exit 1
+  local out_dir=$(get_outdir $1)
+  echo "Running unit tests in ${out_dir} ..."
+  ./testing/xvfb.py "${out_dir}" mojo/tools/test_runner.py \
+      mojo/tools/data/unittests "${out_dir}" mojob_test_successes || exit 1
 }
 
 do_perftests() {
-  echo "Running perf tests in out/$1 ..."
-  "out/$1/mojo_public_system_perftests" || exit 1
+  local out_dir=$(get_outdir $1)
+  echo "Running perf tests in ${out_dir} ..."
+  "${out_dir}/mojo_public_system_perftests" || exit 1
 }
 
 do_pytests() {
-  echo "Running python tests in out/$1 ..."
+  local out_dir=$(get_outdir $1)
+  echo "Running python tests in ${out_dir} ..."
   python mojo/tools/run_mojo_python_tests.py || exit 1
-  python mojo/tools/run_mojo_python_bindings_tests.py "--build-dir=out/$1" || \
-      exit 1
+  python mojo/tools/run_mojo_python_bindings_tests.py \
+      "--build-dir=${out_dir}" || exit 1
 }
 
 do_gn() {
   local gn_args="$(make_gn_args $1)"
-  echo "Running gn with --args=\"${gn_args}\" ..."
-  gn gen --args="${gn_args}" "out/$1"
+  local out_dir="$(get_outdir $1)"
+  echo "Running gn gen ${out_dir} with --args=\"${gn_args}\" ..."
+  gn gen --args="${gn_args}" "${out_dir}"
 }
 
 do_sync() {
-  # Note: sync only (with hooks, but no gyp-ing).
-  GYP_CHROMIUM_NO_ACTION=1 gclient sync || exit 1
+  gclient sync || exit 1
 }
 
 # Valid values: Debug or Release.
 BUILD_TYPE=Debug
 # Valid values: clang or gcc.
 COMPILER=clang
+# Valid values: linux, android or chromeos
+TARGET=linux
 # Valid values: auto or disabled.
 GOMA=auto
 make_gn_args() {
@@ -124,6 +138,15 @@ make_gn_args() {
       ;;
     disabled)
       args+=("use_goma=false")
+      ;;
+  esac
+  case "$TARGET" in
+    android)
+      args+=("os=\"android\"" "cpu_arch=\"arm\"")
+      ;;
+    chromeos)
+      args+=("os=\"chromeos\"" "ui_base_build_ime=false" \
+             "use_system_harfbuzz=false")
       ;;
   esac
   echo "${args[*]}"
@@ -190,6 +213,13 @@ for arg in "$@"; do
       ;;
     --no-goma)
       GOMA=disabled
+      ;;
+    --android)
+      TARGET=android
+      COMPILER=gcc
+      ;;
+     --chromeos)
+      TARGET=chromeos
       ;;
     *)
       echo "Unknown command \"${arg}\". Try \"$(basename "$0") help\"."
