@@ -153,7 +153,7 @@ make_gn_args() {
 }
 
 # We're in src/mojo/tools. We want to get to src.
-cd "$(realpath "$(dirname "$0")")/../.."
+cd "$(readlink -e "$(dirname "$0")")/../.."
 
 if [ $# -eq 0 ]; then
   do_help
