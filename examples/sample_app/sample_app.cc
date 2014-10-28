@@ -21,19 +21,23 @@
 
 namespace examples {
 
-class SampleApp : public mojo::ApplicationDelegate,
-                  public mojo::NativeViewportClient {
+class SampleApp
+    : public mojo::ApplicationDelegate,
+      public mojo::NativeViewportClient,
+      public mojo::InterfaceImpl<mojo::NativeViewportEventDispatcher> {
  public:
   SampleApp() : weak_factory_(this) {}
 
-  virtual ~SampleApp() {
+  ~SampleApp() override {
     // TODO(darin): Fix shutdown so we don't need to leak this.
     mojo_ignore_result(gles2_client_.release());
   }
 
-  virtual void Initialize(mojo::ApplicationImpl* app) override {
+  void Initialize(mojo::ApplicationImpl* app) override {
     app->ConnectToService("mojo:native_viewport_service", &viewport_);
     viewport_.set_client(this);
+
+    SetEventDispatcher();
 
     // TODO(jamesr): Should be mojo:gpu_service
     app->ConnectToService("mojo:native_viewport_service", &gpu_service_);
@@ -47,16 +51,16 @@ class SampleApp : public mojo::ApplicationDelegate,
     viewport_->Show();
   }
 
-  virtual void OnDestroyed() override { mojo::RunLoop::current()->Quit(); }
+  void OnDestroyed() override { mojo::RunLoop::current()->Quit(); }
 
-  virtual void OnSizeChanged(mojo::SizePtr size) override {
+  void OnSizeChanged(mojo::SizePtr size) override {
     assert(size);
     if (gles2_client_)
       gles2_client_->SetSize(*size);
   }
 
-  virtual void OnEvent(mojo::EventPtr event,
-                       const mojo::Callback<void()>& callback) override {
+  void OnEvent(mojo::EventPtr event,
+               const mojo::Callback<void()>& callback) override {
     assert(event);
     if (event->location_data && event->location_data->in_view_location)
       gles2_client_->HandleInputEvent(*event);
@@ -64,6 +68,12 @@ class SampleApp : public mojo::ApplicationDelegate,
   }
 
  private:
+  void SetEventDispatcher() {
+    mojo::NativeViewportEventDispatcherPtr proxy;
+    mojo::WeakBindToProxy(this, &proxy);
+    viewport_->SetEventDispatcher(proxy.Pass());
+  }
+
   void OnCreatedNativeViewport(uint64_t native_viewport_id) {
     mojo::SizePtr size = mojo::Size::New();
     size->width = 800;

@@ -35,6 +35,7 @@ class NativeViewportImpl : public InterfaceImpl<NativeViewport>,
   void Close() override;
   void SetSize(SizePtr size) override;
   void SubmittedFrame(SurfaceIdPtr surface_id) override;
+  void SetEventDispatcher(NativeViewportEventDispatcherPtr dispatcher) override;
 
   // PlatformViewport::Delegate implementation.
   void OnBoundsChanged(const gfx::Rect& bounds) override;
@@ -57,6 +58,7 @@ class NativeViewportImpl : public InterfaceImpl<NativeViewport>,
   cc::SurfaceId child_surface_id_;
   bool waiting_for_event_ack_;
   Callback<void(uint64_t)> create_callback_;
+  NativeViewportEventDispatcherPtr event_dispatcher_;
   base::WeakPtrFactory<NativeViewportImpl> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(NativeViewportImpl);

@@ -93,6 +93,11 @@ void NativeViewportImpl::SubmittedFrame(SurfaceIdPtr child_surface_id) {
     viewport_surface_->SetChildId(child_surface_id_);
 }
 
+void NativeViewportImpl::SetEventDispatcher(
+    NativeViewportEventDispatcherPtr dispatcher) {
+  event_dispatcher_ = dispatcher.Pass();
+}
+
 void NativeViewportImpl::OnBoundsChanged(const gfx::Rect& bounds) {
   if (size_ == bounds.size())
     return;
@@ -118,6 +123,9 @@ void NativeViewportImpl::OnAcceleratedWidgetAvailable(
 }
 
 bool NativeViewportImpl::OnEvent(ui::Event* ui_event) {
+  if (!event_dispatcher_.get())
+    return false;
+
   // Must not return early before updating capture.
   switch (ui_event->type()) {
     case ui::ET_MOUSE_PRESSED:
@@ -135,7 +143,7 @@ bool NativeViewportImpl::OnEvent(ui::Event* ui_event) {
   if (waiting_for_event_ack_ && IsRateLimitedEventType(ui_event))
     return false;
 
-  client()->OnEvent(
+  event_dispatcher_->OnEvent(
       Event::From(*ui_event),
       base::Bind(&NativeViewportImpl::AckEvent, weak_factory_.GetWeakPtr()));
   waiting_for_event_ack_ = true;

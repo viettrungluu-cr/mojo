@@ -88,6 +88,10 @@ DisplayManager::DisplayManager(
   app_connection->ConnectToService("mojo:surfaces_service", &surfaces_service_);
   surfaces_service_->CreateSurfaceConnection(base::Bind(
       &DisplayManager::OnSurfaceConnectionCreated, weak_factory_.GetWeakPtr()));
+
+  NativeViewportEventDispatcherPtr event_dispatcher;
+  app_connection->ConnectToService(&event_dispatcher);
+  native_viewport_->SetEventDispatcher(event_dispatcher.Pass());
 }
 
 DisplayManager::~DisplayManager() {
@@ -158,12 +162,6 @@ void DisplayManager::OnSizeChanged(SizePtr size) {
   surface_->DestroySurface(SurfaceId::From(surface_id_));
   surface_id_ = cc::SurfaceId();
   SchedulePaint(connection_manager_->root(), gfx::Rect(size_));
-}
-
-void DisplayManager::OnEvent(EventPtr event,
-                             const mojo::Callback<void()>& callback) {
-  connection_manager_->DispatchViewInputEventToDelegate(event.Pass());
-  callback.Run();
 }
 
 void DisplayManager::ReturnResources(Array<ReturnedResourcePtr> resources) {

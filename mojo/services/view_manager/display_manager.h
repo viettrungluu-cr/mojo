@@ -56,7 +56,6 @@ class MOJO_VIEW_MANAGER_EXPORT DisplayManager
   // NativeViewportClient implementation.
   void OnDestroyed() override;
   void OnSizeChanged(SizePtr size) override;
-  void OnEvent(EventPtr event, const mojo::Callback<void()>& callback) override;
 
   // SurfaceClient implementation.
   void ReturnResources(Array<ReturnedResourcePtr> resources) override;

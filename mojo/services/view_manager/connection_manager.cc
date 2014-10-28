@@ -15,6 +15,29 @@
 namespace mojo {
 namespace service {
 
+class WindowManagerInternalClientImpl
+    : public InterfaceImpl<WindowManagerInternalClient> {
+ public:
+  WindowManagerInternalClientImpl(WindowManagerInternalClient* real_client,
+                                  ErrorHandler* error_handler)
+      : real_client_(real_client), error_handler_(error_handler) {}
+  ~WindowManagerInternalClientImpl() override {}
+
+  // WindowManagerInternalClient:
+  void DispatchInputEventToView(Id transport_view_id, EventPtr event) override {
+    real_client_->DispatchInputEventToView(transport_view_id, event.Pass());
+  }
+
+  // InterfaceImpl:
+  void OnConnectionError() override { error_handler_->OnConnectionError(); }
+
+ private:
+  WindowManagerInternalClient* real_client_;
+  ErrorHandler* error_handler_;
+
+  DISALLOW_COPY_AND_ASSIGN(WindowManagerInternalClientImpl);
+};
+
 ConnectionManager::ScopedChange::ScopedChange(
     ViewManagerServiceImpl* connection,
     ConnectionManager* connection_manager,
@@ -43,12 +66,12 @@ ConnectionManager::ConnectionManager(ApplicationConnection* app_connection,
       root_(new ServerView(this, RootViewId())),
       current_change_(NULL),
       in_destructor_(false) {
-  app_connection->ConnectToService(&window_manager_);
-  window_manager_.set_client(this);
-  window_manager_.set_error_handler(this);
   // |app_connection| originates from the WindowManager. Let it connect
-  // directly to the ViewManager.
-  app_connection->AddService(this);
+  // directly to the ViewManager and WindowManagerInternalClient.
+  app_connection->AddService(
+      static_cast<InterfaceFactory<ViewManagerService>*>(this));
+  app_connection->AddService(
+      static_cast<InterfaceFactory<WindowManagerInternalClient>*>(this));
   root_->SetBounds(gfx::Rect(800, 600));
 }
 
@@ -147,10 +170,6 @@ const ViewManagerServiceImpl* ConnectionManager::GetConnectionWithRoot(
       return i->second;
   }
   return NULL;
-}
-
-void ConnectionManager::DispatchViewInputEventToDelegate(EventPtr event) {
-  window_manager_->OnViewInputEvent(event.Pass());
 }
 
 void ConnectionManager::ProcessViewBoundsChanged(const ServerView* view,
@@ -334,6 +353,19 @@ void ConnectionManager::Create(ApplicationConnection* connection,
                                  InterfaceRequest<ServiceProvider>());
   AddConnection(window_manager_vm_service_);
   WeakBindToRequest(window_manager_vm_service_, &request);
+}
+
+void ConnectionManager::Create(
+    ApplicationConnection* connection,
+    InterfaceRequest<WindowManagerInternalClient> request) {
+  if (wm_internal_client_impl_.get()) {
+    VLOG(1) << "WindowManagerInternalClient requested more than once.";
+    return;
+  }
+
+  wm_internal_client_impl_.reset(
+      new WindowManagerInternalClientImpl(this, this));
+  WeakBindToRequest(wm_internal_client_impl_.get(), &request);
 }
 
 void ConnectionManager::OnConnectionError() {

@@ -28,6 +28,7 @@ namespace service {
 
 class ConnectionManagerDelegate;
 class ViewManagerServiceImpl;
+class WindowManagerInternalClientImpl;
 
 // ConnectionManager manages the set of connections to the ViewManager (all the
 // ViewManagerServiceImpls) as well as providing the root of the hierarchy.
@@ -35,6 +36,7 @@ class MOJO_VIEW_MANAGER_EXPORT ConnectionManager
     : public ServerViewDelegate,
       public WindowManagerInternalClient,
       public InterfaceFactory<ViewManagerService>,
+      public InterfaceFactory<WindowManagerInternalClient>,
       public ErrorHandler {
  public:
   // Create when a ViewManagerServiceImpl is about to make a change. Ensures
@@ -115,8 +117,6 @@ class MOJO_VIEW_MANAGER_EXPORT ConnectionManager
   }
   const ViewManagerServiceImpl* GetConnectionWithRoot(const ViewId& id) const;
 
-  void DispatchViewInputEventToDelegate(EventPtr event);
-
   // These functions trivially delegate to all ViewManagerServiceImpls, which in
   // term notify their clients.
   void ProcessViewDestroyed(ServerView* view);
@@ -184,6 +184,11 @@ class MOJO_VIEW_MANAGER_EXPORT ConnectionManager
   virtual void Create(ApplicationConnection* connection,
                       InterfaceRequest<ViewManagerService> request) override;
 
+  // InterfaceFactory<WindowManagerInternalClient>:
+  virtual void Create(
+      ApplicationConnection* connection,
+      InterfaceRequest<WindowManagerInternalClient> request) override;
+
   // ErrorHandler:
   void OnConnectionError() override;
 
@@ -196,8 +201,6 @@ class MOJO_VIEW_MANAGER_EXPORT ConnectionManager
   // NOTE: |window_manager_vm_service_| is also in |connection_map_|.
   ViewManagerServiceImpl* window_manager_vm_service_;
 
-  WindowManagerInternalServicePtr window_manager_;
-
   // ID to use for next ViewManagerServiceImpl.
   ConnectionSpecificId next_connection_id_;
 
@@ -207,6 +210,8 @@ class MOJO_VIEW_MANAGER_EXPORT ConnectionManager
   DisplayManager display_manager_;
 
   scoped_ptr<ServerView> root_;
+
+  scoped_ptr<WindowManagerInternalClientImpl> wm_internal_client_impl_;
 
   // If non-null we're processing a change. The ScopedChange is not owned by us
   // (it's created on the stack by ViewManagerServiceImpl).

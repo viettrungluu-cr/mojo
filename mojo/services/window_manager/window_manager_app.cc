@@ -94,13 +94,12 @@ WindowManagerApp::WindowManagerApp(
     : shell_(nullptr),
       window_manager_service2_factory_(this),
       window_manager_factory_(this),
-      window_manager_internal_service_factory_(this),
+      native_viewport_event_dispatcher_factory_(this),
       wrapped_view_manager_delegate_(view_manager_delegate),
       window_manager_delegate_(window_manager_delegate),
       view_manager_(NULL),
       root_(NULL),
-      dummy_delegate_(new DummyDelegate),
-      window_manager_client_(nullptr) {
+      dummy_delegate_(new DummyDelegate) {
 }
 
 WindowManagerApp::~WindowManagerApp() {}
@@ -381,7 +380,9 @@ void WindowManagerApp::LaunchViewManager(ApplicationImpl* app) {
   view_manager_client_ = ViewManagerClientFactory::WeakBindViewManagerToPipe(
                              pipe.handle0.Pass(), shell_, this).Pass();
 
-  view_manager_app->AddService(&window_manager_internal_service_factory_);
+  view_manager_app->AddService(&native_viewport_event_dispatcher_factory_);
+
+  view_manager_app->ConnectToService(&window_manager_client_);
 }
 
 }  // namespace mojo

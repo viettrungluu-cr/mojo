@@ -17,8 +17,9 @@
 #include "mojo/services/public/cpp/view_manager/view_manager_client_factory.h"
 #include "mojo/services/public/cpp/view_manager/view_manager_delegate.h"
 #include "mojo/services/public/cpp/view_manager/view_observer.h"
+#include "mojo/services/public/interfaces/window_manager/window_manager_internal.mojom.h"
+#include "mojo/services/window_manager/native_viewport_event_dispatcher_impl.h"
 #include "mojo/services/window_manager/window_manager_impl.h"
-#include "mojo/services/window_manager/window_manager_internal_service_impl.h"
 #include "mojo/services/window_manager/window_manager_service2_impl.h"
 #include "ui/aura/client/focus_change_observer.h"
 #include "ui/events/event_handler.h"
@@ -88,10 +89,6 @@ class WindowManagerApp
 
   void InitFocus(wm::FocusRules* rules);
 
-  void set_window_manager_client(WindowManagerInternalClient* client) {
-    window_manager_client_ = client;
-  }
-
   // WindowManagerImpl::Embed() forwards to this. If connected to ViewManager
   // then forwards to delegate, otherwise waits for connection to establish then
   // forwards.
@@ -155,9 +152,9 @@ class WindowManagerApp
   InterfaceFactoryImplWithContext<WindowManagerImpl, WindowManagerApp>
       window_manager_factory_;
 
-  InterfaceFactoryImplWithContext<WindowManagerInternalServiceImpl,
+  InterfaceFactoryImplWithContext<NativeViewportEventDispatcherImpl,
                                   WindowManagerApp>
-      window_manager_internal_service_factory_;
+      native_viewport_event_dispatcher_factory_;
 
   ViewManagerDelegate* wrapped_view_manager_delegate_;
   WindowManagerDelegate* window_manager_delegate_;
@@ -178,7 +175,7 @@ class WindowManagerApp
 
   scoped_ptr<DummyDelegate> dummy_delegate_;
 
-  WindowManagerInternalClient* window_manager_client_;
+  WindowManagerInternalClientPtr window_manager_client_;
 
   ScopedVector<PendingEmbed> pending_embeds_;
 

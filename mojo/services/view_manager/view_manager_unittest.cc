@@ -251,7 +251,7 @@ class ViewManagerProxy : public TestChangeTracker::Delegate {
 
  private:
   friend class TestViewManagerClientConnection;
-  friend class WindowManagerInternalServiceImpl;
+  friend class TestWindowManagerImpl;
 
   void set_router(mojo::internal::Router* router) { router_ = router; }
 
@@ -407,36 +407,13 @@ class TestViewManagerClientConnection
   DISALLOW_COPY_AND_ASSIGN(TestViewManagerClientConnection);
 };
 
-class WindowManagerInternalServiceImpl
-    : public InterfaceImpl<WindowManagerInternalService> {
- public:
-  explicit WindowManagerInternalServiceImpl(
-      TestViewManagerClientConnection* connection)
-      : connection_(connection) {}
-  ~WindowManagerInternalServiceImpl() override {}
-
-  // InterfaceImpl:
-  void OnConnectionEstablished() override {
-    connection_->proxy()->set_window_manager_client(client());
-  }
-
-  void OnViewInputEvent(mojo::EventPtr event) override {}
-
- private:
-  TestViewManagerClientConnection* connection_;
-
-  DISALLOW_COPY_AND_ASSIGN(WindowManagerInternalServiceImpl);
-};
-
 // Used with ViewManagerService::Embed(). Creates a
 // TestViewManagerClientConnection, which creates and owns the ViewManagerProxy.
-class EmbedApplicationLoader
-    : public ApplicationLoader,
-      ApplicationDelegate,
-      public InterfaceFactory<ViewManagerClient>,
-      public InterfaceFactory<WindowManagerInternalService> {
+class EmbedApplicationLoader : public ApplicationLoader,
+                               ApplicationDelegate,
+                               public InterfaceFactory<ViewManagerClient> {
  public:
-  EmbedApplicationLoader() : last_view_manager_client_(nullptr) {}
+  EmbedApplicationLoader() {}
   ~EmbedApplicationLoader() override {}
 
   // ApplicationLoader implementation:
@@ -456,46 +433,35 @@ class EmbedApplicationLoader
   // ApplicationDelegate implementation:
   bool ConfigureIncomingConnection(ApplicationConnection* connection) override {
     connection->AddService<ViewManagerClient>(this);
-    connection->AddService<WindowManagerInternalService>(this);
     return true;
   }
 
   // InterfaceFactory<ViewManagerClient> implementation:
   void Create(ApplicationConnection* connection,
               InterfaceRequest<ViewManagerClient> request) override {
-    last_view_manager_client_ = new TestViewManagerClientConnection();
-    BindToRequest(last_view_manager_client_, &request);
-  }
-  void Create(ApplicationConnection* connection,
-              InterfaceRequest<WindowManagerInternalService> request) override {
-    BindToRequest(
-        new WindowManagerInternalServiceImpl(last_view_manager_client_),
-        &request);
+    BindToRequest(new TestViewManagerClientConnection(), &request);
   }
 
  private:
-  // Used so that TestViewManagerClientConnection and
-  // WindowManagerInternalServiceImpl can share the same TestChangeTracker.
-  TestViewManagerClientConnection* last_view_manager_client_;
   ScopedVector<ApplicationImpl> apps_;
 
   DISALLOW_COPY_AND_ASSIGN(EmbedApplicationLoader);
 };
 
-class TestWindowManagerImpl
-    : public InterfaceImpl<WindowManager>,
-      public InterfaceFactory<WindowManagerInternalService> {
+class TestWindowManagerImpl : public InterfaceImpl<WindowManager> {
  public:
   explicit TestWindowManagerImpl(ApplicationConnection* connection)
       : view_manager_client_(nullptr), got_initial_embed_(false) {
     // WindowManager is expected to establish initial connection to VM.
     ApplicationConnection* view_manager_app =
         connection->ConnectToApplication("mojo:view_manager");
-    view_manager_app->AddService<WindowManagerInternalService>(this);
     view_manager_app->ConnectToService(&view_manager_);
+    view_manager_app->ConnectToService(&window_manager_client_);
 
     view_manager_client_ = new TestViewManagerClientConnection();
     view_manager_.set_client(view_manager_client_);
+    view_manager_client_->proxy()->set_window_manager_client(
+        window_manager_client_.get());
     view_manager_client_->proxy()->set_view_manager(view_manager_.get());
   }
 
@@ -519,17 +485,10 @@ class TestWindowManagerImpl
     view_manager_client_->tracker()->DelegateEmbed(url);
   }
 
-  // InterfaceFactory<>:
-  virtual void Create(
-      ApplicationConnection* connection,
-      InterfaceRequest<WindowManagerInternalService> request) override {
-    BindToRequest(new WindowManagerInternalServiceImpl(view_manager_client_),
-                  &request);
-  }
-
  private:
   ViewManagerServicePtr view_manager_;
   TestViewManagerClientConnection* view_manager_client_;
+  WindowManagerInternalClientPtr window_manager_client_;
 
   // Did we get Embed() yet?
   bool got_initial_embed_;

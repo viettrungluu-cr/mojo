@@ -105,10 +105,6 @@ class SurfacesApp : public ApplicationDelegate,
   // NativeViewportClient implementation.
   virtual void OnSizeChanged(mojo::SizePtr size) override {}
   virtual void OnDestroyed() override {}
-  virtual void OnEvent(mojo::EventPtr event,
-                       const mojo::Callback<void()>& callback) override {
-    callback.Run();
-  }
 
  private:
   void OnCreatedNativeViewport(uint64_t native_viewport_id) {}
