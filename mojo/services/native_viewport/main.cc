@@ -31,22 +31,16 @@ class NativeViewportAppDelegate
   ~NativeViewportAppDelegate() override {}
 
  private:
-  bool HasArg(const std::string& arg) {
-    const auto& args = app_->args();
-    return std::find(args.begin(), args.end(), arg) != args.end();
-  }
-
   // ApplicationDelegate implementation.
   void Initialize(ApplicationImpl* application) override {
     app_ = application;
 
-#if !defined(COMPONENT_BUILD)
-    if (HasArg(kUseTestConfig))
+    if (app_->HasArg(kUseTestConfig))
       gfx::GLSurface::InitializeOneOffForTests();
     else
       gfx::GLSurface::InitializeOneOff();
-#endif
-    is_headless_ = HasArg(kUseHeadlessConfig);
+
+    is_headless_ = app_->HasArg(kUseHeadlessConfig);
   }
 
   bool ConfigureIncomingConnection(
