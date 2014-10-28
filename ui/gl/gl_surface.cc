@@ -28,7 +28,7 @@ base::LazyInstance<base::ThreadLocalPointer<GLSurface> >::Leaky
 }  // namespace
 
 // static
-bool GLSurface::InitializeOneOff() {
+bool GLSurface::InitializeOneOff(GLImplementation impl) {
   DCHECK_EQ(kGLImplementationNone, GetGLImplementation());
 
   TRACE_EVENT0("gpu", "GLSurface::InitializeOneOff");
@@ -40,7 +40,8 @@ bool GLSurface::InitializeOneOff() {
   CommandLine* cmd = CommandLine::ForCurrentProcess();
 
   // The default implementation is always the first one in list.
-  GLImplementation impl = allowed_impls[0];
+  if (impl == kGLImplementationNone)
+    impl = allowed_impls[0];
   bool fallback_to_osmesa = false;
   if (cmd->HasSwitch(switches::kOverrideUseGLWithOSMesaForTests)) {
     impl = kGLImplementationOSMesaGL;

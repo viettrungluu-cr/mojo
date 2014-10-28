@@ -37,6 +37,8 @@ class NativeViewportAppDelegate
 
     if (app_->HasArg(kUseTestConfig))
       gfx::GLSurface::InitializeOneOffForTests();
+    else if (app_->HasArg(kUseOSMesa))
+      gfx::GLSurface::InitializeOneOff(gfx::kGLImplementationOSMesaGL);
     else
       gfx::GLSurface::InitializeOneOff();
 

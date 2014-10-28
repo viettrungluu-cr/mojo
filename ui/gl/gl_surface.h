@@ -72,7 +72,7 @@ class GL_EXPORT GLSurface : public base::RefCounted<GLSurface> {
   virtual bool PostSubBuffer(int x, int y, int width, int height);
 
   // Initialize GL bindings.
-  static bool InitializeOneOff();
+  static bool InitializeOneOff(GLImplementation = kGLImplementationNone);
 
   // Unit tests should call these instead of InitializeOneOff() to set up
   // GL bindings appropriate for tests.
