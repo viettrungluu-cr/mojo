@@ -86,13 +86,6 @@ do_pytests() {
       "--build-dir=${out_dir}" || exit 1
 }
 
-do_skytests() {
-  if [ $TARGET == linux ]; then
-    python sky/tools/test_sky -t $1 --no-new-test-results \
-        --no-show-results --verbose
-  fi
-}
-
 do_gn() {
   local gn_args="$(make_gn_args $1)"
   local out_dir="$(get_outdir $1)"
@@ -180,7 +173,6 @@ for arg in "$@"; do
     test)
       do_unittests "$BUILD_TYPE"
       do_pytests "$BUILD_TYPE"
-      do_skytests "$BUILD_TYPE"
       ;;
     perftest)
       do_perftests "$BUILD_TYPE"
