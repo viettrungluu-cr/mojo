@@ -18,6 +18,7 @@ shared_library("nesting_app") {
     "//mojo/services/public/cpp/view_manager",
     "//mojo/services/public/interfaces/geometry",
     "//mojo/services/public/interfaces/navigation",
+    "//skia",
     "//ui/gfx/geometry",
     "//ui/gl",
     "//url",

@@ -24,12 +24,7 @@
 #include "mojo/services/public/cpp/view_manager/view_manager_delegate.h"
 #include "mojo/services/public/cpp/view_manager/view_observer.h"
 #include "mojo/services/public/interfaces/content_handler/content_handler.mojom.h"
-#include "skia/ext/platform_canvas.h"
-#include "skia/ext/refptr.h"
-#include "third_party/skia/include/core/SkBitmap.h"
-#include "third_party/skia/include/core/SkCanvas.h"
-#include "third_party/skia/include/core/SkPaint.h"
-#include "third_party/skia/include/core/SkScalar.h"
+#include "third_party/skia/include/core/SkColor.h"
 #include "ui/gfx/codec/png_codec.h"
 
 namespace mojo {
@@ -59,7 +54,9 @@ class PNGView : public ViewManagerDelegate, public ViewObserver {
           ServiceProviderImpl* exported_services,
           scoped_ptr<ServiceProvider> imported_services,
           Shell* shell)
-      : imported_services_(imported_services.Pass()),
+      : width_(0),
+        height_(0),
+        imported_services_(imported_services.Pass()),
         shell_(shell),
         root_(nullptr),
         view_manager_client_factory_(shell, this),
@@ -83,7 +80,7 @@ class PNGView : public ViewManagerDelegate, public ViewObserver {
     bitmap_uploader_.reset(new BitmapUploader(root_));
     bitmap_uploader_->Init(shell_);
     bitmap_uploader_->SetColor(SK_ColorGRAY);
-    if (!bitmap_.isNull())
+    if (bitmap_.get())
       DrawBitmap();
   }
 
@@ -125,25 +122,22 @@ class PNGView : public ViewManagerDelegate, public ViewObserver {
       }
     }
 
+    bitmap_.reset(new std::vector<unsigned char>);
     gfx::PNGCodec::Decode(static_cast<const unsigned char*>(data.get()),
                           content_length,
-                          &bitmap_);
+                          gfx::PNGCodec::FORMAT_BGRA,
+                          bitmap_.get(),
+                          &width_,
+                          &height_);
   }
 
   void DrawBitmap() {
     if (!root_)
       return;
 
-    skia::RefPtr<SkCanvas> canvas(skia::AdoptRef(skia::CreatePlatformCanvas(
-        root_->bounds().width, root_->bounds().height, true)));
-    canvas->drawColor(SK_ColorGRAY);
-    SkPaint paint;
-    SkScalar scale =
-        SkFloatToScalar(zoom_percentage_ * 1.0f / kDefaultZoomPercentage);
-    canvas->scale(scale, scale);
-    canvas->drawBitmap(bitmap_, 0, 0, &paint);
-    bitmap_uploader_->SetBitmap(
-        skia::GetTopDevice(*canvas)->accessBitmap(true));
+
+    bitmap_uploader_->SetBitmap(width_, height_, bitmap_.Pass(),
+                                BitmapUploader::BGRA);
   }
 
   void ZoomIn() {
@@ -182,7 +176,9 @@ class PNGView : public ViewManagerDelegate, public ViewObserver {
     return 0;
   }
 
-  SkBitmap bitmap_;
+  int width_;
+  int height_;
+  scoped_ptr<std::vector<unsigned char>> bitmap_;
   scoped_ptr<ServiceProvider> imported_services_;
   Shell* shell_;
   View* root_;

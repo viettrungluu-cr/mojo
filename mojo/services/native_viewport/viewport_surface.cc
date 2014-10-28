@@ -8,7 +8,7 @@
 #include "cc/surfaces/surface_id_allocator.h"
 #include "mojo/converters/geometry/geometry_type_converters.h"
 #include "mojo/converters/surfaces/surfaces_type_converters.h"
-#include "mojo/converters/surfaces/surfaces_utils.h"
+#include "mojo/services/public/cpp/surfaces/surfaces_utils.h"
 #include "ui/gfx/transform.h"
 
 namespace mojo {
@@ -92,10 +92,11 @@ void ViewportSurface::SubmitFrame() {
   surface_quad->shared_quad_state_index = 0;
   surface_quad->surface_quad_state = surface_quad_state.Pass();
 
-  PassPtr pass = CreateDefaultPass(1, bounds);
+  PassPtr pass = CreateDefaultPass(1, *mojo::Rect::From(bounds));
 
   pass->quads.push_back(surface_quad.Pass());
-  pass->shared_quad_states.push_back(CreateDefaultSQS(size_));
+  pass->shared_quad_states.push_back(CreateDefaultSQS(
+      *mojo::Size::From(size_)));
 
   FramePtr frame = Frame::New();
   frame->passes.push_back(pass.Pass());

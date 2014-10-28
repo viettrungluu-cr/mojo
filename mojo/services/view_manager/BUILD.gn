@@ -43,6 +43,7 @@ shared_library("view_manager") {
     "//mojo/public/c/system:for_shared_library",
     "//mojo/public/cpp/bindings",
     "//mojo/public/interfaces/application",
+    "//mojo/services/public/cpp/surfaces",
     "//mojo/services/public/interfaces/geometry",
     "//mojo/services/public/interfaces/input_events",
     "//mojo/services/public/interfaces/native_viewport",

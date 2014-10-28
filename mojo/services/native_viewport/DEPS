@@ -6,6 +6,7 @@ include_rules = [
   "+mojo/converters/input_events",
   "+mojo/converters/surfaces",
   "+mojo/services/public/cpp/native_viewport",
+  "+mojo/services/public/cpp/surfaces",
   "+mojo/services/public/interfaces/gpu",
   "+mojo/services/public/interfaces/native_viewport",
   "+mojo/services/public/interfaces/geometry",

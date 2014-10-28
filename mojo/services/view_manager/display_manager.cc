@@ -8,8 +8,8 @@
 #include "cc/surfaces/surface_id_allocator.h"
 #include "mojo/converters/geometry/geometry_type_converters.h"
 #include "mojo/converters/surfaces/surfaces_type_converters.h"
-#include "mojo/converters/surfaces/surfaces_utils.h"
 #include "mojo/public/cpp/application/application_connection.h"
+#include "mojo/services/public/cpp/surfaces/surfaces_utils.h"
 #include "mojo/services/public/interfaces/gpu/gpu.mojom.h"
 #include "mojo/services/public/interfaces/surfaces/quads.mojom.h"
 #include "mojo/services/view_manager/connection_manager.h"
@@ -59,7 +59,7 @@ void DrawViewTree(Pass* pass, const ServerView* view, gfx::Vector2d offset) {
       base::saturated_cast<int32_t>(pass->shared_quad_states.size());
   surface_quad->surface_quad_state = surface_quad_state.Pass();
 
-  SharedQuadStatePtr sqs = CreateDefaultSQS(node_bounds.size());
+  SharedQuadStatePtr sqs = CreateDefaultSQS(*Size::From(node_bounds.size()));
   sqs->content_to_target_transform = Transform::From(node_transform);
 
   pass->quads.push_back(surface_quad.Pass());
@@ -128,7 +128,10 @@ void DisplayManager::Draw() {
     surface_->CreateSurface(SurfaceId::From(surface_id_), Size::From(size_));
   }
 
-  PassPtr pass = CreateDefaultPass(1, gfx::Rect(size_));
+  Rect rect;
+  rect.width = size_.width();
+  rect.height = size_.height();
+  PassPtr pass = CreateDefaultPass(1, rect);
   pass->damage_rect = Rect::From(dirty_rect_);
 
   DrawViewTree(pass.get(), connection_manager_->root(), gfx::Vector2d());

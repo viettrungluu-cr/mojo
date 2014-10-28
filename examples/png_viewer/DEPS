@@ -1,5 +1,4 @@
 include_rules = [
-  "+skia/ext",
-  "+third_party/skia/include",
-  "+ui/gfx",
+  "+third_party/skia/include/core/SkColor.h",
+  "+ui/gfx/codec",
 ]

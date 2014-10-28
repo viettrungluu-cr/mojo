@@ -10,27 +10,21 @@ source_set("bitmap_uploader") {
 
   public_deps = [
     "//base",
-    "//cc/surfaces",
     "//mojo/public/c/gles2",
     "//mojo/services/public/interfaces/gpu",
     "//mojo/services/public/interfaces/surfaces",
-    "//skia",
-    "//ui/gfx/geometry",
   ]
   deps = [
-    "//gpu",
     "//mojo/application",
-    "//mojo/converters/geometry",
-    "//mojo/converters/surfaces",
     "//mojo/public/cpp/bindings:bindings",
+    "//mojo/public/gles2:for_shared_library",
     "//mojo/public/interfaces/application",
+    "//mojo/services/public/cpp/surfaces",
     "//mojo/services/public/cpp/view_manager",
     "//mojo/services/public/interfaces/geometry",
     "//mojo/services/public/interfaces/input_events:input_events",
     "//mojo/services/public/interfaces/surfaces:surface_id",
     "//mojo/services/public/interfaces/view_manager",
     "//mojo/services/public/interfaces/window_manager2",
-    "//ui/events",
-    "//ui/gfx",
   ]
 }

@@ -25,6 +25,7 @@
 #include "mojo/services/public/cpp/view_manager/view_manager_context.h"
 #include "mojo/services/public/cpp/view_manager/view_manager_delegate.h"
 #include "mojo/services/public/cpp/view_manager/view_observer.h"
+#include "third_party/skia/include/core/SkColor.h"
 
 namespace examples {
 namespace {

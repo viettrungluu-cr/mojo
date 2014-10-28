@@ -9,20 +9,18 @@
 #endif  // GL_GLEXT_PROTOTYPES
 
 #include "base/bind.h"
-#include "cc/surfaces/surface_id.h"
-#include "cc/surfaces/surface_id_allocator.h"
 #include "gpu/GLES2/gl2chromium.h"
 #include "gpu/GLES2/gl2extchromium.h"
-#include "gpu/command_buffer/common/mailbox.h"
-#include "mojo/converters/geometry/geometry_type_converters.h"
-#include "mojo/converters/surfaces/surfaces_type_converters.h"
-#include "mojo/converters/surfaces/surfaces_utils.h"
 #include "mojo/public/c/gles2/gles2.h"
 #include "mojo/public/cpp/application/connect.h"
 #include "mojo/public/interfaces/application/shell.mojom.h"
+#include "mojo/services/public/cpp/geometry/geometry_util.h"
+#include "mojo/services/public/cpp/surfaces/surfaces_utils.h"
 #include "mojo/services/public/cpp/view_manager/lib/view_manager_client_impl.h"
 #include "third_party/khronos/GLES2/gl2.h"
 #include "ui/gfx/geometry/rect.h"
+
+#define TRANSPARENT_COLOR 0x00000000
 
 namespace mojo {
 
@@ -31,15 +29,16 @@ void LostContext(void*) {
   DCHECK(false);
 }
 
-uint32_t TextureFormat() {
-  return SK_B32_SHIFT ? GL_RGBA : GL_BGRA_EXT;
-}
 }
 
 BitmapUploader::BitmapUploader(View* view)
     : view_(view),
-      color_(SK_ColorTRANSPARENT),
+      color_(TRANSPARENT_COLOR),
+      width_(0),
+      height_(0),
+      format_(BGRA),
       next_resource_id_(1u),
+      id_namespace_(0),
       weak_factory_(this) {
 }
 
@@ -69,7 +68,7 @@ BitmapUploader::~BitmapUploader() {
   MojoGLES2DestroyContext(gles2_context_);
 }
 
-void BitmapUploader::SetColor(SkColor color) {
+void BitmapUploader::SetColor(uint32_t color) {
   if (color_ == color)
     return;
   color_ = color;
@@ -77,30 +76,44 @@ void BitmapUploader::SetColor(SkColor color) {
     Upload();
 }
 
-void BitmapUploader::SetBitmap(const SkBitmap& bitmap) {
-  bitmap_ = bitmap;
+void BitmapUploader::SetBitmap(int width,
+                               int height,
+                               scoped_ptr<std::vector<unsigned char>> data,
+                               Format format) {
+  width_ = width;
+  height_ = height;
+  bitmap_ = data.Pass();
+  format_ = format;
   if (surface_)
     Upload();
 }
 
 void BitmapUploader::Upload() {
-  const gfx::Size size(view_->bounds().width, view_->bounds().height);
-  if (size.IsEmpty()) {
+  Size size;
+  size.width = view_->bounds().width;
+  size.height = view_->bounds().height;
+  if (!size.width || !size.height) {
     view_->SetSurfaceId(SurfaceId::New());
     return;
   }
   if (!surface_)  // Can't upload yet, store for later.
     return;
-  if (id_.is_null() || size != surface_size_) {
-    if (!id_.is_null())
-      surface_->DestroySurface(SurfaceId::From(id_));
-    id_ = id_allocator_->GenerateId();
-    surface_->CreateSurface(SurfaceId::From(id_), Size::From(size));
-    view_->SetSurfaceId(SurfaceId::From(id_));
+  if (!surface_id_ || size != surface_size_) {
+    if (surface_id_) {
+      surface_->DestroySurface(surface_id_.Clone());
+    } else {
+      surface_id_ = SurfaceId::New();
+      surface_id_->id = static_cast<uint64_t>(id_namespace_) << 32;
+    }
+    surface_id_->id++;
+    surface_->CreateSurface(surface_id_.Clone(), size.Clone());
+    view_->SetSurfaceId(surface_id_.Clone());
     surface_size_ = size;
   }
 
-  gfx::Rect bounds(size);
+  Rect bounds;
+  bounds.width = size.width;
+  bounds.height = size.height;
   PassPtr pass = CreateDefaultPass(1, bounds);
   FramePtr frame = Frame::New();
   frame->resources.resize(0u);
@@ -109,23 +122,24 @@ void BitmapUploader::Upload() {
   pass->shared_quad_states.push_back(CreateDefaultSQS(size));
 
   MojoGLES2MakeCurrent(gles2_context_);
-  if (!bitmap_.isNull()) {
-    gfx::Size bitmap_size(bitmap_.width(), bitmap_.height());
+  if (bitmap_.get()) {
+    Size bitmap_size;
+    bitmap_size.width = width_;
+    bitmap_size.height = height_;
     GLuint texture_id = BindTextureForSize(bitmap_size);
-    bitmap_.lockPixels();
     glTexSubImage2D(GL_TEXTURE_2D,
                     0,
                     0,
                     0,
-                    bitmap_size.width(),
-                    bitmap_size.height(),
+                    bitmap_size.width,
+                    bitmap_size.height,
                     TextureFormat(),
                     GL_UNSIGNED_BYTE,
-                    bitmap_.getPixels());
-    bitmap_.unlockPixels();
+                    &((*bitmap_)[0]));
 
-    gpu::Mailbox mailbox = gpu::Mailbox::Generate();
-    glProduceTextureCHROMIUM(GL_TEXTURE_2D, mailbox.name);
+    GLbyte mailbox[GL_MAILBOX_SIZE_CHROMIUM];
+    glGenMailboxCHROMIUM(mailbox);
+    glProduceTextureCHROMIUM(GL_TEXTURE_2D, mailbox);
     GLuint sync_point = glInsertSyncPointCHROMIUM();
 
     TransferableResourcePtr resource = TransferableResource::New();
@@ -133,9 +147,11 @@ void BitmapUploader::Upload() {
     resource_to_texture_id_map_[resource->id] = texture_id;
     resource->format = mojo::RESOURCE_FORMAT_RGBA_8888;
     resource->filter = GL_LINEAR;
-    resource->size = Size::From(bitmap_size);
+    resource->size = bitmap_size.Clone();
     MailboxHolderPtr mailbox_holder = MailboxHolder::New();
-    mailbox_holder->mailbox = Mailbox::From(mailbox);
+    mailbox_holder->mailbox = Mailbox::New();
+    for (int i = 0; i < GL_MAILBOX_SIZE_CHROMIUM; ++i)
+      mailbox_holder->mailbox->name.push_back(mailbox[i]);
     mailbox_holder->texture_target = GL_TEXTURE_2D;
     mailbox_holder->sync_point = sync_point;
     resource->mailbox_holder = mailbox_holder.Pass();
@@ -144,18 +160,39 @@ void BitmapUploader::Upload() {
 
     QuadPtr quad = Quad::New();
     quad->material = MATERIAL_TEXTURE_CONTENT;
-    quad->rect = Rect::From(bounds);
-    quad->opaque_rect = Rect::From(bounds);
-    quad->visible_rect = Rect::From(bounds);
+
+    RectPtr rect = Rect::New();
+    if (width_ <= size.width && height_ <= size.height) {
+      rect->width = width_;
+      rect->height = height_;
+    } else {
+      // The source bitmap is larger than the viewport. Resize it while
+      // maintaining the aspect ratio.
+      float width_ratio = static_cast<float>(width_) / size.width;
+      float height_ratio = static_cast<float>(height_) / size.height;
+      if (width_ratio > height_ratio) {
+        rect->width = size.width;
+        rect->height = height_ / width_ratio;
+      } else {
+        rect->height = size.height;
+        rect->width = width_ / height_ratio;
+      }
+    }
+    quad->rect = rect.Clone();
+    quad->opaque_rect = rect.Clone();
+    quad->visible_rect = rect.Clone();
     quad->needs_blending = true;
     quad->shared_quad_state_index = 0u;
 
     TextureQuadStatePtr texture_state = TextureQuadState::New();
     texture_state->resource_id = resource->id;
     texture_state->premultiplied_alpha = true;
-    texture_state->uv_top_left = PointF::From(gfx::PointF(0.f, 0.f));
-    texture_state->uv_bottom_right = PointF::From(gfx::PointF(1.f, 1.f));
-    texture_state->background_color = Color::From(SkColor(SK_ColorTRANSPARENT));
+    texture_state->uv_top_left = PointF::New();
+    texture_state->uv_bottom_right = PointF::New();
+    texture_state->uv_bottom_right->x = 1.f;
+    texture_state->uv_bottom_right->y = 1.f;
+    texture_state->background_color = Color::New();
+    texture_state->background_color->rgba = TRANSPARENT_COLOR;
     for (int i = 0; i < 4; ++i)
       texture_state->vertex_opacity.push_back(1.f);
     texture_state->flipped = false;
@@ -165,17 +202,18 @@ void BitmapUploader::Upload() {
     pass->quads.push_back(quad.Pass());
   }
 
-  if (color_ != SK_ColorTRANSPARENT) {
+  if (color_ != TRANSPARENT_COLOR) {
     QuadPtr quad = Quad::New();
     quad->material = MATERIAL_SOLID_COLOR;
-    quad->rect = Rect::From(bounds);
-    quad->opaque_rect = Rect::From(gfx::Rect());
-    quad->visible_rect = Rect::From(bounds);
+    quad->rect = bounds.Clone();
+    quad->opaque_rect = Rect::New();
+    quad->visible_rect = bounds.Clone();
     quad->needs_blending = true;
     quad->shared_quad_state_index = 0u;
 
     SolidColorQuadStatePtr color_state = SolidColorQuadState::New();
-    color_state->color = Color::From(color_);
+    color_state->color = Color::New();
+    color_state->color->rgba = color_;
     color_state->force_anti_aliasing_off = false;
 
     quad->solid_color_quad_state = color_state.Pass();
@@ -184,7 +222,7 @@ void BitmapUploader::Upload() {
 
   frame->passes.push_back(pass.Pass());
 
-  surface_->SubmitFrame(SurfaceId::From(id_), frame.Pass());
+  surface_->SubmitFrame(surface_id_.Clone(), frame.Pass());
 }
 
 void BitmapUploader::ReturnResources(Array<ReturnedResourcePtr> resources) {
@@ -207,12 +245,12 @@ void BitmapUploader::OnSurfaceConnectionCreated(SurfacePtr surface,
                                                 uint32_t id_namespace) {
   surface_ = surface.Pass();
   surface_.set_client(this);
-  id_allocator_.reset(new cc::SurfaceIdAllocator(id_namespace));
-  if (color_ != SK_ColorTRANSPARENT || !bitmap_.isNull())
+  id_namespace_ = id_namespace;
+  if (color_ != TRANSPARENT_COLOR || bitmap_.get())
     Upload();
 }
 
-uint32_t BitmapUploader::BindTextureForSize(const gfx::Size size) {
+uint32_t BitmapUploader::BindTextureForSize(const Size size) {
   // TODO(jamesr): Recycle textures.
   GLuint texture = 0u;
   glGenTextures(1, &texture);
@@ -220,14 +258,18 @@ uint32_t BitmapUploader::BindTextureForSize(const gfx::Size size) {
   glTexImage2D(GL_TEXTURE_2D,
                0,
                TextureFormat(),
-               size.width(),
-               size.height(),
+               size.width,
+               size.height,
                0,
                TextureFormat(),
                GL_UNSIGNED_BYTE,
                0);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
   return texture;
+}
+
+uint32_t BitmapUploader::TextureFormat() {
+  return format_ == BGRA ? GL_BGRA_EXT : GL_RGBA;
 }
 
 }  // namespace mojo

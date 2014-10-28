@@ -10,15 +10,12 @@ component("surfaces") {
     "mojo_surfaces_export.h",
     "surfaces_type_converters.cc",
     "surfaces_type_converters.h",
-    "surfaces_utils.cc",
-    "surfaces_utils.h",
   ]
 
   defines = [ "MOJO_SURFACES_IMPLEMENTATION" ]
 
   public_deps = [
     "//mojo/converters/geometry",
-    "//ui/gfx",
   ]
 
   deps = [
@@ -26,7 +23,6 @@ component("surfaces") {
     "//cc",
     "//cc/surfaces",
     "//gpu",
-    "//ui/gfx/geometry",
     "//mojo/environment:chromium",
     "//mojo/public/c/system:for_component",
     "//mojo/services/public/interfaces/surfaces:surface_id",

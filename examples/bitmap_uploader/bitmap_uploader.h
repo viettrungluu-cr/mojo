@@ -6,19 +6,15 @@
 #define EXAMPLES_BITMAP_UPLOADER_BITMAP_UPLOADER_H_
 
 #include "base/callback.h"
+#include "base/containers/hash_tables.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
-#include "cc/surfaces/surface_id.h"
 #include "mojo/public/c/gles2/gles2.h"
+#include "mojo/services/public/interfaces/geometry/geometry.mojom.h"
 #include "mojo/services/public/interfaces/gpu/gpu.mojom.h"
+#include "mojo/services/public/interfaces/surfaces/surface_id.mojom.h"
 #include "mojo/services/public/interfaces/surfaces/surfaces.mojom.h"
 #include "mojo/services/public/interfaces/surfaces/surfaces_service.mojom.h"
-#include "third_party/skia/include/core/SkBitmap.h"
-#include "ui/gfx/geometry/size.h"
-
-namespace cc {
-class SurfaceIdAllocator;
-}
 
 namespace mojo {
 class Shell;
@@ -32,13 +28,25 @@ class BitmapUploader : public SurfaceClient {
 
   void Init(Shell* shell);
 
-  void SetColor(SkColor color);
-  void SetBitmap(const SkBitmap& bitmap);
+  // Sets the color which is RGBA.
+  void SetColor(uint32_t color);
+
+  enum Format {
+    RGBA,  // Pixel layout on Android.
+    BGRA,  // Pixel layout everywhere else.
+  };
+
+  // Sets a bitmap.
+  void SetBitmap(int width,
+                 int height,
+                 scoped_ptr<std::vector<unsigned char>> data,
+                 Format format);
 
  private:
   void Upload();
   void OnSurfaceConnectionCreated(SurfacePtr surface, uint32_t id_namespace);
-  uint32_t BindTextureForSize(const gfx::Size size);
+  uint32_t BindTextureForSize(const Size size);
+  uint32_t TextureFormat();
 
   // SurfaceClient implementation.
   virtual void ReturnResources(Array<ReturnedResourcePtr> resources) override;
@@ -48,14 +56,17 @@ class BitmapUploader : public SurfaceClient {
   GpuPtr gpu_service_;
   MojoGLES2Context gles2_context_;
 
-  gfx::Size size_;
-  SkColor color_;
-  SkBitmap bitmap_;
+  Size size_;
+  uint32_t color_;
+  int width_;
+  int height_;
+  Format format_;
+  scoped_ptr<std::vector<unsigned char>> bitmap_;
   SurfacePtr surface_;
-  cc::SurfaceId id_;
-  scoped_ptr<cc::SurfaceIdAllocator> id_allocator_;
-  gfx::Size surface_size_;
+  Size surface_size_;
   uint32_t next_resource_id_;
+  uint32_t id_namespace_;
+  SurfaceIdPtr surface_id_;
   base::hash_map<uint32_t, uint32_t> resource_to_texture_id_map_;
 
   base::WeakPtrFactory<BitmapUploader> weak_factory_;
