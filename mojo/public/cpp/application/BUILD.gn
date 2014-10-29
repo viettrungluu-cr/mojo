@@ -56,5 +56,6 @@ source_set("test_support") {
   sources = [
     "application_test_base.h",
     "lib/application_test_base.cc",
+    "lib/application_test_main.cc",
   ]
 }
