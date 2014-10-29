@@ -23,7 +23,7 @@ class FakePictureLayerTilingClient : public PictureLayerTilingClient {
   // PictureLayerTilingClient implementation.
   scoped_refptr<Tile> CreateTile(PictureLayerTiling* tiling,
                                  const gfx::Rect& rect) override;
-  PicturePileImpl* GetPile() override;
+  RasterSource* GetRasterSource() override;
   gfx::Size CalculateTileSize(const gfx::Size& content_bounds) const override;
   size_t GetMaxTilesForInterestArea() const override;
   float GetSkewportTargetTimeInSeconds() const override;
@@ -33,8 +33,8 @@ class FakePictureLayerTilingClient : public PictureLayerTilingClient {
   void SetTileSize(const gfx::Size& tile_size);
   gfx::Size TileSize() const { return tile_size_; }
 
-  const Region* GetInvalidation() override;
-  const PictureLayerTiling* GetTwinTiling(
+  const Region* GetPendingInvalidation() override;
+  const PictureLayerTiling* GetPendingOrActiveTwinTiling(
       const PictureLayerTiling* tiling) const override;
   PictureLayerTiling* GetRecycledTwinTiling(
       const PictureLayerTiling* tiling) override;

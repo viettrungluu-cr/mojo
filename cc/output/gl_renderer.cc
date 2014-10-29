@@ -373,7 +373,6 @@ GLRenderer::GLRenderer(RendererClient* client,
   capabilities_.allow_rasterize_on_demand = true;
 
   use_sync_query_ = context_caps.gpu.sync_query;
-  use_blend_minmax_ = context_caps.gpu.blend_minmax;
   use_blend_equation_advanced_ = context_caps.gpu.blend_equation_advanced;
   use_blend_equation_advanced_coherent_ =
       context_caps.gpu.blend_equation_advanced_coherent;
@@ -738,7 +737,6 @@ static skia::RefPtr<SkImage> ApplyImageFilter(
 
 bool GLRenderer::CanApplyBlendModeUsingBlendFunc(SkXfermode::Mode blend_mode) {
   return use_blend_equation_advanced_ ||
-         (use_blend_minmax_ && blend_mode == SkXfermode::kLighten_Mode) ||
          blend_mode == SkXfermode::kScreen_Mode ||
          blend_mode == SkXfermode::kSrcOver_Mode;
 }
@@ -804,9 +802,6 @@ void GLRenderer::ApplyBlendModeUsingBlendFunc(SkXfermode::Mode blend_mode) {
   } else {
     if (blend_mode == SkXfermode::kScreen_Mode) {
       GLC(gl_, gl_->BlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ONE));
-    } else if (blend_mode == SkXfermode::kLighten_Mode) {
-      GLC(gl_, gl_->BlendFunc(GL_ONE, GL_ONE));
-      GLC(gl_, gl_->BlendEquation(GL_MAX_EXT));
     }
   }
 }
@@ -819,9 +814,6 @@ void GLRenderer::RestoreBlendFuncToDefault(SkXfermode::Mode blend_mode) {
     GLC(gl_, gl_->BlendEquation(GL_FUNC_ADD));
   } else {
     GLC(gl_, gl_->BlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA));
-
-    if (blend_mode == SkXfermode::kLighten_Mode)
-      GLC(gl_, gl_->BlendEquation(GL_FUNC_ADD));
   }
 }
 
@@ -862,8 +854,8 @@ gfx::Rect GLRenderer::GetBackdropBoundingBoxForRenderPassQuad(
     backdrop_rect.Inset(-kOutsetForAntialiasing, -kOutsetForAntialiasing);
   }
 
-  backdrop_rect.Intersect(
-      MoveFromDrawToWindowSpace(frame->current_render_pass->output_rect));
+  backdrop_rect.Intersect(MoveFromDrawToWindowSpace(
+      frame, frame->current_render_pass->output_rect));
   return backdrop_rect;
 }
 
@@ -2038,7 +2030,7 @@ void GLRenderer::DrawPictureQuad(const DrawingFrame* frame,
   }
 
   SkCanvas canvas(on_demand_tile_raster_bitmap_);
-  quad->picture_pile->RasterToBitmap(
+  quad->picture_pile->PlaybackToCanvas(
       &canvas, quad->content_rect, quad->contents_scale, NULL);
 
   uint8_t* bitmap_pixels = NULL;
@@ -2287,7 +2279,16 @@ void GLRenderer::FinishDrawingFrame(DrawingFrame* frame) {
 
 void GLRenderer::FinishDrawingQuadList() { FlushTextureQuadCache(); }
 
-bool GLRenderer::FlippedFramebuffer() const { return true; }
+bool GLRenderer::FlippedFramebuffer(const DrawingFrame* frame) const {
+  if (frame->current_render_pass != frame->root_render_pass)
+    return true;
+  return FlippedRootFramebuffer();
+}
+
+bool GLRenderer::FlippedRootFramebuffer() const {
+  // GL is normally flipped, so a flipped output results in an unflipping.
+  return !output_surface_->capabilities().flipped_output_surface;
+}
 
 void GLRenderer::EnsureScissorTestEnabled() {
   if (is_scissor_enabled_)
@@ -2314,7 +2315,7 @@ void GLRenderer::CopyCurrentRenderPassToBitmap(
   gfx::Rect copy_rect = frame->current_render_pass->output_rect;
   if (request->has_area())
     copy_rect.Intersect(request->area());
-  GetFramebufferPixelsAsync(copy_rect, request.Pass());
+  GetFramebufferPixelsAsync(frame, copy_rect, request.Pass());
 }
 
 void GLRenderer::ToGLMatrix(float* gl_matrix, const gfx::Transform& transform) {
@@ -2447,7 +2448,8 @@ void GLRenderer::SwapBuffers(const CompositorFrameMetadata& metadata) {
                                        swap_buffer_rect_.height();
     compositor_frame.gl_frame_data->sub_buffer_rect =
         gfx::Rect(swap_buffer_rect_.x(),
-                  flipped_y_pos_of_rect_bottom,
+                  FlippedRootFramebuffer() ? flipped_y_pos_of_rect_bottom
+                                           : swap_buffer_rect_.y(),
                   swap_buffer_rect_.width(),
                   swap_buffer_rect_.height());
   } else {
@@ -2496,6 +2498,7 @@ void GLRenderer::EnsureBackbuffer() {
 }
 
 void GLRenderer::GetFramebufferPixelsAsync(
+    const DrawingFrame* frame,
     const gfx::Rect& rect,
     scoped_ptr<CopyOutputRequest> request) {
   DCHECK(!request->IsEmpty());
@@ -2504,7 +2507,7 @@ void GLRenderer::GetFramebufferPixelsAsync(
   if (rect.IsEmpty())
     return;
 
-  gfx::Rect window_rect = MoveFromDrawToWindowSpace(rect);
+  gfx::Rect window_rect = MoveFromDrawToWindowSpace(frame, rect);
   DCHECK_GE(window_rect.x(), 0);
   DCHECK_GE(window_rect.y(), 0);
   DCHECK_LE(window_rect.right(), current_surface_size_.width());

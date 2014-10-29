@@ -10,7 +10,6 @@
 #include <utility>
 
 #include "base/containers/hash_tables.h"
-#include "base/memory/ref_counted.h"
 #include "cc/base/cc_export.h"
 #include "cc/base/region.h"
 #include "cc/base/tiling_data.h"
@@ -26,7 +25,7 @@ class Value;
 
 namespace cc {
 
-class CC_EXPORT PicturePileBase : public base::RefCounted<PicturePileBase> {
+class CC_EXPORT PicturePileBase {
  public:
   PicturePileBase();
   explicit PicturePileBase(const PicturePileBase* other);
@@ -43,13 +42,10 @@ class CC_EXPORT PicturePileBase : public base::RefCounted<PicturePileBase> {
   int num_tiles_y() const { return tiling_.num_tiles_y(); }
   gfx::Rect tile_bounds(int x, int y) const { return tiling_.TileBounds(x, y); }
   bool HasRecordingAt(int x, int y);
-  bool CanRaster(float contents_scale, const gfx::Rect& content_rect);
+  bool CanRaster(float contents_scale, const gfx::Rect& content_rect) const;
 
   // If this pile contains any valid recordings. May have false positives.
   bool HasRecordings() const { return has_any_recordings_; }
-
-  // If this pile has ever contained any recordings with text.
-  bool has_text() const { return has_text_; }
 
   bool is_solid_color() const { return is_solid_color_; }
   SkColor solid_color() const { return solid_color_; }
@@ -128,7 +124,6 @@ class CC_EXPORT PicturePileBase : public base::RefCounted<PicturePileBase> {
   // A hint about whether there are any recordings. This may be a false
   // positive.
   bool has_any_recordings_;
-  bool has_text_;
   bool is_mask_;
   bool is_solid_color_;
   SkColor solid_color_;
@@ -136,7 +131,6 @@ class CC_EXPORT PicturePileBase : public base::RefCounted<PicturePileBase> {
  private:
   void SetBufferPixels(int buffer_pixels);
 
-  friend class base::RefCounted<PicturePileBase>;
   DISALLOW_COPY_AND_ASSIGN(PicturePileBase);
 };
 

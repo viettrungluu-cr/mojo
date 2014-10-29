@@ -57,6 +57,7 @@ component("base") {
     "android/jni_weak_ref.h",
     "android/library_loader/library_loader_hooks.cc",
     "android/library_loader/library_loader_hooks.h",
+    "android/library_loader/library_load_from_apk_status_codes.h",
     "android/memory_pressure_listener_android.cc",
     "android/memory_pressure_listener_android.h",
     "android/java_handler_thread.cc",
@@ -507,10 +508,12 @@ component("base") {
     "process/process_metrics_win.cc",
     "process/process_posix.cc",
     "process/process_win.cc",
-    "profiler/scoped_profile.cc",
-    "profiler/scoped_profile.h",
     "profiler/alternate_timer.cc",
     "profiler/alternate_timer.h",
+    "profiler/scoped_profile.cc",
+    "profiler/scoped_profile.h",
+    "profiler/scoped_tracker.cc",
+    "profiler/scoped_tracker.h",
     "profiler/tracked_time.cc",
     "profiler/tracked_time.h",
     "rand_util.cc",
@@ -1340,7 +1343,6 @@ test("base_unittests") {
     "//base/test:run_all_unittests",
     "//base/test:test_support",
     "//base/third_party/dynamic_annotations",
-    "//base/third_party/nspr",
     "//testing/gmock",
     "//testing/gtest",
     "//third_party/icu",
@@ -1464,14 +1466,17 @@ if (is_android) {
   }
 
   # GYP: //base.gyp:base_java_application_state
+  # GYP: //base.gyp:base_java_library_load_from_apk_status_codes
   # GYP: //base.gyp:base_java_memory_pressure_level
   java_cpp_enum("base_android_java_enums_srcjar") {
     sources = [
       "android/application_status_listener.h",
+      "android/library_loader/library_load_from_apk_status_codes.h",
       "memory/memory_pressure_listener.h",
     ]
     outputs = [
       "org/chromium/base/ApplicationState.java",
+      "org/chromium/base/library_loader/LibraryLoadFromApkStatusCodes.java",
       "org/chromium/base/MemoryPressureLevel.java",
     ]
   }

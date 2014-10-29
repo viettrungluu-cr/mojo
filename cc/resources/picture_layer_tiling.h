@@ -38,11 +38,13 @@ class CC_EXPORT PictureLayerTilingClient {
   virtual scoped_refptr<Tile> CreateTile(
     PictureLayerTiling* tiling,
     const gfx::Rect& content_rect) = 0;
-  virtual PicturePileImpl* GetPile() = 0;
+  virtual RasterSource* GetRasterSource() = 0;
   virtual gfx::Size CalculateTileSize(
     const gfx::Size& content_bounds) const = 0;
-  virtual const Region* GetInvalidation() = 0;
-  virtual const PictureLayerTiling* GetTwinTiling(
+  // This invalidation region defines the area (if any, it can by null) that
+  // tiles can not be shared between pending and active trees.
+  virtual const Region* GetPendingInvalidation() = 0;
+  virtual const PictureLayerTiling* GetPendingOrActiveTwinTiling(
       const PictureLayerTiling* tiling) const = 0;
   virtual PictureLayerTiling* GetRecycledTwinTiling(
       const PictureLayerTiling* tiling) = 0;

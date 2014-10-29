@@ -249,7 +249,7 @@ scoped_ptr<LayerTreeHostImpl> LayerTreeHostImpl::Create(
     Proxy* proxy,
     RenderingStatsInstrumentation* rendering_stats_instrumentation,
     SharedBitmapManager* shared_bitmap_manager,
-    GpuMemoryBufferManager* gpu_memory_buffer_manager,
+    gpu::GpuMemoryBufferManager* gpu_memory_buffer_manager,
     int id) {
   return make_scoped_ptr(new LayerTreeHostImpl(settings,
                                                client,
@@ -266,7 +266,7 @@ LayerTreeHostImpl::LayerTreeHostImpl(
     Proxy* proxy,
     RenderingStatsInstrumentation* rendering_stats_instrumentation,
     SharedBitmapManager* shared_bitmap_manager,
-    GpuMemoryBufferManager* gpu_memory_buffer_manager,
+    gpu::GpuMemoryBufferManager* gpu_memory_buffer_manager,
     int id)
     : BeginFrameSourceMixIn(),
       client_(client),
@@ -1183,12 +1183,6 @@ void LayerTreeHostImpl::ResetTreesForTesting() {
   recycle_tree_ = nullptr;
 }
 
-void LayerTreeHostImpl::ResetRecycleTreeForTesting() {
-  if (recycle_tree_)
-    recycle_tree_->DetachLayerTree();
-  recycle_tree_ = nullptr;
-}
-
 void LayerTreeHostImpl::EnforceManagedMemoryPolicy(
     const ManagedMemoryPolicy& policy) {
 
@@ -1286,7 +1280,7 @@ void LayerTreeHostImpl::GetPictureLayerImplPairs(
     if (!layer->HasValidTilePriorities())
       continue;
 
-    PictureLayerImpl* twin_layer = layer->GetTwinLayer();
+    PictureLayerImpl* twin_layer = layer->GetPendingOrActiveTwinLayer();
 
     // Ignore the twin layer when tile priorities are invalid.
     // TODO(vmpstr): Iterators should handle this instead. crbug.com/381704
@@ -2991,6 +2985,14 @@ void LayerTreeHostImpl::PinchGestureEnd() {
   if (top_controls_manager_)
     top_controls_manager_->PinchEnd();
   client_->SetNeedsCommitOnImplThread();
+  // When a pinch ends, we may be displaying content cached at incorrect scales,
+  // so updating draw properties and drawing will ensure we are using the right
+  // scales that we want when we're not inside a pinch.
+  active_tree_->set_needs_update_draw_properties();
+  SetNeedsRedraw();
+  // TODO(danakj): Don't set root damage. Just updating draw properties and
+  // getting new tiles rastered should be enough! crbug.com/427423
+  SetFullRootLayerDamage();
 }
 
 static void CollectScrollDeltas(ScrollAndScaleSet* scroll_info,

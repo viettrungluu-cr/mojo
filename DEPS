@@ -30,12 +30,12 @@ vars = {
   'skia_git': 'https://skia.googlesource.com',
   'boringssl_git': 'https://boringssl.googlesource.com',
   'sfntly_revision': '1bdaae8fc788a5ac8936d68bf24f37d977a13dac',
-  'skia_revision': '30b83d45a3af444e6868c638d86442c2ea3e20c6',
+  'skia_revision': '32501a1bd4964576264795ada7e9c3bf572285b3',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling Skia
   # and V8 without interference from each other.
   'v8_branch': 'trunk',
-  'v8_revision': 'fb0f6c03710de36d4f11b8164a76c8a66008f5d9', # from svn revision 24879
+  'v8_revision': 'bfb312d4b40507780e15bfee2e0dc32f1391c4db', # from svn revision 24925
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling ANGLE
   # and whatever else without interference from each other.
@@ -136,7 +136,7 @@ deps_os = {
 
     # For Linux and Chromium OS.
     'src/third_party/cros_system_api':
-     Var('chromium_git') + '/chromiumos/platform/system_api.git' + '@' + '75502d403cfbc60ab1e1c81e8cbe7d45afb6bd0e',
+     Var('chromium_git') + '/chromiumos/platform/system_api.git' + '@' + '7d5f30c6bd012260e5266c6e9624f4fed91eb852',
 
     # Note that this is different from Android's freetype repo.
     'src/third_party/freetype2/src':

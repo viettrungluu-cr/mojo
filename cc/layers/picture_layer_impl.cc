@@ -90,6 +90,8 @@ PictureLayerImpl::PictureLayerImpl(LayerTreeImpl* tree_impl, int id)
 }
 
 PictureLayerImpl::~PictureLayerImpl() {
+  if (twin_layer_)
+    twin_layer_->twin_layer_ = nullptr;
   layer_tree_impl()->UnregisterPictureLayerImpl(this);
 }
 
@@ -110,10 +112,15 @@ void PictureLayerImpl::PushPropertiesTo(LayerImpl* base_layer) {
 
   LayerImpl::PushPropertiesTo(base_layer);
 
-  // When the pending tree pushes to the active tree, the pending twin
-  // becomes recycled.
-  layer_impl->twin_layer_ = nullptr;
-  twin_layer_ = nullptr;
+  // Twin relationships should never change once established.
+  DCHECK_IMPLIES(twin_layer_, twin_layer_ == layer_impl);
+  DCHECK_IMPLIES(twin_layer_, layer_impl->twin_layer_ == this);
+  // The twin relationship does not need to exist before the first
+  // PushPropertiesTo from pending to active layer since before that the active
+  // layer can not have a pile or tilings, it has only been created and inserted
+  // into the tree at that point.
+  twin_layer_ = layer_impl;
+  layer_impl->twin_layer_ = this;
 
   layer_impl->pile_ = pile_;
 
@@ -155,6 +162,11 @@ void PictureLayerImpl::AppendQuads(RenderPass* render_pass,
                                    const Occlusion& occlusion_in_content_space,
                                    AppendQuadsData* append_quads_data) {
   DCHECK(!needs_post_commit_initialization_);
+  // The bounds and the pile size may differ if the pile wasn't updated (ie.
+  // PictureLayer::Update didn't happen). But that should never be the case if
+  // the layer is part of the visible frame, which is why we're appending quads
+  // in the first place
+  DCHECK_EQ(bounds().ToString(), pile_->tiling_size().ToString());
 
   SharedQuadState* shared_quad_state =
       render_pass->CreateAndAppendSharedQuadState();
@@ -163,7 +175,7 @@ void PictureLayerImpl::AppendQuads(RenderPass* render_pass,
     PopulateSharedQuadState(shared_quad_state);
 
     AppendDebugBorderQuad(
-        render_pass, content_bounds(), shared_quad_state, append_quads_data);
+        render_pass, bounds(), shared_quad_state, append_quads_data);
 
     SolidColorLayerImpl::AppendSolidQuads(render_pass,
                                           occlusion_in_content_space,
@@ -179,7 +191,7 @@ void PictureLayerImpl::AppendQuads(RenderPass* render_pass,
   scaled_draw_transform.Scale(SK_MScalar1 / max_contents_scale,
                               SK_MScalar1 / max_contents_scale);
   gfx::Size scaled_content_bounds =
-      gfx::ToCeiledSize(gfx::ScaleSize(content_bounds(), max_contents_scale));
+      gfx::ToCeiledSize(gfx::ScaleSize(bounds(), max_contents_scale));
   gfx::Rect scaled_visible_content_rect =
       gfx::ScaleToEnclosingRect(visible_content_rect(), max_contents_scale);
   scaled_visible_content_rect.Intersect(gfx::Rect(scaled_content_bounds));
@@ -561,10 +573,16 @@ gfx::Rect PictureLayerImpl::GetViewportForTilePriorityInContentSpace() const {
   return visible_rect_in_content_space;
 }
 
-PictureLayerImpl* PictureLayerImpl::GetRecycledTwinLayer() {
-  // TODO(vmpstr): Maintain recycled twin as a member. crbug.com/407418
-  return static_cast<PictureLayerImpl*>(
-      layer_tree_impl()->FindRecycleTreeLayerById(id()));
+PictureLayerImpl* PictureLayerImpl::GetPendingOrActiveTwinLayer() const {
+  if (!twin_layer_ || !twin_layer_->IsOnActiveOrPendingTree())
+    return nullptr;
+  return twin_layer_;
+}
+
+PictureLayerImpl* PictureLayerImpl::GetRecycledTwinLayer() const {
+  if (!twin_layer_ || twin_layer_->IsOnActiveOrPendingTree())
+    return nullptr;
+  return twin_layer_;
 }
 
 void PictureLayerImpl::NotifyTileStateChanged(const Tile* tile) {
@@ -628,19 +646,28 @@ scoped_refptr<Tile> PictureLayerImpl::CreateTile(PictureLayerTiling* tiling,
       flags);
 }
 
-PicturePileImpl* PictureLayerImpl::GetPile() {
+RasterSource* PictureLayerImpl::GetRasterSource() {
   return pile_.get();
 }
 
-const Region* PictureLayerImpl::GetInvalidation() {
-  return &invalidation_;
+const Region* PictureLayerImpl::GetPendingInvalidation() {
+  if (layer_tree_impl()->IsPendingTree())
+    return &invalidation_;
+  DCHECK(layer_tree_impl()->IsActiveTree());
+  if (PictureLayerImpl* twin_layer = GetPendingOrActiveTwinLayer())
+    return &twin_layer->invalidation_;
+  return nullptr;
 }
 
-const PictureLayerTiling* PictureLayerImpl::GetTwinTiling(
+const PictureLayerTiling* PictureLayerImpl::GetPendingOrActiveTwinTiling(
     const PictureLayerTiling* tiling) const {
-  if (!twin_layer_)
+  PictureLayerImpl* twin_layer = GetPendingOrActiveTwinLayer();
+  if (!twin_layer)
     return nullptr;
-  return twin_layer_->tilings_->TilingAtScale(tiling->contents_scale());
+  // TODO(danakj): Remove this when no longer swapping tilings.
+  if (!twin_layer->tilings_)
+    return nullptr;
+  return twin_layer->tilings_->TilingAtScale(tiling->contents_scale());
 }
 
 PictureLayerTiling* PictureLayerImpl::GetRecycledTwinTiling(
@@ -770,8 +797,10 @@ void PictureLayerImpl::SyncFromActiveLayer(const PictureLayerImpl* other) {
 
   bool synced_high_res_tiling = false;
   if (CanHaveTilings()) {
-    synced_high_res_tiling = tilings_->SyncTilings(
-        *other->tilings_, bounds(), invalidation_, MinimumContentsScale());
+    synced_high_res_tiling = tilings_->SyncTilings(*other->tilings_,
+                                                   pile_->tiling_size(),
+                                                   invalidation_,
+                                                   MinimumContentsScale());
   } else {
     RemoveAllTilings();
   }
@@ -791,9 +820,11 @@ void PictureLayerImpl::SyncFromActiveLayer(const PictureLayerImpl* other) {
 
 void PictureLayerImpl::SyncTiling(
     const PictureLayerTiling* tiling) {
+  if (!tilings_)
+    return;
   if (!CanHaveTilingWithScale(tiling->contents_scale()))
     return;
-  tilings_->AddTiling(tiling->contents_scale(), bounds());
+  tilings_->AddTiling(tiling->contents_scale(), pile_->tiling_size());
 
   // If this tree needs update draw properties, then the tiling will
   // get updated prior to drawing or activation.  If this tree does not
@@ -812,6 +843,7 @@ void PictureLayerImpl::SyncTiling(
 void PictureLayerImpl::GetContentsResourceId(
     ResourceProvider::ResourceId* resource_id,
     gfx::Size* resource_size) const {
+  DCHECK_EQ(bounds().ToString(), pile_->tiling_size().ToString());
   gfx::Rect content_rect(bounds());
   PictureLayerTilingSet::CoverageIterator iter(
       tilings_.get(), 1.f, content_rect, ideal_contents_scale_);
@@ -845,16 +877,12 @@ void PictureLayerImpl::DoPostCommitInitialization() {
   if (!tilings_)
     tilings_ = make_scoped_ptr(new PictureLayerTilingSet(this));
 
-  DCHECK(!twin_layer_);
-  twin_layer_ = static_cast<PictureLayerImpl*>(
-      layer_tree_impl()->FindActiveTreeLayerById(id()));
-  if (twin_layer_) {
-    DCHECK(!twin_layer_->twin_layer_);
-    twin_layer_->twin_layer_ = this;
+  PictureLayerImpl* twin_layer = GetPendingOrActiveTwinLayer();
+  if (twin_layer) {
     // If the twin has never been pushed to, do not sync from it.
     // This can happen if this function is called during activation.
-    if (!twin_layer_->needs_post_commit_initialization_)
-      SyncFromActiveLayer(twin_layer_);
+    if (!twin_layer->needs_post_commit_initialization_)
+      SyncFromActiveLayer(twin_layer);
   }
 
   needs_post_commit_initialization_ = false;
@@ -864,12 +892,13 @@ PictureLayerTiling* PictureLayerImpl::AddTiling(float contents_scale) {
   DCHECK(CanHaveTilingWithScale(contents_scale)) <<
       "contents_scale: " << contents_scale;
 
-  PictureLayerTiling* tiling = tilings_->AddTiling(contents_scale, bounds());
+  PictureLayerTiling* tiling =
+      tilings_->AddTiling(contents_scale, pile_->tiling_size());
 
   DCHECK(pile_->HasRecordings());
 
-  if (twin_layer_)
-    twin_layer_->SyncTiling(tiling);
+  if (PictureLayerImpl* twin_layer = GetPendingOrActiveTwinLayer())
+    twin_layer->SyncTiling(tiling);
 
   return tiling;
 }
@@ -1067,8 +1096,8 @@ void PictureLayerImpl::RecalculateRasterScales() {
     // See crbug.com/422341.
     float maximum_scale = draw_properties().maximum_animation_contents_scale;
     if (maximum_scale) {
-      gfx::Size bounds_at_maximum_scale =
-          gfx::ToCeiledSize(gfx::ScaleSize(bounds(), maximum_scale));
+      gfx::Size bounds_at_maximum_scale = gfx::ToCeiledSize(
+          gfx::ScaleSize(pile_->tiling_size(), maximum_scale));
       if (bounds_at_maximum_scale.GetArea() <=
           layer_tree_impl()->device_viewport_size().GetArea())
         can_raster_at_maximum_scale = true;
@@ -1084,11 +1113,11 @@ void PictureLayerImpl::RecalculateRasterScales() {
 
   // If this layer would create zero or one tiles at this content scale,
   // don't create a low res tiling.
-  gfx::Size content_bounds =
-      gfx::ToCeiledSize(gfx::ScaleSize(bounds(), raster_contents_scale_));
-  gfx::Size tile_size = CalculateTileSize(content_bounds);
-  bool tile_covers_bounds = tile_size.width() >= content_bounds.width() &&
-                            tile_size.height() >= content_bounds.height();
+  gfx::Size raster_bounds = gfx::ToCeiledSize(
+      gfx::ScaleSize(pile_->tiling_size(), raster_contents_scale_));
+  gfx::Size tile_size = CalculateTileSize(raster_bounds);
+  bool tile_covers_bounds = tile_size.width() >= raster_bounds.width() &&
+                            tile_size.height() >= raster_bounds.height();
   if (tile_size.IsEmpty() || tile_covers_bounds) {
     low_res_raster_contents_scale_ = raster_contents_scale_;
     return;
@@ -1113,7 +1142,7 @@ void PictureLayerImpl::CleanUpTilingsOnActiveLayer(
       raster_contents_scale_, ideal_contents_scale_);
   float twin_low_res_scale = 0.f;
 
-  PictureLayerImpl* twin = twin_layer_;
+  PictureLayerImpl* twin = GetPendingOrActiveTwinLayer();
   if (twin && twin->CanHaveTilings()) {
     min_acceptable_high_res_scale = std::min(
         min_acceptable_high_res_scale,
@@ -1122,10 +1151,14 @@ void PictureLayerImpl::CleanUpTilingsOnActiveLayer(
         max_acceptable_high_res_scale,
         std::max(twin->raster_contents_scale_, twin->ideal_contents_scale_));
 
-    for (size_t i = 0; i < twin->tilings_->num_tilings(); ++i) {
-      PictureLayerTiling* tiling = twin->tilings_->tiling_at(i);
-      if (tiling->resolution() == LOW_RESOLUTION)
-        twin_low_res_scale = tiling->contents_scale();
+    // TODO(danakj): Remove the tilings_ check when we create them in the
+    // constructor.
+    if (twin->tilings_) {
+      for (size_t i = 0; i < twin->tilings_->num_tilings(); ++i) {
+        PictureLayerTiling* tiling = twin->tilings_->tiling_at(i);
+        if (tiling->resolution() == LOW_RESOLUTION)
+          twin_low_res_scale = tiling->contents_scale();
+      }
     }
   }
 
@@ -1160,7 +1193,8 @@ void PictureLayerImpl::CleanUpTilingsOnActiveLayer(
   PictureLayerImpl* recycled_twin = GetRecycledTwinLayer();
   // Remove tilings on this tree and the twin tree.
   for (size_t i = 0; i < to_remove.size(); ++i) {
-    const PictureLayerTiling* twin_tiling = GetTwinTiling(to_remove[i]);
+    const PictureLayerTiling* twin_tiling =
+        GetPendingOrActiveTwinTiling(to_remove[i]);
     // Only remove tilings from the twin layer if they have
     // NON_IDEAL_RESOLUTION.
     if (twin_tiling && twin_tiling->resolution() == NON_IDEAL_RESOLUTION)
@@ -1185,7 +1219,8 @@ float PictureLayerImpl::MinimumContentsScale() const {
   // then it will end up having less than one pixel of content in that
   // dimension.  Bump the minimum contents scale up in this case to prevent
   // this from happening.
-  int min_dimension = std::min(bounds().width(), bounds().height());
+  int min_dimension =
+      std::min(pile_->tiling_size().width(), pile_->tiling_size().height());
   if (!min_dimension)
     return setting_min;
 
@@ -1318,10 +1353,11 @@ void PictureLayerImpl::AsValueInto(base::debug::TracedValue* state) const {
   state->EndArray();
 
   state->BeginArray("coverage_tiles");
-  for (PictureLayerTilingSet::CoverageIterator iter(tilings_.get(),
-                                                    1.f,
-                                                    gfx::Rect(content_bounds()),
-                                                    ideal_contents_scale_);
+  for (PictureLayerTilingSet::CoverageIterator iter(
+           tilings_.get(),
+           1.f,
+           gfx::Rect(pile_->tiling_size()),
+           ideal_contents_scale_);
        iter;
        ++iter) {
     state->BeginDictionary();

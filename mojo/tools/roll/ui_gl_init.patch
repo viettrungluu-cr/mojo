@@ -1,0 +1,36 @@
+diff --git a/ui/gl/gl_surface.cc b/ui/gl/gl_surface.cc
+index 620cee7..4459d48 100644
+--- a/ui/gl/gl_surface.cc
++++ b/ui/gl/gl_surface.cc
+@@ -28,7 +28,7 @@ base::LazyInstance<base::ThreadLocalPointer<GLSurface> >::Leaky
+ }  // namespace
+ 
+ // static
+-bool GLSurface::InitializeOneOff() {
++bool GLSurface::InitializeOneOff(GLImplementation impl) {
+   DCHECK_EQ(kGLImplementationNone, GetGLImplementation());
+ 
+   TRACE_EVENT0("gpu", "GLSurface::InitializeOneOff");
+@@ -40,7 +40,8 @@ bool GLSurface::InitializeOneOff() {
+   CommandLine* cmd = CommandLine::ForCurrentProcess();
+ 
+   // The default implementation is always the first one in list.
+-  GLImplementation impl = allowed_impls[0];
++  if (impl == kGLImplementationNone)
++    impl = allowed_impls[0];
+   bool fallback_to_osmesa = false;
+   if (cmd->HasSwitch(switches::kOverrideUseGLWithOSMesaForTests)) {
+     impl = kGLImplementationOSMesaGL;
+diff --git a/ui/gl/gl_surface.h b/ui/gl/gl_surface.h
+index 54bcc37..d458063 100644
+--- a/ui/gl/gl_surface.h
++++ b/ui/gl/gl_surface.h
+@@ -72,7 +72,7 @@ class GL_EXPORT GLSurface : public base::RefCounted<GLSurface> {
+   virtual bool PostSubBuffer(int x, int y, int width, int height);
+ 
+   // Initialize GL bindings.
+-  static bool InitializeOneOff();
++  static bool InitializeOneOff(GLImplementation = kGLImplementationNone);
+ 
+   // Unit tests should call these instead of InitializeOneOff() to set up
+   // GL bindings appropriate for tests.
