@@ -11,6 +11,7 @@ source_set("bitmap_uploader") {
   public_deps = [
     "//base",
     "//mojo/public/c/gles2",
+    "//mojo/public/gles2:for_shared_library",
     "//mojo/services/public/interfaces/gpu",
     "//mojo/services/public/interfaces/surfaces",
   ]

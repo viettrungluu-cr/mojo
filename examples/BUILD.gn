@@ -12,6 +12,7 @@ group("examples") {
     "//examples/content_handler_demo",
     "//examples/echo",
     "//examples/http_server",
+    "//examples/pdf_viewer",
     "//examples/png_viewer",
     "//examples/sample_app",
     "//examples/surfaces_app",

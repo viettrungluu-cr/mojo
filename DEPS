@@ -28,6 +28,7 @@ vars = {
   'libcxxabi_revision': '4ad1009ab3a59fa7a6896d74d5e4de5885697f95',
   'chromium_git': 'https://chromium.googlesource.com',
   'skia_git': 'https://skia.googlesource.com',
+  'pdfium_git': 'https://pdfium.googlesource.com',
   'boringssl_git': 'https://boringssl.googlesource.com',
   'sfntly_revision': '1bdaae8fc788a5ac8936d68bf24f37d977a13dac',
   'skia_revision': '32501a1bd4964576264795ada7e9c3bf572285b3',
@@ -44,6 +45,10 @@ vars = {
   # the commit queue can handle CLs rolling build tools
   # and whatever else without interference from each other.
   'buildtools_revision': '56bc51aff4175d3fa27dcd0faa2c345ab046c8a5',
+  # Three lines of non-changing comments so that
+  # the commit queue can handle CLs rolling PDFium
+  # and whatever else without interference from each other.
+  'pdfium_revision': '767aebbef641a89498deebc29369a078207b4dcc',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling BoringSSL
   # and whatever else without interference from each other.
@@ -122,6 +127,9 @@ deps = {
 
   'src/third_party/mesa/src':
    Var('chromium_git') + '/chromium/deps/mesa.git' + '@' + '9731cb962963bca8a05f3d0f6ea40c3a781f0537',
+
+  'src/third_party/pdfium':
+   'https://pdfium.googlesource.com/pdfium.git' + '@' +  Var('pdfium_revision'),
 
   'src/third_party/boringssl/src':
    'https://boringssl.googlesource.com/boringssl.git' + '@' +  Var('boringssl_revision'),
