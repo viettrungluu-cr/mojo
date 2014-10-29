@@ -4,21 +4,36 @@
 
 import("//build/go/rules.gni")
 
-group("go") {
-  deps = [
-    ":system_test",
-  ]
-}
-
-go_test_binary("system_test") {
-  sources = [
-    "tests/system_test.go",
-  ]
-  static_library_sources = [
-    "c_embedder/c_embedder.cc",
-    "c_embedder/c_embedder.h",
-  ]
-  deps = [
-    "//mojo/edk/system",
-  ]
+if (is_android) {
+   group("go") {
+     deps = [
+       ":go_sample_app",
+     ]
+  }
+  go_shared_library("go_sample_app") {
+    sources = [
+      "sample_app/app.go",
+    ]
+    deps = [
+      "//mojo/public/c/system:for_shared_library",
+    ]
+  }
+} else if (is_linux) {
+  group("go") {
+      deps = [
+        ":system_test",
+      ]
+  }
+  go_test_binary("system_test") {
+    sources = [
+      "tests/system_test.go",
+    ]
+    static_library_sources = [
+      "c_embedder/c_embedder.cc",
+      "c_embedder/c_embedder.h",
+    ]
+    deps = [
+      "//mojo/edk/system",
+    ]
+  }  
 }

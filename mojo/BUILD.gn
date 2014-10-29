@@ -35,15 +35,16 @@ group("mojo") {
     ]
   }
 
+  if (mojo_use_go) {
+    deps += [
+      "//mojo/go",
+    ]
+  }
+
   if (is_linux) {
     deps += [
       "//mojo/python",
     ]
-    if (mojo_use_go) {
-      deps += [
-        "//mojo/go",
-      ]
-    }
   }
 }
 
