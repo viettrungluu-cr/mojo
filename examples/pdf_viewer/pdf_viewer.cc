@@ -21,8 +21,6 @@
 #include "mojo/services/public/interfaces/input_events/input_events.mojom.h"
 #include "mojo/services/public/interfaces/input_events/input_key_codes.mojom.h"
 #include "third_party/pdfium/fpdfsdk/include/fpdf_ext.h"
-#include "third_party/pdfium/fpdfsdk/include/fpdfformfill.h"
-#include "third_party/pdfium/fpdfsdk/include/fpdftext.h"
 #include "third_party/pdfium/fpdfsdk/include/fpdfview.h"
 #include "v8/include/v8.h"
 
@@ -124,7 +122,6 @@ class PDFView : public ViewManagerDelegate, public ViewObserver {
       return;
 
     FPDF_PAGE page = FPDF_LoadPage(doc_, current_page_);
-    FPDF_TEXTPAGE text_page = FPDFText_LoadPage(page);
     int width = static_cast<int>(FPDF_GetPageWidth(page));
     int height = static_cast<int>(FPDF_GetPageHeight(page));
 
@@ -138,7 +135,6 @@ class PDFView : public ViewManagerDelegate, public ViewObserver {
     FPDF_RenderPageBitmap(f_bitmap, page, 0, 0, width, height, 0, 0);
     FPDFBitmap_Destroy(f_bitmap);
 
-    FPDFText_ClosePage(text_page);
     FPDF_ClosePage(page);
 
     bitmap_uploader_->SetBitmap(width, height, bitmap.Pass(),

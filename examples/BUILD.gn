@@ -12,7 +12,6 @@ group("examples") {
     "//examples/content_handler_demo",
     "//examples/echo",
     "//examples/http_server",
-    "//examples/pdf_viewer",
     "//examples/png_viewer",
     "//examples/sample_app",
     "//examples/surfaces_app",
@@ -30,5 +29,9 @@ group("examples") {
       "//examples/window_manager",
       "//examples/wm_flow",
     ]
+  }
+
+  if (!is_android) {
+    "//examples/pdf_viewer",  
   }
 }
