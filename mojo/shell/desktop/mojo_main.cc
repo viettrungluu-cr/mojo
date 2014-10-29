@@ -105,6 +105,21 @@ bool ConfigureURLMappings(const std::string& mappings,
   return true;
 }
 
+bool isArgsFor(const std::string& arg, std::string* value) {
+  const std::string kArgsForSwitches[] = {
+    "-" + std::string(switches::kArgsFor),
+    "--" + std::string(switches::kArgsFor),
+  };
+  for (size_t i = 0; i < arraysize(kArgsForSwitches); i++) {
+    std::string argsfor_switch(kArgsForSwitches[i]);
+    if (arg.compare(0, argsfor_switch.size(), argsfor_switch) == 0) {
+      *value = arg.substr(argsfor_switch.size() + 1, std::string::npos);
+      return true;
+    }
+  }
+  return false;
+}
+
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -157,9 +172,13 @@ int main(int argc, char** argv) {
         return 0;
       }
 
-      for (const auto& kv : command_line.GetSwitches()) {
-        if (kv.first == switches::kArgsFor)
-          GetAppURLAndSetArgs(kv.second, &shell_context);
+      // The mojo_shell --args-for command-line switch is handled specially
+      // because it can appear more than once. The base::CommandLine class
+      // collapses multiple occurrences of the same switch.
+      for (int i = 1; i < argc; i++) {
+        std::string argsForValue;
+        if (isArgsFor(argv[i], &argsForValue))
+          GetAppURLAndSetArgs(argsForValue, &shell_context);
       }
 
       message_loop.PostTask(FROM_HERE, base::Bind(RunApps, &shell_context));
