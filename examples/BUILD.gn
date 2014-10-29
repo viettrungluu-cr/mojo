@@ -11,7 +11,6 @@ group("examples") {
     "//examples/apptest",
     "//examples/content_handler_demo",
     "//examples/echo",
-    "//examples/http_server",
     "//examples/png_viewer",
     "//examples/sample_app",
     "//examples/surfaces_app",

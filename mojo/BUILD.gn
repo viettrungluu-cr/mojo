@@ -21,6 +21,7 @@ group("mojo") {
     "//mojo/public",
     "//mojo/services",
     "//mojo/tools/package_manager",
+    "//services",
   ]
 
   if (use_prebuilt_mojo_shell) {
