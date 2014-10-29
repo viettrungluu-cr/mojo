@@ -32,6 +32,8 @@ group("examples") {
   }
 
   if (!is_android) {
-    "//examples/pdf_viewer",  
+    deps += [
+      "//examples/pdf_viewer",  
+    ]
   }
 }
