@@ -86,4 +86,16 @@ bool Converter<mojo::Handle>::FromV8(v8::Isolate* isolate,
   return true;
 }
 
+v8::Handle<v8::Value> Converter<mojo::MessagePipeHandle>::ToV8(
+    v8::Isolate* isolate, mojo::MessagePipeHandle val) {
+  return Converter<mojo::Handle>::ToV8(isolate, val);
+}
+
+bool Converter<mojo::MessagePipeHandle>::FromV8(v8::Isolate* isolate,
+                                                v8::Handle<v8::Value> val,
+                                                mojo::MessagePipeHandle* out) {
+  return Converter<mojo::Handle>::FromV8(isolate, val, out);
+}
+
+
 }  // namespace gin

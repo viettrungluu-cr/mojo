@@ -65,6 +65,15 @@ struct Converter<mojo::Handle> {
                      mojo::Handle* out);
 };
 
+template<>
+struct Converter<mojo::MessagePipeHandle> {
+  static v8::Handle<v8::Value> ToV8(v8::Isolate* isolate,
+                                    mojo::MessagePipeHandle val);
+  static bool FromV8(v8::Isolate* isolate,
+                     v8::Handle<v8::Value> val,
+                     mojo::MessagePipeHandle* out);
+};
+
 // We need to specialize the normal gin::Handle converter in order to handle
 // converting |null| to a wrapper for an empty mojo::Handle.
 template<>

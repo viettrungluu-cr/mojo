@@ -8,7 +8,9 @@
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/scoped_vector.h"
 #include "mojo/public/cpp/application/application_delegate.h"
+#include "mojo/public/cpp/bindings/interface_request.h"
 #include "mojo/public/cpp/system/message_pipe.h"
+#include "mojo/public/interfaces/application/service_provider.mojom.h"
 
 namespace mojo {
 
@@ -37,9 +39,9 @@ class ApplicationDelegateImpl : public ApplicationDelegate {
   // Remove app from the AppVector; destroys the app.
   void QuitJSApp(JSApp *app);
 
-  void ConnectToService(ScopedMessagePipeHandle pipe_handle,
-                        const std::string& application_url,
-                        const std::string& interface_name);
+  // Use the shell to connect to a ServiceProvider for application_url.
+  void ConnectToApplication(const std::string& application_url,
+                            InterfaceRequest<ServiceProvider> request);
 
  protected:
   // ApplicationDelegate:
@@ -47,7 +49,7 @@ class ApplicationDelegateImpl : public ApplicationDelegate {
 
  private:
   typedef ScopedVector<JSApp> AppVector;
-  ApplicationImpl* application_impl_;
+  ApplicationImpl* application_impl_;  // Owns the shell used by all JSApps.
   AppVector app_vector_;
 };
 

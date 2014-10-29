@@ -30,8 +30,11 @@ v8::Local<v8::Value> MojoInternals::GetModule(JSApp* js_app,
 
   if (templ.IsEmpty()) {
     templ = gin::ObjectTemplateBuilder(isolate)
-                .SetMethod("connectToService",
-                           base::Bind(&JSApp::ConnectToService,
+                .SetMethod("requestorMessagePipeHandle",
+                           base::Bind(&JSApp::RequestorMessagePipeHandle,
+                                      base::Unretained(js_app)))
+                .SetMethod("connectToApplication",
+                           base::Bind(&JSApp::ConnectToApplication,
                                       base::Unretained(js_app)))
                 .SetMethod("quit",
                            base::Bind(&JSApp::Quit, base::Unretained(js_app)))

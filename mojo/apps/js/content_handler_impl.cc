@@ -14,9 +14,11 @@ namespace apps {
 class ContentHandlerJSApp : public JSApp {
  public:
   ContentHandlerJSApp(ApplicationDelegateImpl* app_delegate_impl,
-                      URLResponsePtr content)
+                      URLResponsePtr content,
+                      InterfaceRequest<ServiceProvider> sp)
       : JSApp(app_delegate_impl),
-        content_(content.Pass()) {
+        content_(content.Pass()),
+        requestor_service_provider_(sp.Pass()) {
   }
 
   bool Load(std::string* source, std::string* file_name) override {
@@ -26,8 +28,13 @@ class ContentHandlerJSApp : public JSApp {
     return common::BlockingCopyToString(content_->body.Pass(), source);
   }
 
+  virtual MessagePipeHandle RequestorMessagePipeHandle() override {
+    return requestor_service_provider_.PassMessagePipe().release();
+  }
+
  private:
   URLResponsePtr content_;
+  InterfaceRequest<ServiceProvider> requestor_service_provider_;
 };
 
 
@@ -41,9 +48,9 @@ ContentHandlerImpl::~ContentHandlerImpl() {
 void ContentHandlerImpl::OnConnect(
     const mojo::String& requestor_url,
     URLResponsePtr content,
-    InterfaceRequest<ServiceProvider> service_provider) {
+    InterfaceRequest<ServiceProvider> sp) {
   scoped_ptr<JSApp> js_app(
-      new ContentHandlerJSApp(app_delegate_impl_, content.Pass()));
+      new ContentHandlerJSApp(app_delegate_impl_, content.Pass(), sp.Pass()));
   app_delegate_impl_->StartJSApp(js_app.Pass());
 }
 

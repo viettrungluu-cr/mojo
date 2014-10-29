@@ -38,9 +38,14 @@ class JSApp {
   // Called by the JS mojo module to quit this JS app. See mojo.js.
   void Quit();
 
-  // Called by the JS mojo module to connect to a Mojo service.
-  Handle ConnectToService(const std::string& application_url,
-                          const std::string& interface_name);
+  // Called by the JS mojo module to connect to a Mojo application.
+  MessagePipeHandle ConnectToApplication(const std::string& application_url);
+
+  // Called by the JS mojo module to retrieve the ServiceProvider message
+  // pipe handle passed to the JS content handler's OnConnect() method.
+  // If this app was not launched by the content handler then return an
+  // invalid Mojo handle.
+  virtual MessagePipeHandle RequestorMessagePipeHandle() = 0;
 
  private:
   void Run();

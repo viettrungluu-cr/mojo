@@ -27,6 +27,10 @@ class StandaloneJSApp : public JSApp {
     return ReadFileToString(path_, source);
   }
 
+  virtual MessagePipeHandle RequestorMessagePipeHandle() override {
+    return MessagePipeHandle();
+  }
+
  private:
   base::FilePath path_;
 };

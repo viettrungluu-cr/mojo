@@ -41,15 +41,12 @@ void ApplicationDelegateImpl::QuitJSApp(JSApp* app) {
     base::MessageLoop::current()->QuitNow();
 }
 
-void ApplicationDelegateImpl::ConnectToService(
-    ScopedMessagePipeHandle pipe_handle,
+void ApplicationDelegateImpl::ConnectToApplication(
     const std::string& application_url,
-    const std::string& interface_name) {
+    InterfaceRequest<ServiceProvider> request) {
   CHECK(application_impl_);
-  ServiceProvider* service_provider =
-      application_impl_->ConnectToApplication(application_url)
-          ->GetServiceProvider();
-  service_provider->ConnectToService(interface_name, pipe_handle.Pass());
+  application_impl_->shell()->ConnectToApplication(application_url,
+                                                   request.Pass());
 }
 
 }  // namespace apps

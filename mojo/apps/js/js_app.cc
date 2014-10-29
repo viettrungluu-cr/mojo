@@ -48,21 +48,23 @@ void JSApp::Quit() {
       FROM_HERE, base::Bind(&JSApp::Terminate, base::Unretained(this)));
 }
 
-Handle JSApp::ConnectToService(const std::string& application_url,
-                               const std::string& interface_name) {
+MessagePipeHandle JSApp::ConnectToApplication(
+    const std::string& application_url) {
   CHECK(on_js_app_thread());
   MessagePipe pipe;
+  InterfaceRequest<ServiceProvider> request =
+      MakeRequest<ServiceProvider>(pipe.handle1.Pass());
 
   app_delegate_impl_task_runner_->PostTask(
       FROM_HERE,
-      base::Bind(&ApplicationDelegateImpl::ConnectToService,
+      base::Bind(&ApplicationDelegateImpl::ConnectToApplication,
                  base::Unretained(app_delegate_impl_),
-                 base::Passed(pipe.handle1.Pass()),
                  application_url,
-                 interface_name));
+                 base::Passed(request.Pass())));
 
-  return pipe.handle0.release();
+  return pipe.handle0.Pass().release();
 }
+
 
 void JSApp::Run() {
   CHECK(!js_app_task_runner_.get() && !on_app_delegate_impl_thread());

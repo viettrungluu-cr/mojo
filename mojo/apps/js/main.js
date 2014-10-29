@@ -25,7 +25,7 @@ define("test", [
   "console"
 ], function(mojo, core, connection, support, net, loader, console) {
 
-  var networkService = mojo.connectToService(
+  var networkService = mojo.shell().connectToService(
       "mojo:network_service", net.NetworkService);
 
   var urlLoaderPipe = core.createMessagePipe();
