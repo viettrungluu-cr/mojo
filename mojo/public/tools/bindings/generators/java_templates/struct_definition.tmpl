@@ -187,11 +187,13 @@ if (decoder{{level+1}} == null) {
             return false;
         if (getClass() != object.getClass())
             return false;
+{% if struct.fields|length %}
         {{struct|name}} other = ({{struct|name}}) object;
-{% for field in struct.fields %}
+{%   for field in struct.fields %}
         if ({{inequality(field.kind, field|name, 'other.'~field|name)}})
             return false;
-{% endfor %}
+{%   endfor %}
+{% endif %}
         return true;
     }
 
@@ -201,7 +203,7 @@ if (decoder{{level+1}} == null) {
     @Override
     public int hashCode() {
         final int prime = 31;
-        int result = 1;
+        int result = prime + getClass().hashCode();
 {% for field in struct.fields %}
         result = prime * result + {{hash(field.kind, field|name)}};
 {% endfor %}
