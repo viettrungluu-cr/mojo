@@ -6,10 +6,9 @@
 
 #include "mojo/public/cpp/application/application_delegate.h"
 #include "mojo/public/cpp/application/application_impl.h"
+#include "mojo/public/cpp/environment/environment.h"
 #include "mojo/public/cpp/environment/logging.h"
 #include "mojo/public/cpp/system/message_pipe.h"
-#include "mojo/public/cpp/utility/lib/thread_local.h"
-#include "mojo/public/cpp/utility/run_loop.h"
 
 namespace mojo {
 namespace test {
@@ -18,9 +17,6 @@ namespace {
 
 // This shell handle is shared by multiple test application instances.
 MessagePipeHandle g_shell_handle;
-
-// TODO(msw): Support base::MessageLoop environments.
-internal::ThreadLocalPointer<RunLoop> test_run_loop;
 
 }  // namespace
 
@@ -46,7 +42,7 @@ ApplicationTestBase::~ApplicationTestBase() {
 
 void ApplicationTestBase::SetUp() {
   // A run loop is needed for ApplicationImpl initialization and communication.
-  test_run_loop.Set(new RunLoop());
+  Environment::InstantiateDefaultRunLoop();
 
   // New applications are constructed for each test to avoid persisting state.
   application_impl_ = new ApplicationImpl(GetApplicationDelegate(),
@@ -59,8 +55,7 @@ void ApplicationTestBase::SetUp() {
 void ApplicationTestBase::TearDown() {
   SetShellHandle(application_impl_->UnbindShell());
   delete application_impl_;
-  delete test_run_loop.Get();
-  test_run_loop.Set(nullptr);
+  Environment::DestroyDefaultRunLoop();
 }
 
 }  // namespace test

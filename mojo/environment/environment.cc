@@ -4,6 +4,7 @@
 
 #include "mojo/public/cpp/environment/environment.h"
 
+#include "base/logging.h"
 #include "mojo/environment/default_async_waiter_impl.h"
 #include "mojo/environment/default_logger_impl.h"
 
@@ -31,6 +32,18 @@ const MojoAsyncWaiter* Environment::GetDefaultAsyncWaiter() {
 // static
 const MojoLogger* Environment::GetDefaultLogger() {
   return internal::GetDefaultLoggerImpl();
+}
+
+// static
+void Environment::InstantiateDefaultRunLoop() {
+  // TODO(msw): Support the base::MessageLoop/RunLoop Chromium-environment.
+  NOTIMPLEMENTED();
+}
+
+// static
+void Environment::DestroyDefaultRunLoop() {
+  // TODO(msw): Support the base::MessageLoop/RunLoop Chromium-environment.
+  NOTIMPLEMENTED();
 }
 
 }  // namespace mojo
