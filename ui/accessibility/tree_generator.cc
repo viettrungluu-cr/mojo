@@ -4,6 +4,7 @@
 
 #include "ui/accessibility/tree_generator.h"
 
+#include "base/logging.h"
 #include "ui/accessibility/ax_serializable_tree.h"
 #include "ui/accessibility/ax_tree.h"
 
