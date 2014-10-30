@@ -133,9 +133,11 @@ class FakeExternalApplication {
   // application_impl is the the actual implementation to be registered.
   void Register(scoped_ptr<InterfaceImpl<Application>> application_impl,
                 base::Closure register_complete_callback) {
-    connection_->Register(GURL(url_), &ptr_, register_complete_callback);
+    connection_->Register(GURL(url_),
+                          base::Bind(&FakeExternalApplication::OnRegister,
+                                     base::Unretained(this),
+                                     register_complete_callback));
     application_impl_ = application_impl.Pass();
-    ptr_.set_client(application_impl_.get());
   }
 
   void ConnectToAppByUrl(std::string app_url) {
@@ -146,6 +148,12 @@ class FakeExternalApplication {
   const std::string& url() { return url_; }
 
  private:
+  void OnRegister(base::Closure complete_callback, ShellPtr shell) {
+    ptr_ = shell.Pass();
+    ptr_.set_client(application_impl_.get());
+    complete_callback.Run();
+  }
+
   const std::string url_;
   scoped_ptr<InterfaceImpl<Application>> application_impl_;
   ShellPtr ptr_;

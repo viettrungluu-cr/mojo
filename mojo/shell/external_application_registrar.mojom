@@ -9,10 +9,10 @@ module mojo {
 // This interface allows applications running outside the auspices of a Shell
 // to request registration at the given application_url.
 // The shell implementing this interface will make the calling application
-// available to other apps at that URL and bind the provided Shell& to
+// available to other apps at that URL and pass back a Shell bound to
 // an impl capable of servicing the external application's connection requests.
 interface ExternalApplicationRegistrar {
-  Register(string application_url, Shell& shell) => ();
+  Register(string application_url) => (Shell shell);
 };
 
 }

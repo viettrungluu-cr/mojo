@@ -52,11 +52,9 @@ void ExternalApplicationRegistrarConnection::Connect(
 
 void ExternalApplicationRegistrarConnection::Register(
     const GURL& app_url,
-    ShellPtr* shell,
-    base::Closure register_complete_callback) {
+    base::Callback<void(ShellPtr)> register_complete_callback) {
   DCHECK(!client_socket_);
-  registrar_->Register(
-      String::From(app_url), GetProxy(shell), register_complete_callback);
+  registrar_->Register(String::From(app_url), register_complete_callback);
 }
 
 void ExternalApplicationRegistrarConnection::OnConnect(

@@ -55,9 +55,9 @@ class ExternalApplicationListenerPosix::RegistrarImpl
   embedder::ChannelInit channel_init;
 
  private:
-  void Register(const String& app_url,
-                InterfaceRequest<Shell> shell,
-                const mojo::Closure& callback) override;
+  virtual void Register(
+      const String& app_url,
+      const mojo::Callback<void(ShellPtr)>& callback) override;
 
   const RegisterCallback register_callback_;
 };
@@ -190,10 +190,10 @@ void ExternalApplicationListenerPosix::RegistrarImpl::OnConnectionError() {
 
 void ExternalApplicationListenerPosix::RegistrarImpl::Register(
     const String& app_url,
-    InterfaceRequest<Shell> shell,
-    const mojo::Closure& callback) {
-  register_callback_.Run(app_url.To<GURL>(), shell.PassMessagePipe());
-  callback.Run();
+    const mojo::Callback<void(ShellPtr)>& callback) {
+  MessagePipe pipe;
+  register_callback_.Run(app_url.To<GURL>(), pipe.handle0.Pass());
+  callback.Run(MakeProxy<Shell>(pipe.handle1.Pass()));
 }
 
 }  // namespace shell

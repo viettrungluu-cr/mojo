@@ -41,12 +41,8 @@ class ExternalApplicationRegistrarConnection : public ErrorHandler {
   void Connect(const CompletionCallback& callback);
 
   // Registers this app with the shell at the provided URL.
-  // shell is not ready for use until register_complete_callback fires.
-  // TODO(cmasone): Once the pipe for shell can be placed in a FIFO relationship
-  // with the one underlying registrar_, the callback becomes unneeded.
   void Register(const GURL& app_url,
-                ShellPtr* shell,
-                base::Closure register_complete_callback);
+                base::Callback<void(ShellPtr)> register_complete_callback);
 
  private:
   // Handles the result of Connect(). If it was successful, promotes the socket
