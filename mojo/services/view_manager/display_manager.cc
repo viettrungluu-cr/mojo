@@ -113,6 +113,10 @@ void DisplayManager::SchedulePaint(const ServerView* view,
   }
 }
 
+void DisplayManager::SetViewportSize(const gfx::Size& size) {
+  native_viewport_->SetSize(Size::From(size));
+}
+
 void DisplayManager::OnCreatedNativeViewport(uint64_t native_viewport_id) {
 }
 

@@ -45,6 +45,8 @@ class MOJO_VIEW_MANAGER_EXPORT DisplayManager
   // Schedules a paint for the specified region of the specified view.
   void SchedulePaint(const ServerView* view, const gfx::Rect& bounds);
 
+  void SetViewportSize(const gfx::Size& size);
+
   // See description above field for details.
   bool in_setup() const { return in_setup_; }
 

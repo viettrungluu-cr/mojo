@@ -81,6 +81,8 @@ class WindowManagerApp
   void FocusWindow(Id view);
   void ActivateWindow(Id view);
 
+  void SetViewportSize(const gfx::Size&);
+
   bool IsReady() const;
 
   // A client of this object will use this accessor to gain access to the

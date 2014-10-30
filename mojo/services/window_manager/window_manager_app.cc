@@ -365,6 +365,10 @@ void WindowManagerApp::Unregister(View* view) {
   view_id_to_window_map_.erase(it);
 }
 
+void WindowManagerApp::SetViewportSize(const gfx::Size& size) {
+  window_manager_client_->SetViewportSize(Size::From(size));
+}
+
 void WindowManagerApp::LaunchViewManager(ApplicationImpl* app) {
   // TODO(sky): figure out logic if this connection goes away.
   view_manager_client_factory_.reset(

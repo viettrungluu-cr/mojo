@@ -6,6 +6,7 @@
 
 #include "base/logging.h"
 #include "base/stl_util.h"
+#include "mojo/converters/geometry/geometry_type_converters.h"
 #include "mojo/converters/input_events/input_events_type_converters.h"
 #include "mojo/public/cpp/application/application_connection.h"
 #include "mojo/public/interfaces/application/service_provider.mojom.h"
@@ -26,6 +27,10 @@ class WindowManagerInternalClientImpl
   // WindowManagerInternalClient:
   void DispatchInputEventToView(Id transport_view_id, EventPtr event) override {
     real_client_->DispatchInputEventToView(transport_view_id, event.Pass());
+  }
+
+  void SetViewportSize(SizePtr size) override {
+    real_client_->SetViewportSize(size.Pass());
   }
 
   // InterfaceImpl:
@@ -322,6 +327,11 @@ void ConnectionManager::OnViewPropertyChanged(
     pair.second->ProcessViewPropertyChanged(
         view, name, new_data, IsChangeSource(pair.first));
   }
+}
+
+void ConnectionManager::SetViewportSize(SizePtr size) {
+  gfx::Size new_size = size.To<gfx::Size>();
+  display_manager_.SetViewportSize(new_size);
 }
 
 void ConnectionManager::DispatchInputEventToView(Id transport_view_id,

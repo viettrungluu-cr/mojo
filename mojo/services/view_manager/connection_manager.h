@@ -177,17 +177,17 @@ class MOJO_VIEW_MANAGER_EXPORT ConnectionManager
                              const std::vector<uint8_t>* new_data) override;
 
   // WindowManagerInternalClient:
-  virtual void DispatchInputEventToView(Id transport_view_id,
-                                        EventPtr event) override;
+  void DispatchInputEventToView(Id transport_view_id,
+                                EventPtr event) override;
+  void SetViewportSize(SizePtr size) override;
 
   // InterfaceFactory<ViewManagerService>:
-  virtual void Create(ApplicationConnection* connection,
-                      InterfaceRequest<ViewManagerService> request) override;
+  void Create(ApplicationConnection* connection,
+              InterfaceRequest<ViewManagerService> request) override;
 
   // InterfaceFactory<WindowManagerInternalClient>:
-  virtual void Create(
-      ApplicationConnection* connection,
-      InterfaceRequest<WindowManagerInternalClient> request) override;
+  void Create(ApplicationConnection* connection,
+              InterfaceRequest<WindowManagerInternalClient> request) override;
 
   // ErrorHandler:
   void OnConnectionError() override;
