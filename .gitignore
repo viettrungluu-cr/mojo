@@ -16,7 +16,7 @@ v8.log
 /build/util/LASTCHANGE*
 /build/linux/bin/eu-strip
 /buildtools
-# The Chrome OS build creates a /c symlink due to http://crbug.com/54866.	
+# The Chrome OS build creates a /c symlink due to http://crbug.com/54866.
 # TODO(vtl): Check if this is still true.
 /c
 /mojo/public/tools/prebuilt/
