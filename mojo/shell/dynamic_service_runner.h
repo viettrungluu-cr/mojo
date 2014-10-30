@@ -7,6 +7,7 @@
 
 #include "base/callback_forward.h"
 #include "base/memory/scoped_ptr.h"
+#include "base/native_library.h"
 #include "mojo/public/cpp/system/core.h"
 
 namespace base {
@@ -30,6 +31,15 @@ class DynamicServiceRunner {
   virtual void Start(const base::FilePath& app_path,
                      ScopedMessagePipeHandle service_handle,
                      const base::Closure& app_completed_callback) = 0;
+
+  // Loads the service in the DSO specificed by |app_path| and prepares it for
+  // execution. Runs the DSO's exported function MojoMain().
+  // The NativeLibrary is returned and ownership transferred to the caller.
+  // This is so if it is unloaded at all, this can be done safely after this
+  // thread is destroyed and any thread-local destructors have been executed.
+  static base::NativeLibrary LoadAndRunService(
+      const base::FilePath& app_path,
+      ScopedMessagePipeHandle service_handle);
 };
 
 class DynamicServiceRunnerFactory {

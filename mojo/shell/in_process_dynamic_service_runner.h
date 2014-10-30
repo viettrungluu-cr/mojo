@@ -8,7 +8,6 @@
 #include "base/callback.h"
 #include "base/files/file_path.h"
 #include "base/macros.h"
-#include "base/scoped_native_library.h"
 #include "base/threading/simple_thread.h"
 #include "mojo/shell/dynamic_service_runner.h"
 
@@ -37,7 +36,7 @@ class InProcessDynamicServiceRunner
   ScopedMessagePipeHandle service_handle_;
   base::Callback<bool(void)> app_completed_callback_runner_;
 
-  base::ScopedNativeLibrary app_library_;
+  base::NativeLibrary app_library_;
   scoped_ptr<base::DelegateSimpleThread> thread_;
 
   DISALLOW_COPY_AND_ASSIGN(InProcessDynamicServiceRunner);

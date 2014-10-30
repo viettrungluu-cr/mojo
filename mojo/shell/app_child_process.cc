@@ -13,7 +13,6 @@
 #include "base/memory/ref_counted.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/message_loop/message_loop.h"
-#include "base/scoped_native_library.h"
 #include "base/single_thread_task_runner.h"
 #include "base/synchronization/waitable_event.h"
 #include "base/threading/thread.h"
@@ -23,6 +22,7 @@
 #include "mojo/edk/embedder/simple_platform_support.h"
 #include "mojo/public/cpp/system/core.h"
 #include "mojo/shell/app_child_process.mojom.h"
+#include "mojo/shell/dynamic_service_runner.h"
 
 namespace mojo {
 namespace shell {
@@ -226,30 +226,9 @@ class AppChildControllerImpl : public InterfaceImpl<AppChildController> {
     DVLOG(2) << "Loading/running Mojo app from " << app_path.value()
              << " out of process";
 
-    do {
-      base::NativeLibraryLoadError load_error;
-      base::ScopedNativeLibrary app_library(
-          base::LoadNativeLibrary(app_path, &load_error));
-      if (!app_library.is_valid()) {
-        LOG(ERROR) << "Failed to load library (error: " << load_error.ToString()
-                   << ")";
-        break;
-      }
-
-      typedef MojoResult (*MojoMainFunction)(MojoHandle);
-      MojoMainFunction main_function = reinterpret_cast<MojoMainFunction>(
-          app_library.GetFunctionPointer("MojoMain"));
-      if (!main_function) {
-        LOG(ERROR) << "Entrypoint MojoMain not found";
-        break;
-      }
-
-      // TODO(vtl): Report the result back to our parent process.
-      // |MojoMain()| takes ownership of the service handle.
-      MojoResult result = main_function(service.release().value());
-      if (result < MOJO_RESULT_OK)
-        LOG(ERROR) << "MojoMain returned an error: " << result;
-    } while (false);
+    // We intentionally don't unload the native library as its lifetime is the
+    // same as that of the process.
+    DynamicServiceRunner::LoadAndRunService(app_path, service.Pass());
   }
 
   base::ThreadChecker thread_checker_;

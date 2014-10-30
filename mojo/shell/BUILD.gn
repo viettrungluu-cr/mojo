@@ -48,6 +48,7 @@ source_set("lib") {
     "context.h",
     "dynamic_application_loader.cc",
     "dynamic_application_loader.h",
+    "dynamic_service_runner.cc",
     "dynamic_service_runner.h",
     "external_application_listener.h",
     "external_application_listener_posix.cc",
