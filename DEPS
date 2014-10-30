@@ -18,24 +18,14 @@
 # to list the dependency's destination directory.
 
 vars = {
-  # Use this googlecode_url variable only if there is an internal mirror for it.
-  # If you do not know, use the full path while defining your new deps entry.
-  'googlecode_url': 'http://%s.googlecode.com/svn',
-  'sourceforge_url': 'http://svn.code.sf.net/p/%(repo)s/code',
-  'llvm_url': 'http://src.chromium.org/llvm-project',
-  'llvm_git': 'https://llvm.googlesource.com',
+  'chromium_git': 'https://chromium.googlesource.com',
   'libcxx_revision': '48198f9110397fff47fe7c37cbfa296be7d44d3d',
   'libcxxabi_revision': '4ad1009ab3a59fa7a6896d74d5e4de5885697f95',
-  'chromium_git': 'https://chromium.googlesource.com',
-  'skia_git': 'https://skia.googlesource.com',
-  'pdfium_git': 'https://pdfium.googlesource.com',
-  'boringssl_git': 'https://boringssl.googlesource.com',
   'sfntly_revision': '1bdaae8fc788a5ac8936d68bf24f37d977a13dac',
   'skia_revision': '32501a1bd4964576264795ada7e9c3bf572285b3',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling Skia
   # and V8 without interference from each other.
-  'v8_branch': 'trunk',
   'v8_revision': 'bfb312d4b40507780e15bfee2e0dc32f1391c4db', # from svn revision 24925
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling ANGLE
