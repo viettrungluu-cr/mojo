@@ -38,6 +38,13 @@ use_goma = true
 Assuming Goma is installed in the default location (~/goma).
 
 
+Run a demo:
+```
+mojo/tools/mojo_demo.sh --browser
+```
+
+
+
 Run the tests:
 ```
 mojo/tools/mojob.sh test
