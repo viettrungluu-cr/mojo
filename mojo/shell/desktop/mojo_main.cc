@@ -128,8 +128,9 @@ int main(int argc, char** argv) {
 
   const base::CommandLine& command_line =
     *base::CommandLine::ForCurrentProcess();
-  if (command_line.HasSwitch(switches::kHelp) ||
-      command_line.GetArgs().empty()){
+  if (!command_line.HasSwitch(switches::kEnableExternalApplications) &&
+      (command_line.HasSwitch(switches::kHelp) ||
+       command_line.GetArgs().empty())) {
     Usage();
     return 0;
   }
