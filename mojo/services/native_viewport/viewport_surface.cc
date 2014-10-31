@@ -40,6 +40,7 @@ void ViewportSurface::SetSize(const gfx::Size& size) {
   if (size_ == size)
     return;
 
+  size_ = size;
   if (id_.is_null())
     return;
 
