@@ -173,9 +173,15 @@ class DynamicApplicationLoader::NetworkLoader : public Loader {
       load_callbacks_->LoadWithContentHandler(iter->second, response.Pass());
       return;
     }
-    LOG(ERROR) << "Failed to find content handler for " << response->mime_type
-               << " from " << response->url << std::endl
-               << "INSECURELY LOADING AS EXECUTABLE CODE INSTEAD" << std::endl;
+
+    LOG(INFO) << "Failed to find content handler for " << response->url
+              << " (mimetype: " << response->url << ")" << std::endl
+              << "Attempting to load as native library instead...";
+
+    // TODO(aa): Santify check that the thing we got looks vaguely like a mojo
+    // application. That could either mean looking for the platform-specific dll
+    // header, or looking for some specific mojo signature prepended to the
+    // library.
 
     base::CreateTemporaryFile(&file_);
     common::CopyToFile(
