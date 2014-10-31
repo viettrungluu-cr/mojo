@@ -66,5 +66,9 @@ source_set("test_support_standalone") {
   testonly = true
   sources = [ "lib/application_test_main.cc", ]
   public_deps = [ ":test_support", ]
-  deps = [ "//mojo/public/cpp/environment:standalone", ]
+  deps = [
+    "//mojo/public/cpp/environment:standalone",
+    "//mojo/public/cpp/application",
+    "//mojo/public/cpp/system",
+  ]
 }

@@ -412,6 +412,51 @@ def _CheckValidHostsInDEPS(input_api, output_api):
         long_text=error.output)]
 
 
+def _CheckGNCheck(input_api, output_api):
+  """Checks that gn gen and gn check pass"""
+
+  class _TemporaryDirectory(object):
+    """Context manager for tempfile.mkdtemp()"""
+    def __init__(self, parent_dir=None):
+      self.parent_dir = parent_dir
+
+    def __enter__(self):
+      self.path = input_api.tempfile.mkdtemp(dir=self.parent_dir)
+      return self.path
+
+    def __exit__(self, exc_type, exc_value, traceback):
+      # input_api does not include shutil or any nice way to delete
+      # a directory, so we hackishly import it here.
+      import shutil
+      shutil.rmtree(self.path)
+
+  # TODO(eseidel): We should not have to pass dir= here but unfortunately
+  # gn's rebase_path can't handle absolute paths!  crbug.com/429324
+  temp_parent = input_api.change.RepositoryRoot()
+  with _TemporaryDirectory(parent_dir=temp_parent) as out_dir:
+    relative_out_dir = input_api.os_path.relpath(out_dir, temp_parent)
+    try:
+      input_api.subprocess.check_output(['gn', 'gen', relative_out_dir])
+    except input_api.subprocess.CalledProcessError, error:
+      return [output_api.PresubmitError(
+          'gn gen must not fail.', long_text=error.output)]
+
+    # TODO(eseidel): Currently only these are known to pass,
+    # once everything passes we can just call 'gn check' once without a filter!
+    KNOWN_PASSING = [
+      '//sky/*',
+      '//mojo/public/*',
+    ]
+    for target_filter in KNOWN_PASSING:
+      try:
+        input_api.subprocess.check_output(['gn', 'check', relative_out_dir,
+            target_filter])
+      except input_api.subprocess.CalledProcessError, error:
+        error_title = 'gn check %s must not fail.' % target_filter
+        return [output_api.PresubmitError(error_title, long_text=error.output)]
+  return []
+
+
 def _CheckNoBannedFunctions(input_api, output_api):
   """Make sure that banned functions are not used."""
   warnings = []
@@ -1292,6 +1337,7 @@ def _CommonChecks(input_api, output_api):
   results.extend(_CheckParseErrors(input_api, output_api))
   results.extend(_CheckForIPCRules(input_api, output_api))
   results.extend(_CheckForOverrideAndFinalRules(input_api, output_api))
+  results.extend(_CheckGNCheck(input_api, output_api))
 
   if any('PRESUBMIT.py' == f.LocalPath() for f in input_api.AffectedFiles()):
     results.extend(input_api.canned_checks.RunUnitTestsInDirectory(
