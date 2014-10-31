@@ -4,45 +4,34 @@
 
 #include <stdio.h>
 
+#include "mojo/public/c/system/main.h"
 #include "mojo/public/cpp/application/application_delegate.h"
 #include "mojo/public/cpp/application/application_impl.h"
+#include "mojo/public/cpp/application/application_runner.h"
 #include "mojo/public/cpp/application/interface_factory_impl.h"
 #include "mojo/services/public/interfaces/content_handler/content_handler.mojom.h"
 
 namespace mojo {
 namespace examples {
 
-class ContentHandlerApp;
-
-class ContentHandlerImpl : public InterfaceImpl<ContentHandler> {
+class PrintBodyApplication : public InterfaceImpl<Application> {
  public:
-  explicit ContentHandlerImpl(ContentHandlerApp* content_handler_app)
-      : content_handler_app_(content_handler_app) {
+  PrintBodyApplication(ShellPtr shell, ScopedDataPipeConsumerHandle body)
+      : shell_(shell.Pass()), body_(body.Pass()) {
+    shell_.set_client(this);
   }
-  virtual ~ContentHandlerImpl() {}
+
+  virtual void Initialize(Array<String> args) override {}
+
+  virtual void AcceptConnection(const String& requestor_url,
+                                ServiceProviderPtr service_provider) override {
+    printf("ContentHandler::OnConnect - requestor_url:%s - body follows\n\n",
+           requestor_url.To<std::string>().c_str());
+    PrintResponse(body_.Pass());
+    delete this;
+  }
 
  private:
-  virtual void OnConnect(
-      const mojo::String& requestor_url,
-      URLResponsePtr response,
-      InterfaceRequest<ServiceProvider> service_provider) override;
-
-  ContentHandlerApp* content_handler_app_;
-};
-
-class ContentHandlerApp : public ApplicationDelegate {
- public:
-  ContentHandlerApp() : content_handler_factory_(this) {
-  }
-
-  virtual void Initialize(ApplicationImpl* app) override {}
-
-  virtual bool ConfigureIncomingConnection(
-      ApplicationConnection* connection) override {
-    connection->AddService(&content_handler_factory_);
-    return true;
-  }
-
   void PrintResponse(ScopedDataPipeConsumerHandle body) const {
     for (;;) {
       char buf[512];
@@ -66,25 +55,47 @@ class ContentHandlerApp : public ApplicationDelegate {
     }
   }
 
- private:
-  InterfaceFactoryImplWithContext<ContentHandlerImpl,
-                                  ContentHandlerApp> content_handler_factory_;
+  ShellPtr shell_;
+  ScopedDataPipeConsumerHandle body_;
+
+  MOJO_DISALLOW_COPY_AND_ASSIGN(PrintBodyApplication);
 };
 
-void ContentHandlerImpl::OnConnect(
-    const mojo::String& requestor_url,
-    URLResponsePtr response,
-    InterfaceRequest<ServiceProvider> service_provider) {
-  printf("ContentHandler::OnConnect - requestor_url:%s - body follows\n\n",
-         requestor_url.To<std::string>().c_str());
-  content_handler_app_->PrintResponse(response->body.Pass());
-}
+class ContentHandlerImpl : public InterfaceImpl<ContentHandler> {
+ public:
+  explicit ContentHandlerImpl() {}
+  virtual ~ContentHandlerImpl() {}
+
+ private:
+  virtual void StartApplication(ShellPtr shell,
+                                URLResponsePtr response) override {
+    // The application will delete itself after being connected to.
+    new PrintBodyApplication(shell.Pass(), response->body.Pass());
+  }
+};
+
+class ContentHandlerApp : public ApplicationDelegate {
+ public:
+  ContentHandlerApp() : content_handler_factory_() {}
+
+  virtual void Initialize(ApplicationImpl* app) override {}
+
+  virtual bool ConfigureIncomingConnection(
+      ApplicationConnection* connection) override {
+    connection->AddService(&content_handler_factory_);
+    return true;
+  }
+
+ private:
+  InterfaceFactoryImpl<ContentHandlerImpl> content_handler_factory_;
+
+  MOJO_DISALLOW_COPY_AND_ASSIGN(ContentHandlerApp);
+};
 
 }  // namespace examples
-
-// static
-ApplicationDelegate* ApplicationDelegate::Create() {
-  return new examples::ContentHandlerApp();
-}
-
 }  // namespace mojo
+
+MojoResult MojoMain(MojoHandle shell_handle) {
+  mojo::ApplicationRunner runner(new mojo::examples::ContentHandlerApp);
+  return runner.Run(shell_handle);
+}

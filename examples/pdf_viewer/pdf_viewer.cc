@@ -5,6 +5,7 @@
 #include "base/strings/string_tokenizer.h"
 #include "examples/bitmap_uploader/bitmap_uploader.h"
 #include "mojo/application/application_runner_chromium.h"
+#include "mojo/application/content_handler_factory.h"
 #include "mojo/public/c/system/main.h"
 #include "mojo/public/cpp/application/application_connection.h"
 #include "mojo/public/cpp/application/application_delegate.h"
@@ -29,32 +30,16 @@
 namespace mojo {
 namespace examples {
 
-class PDFViewer;
-
-class PDFView : public ViewManagerDelegate, public ViewObserver {
+class PDFView : public ApplicationDelegate,
+                public ViewManagerDelegate,
+                public ViewObserver {
  public:
-  static void Spawn(URLResponsePtr response,
-                    ServiceProviderImpl* exported_services,
-                    scoped_ptr<ServiceProvider> imported_services,
-                    Shell* shell) {
-    // PDFView deletes itself when its View is destroyed.
-    new PDFView(
-        response.Pass(), exported_services, imported_services.Pass(), shell);
-  }
-
- private:
-  PDFView(URLResponsePtr response,
-          ServiceProviderImpl* exported_services,
-          scoped_ptr<ServiceProvider> imported_services,
-          Shell* shell)
+  PDFView(URLResponsePtr response)
       : current_page_(0),
         page_count_(0),
         doc_(NULL),
-        imported_services_(imported_services.Pass()),
-        shell_(shell),
-        root_(nullptr),
-        view_manager_client_factory_(shell, this) {
-    exported_services->AddService(&view_manager_client_factory_);
+        app_(nullptr),
+        root_(nullptr) {
     FetchPDF(response.Pass());
   }
 
@@ -65,6 +50,20 @@ class PDFView : public ViewManagerDelegate, public ViewObserver {
       root_->RemoveObserver(this);
   }
 
+ private:
+  // Overridden from ApplicationDelegate:
+  virtual void Initialize(ApplicationImpl* app) override {
+    app_ = app;
+    view_manager_client_factory_.reset(
+        new ViewManagerClientFactory(app->shell(), this));
+  }
+
+  virtual bool ConfigureIncomingConnection(
+      ApplicationConnection* connection) override {
+    connection->AddService(view_manager_client_factory_.get());
+    return true;
+  }
+
   // Overridden from ViewManagerDelegate:
   virtual void OnEmbed(ViewManager* view_manager,
                        View* root,
@@ -73,7 +72,7 @@ class PDFView : public ViewManagerDelegate, public ViewObserver {
     root_ = root;
     root_->AddObserver(this);
     bitmap_uploader_.reset(new BitmapUploader(root_));
-    bitmap_uploader_->Init(shell_);
+    bitmap_uploader_->Init(app_->shell());
     bitmap_uploader_->SetColor(BACKGROUND_COLOR);
     DrawBitmap();
   }
@@ -114,7 +113,10 @@ class PDFView : public ViewManagerDelegate, public ViewObserver {
 
   virtual void OnViewDestroyed(View* view) override {
     DCHECK_EQ(view, root_);
-    delete this;
+    // TODO(qsr): It should not be necessary to cleanup the uploader, but it
+    // crashes if the GL context goes away.
+    bitmap_uploader_.reset();
+    ApplicationImpl::Terminate();
   }
 
   void DrawBitmap() {
@@ -186,64 +188,40 @@ class PDFView : public ViewManagerDelegate, public ViewObserver {
   int current_page_;
   int page_count_;
   FPDF_DOCUMENT doc_;
-  scoped_ptr<ServiceProvider> imported_services_;
-  Shell* shell_;
+  ApplicationImpl* app_;
   View* root_;
-  ViewManagerClientFactory view_manager_client_factory_;
+  scoped_ptr<ViewManagerClientFactory> view_manager_client_factory_;
   scoped_ptr<BitmapUploader> bitmap_uploader_;
 
   DISALLOW_COPY_AND_ASSIGN(PDFView);
 };
 
-class ContentHandlerImpl : public InterfaceImpl<ContentHandler> {
+class PDFViewer : public ApplicationDelegate,
+                  public ContentHandlerFactory::Delegate {
  public:
-  explicit ContentHandlerImpl(Shell* shell) : shell_(shell) {}
-  virtual ~ContentHandlerImpl() {}
-
- private:
-  // Overridden from ContentHandler:
-  virtual void OnConnect(
-      const mojo::String& requestor_url,
-      URLResponsePtr response,
-      InterfaceRequest<ServiceProvider> service_provider) override {
-    ServiceProviderImpl* exported_services = new ServiceProviderImpl();
-    BindToRequest(exported_services, &service_provider);
-    scoped_ptr<ServiceProvider> remote(
-        exported_services->CreateRemoteServiceProvider());
-    PDFView::Spawn(response.Pass(), exported_services, remote.Pass(), shell_);
-  }
-
-  Shell* shell_;
-
-  DISALLOW_COPY_AND_ASSIGN(ContentHandlerImpl);
-};
-
-class PDFViewer : public ApplicationDelegate {
- public:
-  PDFViewer() {}
-  virtual ~PDFViewer() {
-    FPDF_DestroyLibrary();
-  }
- private:
-  // Overridden from ApplicationDelegate:
-  virtual void Initialize(ApplicationImpl* app) override {
-    content_handler_factory_.reset(
-        new InterfaceFactoryImplWithContext<ContentHandlerImpl, Shell>(
-            app->shell()));
-
+  PDFViewer() : content_handler_factory_(this) {
     v8::V8::InitializeICU();
     FPDF_InitLibrary(NULL);
   }
 
+  virtual ~PDFViewer() { FPDF_DestroyLibrary(); }
+
+ private:
   // Overridden from ApplicationDelegate:
   virtual bool ConfigureIncomingConnection(
       ApplicationConnection* connection) override {
-    connection->AddService(content_handler_factory_.get());
+    connection->AddService(&content_handler_factory_);
     return true;
   }
 
-  scoped_ptr<InterfaceFactoryImplWithContext<ContentHandlerImpl, Shell> >
-      content_handler_factory_;
+  // Overridden from ContentHandlerFactory::Delegate:
+  virtual scoped_ptr<ContentHandlerFactory::HandledApplicationHolder>
+  CreateApplication(ShellPtr shell, URLResponsePtr response) override {
+    return make_handled_factory_holder(new mojo::ApplicationImpl(
+        new PDFView(response.Pass()), shell.PassMessagePipe()));
+  }
+
+  ContentHandlerFactory content_handler_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(PDFViewer);
 };
@@ -252,6 +230,6 @@ class PDFViewer : public ApplicationDelegate {
 }  // namespace mojo
 
 MojoResult MojoMain(MojoHandle shell_handle) {
-  mojo::ApplicationRunnerChromium runner(new mojo::examples::PDFViewer);
+  mojo::ApplicationRunnerChromium runner(new mojo::examples::PDFViewer());
   return runner.Run(shell_handle);
 }

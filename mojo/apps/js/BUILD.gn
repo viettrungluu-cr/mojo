@@ -7,7 +7,6 @@ group("js") {
   testonly = true
   deps = [
     ":js_content_handler",
-    ":js_standalone"
   ]
 }
 
@@ -31,7 +30,6 @@ source_set("mojo_runner") {
 
 source_set("js_apps") {
   sources = [
-    "application_delegate_impl.cc",
     "js_app.cc",
     "mojo_bridge_module.cc",
   ]
@@ -49,7 +47,6 @@ source_set("js_apps") {
 
 shared_library("js_content_handler") {
   sources = [
-    "content_handler_impl.cc",
     "content_handler_main.cc",
   ]
 
@@ -57,24 +54,8 @@ shared_library("js_content_handler") {
     ":js_apps",
     "//base:i18n",
     "//mojo/application:application",
+    "//mojo/application:content_handler",
     "//mojo/environment:chromium",
     "//mojo/services/public/interfaces/content_handler",
   ]
 }
-
-shared_library("js_standalone") {
-  sources = [
-    "standalone_main.cc"
-  ]
-
-  deps = [
-    ":js_apps",
-    "//base:i18n",
-    "//mojo/application:application",
-    "//mojo/environment:chromium",
-    "//mojo/public/cpp/application",
-  ]
-}
-
-
-

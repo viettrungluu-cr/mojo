@@ -11,6 +11,7 @@ shared_library("png_viewer") {
     "//examples/bitmap_uploader",
     "//examples/media_viewer:bindings",
     "//mojo/application",
+    "//mojo/application:content_handler",
     "//mojo/public/c/system:for_shared_library",
     "//mojo/public/cpp/bindings",
     "//mojo/public/cpp/utility",

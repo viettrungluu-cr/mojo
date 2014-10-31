@@ -7,107 +7,63 @@
 #include "base/bind.h"
 #include "gin/array_buffer.h"
 #include "gin/converter.h"
-#include "mojo/apps/js/application_delegate_impl.h"
 #include "mojo/apps/js/mojo_bridge_module.h"
+#include "mojo/common/data_pipe_utils.h"
 
 namespace mojo {
 namespace apps {
 
-JSApp::JSApp(ApplicationDelegateImpl* app_delegate_impl)
-    : app_delegate_impl_(app_delegate_impl),
-      thread_("Mojo JS"),
-      app_delegate_impl_task_runner_(
-          base::MessageLoop::current()->task_runner()) {
-  CHECK(on_app_delegate_impl_thread());
-  runner_delegate_.AddBuiltinModule(MojoInternals::kModuleName,
-                                    base::Bind(MojoInternals::GetModule, this));
+JSApp::JSApp(ShellPtr shell, URLResponsePtr response) : shell_(shell.Pass()) {
+  // TODO(hansmuller): handle load failure here and below.
+  DCHECK(!response.is_null());
+  file_name_ = response->url;
+  bool result = common::BlockingCopyToString(response->body.Pass(), &source_);
+  DCHECK(result);
+
+  runner_delegate.AddBuiltinModule(MojoInternals::kModuleName,
+                                   base::Bind(MojoInternals::GetModule, this));
+  shell_.set_client(this);
 }
 
 JSApp::~JSApp() {
 }
 
-bool JSApp::Start() {
-  CHECK(!js_app_task_runner_.get() && on_app_delegate_impl_thread());
-  base::Thread::Options thread_options(base::MessageLoop::TYPE_IO, 0);
-  thread_.StartWithOptions(thread_options);
-
-  // TODO(hansmuller): check thread_.StartWithOptions() return value.
-  // TODO(hansmuller): need to funnel Run() failures back to the caller.
-
-  thread_.message_loop()->PostTask(
-      FROM_HERE, base::Bind(&JSApp::Run, base::Unretained(this)));
-  return true;
-}
-
 void JSApp::Quit() {
-  CHECK(on_js_app_thread());
-
-  // The terminate operation is posted to the message_loop so that
-  // the shell_runner isn't destroyed before this JS function returns.
-  thread_.message_loop()->PostTask(
-      FROM_HERE, base::Bind(&JSApp::Terminate, base::Unretained(this)));
+  isolate_holder_.RemoveRunMicrotasksObserver();
+  base::MessageLoop::current()->PostTask(
+      FROM_HERE, base::Bind(&JSApp::QuitInternal, base::Unretained(this)));
 }
 
 MessagePipeHandle JSApp::ConnectToApplication(
     const std::string& application_url) {
-  CHECK(on_js_app_thread());
   MessagePipe pipe;
   InterfaceRequest<ServiceProvider> request =
       MakeRequest<ServiceProvider>(pipe.handle1.Pass());
-
-  app_delegate_impl_task_runner_->PostTask(
-      FROM_HERE,
-      base::Bind(&ApplicationDelegateImpl::ConnectToApplication,
-                 base::Unretained(app_delegate_impl_),
-                 application_url,
-                 base::Passed(request.Pass())));
-
+  shell_->ConnectToApplication(application_url, request.Pass());
   return pipe.handle0.Pass().release();
 }
 
+MessagePipeHandle JSApp::RequestorMessagePipeHandle() {
+  return requestor_handle_.get();
+}
 
-void JSApp::Run() {
-  CHECK(!js_app_task_runner_.get() && !on_app_delegate_impl_thread());
-  js_app_task_runner_ = base::MessageLoop::current()->task_runner();
+void JSApp::AcceptConnection(const String& requestor_url,
+                             ServiceProviderPtr provider) {
+  requestor_handle_ = provider.PassMessagePipe();
 
-  std::string source;
-  std::string file_name;
-  Load(&source, &file_name);  // TODO(hansmuller): handle Load() failure.
-
-  isolate_holder_.reset(new gin::IsolateHolder());
-  isolate_holder_->AddRunMicrotasksObserver();
-
+  isolate_holder_.AddRunMicrotasksObserver();
   shell_runner_.reset(
-      new gin::ShellRunner(&runner_delegate_, isolate_holder_->isolate()));
-
+      new gin::ShellRunner(&runner_delegate, isolate_holder_.isolate()));
   gin::Runner::Scope scope(shell_runner_.get());
-  shell_runner_->Run(source.c_str(), file_name.c_str());
+  shell_runner_->Run(source_.c_str(), file_name_.c_str());
 }
 
-void JSApp::Terminate() {
-  isolate_holder_->RemoveRunMicrotasksObserver();
-  shell_runner_.reset(nullptr);
-
-  // This JSApp's thread must be stopped on the thread that started it. Ask the
-  // app_delegate_impl_ to erase its AppVector entry for this app, which
-  // implicitly destroys this JSApp and stops its thread.
-  app_delegate_impl_task_runner_->PostTask(
-      FROM_HERE,
-      base::Bind(&ApplicationDelegateImpl::QuitJSApp,
-                 base::Unretained(app_delegate_impl_),
-                 base::Unretained(this)));
+void JSApp::Initialize(Array<String> args) {
 }
 
-bool JSApp::on_app_delegate_impl_thread() const {
-  return app_delegate_impl_task_runner_.get() &&
-         app_delegate_impl_task_runner_.get() ==
-             base::MessageLoop::current()->task_runner().get();
-}
-
-bool JSApp::on_js_app_thread() const {
-  return js_app_task_runner_.get() &&
-         js_app_task_runner_.get() ==
-             base::MessageLoop::current()->task_runner().get();
+void JSApp::QuitInternal() {
+  shell_runner_.reset();
+  base::MessageLoop::current()->QuitWhenIdle();
 }
 
 }  // namespace apps

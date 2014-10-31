@@ -9,8 +9,12 @@
 #include "base/threading/thread.h"
 #include "gin/public/isolate_holder.h"
 #include "gin/shell_runner.h"
+#include "mojo/application/content_handler_factory.h"
 #include "mojo/apps/js/mojo_runner_delegate.h"
-#include "mojo/services/public/interfaces/content_handler/content_handler.mojom.h"
+#include "mojo/public/cpp/application/application_delegate.h"
+#include "mojo/public/interfaces/application/application.mojom.h"
+#include "mojo/public/interfaces/application/shell.mojom.h"
+#include "mojo/services/public/interfaces/network/url_loader.mojom.h"
 
 namespace mojo {
 namespace apps {
@@ -21,19 +25,11 @@ class ApplicationDelegateImpl;
 // Each JavaScript app started by content handler runs on its own thread and
 // in its own V8 isolate. This class represents one running JS app.
 
-class JSApp {
+class JSApp : public InterfaceImpl<Application>,
+              public ContentHandlerFactory::HandledApplicationHolder {
  public:
-  JSApp(ApplicationDelegateImpl* app_delegate_impl);
+  JSApp(ShellPtr shell, URLResponsePtr response);
   virtual ~JSApp();
-
-  // Launch this app on a new thread. This method can be called on any thread.
-  // This method causes Load() and then Run() to run on a new thread.
-  bool Start();
-
-  // Subclasses must return the JS source code for this app's main script and
-  // the filename or URL that identifies the script's origin. This method will
-  // be called from this app's thread.
-  virtual bool Load(std::string* source, std::string* file_name) = 0;
 
   // Called by the JS mojo module to quit this JS app. See mojo.js.
   void Quit();
@@ -42,26 +38,24 @@ class JSApp {
   MessagePipeHandle ConnectToApplication(const std::string& application_url);
 
   // Called by the JS mojo module to retrieve the ServiceProvider message
-  // pipe handle passed to the JS content handler's OnConnect() method.
-  // If this app was not launched by the content handler then return an
-  // invalid Mojo handle.
-  virtual MessagePipeHandle RequestorMessagePipeHandle() = 0;
+  // pipe handle passed to the JS application's AcceptConnection() method.
+  MessagePipeHandle RequestorMessagePipeHandle();
 
  private:
-  void Run();
-  void Terminate();
+  // Application methods:
+  void AcceptConnection(const String& requestor_url,
+                        ServiceProviderPtr provider) override;
+  void Initialize(Array<String> args) override;
 
-  // Used to CHECK that we're running on the correct thread.
-  bool on_app_delegate_impl_thread() const;
-  bool on_js_app_thread() const;
+  void QuitInternal();
 
-  ApplicationDelegateImpl* app_delegate_impl_;
-  base::Thread thread_;
-  scoped_refptr<base::SingleThreadTaskRunner> app_delegate_impl_task_runner_;
-  scoped_refptr<base::SingleThreadTaskRunner> js_app_task_runner_;
-  MojoRunnerDelegate runner_delegate_;
-  scoped_ptr<gin::IsolateHolder> isolate_holder_;
+  ShellPtr shell_;
+  MojoRunnerDelegate runner_delegate;
+  gin::IsolateHolder isolate_holder_;
   scoped_ptr<gin::ShellRunner> shell_runner_;
+  std::string source_;
+  std::string file_name_;
+  ScopedMessagePipeHandle requestor_handle_;
 
   DISALLOW_COPY_AND_ASSIGN(JSApp);
 };

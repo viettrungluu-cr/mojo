@@ -16,7 +16,6 @@ group("mojo") {
     ":tests",
     "//examples",
     "//mojo/apps/js:js_content_handler",
-    "//mojo/apps/js:js_standalone",
     "//mojo/common",
     "//mojo/public",
     "//mojo/services",

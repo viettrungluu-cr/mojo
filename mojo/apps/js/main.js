@@ -5,10 +5,7 @@
 // This trivial app just loads "cnn.com" using the Mojo Network and URLLoader
 // services and then prints a brief summary of the response.
 //
-// To run it using js_standalone (don't forget the quotes):
-//   mojo_shell 'mojo://js_standalone THIS_DIR/main.js'
-//
-// To run it using js_content_handler this file must be specified as a URL. For
+// To run it this file must be specified as a URL. For
 // example:
 //   (cd YOUR_DIR/mojo/apps/js; python -m SimpleHTTPServer ) &
 //   mojo_shell \

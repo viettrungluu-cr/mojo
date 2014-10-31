@@ -11,6 +11,7 @@
 #include "examples/bitmap_uploader/bitmap_uploader.h"
 #include "examples/media_viewer/media_viewer.mojom.h"
 #include "mojo/application/application_runner_chromium.h"
+#include "mojo/application/content_handler_factory.h"
 #include "mojo/public/c/system/main.h"
 #include "mojo/public/cpp/application/application_connection.h"
 #include "mojo/public/cpp/application/application_delegate.h"
@@ -30,38 +31,17 @@
 namespace mojo {
 namespace examples {
 
-class PNGViewer;
-
 // TODO(aa): Hook up ZoomableMedia interface again.
-class PNGView : public ViewManagerDelegate, public ViewObserver {
+class PNGView : public ApplicationDelegate,
+                public ViewManagerDelegate,
+                public ViewObserver {
  public:
-  static void Spawn(URLResponsePtr response,
-                    ServiceProviderImpl* exported_services,
-                    scoped_ptr<ServiceProvider> imported_services,
-                    Shell* shell) {
-    // PNGView deletes itself when its View is destroyed.
-    new PNGView(
-        response.Pass(), exported_services, imported_services.Pass(), shell);
-  }
-
- private:
-  static const uint16_t kMaxZoomPercentage = 400;
-  static const uint16_t kMinZoomPercentage = 20;
-  static const uint16_t kDefaultZoomPercentage = 100;
-  static const uint16_t kZoomStep = 20;
-
-  PNGView(URLResponsePtr response,
-          ServiceProviderImpl* exported_services,
-          scoped_ptr<ServiceProvider> imported_services,
-          Shell* shell)
+  PNGView(URLResponsePtr response)
       : width_(0),
         height_(0),
-        imported_services_(imported_services.Pass()),
-        shell_(shell),
+        app_(nullptr),
         root_(nullptr),
-        view_manager_client_factory_(shell, this),
         zoom_percentage_(kDefaultZoomPercentage) {
-    exported_services->AddService(&view_manager_client_factory_);
     DecodePNG(response.Pass());
   }
 
@@ -70,15 +50,37 @@ class PNGView : public ViewManagerDelegate, public ViewObserver {
       root_->RemoveObserver(this);
   }
 
+ private:
+  static const uint16_t kMaxZoomPercentage = 400;
+  static const uint16_t kMinZoomPercentage = 20;
+  static const uint16_t kDefaultZoomPercentage = 100;
+  static const uint16_t kZoomStep = 20;
+
+  // Overridden from ApplicationDelegate:
+  virtual void Initialize(ApplicationImpl* app) override {
+    app_ = app;
+    view_manager_client_factory_.reset(
+        new ViewManagerClientFactory(app->shell(), this));
+  }
+
+  // Overridden from ApplicationDelegate:
+  virtual bool ConfigureIncomingConnection(
+      ApplicationConnection* connection) override {
+    connection->AddService(view_manager_client_factory_.get());
+    return true;
+  }
+
   // Overridden from ViewManagerDelegate:
   virtual void OnEmbed(ViewManager* view_manager,
                        View* root,
                        ServiceProviderImpl* exported_services,
                        scoped_ptr<ServiceProvider> imported_services) override {
+    // TODO(qsr): The same view should be embeddable on multiple views.
+    DCHECK(!root_);
     root_ = root;
     root_->AddObserver(this);
     bitmap_uploader_.reset(new BitmapUploader(root_));
-    bitmap_uploader_->Init(shell_);
+    bitmap_uploader_->Init(app_->shell());
     bitmap_uploader_->SetColor(SK_ColorGRAY);
     if (bitmap_.get())
       DrawBitmap();
@@ -98,7 +100,39 @@ class PNGView : public ViewManagerDelegate, public ViewObserver {
 
   virtual void OnViewDestroyed(View* view) override {
     DCHECK_EQ(view, root_);
-    delete this;
+    // TODO(qsr): It should not be necessary to cleanup the uploader, but it
+    // crashes if the GL context goes away.
+    bitmap_uploader_.reset();
+    ApplicationImpl::Terminate();
+  }
+
+  void DrawBitmap() {
+    if (!root_)
+      return;
+
+    bitmap_uploader_->SetBitmap(
+        width_, height_, bitmap_.Pass(), BitmapUploader::BGRA);
+  }
+
+  void ZoomIn() {
+    if (zoom_percentage_ >= kMaxZoomPercentage)
+      return;
+    zoom_percentage_ += kZoomStep;
+    DrawBitmap();
+  }
+
+  void ZoomOut() {
+    if (zoom_percentage_ <= kMinZoomPercentage)
+      return;
+    zoom_percentage_ -= kZoomStep;
+    DrawBitmap();
+  }
+
+  void ZoomToActualSize() {
+    if (zoom_percentage_ == kDefaultZoomPercentage)
+      return;
+    zoom_percentage_ = kDefaultZoomPercentage;
+    DrawBitmap();
   }
 
   void DecodePNG(URLResponsePtr response) {
@@ -131,36 +165,6 @@ class PNGView : public ViewManagerDelegate, public ViewObserver {
                           &height_);
   }
 
-  void DrawBitmap() {
-    if (!root_)
-      return;
-
-
-    bitmap_uploader_->SetBitmap(width_, height_, bitmap_.Pass(),
-                                BitmapUploader::BGRA);
-  }
-
-  void ZoomIn() {
-    if (zoom_percentage_ >= kMaxZoomPercentage)
-      return;
-    zoom_percentage_ += kZoomStep;
-    DrawBitmap();
-  }
-
-  void ZoomOut() {
-    if (zoom_percentage_ <= kMinZoomPercentage)
-      return;
-    zoom_percentage_ -= kZoomStep;
-    DrawBitmap();
-  }
-
-  void ZoomToActualSize() {
-    if (zoom_percentage_ == kDefaultZoomPercentage)
-      return;
-    zoom_percentage_ = kDefaultZoomPercentage;
-    DrawBitmap();
-  }
-
   int GetContentLength(const Array<String>& headers) {
     for (size_t i = 0; i < headers.size(); ++i) {
       base::StringTokenizer t(headers[i], ": ;=");
@@ -179,59 +183,36 @@ class PNGView : public ViewManagerDelegate, public ViewObserver {
   int width_;
   int height_;
   scoped_ptr<std::vector<unsigned char>> bitmap_;
-  scoped_ptr<ServiceProvider> imported_services_;
-  Shell* shell_;
+  ApplicationImpl* app_;
   View* root_;
-  ViewManagerClientFactory view_manager_client_factory_;
+  scoped_ptr<ViewManagerClientFactory> view_manager_client_factory_;
   uint16_t zoom_percentage_;
   scoped_ptr<BitmapUploader> bitmap_uploader_;
 
   DISALLOW_COPY_AND_ASSIGN(PNGView);
 };
 
-class ContentHandlerImpl : public InterfaceImpl<ContentHandler> {
+class PNGViewer : public ApplicationDelegate,
+                  public ContentHandlerFactory::Delegate {
  public:
-  explicit ContentHandlerImpl(Shell* shell) : shell_(shell) {}
-  virtual ~ContentHandlerImpl() {}
+  PNGViewer() : content_handler_factory_(this) {}
 
  private:
-  // Overridden from ContentHandler:
-  virtual void OnConnect(
-      const mojo::String& requestor_url,
-      URLResponsePtr response,
-      InterfaceRequest<ServiceProvider> service_provider) override {
-    ServiceProviderImpl* exported_services = new ServiceProviderImpl();
-    BindToRequest(exported_services, &service_provider);
-    scoped_ptr<ServiceProvider> remote(
-        exported_services->CreateRemoteServiceProvider());
-    PNGView::Spawn(response.Pass(), exported_services, remote.Pass(), shell_);
-  }
-
-  Shell* shell_;
-
-  DISALLOW_COPY_AND_ASSIGN(ContentHandlerImpl);
-};
-
-class PNGViewer : public ApplicationDelegate {
- public:
-  PNGViewer() {}
- private:
-  // Overridden from ApplicationDelegate:
-  virtual void Initialize(ApplicationImpl* app) override {
-    content_handler_factory_.reset(
-        new InterfaceFactoryImplWithContext<ContentHandlerImpl, Shell>(
-            app->shell()));
-  }
-
   // Overridden from ApplicationDelegate:
   virtual bool ConfigureIncomingConnection(
       ApplicationConnection* connection) override {
-    connection->AddService(content_handler_factory_.get());
+    connection->AddService(&content_handler_factory_);
     return true;
   }
 
-  scoped_ptr<InterfaceFactoryImplWithContext<ContentHandlerImpl, Shell> >
-      content_handler_factory_;
+  // Overridden from ContentHandlerFactory::Delegate:
+  virtual scoped_ptr<ContentHandlerFactory::HandledApplicationHolder>
+  CreateApplication(ShellPtr shell, URLResponsePtr response) override {
+    return make_handled_factory_holder(new mojo::ApplicationImpl(
+        new PNGView(response.Pass()), shell.PassMessagePipe()));
+  }
+
+  ContentHandlerFactory content_handler_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(PNGViewer);
 };
@@ -240,6 +221,6 @@ class PNGViewer : public ApplicationDelegate {
 }  // namespace mojo
 
 MojoResult MojoMain(MojoHandle shell_handle) {
-  mojo::ApplicationRunnerChromium runner(new mojo::examples::PNGViewer);
+  mojo::ApplicationRunnerChromium runner(new mojo::examples::PNGViewer());
   return runner.Run(shell_handle);
 }

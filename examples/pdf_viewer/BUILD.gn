@@ -10,6 +10,7 @@ shared_library("pdf_viewer") {
   deps = [
     "//examples/bitmap_uploader",
     "//mojo/application",
+    "//mojo/application:content_handler",
     "//mojo/public/c/system:for_shared_library",
     "//mojo/public/cpp/bindings",
     "//mojo/public/cpp/utility",
