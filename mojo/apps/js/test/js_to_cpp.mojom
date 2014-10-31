@@ -1,4 +1,4 @@
-module js_to_cpp {
+module js_to_cpp;
 
 // This struct encompasses all of the basic types, so that they
 // may be sent from C++ to JS and back for validation.
@@ -51,5 +51,3 @@ interface JsSide {
   BitFlip(EchoArgs arg);
   BackPointer(EchoArgs arg);
 };
-
-}

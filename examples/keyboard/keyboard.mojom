@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-module mojo {
+module mojo;
 
 [Client=KeyboardClient]
 interface KeyboardService {
@@ -15,5 +15,3 @@ interface KeyboardClient {
   // |flags| is a bitmask of ui::EventFlags.
   OnKeyboardEvent(uint32 view_id, int32 code, int32 flags);
 };
-
-}

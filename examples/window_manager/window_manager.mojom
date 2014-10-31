@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import "mojo/services/public/interfaces/geometry/geometry.mojom";
+module mojo;
 
-module mojo {
+import "mojo/services/public/interfaces/geometry/geometry.mojom";
 
 interface IWindowManager {
   CloseWindow(uint32 node_id);
@@ -18,5 +18,3 @@ interface IWindowManager {
   // last passed to ShowKeyboard().
   HideKeyboard(uint32 view_id);
 };
-
-}

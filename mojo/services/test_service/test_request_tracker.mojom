@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-module mojo.test {
+module mojo.test;
 
 // Various counters that services can periodically send to a
 // TestTrackedRequestService for recording.
@@ -39,5 +39,3 @@ interface TestRequestTrackerClient {
   // Handshake to tell the client its global identifier and get the name.
   SetIdAndReturnName(uint64 id) => (string? service_name);
 };
-
-}  // module mojo.test

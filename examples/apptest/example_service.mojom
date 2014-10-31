@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-module mojo {
+module mojo;
 
 // A simple service used to exemplify application testing within mojo_shell.
 [Client=ExampleClient]
@@ -17,5 +17,3 @@ interface ExampleService {
 interface ExampleClient {
   Pong(uint16 pong_value);
 };
-
-}

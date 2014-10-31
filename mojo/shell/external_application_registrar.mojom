@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-import "mojo/public/interfaces/application/shell.mojom";
+module mojo;
 
-module mojo {
+import "mojo/public/interfaces/application/shell.mojom";
 
 // This interface allows applications running outside the auspices of a Shell
 // to request registration at the given application_url.
@@ -14,5 +14,3 @@ module mojo {
 interface ExternalApplicationRegistrar {
   Register(string application_url) => (Shell shell);
 };
-
-}
