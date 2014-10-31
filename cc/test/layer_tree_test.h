@@ -34,6 +34,11 @@ class TestHooks : public AnimationDelegate {
 
   void ReadSettings(const LayerTreeSettings& settings);
 
+  virtual void CreateResourceAndRasterWorkerPool(
+      LayerTreeHostImpl* host_impl,
+      scoped_ptr<RasterWorkerPool>* raster_worker_pool,
+      scoped_ptr<ResourcePool>* resource_pool,
+      scoped_ptr<ResourcePool>* staging_resource_pool);
   virtual void WillBeginImplFrameOnThread(LayerTreeHostImpl* host_impl,
                                           const BeginFrameArgs& args) {}
   virtual void BeginMainFrameAbortedOnThread(LayerTreeHostImpl* host_impl,
@@ -134,6 +139,7 @@ class LayerTreeTest : public testing::Test, public TestHooks {
   void PostSetNeedsRedrawRectToMainThread(const gfx::Rect& damage_rect);
   void PostSetVisibleToMainThread(bool visible);
   void PostSetNextCommitForcesRedrawToMainThread();
+  void PostCompositeImmediatelyToMainThread();
 
   void DoBeginTest();
   void Timeout();
@@ -154,6 +160,7 @@ class LayerTreeTest : public testing::Test, public TestHooks {
   void DispatchSetVisible(bool visible);
   void DispatchSetNextCommitForcesRedraw();
   void DispatchDidAddAnimation();
+  void DispatchCompositeImmediately();
 
   virtual void AfterTest() = 0;
   virtual void WillBeginTest();

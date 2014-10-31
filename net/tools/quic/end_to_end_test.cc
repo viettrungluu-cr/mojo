@@ -882,6 +882,7 @@ TEST_P(EndToEndTest, NegotiateMaxOpenStreams) {
 }
 
 TEST_P(EndToEndTest, NegotiateCongestionControl) {
+  ValueRestore<bool> old_flag(&FLAGS_quic_allow_bbr, true);
   ASSERT_TRUE(Initialize());
   client_->client()->WaitForCryptoHandshakeConfirmed();
 
@@ -901,7 +902,7 @@ TEST_P(EndToEndTest, NegotiateCongestionControl) {
   }
 
   EXPECT_EQ(expected_congestion_control_type,
-            QuicSentPacketManagerPeer::GetCongestionControlAlgorithm(
+            QuicSentPacketManagerPeer::GetSendAlgorithm(
                 *GetSentPacketManagerFromFirstServerSession())
             ->GetCongestionControlType());
 }

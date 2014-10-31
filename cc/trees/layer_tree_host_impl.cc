@@ -909,9 +909,9 @@ DrawResult LayerTreeHostImpl::CalculateRenderPasses(
     draw_result = DRAW_SUCCESS;
 
 #if DCHECK_IS_ON
-  for (auto* render_pass : frame->render_passes) {
-    for (auto& quad : render_pass->quad_list)
-      DCHECK(quad.shared_quad_state);
+  for (const auto& render_pass : frame->render_passes) {
+    for (const auto& quad : render_pass->quad_list)
+      DCHECK(quad->shared_quad_state);
     DCHECK(frame->render_passes_by_id.find(render_pass->id) !=
            frame->render_passes_by_id.end());
   }
@@ -1029,11 +1029,10 @@ static void RemoveRenderPassesRecursive(RenderPassId remove_render_pass_id,
   // Now follow up for all RenderPass quads and remove their RenderPasses
   // recursively.
   const QuadList& quad_list = removed_pass->quad_list;
-  QuadList::ConstBackToFrontIterator quad_list_iterator =
-      quad_list.BackToFrontBegin();
-  for (; quad_list_iterator != quad_list.BackToFrontEnd();
+  for (auto quad_list_iterator = quad_list.BackToFrontBegin();
+       quad_list_iterator != quad_list.BackToFrontEnd();
        ++quad_list_iterator) {
-    const DrawQuad* current_quad = &*quad_list_iterator;
+    const DrawQuad* current_quad = *quad_list_iterator;
     if (current_quad->material != DrawQuad::RENDER_PASS)
       continue;
 
@@ -1052,11 +1051,10 @@ bool LayerTreeHostImpl::CullRenderPassesWithNoQuads::ShouldRemoveRenderPass(
 
   // If any quad or RenderPass draws into this RenderPass, then keep it.
   const QuadList& quad_list = render_pass->quad_list;
-  for (QuadList::ConstBackToFrontIterator quad_list_iterator =
-           quad_list.BackToFrontBegin();
+  for (auto quad_list_iterator = quad_list.BackToFrontBegin();
        quad_list_iterator != quad_list.BackToFrontEnd();
        ++quad_list_iterator) {
-    const DrawQuad* current_quad = &*quad_list_iterator;
+    const DrawQuad* current_quad = *quad_list_iterator;
 
     if (current_quad->material != DrawQuad::RENDER_PASS)
       return false;
@@ -1083,12 +1081,11 @@ void LayerTreeHostImpl::RemoveRenderPasses(RenderPassCuller culler,
        it = culler.RenderPassListNext(it)) {
     const RenderPass* current_pass = frame->render_passes[it];
     const QuadList& quad_list = current_pass->quad_list;
-    QuadList::ConstBackToFrontIterator quad_list_iterator =
-        quad_list.BackToFrontBegin();
 
-    for (; quad_list_iterator != quad_list.BackToFrontEnd();
+    for (auto quad_list_iterator = quad_list.BackToFrontBegin();
+         quad_list_iterator != quad_list.BackToFrontEnd();
          ++quad_list_iterator) {
-      const DrawQuad* current_quad = &*quad_list_iterator;
+      const DrawQuad* current_quad = *quad_list_iterator;
 
       if (current_quad->material != DrawQuad::RENDER_PASS)
         continue;
@@ -1235,7 +1232,7 @@ void LayerTreeHostImpl::UpdateTileManagerMemoryPolicy(
       100);
 
   DCHECK(resource_pool_);
-  resource_pool_->CheckBusyResources();
+  resource_pool_->CheckBusyResources(false);
   // Soft limit is used for resource pool such that memory returns to soft
   // limit after going over.
   resource_pool_->SetResourceUsageLimits(
@@ -1245,7 +1242,7 @@ void LayerTreeHostImpl::UpdateTileManagerMemoryPolicy(
 
   // Release all staging resources when invisible.
   if (staging_resource_pool_) {
-    staging_resource_pool_->CheckBusyResources();
+    staging_resource_pool_->CheckBusyResources(false);
     staging_resource_pool_->SetResourceUsageLimits(
         std::numeric_limits<size_t>::max(),
         std::numeric_limits<size_t>::max(),
@@ -1457,7 +1454,7 @@ void LayerTreeHostImpl::ReclaimResources(const CompositorFrameAck* ack) {
   if (tile_manager_) {
     DCHECK(resource_pool_);
 
-    resource_pool_->CheckBusyResources();
+    resource_pool_->CheckBusyResources(false);
     resource_pool_->ReduceResourceUsage();
   }
   // If we're not visible, we likely released resources, so we want to
@@ -1736,6 +1733,12 @@ void LayerTreeHostImpl::SetTopControlsLayoutHeight(float height) {
   SetFullRootLayerDamage();
 }
 
+void LayerTreeHostImpl::SynchronouslyInitializeAllTiles() {
+  // Only valid for the single-threaded non-scheduled/synchronous case
+  // using the zero copy raster worker pool.
+  single_thread_synchronous_task_graph_runner_->RunUntilIdle();
+}
+
 void LayerTreeHostImpl::DidLoseOutputSurface() {
   if (resource_provider_)
     resource_provider_->DidLoseOutputSurface();
@@ -2000,67 +2003,105 @@ void LayerTreeHostImpl::CreateAndSetTileManager() {
   DCHECK(settings_.impl_side_painting);
   DCHECK(output_surface_);
   DCHECK(resource_provider_);
+
+  CreateResourceAndRasterWorkerPool(
+      &raster_worker_pool_, &resource_pool_, &staging_resource_pool_);
+  DCHECK(raster_worker_pool_);
+  DCHECK(resource_pool_);
+
+  base::SingleThreadTaskRunner* task_runner =
+      proxy_->HasImplThread() ? proxy_->ImplThreadTaskRunner()
+                              : proxy_->MainThreadTaskRunner();
+  DCHECK(task_runner);
+  size_t scheduled_raster_task_limit =
+      IsSynchronousSingleThreaded() ? std::numeric_limits<size_t>::max()
+                                    : settings_.scheduled_raster_task_limit;
+  tile_manager_ = TileManager::Create(this,
+                                      task_runner,
+                                      resource_pool_.get(),
+                                      raster_worker_pool_->AsRasterizer(),
+                                      rendering_stats_instrumentation_,
+                                      scheduled_raster_task_limit);
+
+  UpdateTileManagerMemoryPolicy(ActualManagedMemoryPolicy());
+  need_to_update_visible_tiles_before_draw_ = false;
+}
+
+void LayerTreeHostImpl::CreateResourceAndRasterWorkerPool(
+    scoped_ptr<RasterWorkerPool>* raster_worker_pool,
+    scoped_ptr<ResourcePool>* resource_pool,
+    scoped_ptr<ResourcePool>* staging_resource_pool) {
   base::SingleThreadTaskRunner* task_runner =
       proxy_->HasImplThread() ? proxy_->ImplThreadTaskRunner()
                               : proxy_->MainThreadTaskRunner();
   DCHECK(task_runner);
 
   ContextProvider* context_provider = output_surface_->context_provider();
+  bool should_use_zero_copy_rasterizer =
+      settings_.use_zero_copy || IsSynchronousSingleThreaded();
+
   if (!context_provider) {
-    resource_pool_ =
+    *resource_pool =
         ResourcePool::Create(resource_provider_.get(),
                              GL_TEXTURE_2D,
                              resource_provider_->best_texture_format());
 
-    raster_worker_pool_ =
-        BitmapRasterWorkerPool::Create(proxy_->ImplThreadTaskRunner(),
+    *raster_worker_pool =
+        BitmapRasterWorkerPool::Create(task_runner,
                                        RasterWorkerPool::GetTaskGraphRunner(),
                                        resource_provider_.get());
   } else if (use_gpu_rasterization_) {
-    resource_pool_ =
+    *resource_pool =
         ResourcePool::Create(resource_provider_.get(),
                              GL_TEXTURE_2D,
                              resource_provider_->best_texture_format());
 
-    raster_worker_pool_ =
+    *raster_worker_pool =
         GpuRasterWorkerPool::Create(task_runner,
                                     context_provider,
                                     resource_provider_.get(),
                                     settings_.use_distance_field_text);
-  } else if (UseZeroCopyRasterizer()) {
-    resource_pool_ = ResourcePool::Create(
+  } else if (should_use_zero_copy_rasterizer && CanUseZeroCopyRasterizer()) {
+    *resource_pool = ResourcePool::Create(
         resource_provider_.get(),
         GetMapImageTextureTarget(context_provider->ContextCapabilities()),
         resource_provider_->best_texture_format());
 
-    raster_worker_pool_ =
-        ZeroCopyRasterWorkerPool::Create(proxy_->ImplThreadTaskRunner(),
-                                         RasterWorkerPool::GetTaskGraphRunner(),
-                                         resource_provider_.get());
-  } else if (UseOneCopyRasterizer()) {
+    TaskGraphRunner* task_graph_runner;
+    if (IsSynchronousSingleThreaded()) {
+      DCHECK(!single_thread_synchronous_task_graph_runner_);
+      single_thread_synchronous_task_graph_runner_.reset(new TaskGraphRunner);
+      task_graph_runner = single_thread_synchronous_task_graph_runner_.get();
+    } else {
+      task_graph_runner = RasterWorkerPool::GetTaskGraphRunner();
+    }
+
+    *raster_worker_pool = ZeroCopyRasterWorkerPool::Create(
+        task_runner, task_graph_runner, resource_provider_.get());
+  } else if (settings_.use_one_copy && CanUseOneCopyRasterizer()) {
     // We need to create a staging resource pool when using copy rasterizer.
-    staging_resource_pool_ = ResourcePool::Create(
+    *staging_resource_pool = ResourcePool::Create(
         resource_provider_.get(),
         GetMapImageTextureTarget(context_provider->ContextCapabilities()),
         resource_provider_->best_texture_format());
-    resource_pool_ =
+    *resource_pool =
         ResourcePool::Create(resource_provider_.get(),
                              GL_TEXTURE_2D,
                              resource_provider_->best_texture_format());
 
-    raster_worker_pool_ =
+    *raster_worker_pool =
         OneCopyRasterWorkerPool::Create(task_runner,
                                         RasterWorkerPool::GetTaskGraphRunner(),
                                         context_provider,
                                         resource_provider_.get(),
                                         staging_resource_pool_.get());
   } else {
-    resource_pool_ = ResourcePool::Create(
+    *resource_pool = ResourcePool::Create(
         resource_provider_.get(),
         GL_TEXTURE_2D,
         resource_provider_->memory_efficient_texture_format());
 
-    raster_worker_pool_ = PixelBufferRasterWorkerPool::Create(
+    *raster_worker_pool = PixelBufferRasterWorkerPool::Create(
         task_runner,
         RasterWorkerPool::GetTaskGraphRunner(),
         context_provider,
@@ -2068,16 +2109,6 @@ void LayerTreeHostImpl::CreateAndSetTileManager() {
         GetMaxTransferBufferUsageBytes(context_provider->ContextCapabilities(),
                                        settings_.refresh_rate));
   }
-
-  tile_manager_ = TileManager::Create(this,
-                                      task_runner,
-                                      resource_pool_.get(),
-                                      raster_worker_pool_->AsRasterizer(),
-                                      rendering_stats_instrumentation_,
-                                      settings().scheduled_raster_task_limit);
-
-  UpdateTileManagerMemoryPolicy(ActualManagedMemoryPolicy());
-  need_to_update_visible_tiles_before_draw_ = false;
 }
 
 void LayerTreeHostImpl::DestroyTileManager() {
@@ -2085,6 +2116,7 @@ void LayerTreeHostImpl::DestroyTileManager() {
   resource_pool_ = nullptr;
   staging_resource_pool_ = nullptr;
   raster_worker_pool_ = nullptr;
+  single_thread_synchronous_task_graph_runner_ = nullptr;
 }
 
 bool LayerTreeHostImpl::UsePendingTreeForSync() const {
@@ -2093,13 +2125,17 @@ bool LayerTreeHostImpl::UsePendingTreeForSync() const {
   return settings_.impl_side_painting;
 }
 
-bool LayerTreeHostImpl::UseZeroCopyRasterizer() const {
-  return settings_.use_zero_copy && GetRendererCapabilities().using_image;
+bool LayerTreeHostImpl::IsSynchronousSingleThreaded() const {
+  return !proxy_->HasImplThread() && !settings_.single_thread_proxy_scheduler;
 }
 
-bool LayerTreeHostImpl::UseOneCopyRasterizer() const {
+bool LayerTreeHostImpl::CanUseZeroCopyRasterizer() const {
+  return GetRendererCapabilities().using_image;
+}
+
+bool LayerTreeHostImpl::CanUseOneCopyRasterizer() const {
   // Sync query support is required by one-copy rasterizer.
-  return settings_.use_one_copy && GetRendererCapabilities().using_image &&
+  return GetRendererCapabilities().using_image &&
          resource_provider_->use_sync_query();
 }
 
@@ -2997,7 +3033,8 @@ void LayerTreeHostImpl::PinchGestureEnd() {
 
 static void CollectScrollDeltas(ScrollAndScaleSet* scroll_info,
                                 LayerImpl* layer_impl) {
-  DCHECK(layer_impl);
+  if (!layer_impl)
+    return;
 
   gfx::Vector2d scroll_delta =
       gfx::ToFlooredVector2d(layer_impl->ScrollDelta());
@@ -3016,15 +3053,12 @@ static void CollectScrollDeltas(ScrollAndScaleSet* scroll_info,
 scoped_ptr<ScrollAndScaleSet> LayerTreeHostImpl::ProcessScrollDeltas() {
   scoped_ptr<ScrollAndScaleSet> scroll_info(new ScrollAndScaleSet());
 
-  if (active_tree_->root_layer()) {
-    CollectScrollDeltas(scroll_info.get(), active_tree_->root_layer());
-    scroll_info->page_scale_delta = active_tree_->page_scale_delta();
-    active_tree_->set_sent_page_scale_delta(scroll_info->page_scale_delta);
-    scroll_info->swap_promises.swap(
-        swap_promises_for_main_thread_scroll_update_);
-    scroll_info->top_controls_delta = active_tree()->top_controls_delta();
-    active_tree_->set_sent_top_controls_delta(scroll_info->top_controls_delta);
-  }
+  CollectScrollDeltas(scroll_info.get(), active_tree_->root_layer());
+  scroll_info->page_scale_delta = active_tree_->page_scale_delta();
+  active_tree_->set_sent_page_scale_delta(scroll_info->page_scale_delta);
+  scroll_info->swap_promises.swap(swap_promises_for_main_thread_scroll_update_);
+  scroll_info->top_controls_delta = active_tree()->top_controls_delta();
+  active_tree_->set_sent_top_controls_delta(scroll_info->top_controls_delta);
 
   return scroll_info.Pass();
 }

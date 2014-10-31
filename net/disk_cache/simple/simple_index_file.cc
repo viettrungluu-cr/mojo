@@ -6,6 +6,7 @@
 
 #include <vector>
 
+#include "base/files/file.h"
 #include "base/files/file_util.h"
 #include "base/files/memory_mapped_file.h"
 #include "base/hash.h"
@@ -21,6 +22,8 @@
 #include "net/disk_cache/simple/simple_synchronous_entry.h"
 #include "net/disk_cache/simple/simple_util.h"
 #include "third_party/zlib/zlib.h"
+
+using base::File;
 
 namespace disk_cache {
 namespace {
@@ -66,10 +69,16 @@ void UmaRecordIndexInitMethod(IndexInitMethod method,
 }
 
 bool WritePickleFile(Pickle* pickle, const base::FilePath& file_name) {
-  int bytes_written = base::WriteFile(
-      file_name, static_cast<const char*>(pickle->data()), pickle->size());
+  File file(
+      file_name,
+      File::FLAG_CREATE | File::FLAG_WRITE | File::FLAG_SHARE_DELETE);
+  if (!file.IsValid())
+    return false;
+
+  int bytes_written =
+      file.Write(0, static_cast<const char*>(pickle->data()), pickle->size());
   if (bytes_written != implicit_cast<int>(pickle->size())) {
-    base::DeleteFile(file_name, /* recursive = */ false);
+    simple_util::SimpleCacheDeleteFile(file_name);
     return false;
   }
   return true;
@@ -95,7 +104,7 @@ void ProcessEntryFile(SimpleIndex::EntrySet* entries,
     return;
   }
 
-  base::File::Info file_info;
+  File::Info file_info;
   if (!base::GetFileInfo(file_path, &file_info)) {
     LOG(ERROR) << "Could not get file info for " << file_path.value();
     return;
@@ -213,8 +222,11 @@ void SimpleIndexFile::SyncWriteToDisk(net::CacheType cache_type,
   }
 
   // Atomically rename the temporary index file to become the real one.
-  bool result = base::ReplaceFile(temp_index_filename, index_filename, NULL);
-  DCHECK(result);
+  // TODO(gavinp): DCHECK when not shutting down, since that is very strange.
+  // The rename failing during shutdown is legal because it's legal to begin
+  // erasing a cache as soon as the destructor has been called.
+  if (!base::ReplaceFile(temp_index_filename, index_filename, NULL))
+    return;
 
   if (app_on_background) {
     SIMPLE_CACHE_UMA(TIMES,
@@ -332,10 +344,14 @@ void SimpleIndexFile::SyncLoadFromDisk(const base::FilePath& index_filename,
                                        SimpleIndexLoadResult* out_result) {
   out_result->Reset();
 
+  File file(index_filename,
+            File::FLAG_OPEN | File::FLAG_READ | File::FLAG_SHARE_DELETE);
+  if (!file.IsValid())
+    return;
+
   base::MemoryMappedFile index_file_map;
-  if (!index_file_map.Initialize(index_filename)) {
-    LOG(WARNING) << "Could not map Simple Index file.";
-    base::DeleteFile(index_filename, false);
+  if (!index_file_map.Initialize(file.Pass())) {
+    simple_util::SimpleCacheDeleteFile(index_filename);
     return;
   }
 
@@ -346,7 +362,7 @@ void SimpleIndexFile::SyncLoadFromDisk(const base::FilePath& index_filename,
       out_result);
 
   if (!out_result->did_load)
-    base::DeleteFile(index_filename, false);
+    simple_util::SimpleCacheDeleteFile(index_filename);
 }
 
 // static
@@ -434,7 +450,7 @@ void SimpleIndexFile::SyncRestoreFromDisk(
     const base::FilePath& index_file_path,
     SimpleIndexLoadResult* out_result) {
   VLOG(1) << "Simple Cache Index is being restored from disk.";
-  base::DeleteFile(index_file_path, /* recursive = */ false);
+  simple_util::SimpleCacheDeleteFile(index_file_path);
   out_result->Reset();
   SimpleIndex::EntrySet* entries = &out_result->entries;
 

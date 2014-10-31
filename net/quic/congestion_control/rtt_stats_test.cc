@@ -4,8 +4,17 @@
 
 #include "net/quic/congestion_control/rtt_stats.h"
 
+#include <vector>
+
 #include "base/logging.h"
+#include "net/test/scoped_mock_log.h"
 #include "testing/gtest/include/gtest/gtest.h"
+
+using logging::LOG_WARNING;
+using std::vector;
+using testing::HasSubstr;
+using testing::Message;
+using testing::_;
 
 namespace net {
 namespace test {
@@ -32,6 +41,27 @@ TEST_F(RttStatsTest, DefaultsBeforeUpdate) {
             rtt_stats_.MinRtt());
   EXPECT_EQ(QuicTime::Delta::FromMicroseconds(rtt_stats_.initial_rtt_us()),
             rtt_stats_.SmoothedRtt());
+}
+
+TEST_F(RttStatsTest, SmoothedRtt) {
+  // Verify that ack_delay is corrected for in Smoothed RTT.
+  rtt_stats_.UpdateRtt(QuicTime::Delta::FromMilliseconds(300),
+                       QuicTime::Delta::FromMilliseconds(100),
+                       QuicTime::Zero());
+  EXPECT_EQ(QuicTime::Delta::FromMilliseconds(200), rtt_stats_.latest_rtt());
+  EXPECT_EQ(QuicTime::Delta::FromMilliseconds(200), rtt_stats_.SmoothedRtt());
+  // Verify that effective RTT of zero does not change Smoothed RTT.
+  rtt_stats_.UpdateRtt(QuicTime::Delta::FromMilliseconds(200),
+                       QuicTime::Delta::FromMilliseconds(200),
+                       QuicTime::Zero());
+  EXPECT_EQ(QuicTime::Delta::FromMilliseconds(200), rtt_stats_.latest_rtt());
+  EXPECT_EQ(QuicTime::Delta::FromMilliseconds(200), rtt_stats_.SmoothedRtt());
+  // Verify that large erroneous ack_delay does not change Smoothed RTT.
+  rtt_stats_.UpdateRtt(QuicTime::Delta::FromMilliseconds(200),
+                       QuicTime::Delta::FromMilliseconds(300),
+                       QuicTime::Zero());
+  EXPECT_EQ(QuicTime::Delta::FromMilliseconds(200), rtt_stats_.latest_rtt());
+  EXPECT_EQ(QuicTime::Delta::FromMilliseconds(200), rtt_stats_.SmoothedRtt());
 }
 
 TEST_F(RttStatsTest, MinRtt) {
@@ -65,6 +95,13 @@ TEST_F(RttStatsTest, MinRtt) {
                            QuicTime::Delta::FromMilliseconds(40)));
   EXPECT_EQ(QuicTime::Delta::FromMilliseconds(10), rtt_stats_.MinRtt());
   EXPECT_EQ(QuicTime::Delta::FromMilliseconds(10), rtt_stats_.recent_min_rtt());
+  // Verify that ack_delay does not go into recording of min_rtt_.
+  rtt_stats_.UpdateRtt(QuicTime::Delta::FromMilliseconds(7),
+                       QuicTime::Delta::FromMilliseconds(2),
+                       QuicTime::Zero().Add(
+                           QuicTime::Delta::FromMilliseconds(50)));
+  EXPECT_EQ(QuicTime::Delta::FromMilliseconds(7), rtt_stats_.MinRtt());
+  EXPECT_EQ(QuicTime::Delta::FromMilliseconds(7), rtt_stats_.recent_min_rtt());
 }
 
 TEST_F(RttStatsTest, RecentMinRtt) {
@@ -187,6 +224,35 @@ TEST_F(RttStatsTest, ExpireSmoothedMetrics) {
   rtt_stats_.UpdateRtt(half_rtt, QuicTime::Delta::Zero(), QuicTime::Zero());
   EXPECT_GT(doubled_rtt, rtt_stats_.SmoothedRtt());
   EXPECT_LT(initial_rtt, rtt_stats_.mean_deviation());
+}
+
+TEST_F(RttStatsTest, UpdateRttWithBadSendDeltas) {
+  // Make sure we ignore bad RTTs.
+  ScopedMockLog log;
+
+  QuicTime::Delta initial_rtt = QuicTime::Delta::FromMilliseconds(10);
+  rtt_stats_.UpdateRtt(initial_rtt, QuicTime::Delta::Zero(), QuicTime::Zero());
+  EXPECT_EQ(initial_rtt, rtt_stats_.MinRtt());
+  EXPECT_EQ(initial_rtt, rtt_stats_.recent_min_rtt());
+  EXPECT_EQ(initial_rtt, rtt_stats_.SmoothedRtt());
+
+  vector<QuicTime::Delta> bad_send_deltas;
+  bad_send_deltas.push_back(QuicTime::Delta::Zero());
+  bad_send_deltas.push_back(QuicTime::Delta::Infinite());
+  bad_send_deltas.push_back(QuicTime::Delta::FromMicroseconds(-1000));
+  log.StartCapturingLogs();
+
+  for (QuicTime::Delta bad_send_delta : bad_send_deltas) {
+    SCOPED_TRACE(Message() << "bad_send_delta = "
+                 << bad_send_delta.ToMicroseconds());
+    EXPECT_CALL(log, Log(LOG_WARNING, _,  _, _, HasSubstr("Ignoring")));
+    rtt_stats_.UpdateRtt(bad_send_delta,
+                         QuicTime::Delta::Zero(),
+                         QuicTime::Zero());
+    EXPECT_EQ(initial_rtt, rtt_stats_.MinRtt());
+    EXPECT_EQ(initial_rtt, rtt_stats_.recent_min_rtt());
+    EXPECT_EQ(initial_rtt, rtt_stats_.SmoothedRtt());
+  }
 }
 
 }  // namespace test

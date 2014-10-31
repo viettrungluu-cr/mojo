@@ -213,6 +213,10 @@ class QueryFence : public ResourceProvider::Fence {
         query_id_, GL_QUERY_RESULT_AVAILABLE_EXT, &available);
     return !!available;
   }
+  void Wait() override {
+    unsigned result = 0;
+    gl_->GetQueryObjectuivEXT(query_id_, GL_QUERY_RESULT_EXT, &result);
+  }
 
  private:
   ~QueryFence() override {}
@@ -724,7 +728,7 @@ void ResourceProvider::DeleteResourceInternal(ResourceMap::iterator it,
     resource->pixels = NULL;
   }
   if (resource->gpu_memory_buffer) {
-    DCHECK(resource->origin != Resource::External);
+    DCHECK(resource->origin == Resource::Internal);
     delete resource->gpu_memory_buffer;
     resource->gpu_memory_buffer = NULL;
   }
@@ -1026,6 +1030,7 @@ ResourceProvider::ScopedWriteLockSoftware::ScopedWriteLockSoftware(
 }
 
 ResourceProvider::ScopedWriteLockSoftware::~ScopedWriteLockSoftware() {
+  DCHECK(thread_checker_.CalledOnValidThread());
   resource_provider_->UnlockForWrite(resource_);
 }
 
@@ -1044,6 +1049,7 @@ ResourceProvider::ScopedWriteLockGpuMemoryBuffer::
 
 ResourceProvider::ScopedWriteLockGpuMemoryBuffer::
     ~ScopedWriteLockGpuMemoryBuffer() {
+  DCHECK(thread_checker_.CalledOnValidThread());
   resource_provider_->UnlockForWrite(resource_);
   if (!gpu_memory_buffer_)
     return;
@@ -1089,11 +1095,13 @@ ResourceProvider::ScopedWriteLockGr::ScopedWriteLockGr(
 }
 
 ResourceProvider::ScopedWriteLockGr::~ScopedWriteLockGr() {
+  DCHECK(thread_checker_.CalledOnValidThread());
   resource_provider_->UnlockForWrite(resource_);
 }
 
 SkSurface* ResourceProvider::ScopedWriteLockGr::GetSkSurface(
     bool use_distance_field_text) {
+  DCHECK(thread_checker_.CalledOnValidThread());
   DCHECK(resource_->locked_for_write);
 
   // If the surface doesn't exist, or doesn't have the correct dff setting,
@@ -1124,6 +1132,35 @@ SkSurface* ResourceProvider::ScopedWriteLockGr::GetSkSurface(
         gr_texture->asRenderTarget(), text_render_mode));
   }
   return resource_->sk_surface.get();
+}
+
+ResourceProvider::SynchronousFence::SynchronousFence(
+    gpu::gles2::GLES2Interface* gl)
+    : gl_(gl), has_synchronized_(true) {
+}
+
+ResourceProvider::SynchronousFence::~SynchronousFence() {
+}
+
+void ResourceProvider::SynchronousFence::Set() {
+  has_synchronized_ = false;
+}
+
+bool ResourceProvider::SynchronousFence::HasPassed() {
+  if (!has_synchronized_) {
+    has_synchronized_ = true;
+    Synchronize();
+  }
+  return true;
+}
+
+void ResourceProvider::SynchronousFence::Wait() {
+  HasPassed();
+}
+
+void ResourceProvider::SynchronousFence::Synchronize() {
+  TRACE_EVENT0("cc", "ResourceProvider::SynchronousFence::Synchronize");
+  gl_->Finish();
 }
 
 ResourceProvider::ResourceProvider(
@@ -2019,11 +2056,12 @@ void ResourceProvider::CopyResource(ResourceId source_id, ResourceId dest_id) {
     gl->BindTexture(source_resource->target, source_resource->gl_id);
     BindImageForSampling(source_resource);
   }
-  DCHECK(use_sync_query_) << "CHROMIUM_sync_query extension missing";
-  if (!source_resource->gl_read_lock_query_id)
-    gl->GenQueriesEXT(1, &source_resource->gl_read_lock_query_id);
-  gl->BeginQueryEXT(GL_COMMANDS_COMPLETED_CHROMIUM,
-                    source_resource->gl_read_lock_query_id);
+  if (use_sync_query_) {
+    if (!source_resource->gl_read_lock_query_id)
+      gl->GenQueriesEXT(1, &source_resource->gl_read_lock_query_id);
+    gl->BeginQueryEXT(GL_COMMANDS_COMPLETED_CHROMIUM,
+                      source_resource->gl_read_lock_query_id);
+  }
   DCHECK(!dest_resource->image_id);
   dest_resource->allocated = true;
   gl->CopyTextureCHROMIUM(dest_resource->target,
@@ -2032,11 +2070,22 @@ void ResourceProvider::CopyResource(ResourceId source_id, ResourceId dest_id) {
                           0,
                           GLInternalFormat(dest_resource->format),
                           GLDataType(dest_resource->format));
-  // End query and create a read lock fence that will prevent access to
-  // source resource until CopyTextureCHROMIUM command has completed.
-  gl->EndQueryEXT(GL_COMMANDS_COMPLETED_CHROMIUM);
-  source_resource->read_lock_fence = make_scoped_refptr(
-      new QueryFence(gl, source_resource->gl_read_lock_query_id));
+  if (source_resource->gl_read_lock_query_id) {
+    // End query and create a read lock fence that will prevent access to
+    // source resource until CopyTextureCHROMIUM command has completed.
+    gl->EndQueryEXT(GL_COMMANDS_COMPLETED_CHROMIUM);
+    source_resource->read_lock_fence = make_scoped_refptr(
+        new QueryFence(gl, source_resource->gl_read_lock_query_id));
+  } else {
+    // Create a SynchronousFence when CHROMIUM_sync_query extension is missing.
+    // Try to use one synchronous fence for as many CopyResource operations as
+    // possible as that reduce the number of times we have to synchronize with
+    // the GL.
+    if (!synchronous_fence_.get() || synchronous_fence_->has_synchronized())
+      synchronous_fence_ = make_scoped_refptr(new SynchronousFence(gl));
+    source_resource->read_lock_fence = synchronous_fence_;
+    source_resource->read_lock_fence->Set();
+  }
 }
 
 void ResourceProvider::WaitSyncPointIfNeeded(ResourceId id) {
@@ -2052,6 +2101,15 @@ void ResourceProvider::WaitSyncPointIfNeeded(ResourceId id) {
   DCHECK(gl);
   GLC(gl, gl->WaitSyncPointCHROMIUM(resource->mailbox.sync_point()));
   resource->mailbox.set_sync_point(0);
+}
+
+void ResourceProvider::WaitReadLockIfNeeded(ResourceId id) {
+  Resource* resource = GetResource(id);
+  DCHECK_EQ(resource->exported_count, 0);
+  if (!resource->read_lock_fence.get())
+    return;
+
+  resource->read_lock_fence->Wait();
 }
 
 GLint ResourceProvider::GetActiveTextureUnit(GLES2Interface* gl) {

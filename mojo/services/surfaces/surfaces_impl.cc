@@ -82,7 +82,7 @@ void SurfacesImpl::CreateGLES2BoundSurface(CommandBufferPtr gles2_client,
         new ContextProviderMojo(command_buffer_handle_.Pass()))));
   }
   factory_.Create(cc_id, size.To<gfx::Size>());
-  display_->Resize(cc_id, size.To<gfx::Size>());
+  display_->Resize(cc_id, size.To<gfx::Size>(), 1.f);
 }
 
 void SurfacesImpl::ReturnResources(const cc::ReturnedResourceArray& resources) {

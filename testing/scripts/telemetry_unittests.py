@@ -17,19 +17,9 @@ def main_run(args):
     filter_tests = json.load(args.filter_file)
 
   with common.temporary_file() as tempfile_path:
-    rc = common.run_command([
-        sys.executable,
-        os.path.join(args.paths['build'], 'scripts', 'tools', 'runit.py'),
-        '--show-path',
-        sys.executable,
-        os.path.join(args.paths['build'], 'scripts', 'slave', 'runtest.py'),
-        '--target', args.build_config_fs,
-        '--xvfb',
+    rc = common.run_runtest(args, [
         '--annotate', 'gtest',
         '--test-type', 'telemetry_unittests',
-        '--builder-name', args.properties['buildername'],
-        '--slave-name', args.properties['slavename'],
-        '--build-number', str(args.properties['buildnumber']),
         '--run-python-script',
         os.path.join(common.SRC_DIR, 'tools', 'telemetry', 'run_tests'),
         '--browser', args.build_config_fs.lower(),

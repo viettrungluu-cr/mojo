@@ -10,7 +10,6 @@
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "base/threading/platform_thread.h"
-#include "base/timer/timer.h"
 #include "net/base/completion_callback.h"
 #include "net/base/io_buffer.h"
 #include "net/base/net_errors.h"
@@ -2331,11 +2330,6 @@ TEST_F(DiskCacheEntryTest, KeySanityCheck) {
   DisableIntegrityCheck();
 }
 
-// The Simple Cache backend requires a few guarantees from the filesystem like
-// atomic renaming of recently open files. Those guarantees are not provided in
-// general on Windows.
-#if defined(OS_POSIX)
-
 TEST_F(DiskCacheEntryTest, SimpleCacheInternalAsyncIO) {
   SetSimpleCacheMode();
   InitCache();
@@ -4063,5 +4057,3 @@ TEST_F(DiskCacheEntryTest, SimpleCacheTruncateLargeSparseFile) {
 
   entry->Close();
 }
-
-#endif  // defined(OS_POSIX)

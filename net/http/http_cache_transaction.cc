@@ -21,7 +21,7 @@
 #include "base/metrics/field_trial.h"
 #include "base/metrics/histogram.h"
 #include "base/metrics/sparse_histogram.h"
-#include "base/profiler/scoped_profile.h"
+#include "base/profiler/scoped_tracker.h"
 #include "base/rand_util.h"
 #include "base/strings/string_number_conversions.h"
 #include "base/strings/string_piece.h"
@@ -2407,9 +2407,9 @@ bool HttpCache::Transaction::ConditionalizeRequest() {
   if (!use_if_range) {
     // stale-while-revalidate is not useful when we only have a partial response
     // cached, so don't set the header in that case.
-    HttpResponseHeaders::FreshnessLifetimes lifetime =
+    HttpResponseHeaders::FreshnessLifetimes lifetimes =
         response_.headers->GetFreshnessLifetimes(response_.response_time);
-    if (lifetime.stale > TimeDelta()) {
+    if (lifetimes.staleness > TimeDelta()) {
       TimeDelta current_age = response_.headers->GetCurrentAge(
           response_.request_time, response_.response_time, Time::Now());
 
@@ -2417,8 +2417,8 @@ bool HttpCache::Transaction::ConditionalizeRequest() {
           kFreshnessHeader,
           base::StringPrintf("max-age=%" PRId64
                              ",stale-while-revalidate=%" PRId64 ",age=%" PRId64,
-                             lifetime.fresh.InSeconds(),
-                             lifetime.stale.InSeconds(),
+                             lifetimes.freshness.InSeconds(),
+                             lifetimes.staleness.InSeconds(),
                              current_age.InSeconds()));
     }
   }
@@ -2948,8 +2948,8 @@ void HttpCache::Transaction::RecordHistograms() {
 }
 
 void HttpCache::Transaction::OnIOComplete(int result) {
-  // TODO(vadimt): Remove ScopedProfile below once crbug.com/422516 is fixed.
-  tracked_objects::ScopedProfile tracking_profile(
+  // TODO(vadimt): Remove ScopedTracker below once crbug.com/422516 is fixed.
+  tracked_objects::ScopedTracker tracking_profile(
       FROM_HERE_WITH_EXPLICIT_FUNCTION("422516 Transaction::OnIOComplete"));
 
   DoLoop(result);

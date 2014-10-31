@@ -49,35 +49,6 @@ using gpu::gles2::GLES2Interface;
 namespace cc {
 namespace {
 
-class FallbackFence : public ResourceProvider::Fence {
- public:
-  explicit FallbackFence(gpu::gles2::GLES2Interface* gl)
-      : gl_(gl), has_passed_(true) {}
-
-  // Overridden from ResourceProvider::Fence:
-  void Set() override { has_passed_ = false; }
-  bool HasPassed() override {
-    if (!has_passed_) {
-      has_passed_ = true;
-      Synchronize();
-    }
-    return true;
-  }
-
- private:
-  ~FallbackFence() override {}
-
-  void Synchronize() {
-    TRACE_EVENT0("cc", "FallbackFence::Synchronize");
-    gl_->Finish();
-  }
-
-  gpu::gles2::GLES2Interface* gl_;
-  bool has_passed_;
-
-  DISALLOW_COPY_AND_ASSIGN(FallbackFence);
-};
-
 bool NeedsIOSurfaceReadbackWorkaround() {
 #if defined(OS_MACOSX)
   // This isn't strictly required in DumpRenderTree-mode when Mesa is used,
@@ -293,6 +264,10 @@ class GLRenderer::SyncQuery {
       query_->Set();
     }
     bool HasPassed() override { return !query_ || !query_->IsPending(); }
+    void Wait() override {
+      if (query_)
+        query_->Wait();
+    }
 
    private:
     ~Fence() override {}
@@ -465,9 +440,6 @@ static ResourceProvider::ResourceId WaitOnResourceSyncPoints(
 }
 
 void GLRenderer::BeginDrawingFrame(DrawingFrame* frame) {
-  if (frame->device_viewport_rect.IsEmpty())
-    return;
-
   TRACE_EVENT0("cc", "GLRenderer::BeginDrawingFrame");
 
   scoped_refptr<ResourceProvider::Fence> read_lock_fence;
@@ -494,7 +466,8 @@ void GLRenderer::BeginDrawingFrame(DrawingFrame* frame) {
 
     read_lock_fence = current_sync_query_->Begin();
   } else {
-    read_lock_fence = make_scoped_refptr(new FallbackFence(gl_));
+    read_lock_fence =
+        make_scoped_refptr(new ResourceProvider::SynchronousFence(gl_));
   }
   resource_provider_->SetReadLockFence(read_lock_fence.get());
 
@@ -503,10 +476,9 @@ void GLRenderer::BeginDrawingFrame(DrawingFrame* frame) {
   DrawQuad::ResourceIteratorCallback wait_on_resource_syncpoints_callback =
       base::Bind(&WaitOnResourceSyncPoints, resource_provider_);
 
-  for (size_t i = 0; i < frame->render_passes_in_draw_order->size(); ++i) {
-    RenderPass* pass = frame->render_passes_in_draw_order->at(i);
-    for (auto& quad : pass->quad_list)
-      quad.IterateResources(wait_on_resource_syncpoints_callback);
+  for (const auto& pass : *frame->render_passes_in_draw_order) {
+    for (const auto& quad : pass->quad_list)
+      quad->IterateResources(wait_on_resource_syncpoints_callback);
   }
 
   // TODO(enne): Do we need to reinitialize all of this state per frame?
@@ -1183,8 +1155,8 @@ void GLRenderer::DrawRenderPassQuad(DrawingFrame* frame,
                                     : BlendModeNormal;
 
   if (use_aa && mask_texture_id && !use_color_matrix) {
-    const RenderPassMaskProgramAA* program =
-        GetRenderPassMaskProgramAA(tex_coord_precision, shader_blend_mode);
+    const RenderPassMaskProgramAA* program = GetRenderPassMaskProgramAA(
+        tex_coord_precision, mask_sampler, shader_blend_mode);
     SetUseProgram(program->program());
     GLC(gl_, gl_->Uniform1i(program->fragment_shader().sampler_location(), 0));
 
@@ -1205,8 +1177,8 @@ void GLRenderer::DrawRenderPassQuad(DrawingFrame* frame,
     shader_backdrop_rect_location =
         program->fragment_shader().backdrop_rect_location();
   } else if (!use_aa && mask_texture_id && !use_color_matrix) {
-    const RenderPassMaskProgram* program =
-        GetRenderPassMaskProgram(tex_coord_precision, shader_blend_mode);
+    const RenderPassMaskProgram* program = GetRenderPassMaskProgram(
+        tex_coord_precision, mask_sampler, shader_blend_mode);
     SetUseProgram(program->program());
     GLC(gl_, gl_->Uniform1i(program->fragment_shader().sampler_location(), 0));
 
@@ -1241,8 +1213,8 @@ void GLRenderer::DrawRenderPassQuad(DrawingFrame* frame,
         program->fragment_shader().backdrop_rect_location();
   } else if (use_aa && mask_texture_id && use_color_matrix) {
     const RenderPassMaskColorMatrixProgramAA* program =
-        GetRenderPassMaskColorMatrixProgramAA(tex_coord_precision,
-                                              shader_blend_mode);
+        GetRenderPassMaskColorMatrixProgramAA(
+            tex_coord_precision, mask_sampler, shader_blend_mode);
     SetUseProgram(program->program());
     GLC(gl_, gl_->Uniform1i(program->fragment_shader().sampler_location(), 0));
 
@@ -1289,8 +1261,8 @@ void GLRenderer::DrawRenderPassQuad(DrawingFrame* frame,
         program->fragment_shader().backdrop_rect_location();
   } else if (!use_aa && mask_texture_id && use_color_matrix) {
     const RenderPassMaskColorMatrixProgram* program =
-        GetRenderPassMaskColorMatrixProgram(tex_coord_precision,
-                                            shader_blend_mode);
+        GetRenderPassMaskColorMatrixProgram(
+            tex_coord_precision, mask_sampler, shader_blend_mode);
     SetUseProgram(program->program());
     GLC(gl_, gl_->Uniform1i(program->fragment_shader().sampler_location(), 0));
 
@@ -1361,14 +1333,16 @@ void GLRenderer::DrawRenderPassQuad(DrawingFrame* frame,
                      -tex_scale_y));
 
   GLint last_texture_unit = 0;
-  scoped_ptr<ResourceProvider::ScopedSamplerGL> shader_mask_sampler_lock;
   if (shader_mask_sampler_location != -1) {
     DCHECK_NE(shader_mask_tex_coord_scale_location, 1);
     DCHECK_NE(shader_mask_tex_coord_offset_location, 1);
-    DCHECK_EQ(SamplerType2D, mask_sampler);
     GLC(gl_, gl_->Uniform1i(shader_mask_sampler_location, 1));
 
     gfx::RectF mask_uv_rect = quad->MaskUVRect();
+    if (mask_sampler != SamplerType2D) {
+      mask_uv_rect.Scale(quad->mask_texture_size.width(),
+                         quad->mask_texture_size.height());
+    }
 
     // Mask textures are oriented vertically flipped relative to the framebuffer
     // and the RenderPass contents texture, so we flip the tex coords from the
@@ -2913,38 +2887,40 @@ const GLRenderer::RenderPassProgramAA* GLRenderer::GetRenderPassProgramAA(
 
 const GLRenderer::RenderPassMaskProgram* GLRenderer::GetRenderPassMaskProgram(
     TexCoordPrecision precision,
+    SamplerType sampler,
     BlendMode blend_mode) {
   DCHECK_GE(precision, 0);
   DCHECK_LT(precision, NumTexCoordPrecisions);
+  DCHECK_GE(sampler, 0);
+  DCHECK_LT(sampler, NumSamplerTypes);
   DCHECK_GE(blend_mode, 0);
   DCHECK_LT(blend_mode, NumBlendModes);
   RenderPassMaskProgram* program =
-      &render_pass_mask_program_[precision][blend_mode];
+      &render_pass_mask_program_[precision][sampler][blend_mode];
   if (!program->initialized()) {
     TRACE_EVENT0("cc", "GLRenderer::renderPassMaskProgram::initialize");
-    program->Initialize(output_surface_->context_provider(),
-                        precision,
-                        SamplerType2D,
-                        blend_mode);
+    program->Initialize(
+        output_surface_->context_provider(), precision, sampler, blend_mode);
   }
   return program;
 }
 
 const GLRenderer::RenderPassMaskProgramAA*
 GLRenderer::GetRenderPassMaskProgramAA(TexCoordPrecision precision,
+                                       SamplerType sampler,
                                        BlendMode blend_mode) {
   DCHECK_GE(precision, 0);
   DCHECK_LT(precision, NumTexCoordPrecisions);
+  DCHECK_GE(sampler, 0);
+  DCHECK_LT(sampler, NumSamplerTypes);
   DCHECK_GE(blend_mode, 0);
   DCHECK_LT(blend_mode, NumBlendModes);
   RenderPassMaskProgramAA* program =
-      &render_pass_mask_program_aa_[precision][blend_mode];
+      &render_pass_mask_program_aa_[precision][sampler][blend_mode];
   if (!program->initialized()) {
     TRACE_EVENT0("cc", "GLRenderer::renderPassMaskProgramAA::initialize");
-    program->Initialize(output_surface_->context_provider(),
-                        precision,
-                        SamplerType2D,
-                        blend_mode);
+    program->Initialize(
+        output_surface_->context_provider(), precision, sampler, blend_mode);
   }
   return program;
 }
@@ -2990,40 +2966,43 @@ GLRenderer::GetRenderPassColorMatrixProgramAA(TexCoordPrecision precision,
 
 const GLRenderer::RenderPassMaskColorMatrixProgram*
 GLRenderer::GetRenderPassMaskColorMatrixProgram(TexCoordPrecision precision,
+                                                SamplerType sampler,
                                                 BlendMode blend_mode) {
   DCHECK_GE(precision, 0);
   DCHECK_LT(precision, NumTexCoordPrecisions);
+  DCHECK_GE(sampler, 0);
+  DCHECK_LT(sampler, NumSamplerTypes);
   DCHECK_GE(blend_mode, 0);
   DCHECK_LT(blend_mode, NumBlendModes);
   RenderPassMaskColorMatrixProgram* program =
-      &render_pass_mask_color_matrix_program_[precision][blend_mode];
+      &render_pass_mask_color_matrix_program_[precision][sampler][blend_mode];
   if (!program->initialized()) {
     TRACE_EVENT0("cc",
                  "GLRenderer::renderPassMaskColorMatrixProgram::initialize");
-    program->Initialize(output_surface_->context_provider(),
-                        precision,
-                        SamplerType2D,
-                        blend_mode);
+    program->Initialize(
+        output_surface_->context_provider(), precision, sampler, blend_mode);
   }
   return program;
 }
 
 const GLRenderer::RenderPassMaskColorMatrixProgramAA*
 GLRenderer::GetRenderPassMaskColorMatrixProgramAA(TexCoordPrecision precision,
+                                                  SamplerType sampler,
                                                   BlendMode blend_mode) {
   DCHECK_GE(precision, 0);
   DCHECK_LT(precision, NumTexCoordPrecisions);
+  DCHECK_GE(sampler, 0);
+  DCHECK_LT(sampler, NumSamplerTypes);
   DCHECK_GE(blend_mode, 0);
   DCHECK_LT(blend_mode, NumBlendModes);
   RenderPassMaskColorMatrixProgramAA* program =
-      &render_pass_mask_color_matrix_program_aa_[precision][blend_mode];
+      &render_pass_mask_color_matrix_program_aa_[precision][sampler]
+                                                [blend_mode];
   if (!program->initialized()) {
     TRACE_EVENT0("cc",
                  "GLRenderer::renderPassMaskColorMatrixProgramAA::initialize");
-    program->Initialize(output_surface_->context_provider(),
-                        precision,
-                        SamplerType2D,
-                        blend_mode);
+    program->Initialize(
+        output_surface_->context_provider(), precision, sampler, blend_mode);
   }
   return program;
 }
@@ -3248,16 +3227,19 @@ void GLRenderer::CleanupSharedObjects() {
       tile_program_swizzle_opaque_[i][j].Cleanup(gl_);
       tile_program_aa_[i][j].Cleanup(gl_);
       tile_program_swizzle_aa_[i][j].Cleanup(gl_);
+
+      for (int k = 0; k < NumBlendModes; k++) {
+        render_pass_mask_program_[i][j][k].Cleanup(gl_);
+        render_pass_mask_program_aa_[i][j][k].Cleanup(gl_);
+        render_pass_mask_color_matrix_program_aa_[i][j][k].Cleanup(gl_);
+        render_pass_mask_color_matrix_program_[i][j][k].Cleanup(gl_);
+      }
     }
     for (int j = 0; j < NumBlendModes; j++) {
-      render_pass_mask_program_[i][j].Cleanup(gl_);
       render_pass_program_[i][j].Cleanup(gl_);
-      render_pass_mask_program_aa_[i][j].Cleanup(gl_);
       render_pass_program_aa_[i][j].Cleanup(gl_);
       render_pass_color_matrix_program_[i][j].Cleanup(gl_);
-      render_pass_mask_color_matrix_program_aa_[i][j].Cleanup(gl_);
       render_pass_color_matrix_program_aa_[i][j].Cleanup(gl_);
-      render_pass_mask_color_matrix_program_[i][j].Cleanup(gl_);
     }
 
     texture_program_[i].Cleanup(gl_);

@@ -1467,13 +1467,45 @@ TEST_F(PictureLayerImplTest, SolidColorLayerHasVisibleFullCoverage) {
   active_layer_->DidDraw(nullptr);
 
   Region remaining = visible_rect;
-  for (auto& quad : render_pass->quad_list) {
-    EXPECT_TRUE(visible_rect.Contains(quad.rect));
-    EXPECT_TRUE(remaining.Contains(quad.rect));
-    remaining.Subtract(quad.rect);
+  for (const auto& quad : render_pass->quad_list) {
+    EXPECT_TRUE(visible_rect.Contains(quad->rect));
+    EXPECT_TRUE(remaining.Contains(quad->rect));
+    remaining.Subtract(quad->rect);
   }
 
   EXPECT_TRUE(remaining.IsEmpty());
+}
+
+TEST_F(PictureLayerImplTest, TileScalesWithSolidColorPile) {
+  gfx::Size layer_bounds(200, 200);
+  gfx::Size tile_size(host_impl_.settings().default_tile_size);
+  scoped_refptr<FakePicturePileImpl> pending_pile =
+      FakePicturePileImpl::CreateEmptyPileThatThinksItHasRecordings(
+          tile_size, layer_bounds);
+  scoped_refptr<FakePicturePileImpl> active_pile =
+      FakePicturePileImpl::CreateEmptyPileThatThinksItHasRecordings(
+          tile_size, layer_bounds);
+
+  pending_pile->set_is_solid_color(false);
+  active_pile->set_is_solid_color(true);
+  SetupTrees(pending_pile, active_pile);
+  // Solid color layer should not have tilings.
+  ASSERT_FALSE(active_layer_->CanHaveTilings());
+
+  // Update properties with solid color pile should not allow tilings at any
+  // scale.
+  host_impl_.active_tree()->UpdateDrawProperties();
+  EXPECT_FALSE(active_layer_->CanHaveTilings());
+  EXPECT_EQ(0.f, active_layer_->ideal_contents_scale());
+
+  // Push non-solid-color pending pile makes active layer can have tilings.
+  active_layer_->UpdatePile(pending_pile);
+  ASSERT_TRUE(active_layer_->CanHaveTilings());
+
+  // Update properties with non-solid color pile should allow tilings.
+  host_impl_.active_tree()->UpdateDrawProperties();
+  EXPECT_TRUE(active_layer_->CanHaveTilings());
+  EXPECT_GT(active_layer_->ideal_contents_scale(), 0.f);
 }
 
 TEST_F(PictureLayerImplTest, MarkRequiredOffscreenTiles) {

@@ -210,6 +210,8 @@ BASE_EXPORT extern "C" NSString* const NSWindowWillEnterFullScreenNotification;
 BASE_EXPORT extern "C" NSString* const NSWindowWillExitFullScreenNotification;
 BASE_EXPORT extern "C" NSString* const NSWindowDidEnterFullScreenNotification;
 BASE_EXPORT extern "C" NSString* const NSWindowDidExitFullScreenNotification;
+BASE_EXPORT extern "C" NSString* const
+    NSWindowDidChangeBackingPropertiesNotification;
 
 @protocol NSWindowDelegateFullScreenAdditions
 - (void)windowDidFailToEnterFullScreen:(NSWindow*)window;
@@ -293,6 +295,10 @@ typedef NSUInteger NSWindowOcclusionState;
 - (NSWindowOcclusionState)occlusionState;
 @end
 
+
+BASE_EXPORT extern "C" NSString* const
+    NSWindowDidChangeOcclusionStateNotification;
+
 enum {
   NSWorkspaceLaunchWithErrorPresentation = 0x00000040
 };
@@ -325,6 +331,7 @@ BASE_EXPORT extern "C" NSString* const kCWSSIDDidChangeNotification;
 @interface NSUserActivity : NSObject
 
 @property (readonly, copy) NSString* activityType;
+@property (copy) NSDictionary* userInfo;
 @property (copy) NSURL* webPageURL;
 
 @end

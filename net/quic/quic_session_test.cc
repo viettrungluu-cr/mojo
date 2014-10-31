@@ -739,7 +739,7 @@ TEST_P(QuicSessionTest, HandshakeUnblocksFlowControlBlockedHeadersStream) {
     headers_stream->WriteHeaders(stream_id, headers, true, nullptr);
     stream_id += 2;
   }
-  // Write one more to ensure that the headers stream has buffered data. The
+  // Write once more to ensure that the headers stream has buffered data. The
   // random headers may have exactly filled the flow control window.
   headers_stream->WriteHeaders(stream_id, headers, true, nullptr);
   EXPECT_TRUE(headers_stream->HasBufferedData());
@@ -998,9 +998,6 @@ TEST_P(QuicSessionTest, WindowUpdateUnblocksHeadersStream) {
 TEST_P(QuicSessionTest, TooManyUnfinishedStreamsCauseConnectionClose) {
   // If a buggy/malicious peer creates too many streams that are not ended with
   // a FIN or RST then we send a connection close.
-  ValueRestore<bool> old_flag(&FLAGS_close_quic_connection_unfinished_streams_2,
-                              true);
-
   EXPECT_CALL(*connection_,
               SendConnectionClose(QUIC_TOO_MANY_UNFINISHED_STREAMS)).Times(1);
 

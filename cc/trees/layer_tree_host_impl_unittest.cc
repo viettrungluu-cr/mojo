@@ -2370,28 +2370,6 @@ class LayerTreeHostImplTopControlsTest : public LayerTreeHostImplTest {
   LayerTreeSettings settings_;
 };  // class LayerTreeHostImplTopControlsTest
 
-TEST_F(LayerTreeHostImplTopControlsTest,
-       TopControlsDeltaOnlySentWithRootLayer) {
-  CreateHostImpl(settings_, CreateOutputSurface());
-
-  host_impl_->active_tree()->set_top_controls_delta(-20.f);
-
-  // Because LTH::ApplyScrollAndScale doesn't know what to do with a scroll
-  // delta packet when the root layer doesn't exist yet, make sure not to set
-  // sent_top_controls_delta either to avoid the delta getting clobbered on the
-  // next commit.
-  scoped_ptr<ScrollAndScaleSet> scroll_info = host_impl_->ProcessScrollDeltas();
-  EXPECT_EQ(scroll_info->top_controls_delta, 0.f);
-  EXPECT_EQ(host_impl_->active_tree()->sent_top_controls_delta(), 0.f);
-
-  SetupTopControlsAndScrollLayer();
-
-  // After the root layer exists, it should be set normally.
-  scroll_info = host_impl_->ProcessScrollDeltas();
-  EXPECT_EQ(scroll_info->top_controls_delta, -20.f);
-  EXPECT_EQ(host_impl_->active_tree()->sent_top_controls_delta(), -20.f);
-}
-
 TEST_F(LayerTreeHostImplTopControlsTest, ScrollTopControlsByFractionalAmount) {
   SetupTopControlsAndScrollLayerWithVirtualViewport(
       gfx::Size(10, 10), gfx::Size(10, 10), gfx::Size(10, 10));
@@ -4423,7 +4401,7 @@ class LayerTreeHostImplViewportCoveredTest : public LayerTreeHostImplTest {
   size_t CountGutterQuads(const QuadList& quad_list) {
     size_t num_gutter_quads = 0;
     for (const auto& quad : quad_list) {
-      num_gutter_quads += (quad.material == gutter_quad_material_) ? 1 : 0;
+      num_gutter_quads += (quad->material == gutter_quad_material_) ? 1 : 0;
     }
     return num_gutter_quads;
   }
@@ -4436,10 +4414,9 @@ class LayerTreeHostImplViewportCoveredTest : public LayerTreeHostImplTest {
   // Make sure that the texture coordinates match their expectations.
   void ValidateTextureDrawQuads(const QuadList& quad_list) {
     for (const auto& quad : quad_list) {
-      if (quad.material != DrawQuad::TEXTURE_CONTENT)
+      if (quad->material != DrawQuad::TEXTURE_CONTENT)
         continue;
-      const TextureDrawQuad* texture_quad =
-          TextureDrawQuad::MaterialCast(&quad);
+      const TextureDrawQuad* texture_quad = TextureDrawQuad::MaterialCast(quad);
       gfx::SizeF gutter_texture_size_pixels = gfx::ScaleSize(
           gutter_texture_size_, host_impl_->device_scale_factor());
       EXPECT_EQ(texture_quad->uv_top_left.x(),
