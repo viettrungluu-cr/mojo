@@ -186,23 +186,16 @@
       ],
     },
     {
-      'target_name': 'mojo_application_bindings_mojom',
-      'type': 'none',
-      'variables': {
-        'mojom_files': [
-          'interfaces/application/application.mojom',
-          'interfaces/application/service_provider.mojom',
-          'interfaces/application/shell.mojom',
-        ],
-      },
-      'includes': [ 'tools/bindings/mojom_bindings_generator_explicit.gypi' ],
-    },
-    {
       # GN version: //mojo/public/interfaces/application:application
       'target_name': 'mojo_application_bindings',
       'type': 'static_library',
+      'sources': [
+        'interfaces/application/application.mojom',
+        'interfaces/application/service_provider.mojom',
+        'interfaces/application/shell.mojom',
+      ],
+      'includes': [ 'tools/bindings/mojom_bindings_generator.gypi' ],
       'dependencies': [
-        'mojo_application_bindings_mojom',
         'mojo_cpp_bindings',
       ],
       'export_dependent_settings': [
@@ -318,35 +311,28 @@
       ],
     },
     {
-      'target_name': 'mojo_public_test_interfaces_mojom',
-      'type': 'none',
-      'variables': {
-        'mojom_files': [
-          'interfaces/bindings/tests/math_calculator.mojom',
-          'interfaces/bindings/tests/no_module.mojom',
-          'interfaces/bindings/tests/rect.mojom',
-          'interfaces/bindings/tests/regression_tests.mojom',
-          'interfaces/bindings/tests/sample_factory.mojom',
-          'interfaces/bindings/tests/sample_import.mojom',
-          'interfaces/bindings/tests/sample_import2.mojom',
-          'interfaces/bindings/tests/sample_interfaces.mojom',
-          'interfaces/bindings/tests/sample_service.mojom',
-          'interfaces/bindings/tests/serialization_test_structs.mojom',
-          'interfaces/bindings/tests/test_structs.mojom',
-          'interfaces/bindings/tests/validation_test_interfaces.mojom',
-        ],
-      },
-      'includes': [ 'tools/bindings/mojom_bindings_generator_explicit.gypi' ],
-    },
-    {
       # GN version: //mojo/public/interfaces/bindings/tests:test_interfaces
       'target_name': 'mojo_public_test_interfaces',
       'type': 'static_library',
+      'sources': [
+        'interfaces/bindings/tests/math_calculator.mojom',
+        'interfaces/bindings/tests/no_module.mojom',
+        'interfaces/bindings/tests/rect.mojom',
+        'interfaces/bindings/tests/regression_tests.mojom',
+        'interfaces/bindings/tests/sample_factory.mojom',
+        'interfaces/bindings/tests/sample_import.mojom',
+        'interfaces/bindings/tests/sample_import2.mojom',
+        'interfaces/bindings/tests/sample_interfaces.mojom',
+        'interfaces/bindings/tests/sample_service.mojom',
+        'interfaces/bindings/tests/serialization_test_structs.mojom',
+        'interfaces/bindings/tests/test_structs.mojom',
+        'interfaces/bindings/tests/validation_test_interfaces.mojom',
+      ],
+      'includes': [ 'tools/bindings/mojom_bindings_generator.gypi' ],
       'export_dependent_settings': [
         'mojo_cpp_bindings',
       ],
       'dependencies': [
-        'mojo_public_test_interfaces_mojom',
         'mojo_cpp_bindings',
       ],
     },
