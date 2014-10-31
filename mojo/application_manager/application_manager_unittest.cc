@@ -402,6 +402,27 @@ class TestServiceInterceptor : public ApplicationManager::Interceptor {
   DISALLOW_COPY_AND_ASSIGN(TestServiceInterceptor);
 };
 
+class TestDelegate : public ApplicationManager::Delegate {
+ public:
+  void AddMapping(const GURL& from, const GURL& to) {
+    mappings_[from] = to;
+  }
+
+  // ApplicationManager::Delegate
+  virtual GURL ResolveURL(const GURL& url) override {
+    auto it = mappings_.find(url);
+    if (it != mappings_.end())
+      return it->second;
+    return url;
+  }
+
+  virtual void OnApplicationError(const GURL& url) override {
+  }
+
+ private:
+  std::map<GURL, GURL> mappings_;
+};
+
 }  // namespace
 
 class ApplicationManagerTest : public testing::Test {
@@ -411,11 +432,11 @@ class ApplicationManagerTest : public testing::Test {
   ~ApplicationManagerTest() override {}
 
   void SetUp() override {
-    application_manager_.reset(new ApplicationManager);
-    TestApplicationLoader* default_loader = new TestApplicationLoader;
-    default_loader->set_context(&context_);
+    application_manager_.reset(new ApplicationManager(&test_delegate_));
+    test_loader_ = new TestApplicationLoader;
+    test_loader_->set_context(&context_);
     application_manager_->set_default_loader(
-        scoped_ptr<ApplicationLoader>(default_loader));
+        scoped_ptr<ApplicationLoader>(test_loader_));
 
     TestServicePtr service_proxy;
     application_manager_->ConnectToService(GURL(kTestURLString),
@@ -450,6 +471,8 @@ class ApplicationManagerTest : public testing::Test {
 
  protected:
   base::ShadowingAtExitManager at_exit_;
+  TestDelegate test_delegate_;
+  TestApplicationLoader* test_loader_;
   TesterContext tester_context_;
   TestContext context_;
   base::MessageLoop loop_;
@@ -466,7 +489,7 @@ TEST_F(ApplicationManagerTest, Basic) {
 
 // Confirm that no arguments are sent to an application by default.
 TEST_F(ApplicationManagerTest, NoArgs) {
-  ApplicationManager am;
+  ApplicationManager am(&test_delegate_);
   GURL test_url("test:test");
   TestContext context;
   TestApplicationLoader* loader = new TestApplicationLoader;
@@ -483,7 +506,7 @@ TEST_F(ApplicationManagerTest, NoArgs) {
 
 // Confirm that arguments are sent to an application.
 TEST_F(ApplicationManagerTest, Args) {
-  ApplicationManager am;
+  ApplicationManager am(&test_delegate_);
   GURL test_url("test:test");
   std::vector<std::string> args;
   args.push_back("test_arg1");
@@ -517,7 +540,7 @@ TEST_F(ApplicationManagerTest, ClientError) {
 
 TEST_F(ApplicationManagerTest, Deletes) {
   {
-    ApplicationManager am;
+    ApplicationManager am(&test_delegate_);
     TestApplicationLoader* default_loader = new TestApplicationLoader;
     default_loader->set_context(&context_);
     TestApplicationLoader* url_loader1 = new TestApplicationLoader;
@@ -675,6 +698,24 @@ TEST_F(ApplicationManagerTest, Interceptor) {
   EXPECT_EQ(1, interceptor.call_count());
   EXPECT_EQ(url, interceptor.url_spec());
   EXPECT_EQ(1, default_loader->num_loads());
+}
+
+TEST_F(ApplicationManagerTest, MappedURLsShouldNotCauseDuplicateLoad) {
+  test_delegate_.AddMapping(GURL("foo:foo2"), GURL("foo:foo"));
+  // 1 because ApplicationManagerTest connects once at startup.
+  EXPECT_EQ(1, test_loader_->num_loads());
+
+  TestServicePtr test_service;
+  application_manager_->ConnectToService(GURL("foo:foo"), &test_service);
+  EXPECT_EQ(2, test_loader_->num_loads());
+
+  TestServicePtr test_service2;
+  application_manager_->ConnectToService(GURL("foo:foo2"), &test_service2);
+  EXPECT_EQ(2, test_loader_->num_loads());
+
+  TestServicePtr test_service3;
+  application_manager_->ConnectToService(GURL("bar:bar"), &test_service2);
+  EXPECT_EQ(3, test_loader_->num_loads());
 }
 
 }  // namespace mojo

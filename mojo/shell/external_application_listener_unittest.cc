@@ -27,7 +27,9 @@ namespace shell {
 
 class ExternalApplicationListenerTest : public testing::Test {
  public:
-  ExternalApplicationListenerTest() : io_thread_("io thread") {}
+  ExternalApplicationListenerTest()
+      : io_thread_("io thread"),
+        application_manager_(&delegate_) {}
   ~ExternalApplicationListenerTest() override {}
 
   void SetUp() override {
@@ -47,6 +49,7 @@ class ExternalApplicationListenerTest : public testing::Test {
   base::Thread io_thread_;
 
   base::ScopedTempDir temp_dir_;
+  ApplicationManager::Delegate delegate_;
   ApplicationManager application_manager_;
   base::FilePath socket_path_;
   scoped_ptr<ExternalApplicationListener> listener_;
