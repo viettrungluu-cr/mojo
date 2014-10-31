@@ -218,8 +218,15 @@ void DynamicApplicationLoader::Load(
     ApplicationManager* manager,
     const GURL& url,
     scoped_refptr<LoadCallbacks> load_callbacks) {
-  if (url.SchemeIsFile()) {
-    loaders_.push_back(new LocalLoader(url,
+  GURL resolved_url;
+  if (url.SchemeIs("mojo")) {
+    resolved_url = context_->mojo_url_resolver()->Resolve(url);
+  } else {
+    resolved_url = url;
+  }
+
+  if (resolved_url.SchemeIsFile()) {
+    loaders_.push_back(new LocalLoader(resolved_url,
                                        context_,
                                        runner_factory_.get(),
                                        load_callbacks,
@@ -232,7 +239,7 @@ void DynamicApplicationLoader::Load(
         GURL("mojo:network_service"), &network_service_);
   }
 
-  loaders_.push_back(new NetworkLoader(url,
+  loaders_.push_back(new NetworkLoader(resolved_url,
                                        &mime_type_to_url_,
                                        context_,
                                        runner_factory_.get(),
