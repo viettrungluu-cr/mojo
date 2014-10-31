@@ -117,9 +117,7 @@ public class BindingsHelper {
             return true;
         }
         if (o1 == null) {
-            if (o2 != null) {
-                return false;
-            }
+            return false;
         }
         return o1.equals(o2);
     }
