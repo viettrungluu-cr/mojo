@@ -8,6 +8,7 @@
 #include "base/callback_helpers.h"
 #include "base/location.h"
 #include "base/message_loop/message_loop_proxy.h"
+#include "base/threading/platform_thread.h"
 
 namespace mojo {
 namespace shell {
@@ -52,7 +53,8 @@ void InProcessDynamicServiceRunner::Start(
 
 void InProcessDynamicServiceRunner::Run() {
   DVLOG(2) << "Loading/running Mojo app in process from library: "
-           << app_path_.value();
+           << app_path_.value()
+           << " thread id=" << base::PlatformThread::CurrentId();
 
   app_library_ = LoadAndRunService(app_path_, service_handle_.Pass());
   app_completed_callback_runner_.Run();

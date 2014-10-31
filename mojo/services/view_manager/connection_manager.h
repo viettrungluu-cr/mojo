@@ -117,6 +117,8 @@ class MOJO_VIEW_MANAGER_EXPORT ConnectionManager
   }
   const ViewManagerServiceImpl* GetConnectionWithRoot(const ViewId& id) const;
 
+  WindowManagerInternal* wm_internal() { return wm_internal_.get(); }
+
   // These functions trivially delegate to all ViewManagerServiceImpls, which in
   // term notify their clients.
   void ProcessViewDestroyed(ServerView* view);
@@ -210,6 +212,8 @@ class MOJO_VIEW_MANAGER_EXPORT ConnectionManager
   DisplayManager display_manager_;
 
   scoped_ptr<ServerView> root_;
+
+  WindowManagerInternalPtr wm_internal_;
 
   scoped_ptr<WindowManagerInternalClientImpl> wm_internal_client_impl_;
 

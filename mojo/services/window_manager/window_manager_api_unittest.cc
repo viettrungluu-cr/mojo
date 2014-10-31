@@ -17,7 +17,6 @@
 #include "mojo/services/public/cpp/view_manager/view_manager_delegate.h"
 #include "mojo/services/public/interfaces/view_manager/view_manager.mojom.h"
 #include "mojo/services/public/interfaces/window_manager/window_manager.mojom.h"
-#include "mojo/services/public/interfaces/window_manager2/window_manager2.mojom.h"
 #include "mojo/shell/shell_test_helper.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
@@ -28,7 +27,7 @@ const char kTestServiceURL[] = "mojo:test_url";
 
 void EmptyResultCallback(bool result) {}
 
-class TestWindowManagerClient : public WindowManagerClient2 {
+class TestWindowManagerClient : public WindowManagerClient {
  public:
   typedef base::Callback<void(Id, Id)>
       TwoNodeCallback;
@@ -46,7 +45,6 @@ class TestWindowManagerClient : public WindowManagerClient2 {
 
  private:
   // Overridden from WindowManagerClient:
-  void OnWindowManagerReady() override { run_loop_->Quit(); }
   void OnCaptureChanged(Id old_capture_node_id,
                         Id new_capture_node_id) override {}
   void OnFocusChanged(Id old_focused_node_id, Id new_focused_node_id) override {
@@ -173,10 +171,10 @@ class WindowManagerApiTest : public testing::Test {
   }
 
   TestWindowManagerClient* window_manager_client() {
-    return window_manager2_client_.get();
+    return window_manager_client_.get();
   }
 
-  WindowManagerService2Ptr window_manager2_;
+  WindowManagerPtr window_manager_;
 
  private:
   // Overridden from testing::Test:
@@ -195,10 +193,10 @@ class WindowManagerApiTest : public testing::Test {
 
   void ConnectToWindowManager2() {
     test_helper_->application_manager()->ConnectToService(
-        GURL("mojo:window_manager"), &window_manager2_);
+        GURL("mojo:window_manager"), &window_manager_);
     base::RunLoop connect_loop;
-    window_manager2_client_.reset(new TestWindowManagerClient(&connect_loop));
-    window_manager2_.set_client(window_manager_client());
+    window_manager_client_.reset(new TestWindowManagerClient(&connect_loop));
+    window_manager_.set_client(window_manager_client());
     connect_loop.Run();
 
     // The RunLoop above ensures the connection to the windowmanager completes.
@@ -240,8 +238,7 @@ class WindowManagerApiTest : public testing::Test {
   }
 
   scoped_ptr<shell::ShellTestHelper> test_helper_;
-  WindowManagerPtr window_manager_;
-  scoped_ptr<TestWindowManagerClient> window_manager2_client_;
+  scoped_ptr<TestWindowManagerClient> window_manager_client_;
   TestApplicationLoader::RootAddedCallback root_added_callback_;
 
   DISALLOW_COPY_AND_ASSIGN(WindowManagerApiTest);
@@ -252,14 +249,14 @@ class WindowManagerApiTest : public testing::Test {
 // core_window_manager.
 TEST_F(WindowManagerApiTest, DISABLED_FocusAndActivateWindow) {
   Id first_window = OpenWindow();
-  window_manager2_->FocusWindow(first_window, base::Bind(&EmptyResultCallback));
+  window_manager_->FocusWindow(first_window, base::Bind(&EmptyResultCallback));
   TwoIds ids = WaitForFocusChange();
   EXPECT_TRUE(ids.first == 0);
   EXPECT_EQ(ids.second, first_window);
 
   Id second_window = OpenWindow();
-  window_manager2_->ActivateWindow(second_window,
-                                   base::Bind(&EmptyResultCallback));
+  window_manager_->ActivateWindow(second_window,
+                                  base::Bind(&EmptyResultCallback));
   ids = WaitForActiveWindowChange();
   EXPECT_EQ(ids.first, first_window);
   EXPECT_EQ(ids.second, second_window);

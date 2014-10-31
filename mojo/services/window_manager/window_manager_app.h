@@ -20,7 +20,6 @@
 #include "mojo/services/public/interfaces/window_manager/window_manager_internal.mojom.h"
 #include "mojo/services/window_manager/native_viewport_event_dispatcher_impl.h"
 #include "mojo/services/window_manager/window_manager_impl.h"
-#include "mojo/services/window_manager/window_manager_service2_impl.h"
 #include "ui/aura/client/focus_change_observer.h"
 #include "ui/events/event_handler.h"
 #include "ui/wm/public/activation_change_observer.h"
@@ -44,7 +43,7 @@ class AuraInit;
 class DummyDelegate;
 class WindowManagerClient;
 class WindowManagerDelegate;
-class WindowManagerService2Impl;
+class WindowManagerImpl;
 
 // Implements core window manager functionality that could conceivably be shared
 // across multiple window managers implementing superficially different user
@@ -57,13 +56,13 @@ class WindowManagerService2Impl;
 // This object maintains an aura::WindowTreeHost containing a hierarchy of
 // aura::Windows. Window manager functionality (e.g. focus, activation,
 // modality, etc.) are implemented using aura core window manager components.
-class WindowManagerApp
-    : public ApplicationDelegate,
-      public ViewManagerDelegate,
-      public ViewObserver,
-      public ui::EventHandler,
-      public aura::client::FocusChangeObserver,
-      public aura::client::ActivationChangeObserver {
+class WindowManagerApp : public ApplicationDelegate,
+                         public ViewManagerDelegate,
+                         public ViewObserver,
+                         public ui::EventHandler,
+                         public aura::client::FocusChangeObserver,
+                         public aura::client::ActivationChangeObserver,
+                         public InterfaceFactory<WindowManagerInternal> {
  public:
   WindowManagerApp(ViewManagerDelegate* view_manager_delegate,
                    WindowManagerDelegate* window_manager_delegate);
@@ -73,8 +72,8 @@ class WindowManagerApp
   aura::Window* GetWindowForViewId(Id view);
 
   // Register/deregister new connections to the window manager service.
-  void AddConnection(WindowManagerService2Impl* connection);
-  void RemoveConnection(WindowManagerService2Impl* connection);
+  void AddConnection(WindowManagerImpl* connection);
+  void RemoveConnection(WindowManagerImpl* connection);
 
   // These are canonical implementations of the window manager API methods.
   void SetCapture(Id view);
@@ -102,10 +101,12 @@ class WindowManagerApp
   bool ConfigureIncomingConnection(ApplicationConnection* connection) override;
 
  private:
-  typedef std::set<WindowManagerService2Impl*> Connections;
+  // TODO(sky): rename this. Connections is ambiguous.
+  typedef std::set<WindowManagerImpl*> Connections;
   typedef std::map<Id, aura::Window*> ViewIdToWindowMap;
 
   struct PendingEmbed;
+  class WindowManagerInternalImpl;
 
   // Overridden from ViewManagerDelegate:
   void OnEmbed(ViewManager* view_manager,
@@ -146,10 +147,11 @@ class WindowManagerApp
   // Creates the connection to the ViewManager.
   void LaunchViewManager(ApplicationImpl* app);
 
-  Shell* shell_;
+  // InterfaceFactory<WindowManagerInternal>:
+  void Create(ApplicationConnection* connection,
+              InterfaceRequest<WindowManagerInternal> request) override;
 
-  InterfaceFactoryImplWithContext<WindowManagerService2Impl, WindowManagerApp>
-      window_manager_service2_factory_;
+  Shell* shell_;
 
   InterfaceFactoryImplWithContext<WindowManagerImpl, WindowManagerApp>
       window_manager_factory_;

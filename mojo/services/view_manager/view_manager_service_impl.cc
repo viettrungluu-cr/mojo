@@ -550,10 +550,14 @@ void ViewManagerServiceImpl::OnConnectionEstablished() {
   for (ViewIdSet::const_iterator i = roots_.begin(); i != roots_.end(); ++i)
     GetUnknownViewsFrom(GetView(ViewIdFromTransportId(*i)), &to_send);
 
+  MessagePipe pipe;
+  connection_manager_->wm_internal()->CreateWindowManagerForViewManagerClient(
+      id_, pipe.handle1.Pass());
   client()->OnEmbed(id_,
                     creator_url_,
                     ViewToViewData(to_send.front()),
-                    service_provider_.Pass());
+                    service_provider_.Pass(),
+                    pipe.handle0.Pass());
 }
 
 const base::hash_set<Id>&

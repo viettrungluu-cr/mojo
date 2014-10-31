@@ -78,6 +78,27 @@ Id GetIdForWindow(aura::Window* window) {
 
 }  // namespace
 
+class WindowManagerApp::WindowManagerInternalImpl
+    : public InterfaceImpl<WindowManagerInternal> {
+ public:
+  WindowManagerInternalImpl(WindowManagerApp* app) : app_(app) {}
+  ~WindowManagerInternalImpl() override {}
+
+  // WindowManagerInternal:
+  void CreateWindowManagerForViewManagerClient(
+      uint16_t connection_id,
+      ScopedMessagePipeHandle window_manager_pipe) override {
+    // |wm_internal| is tied to the life of the pipe.
+    WindowManagerImpl* wm = new WindowManagerImpl(app_, true);
+    BindToPipe(wm, window_manager_pipe.Pass());
+  }
+
+ private:
+  WindowManagerApp* app_;
+
+  DISALLOW_COPY_AND_ASSIGN(WindowManagerInternalImpl);
+};
+
 // Used for calls to Embed() that occur before we've connected to the
 // ViewManager.
 struct WindowManagerApp::PendingEmbed {
@@ -92,7 +113,6 @@ WindowManagerApp::WindowManagerApp(
     ViewManagerDelegate* view_manager_delegate,
     WindowManagerDelegate* window_manager_delegate)
     : shell_(nullptr),
-      window_manager_service2_factory_(this),
       window_manager_factory_(this),
       native_viewport_event_dispatcher_factory_(this),
       wrapped_view_manager_delegate_(view_manager_delegate),
@@ -114,12 +134,12 @@ aura::Window* WindowManagerApp::GetWindowForViewId(Id view) {
   return it != view_id_to_window_map_.end() ? it->second : NULL;
 }
 
-void WindowManagerApp::AddConnection(WindowManagerService2Impl* connection) {
+void WindowManagerApp::AddConnection(WindowManagerImpl* connection) {
   DCHECK(connections_.find(connection) == connections_.end());
   connections_.insert(connection);
 }
 
-void WindowManagerApp::RemoveConnection(WindowManagerService2Impl* connection) {
+void WindowManagerApp::RemoveConnection(WindowManagerImpl* connection) {
   DCHECK(connections_.find(connection) != connections_.end());
   connections_.erase(connection);
 }
@@ -182,7 +202,6 @@ void WindowManagerApp::Initialize(ApplicationImpl* impl) {
 
 bool WindowManagerApp::ConfigureIncomingConnection(
     ApplicationConnection* connection) {
-  connection->AddService(&window_manager_service2_factory_);
   connection->AddService(&window_manager_factory_);
   return true;
 }
@@ -210,11 +229,6 @@ void WindowManagerApp::OnEmbed(ViewManager* view_manager,
   if (wrapped_view_manager_delegate_) {
     wrapped_view_manager_delegate_->OnEmbed(
         view_manager, root, exported_services, imported_services.Pass());
-  }
-
-  for (Connections::const_iterator it = connections_.begin();
-       it != connections_.end(); ++it) {
-    (*it)->NotifyReady();
   }
 
   for (PendingEmbed* pending_embed : pending_embeds_)
@@ -385,8 +399,15 @@ void WindowManagerApp::LaunchViewManager(ApplicationImpl* app) {
                              pipe.handle0.Pass(), shell_, this).Pass();
 
   view_manager_app->AddService(&native_viewport_event_dispatcher_factory_);
+  view_manager_app->AddService(this);
 
   view_manager_app->ConnectToService(&window_manager_client_);
+}
+
+void WindowManagerApp::Create(ApplicationConnection* connection,
+                              InterfaceRequest<WindowManagerInternal> request) {
+  WindowManagerInternalImpl* impl = new WindowManagerInternalImpl(this);
+  BindToRequest(impl, &request);
 }
 
 }  // namespace mojo

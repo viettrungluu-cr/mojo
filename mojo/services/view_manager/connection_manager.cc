@@ -77,6 +77,7 @@ ConnectionManager::ConnectionManager(ApplicationConnection* app_connection,
       static_cast<InterfaceFactory<ViewManagerService>*>(this));
   app_connection->AddService(
       static_cast<InterfaceFactory<WindowManagerInternalClient>*>(this));
+  app_connection->ConnectToService(&wm_internal_);
   root_->SetBounds(gfx::Rect(800, 600));
 }
 

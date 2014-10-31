@@ -136,11 +136,13 @@ interface ViewManagerService {
 [Client=ViewManagerService]
 interface ViewManagerClient {
   // Invoked when the client application has been embedded at |root|.
-  // See Embed() on ViewManagerService for more details.
+  // See Embed() on ViewManagerService for more details. |window_manager_pipe|
+  // is a pipe to the WindowManager.
   OnEmbed(uint16 connection_id,
           string embedder_url,
           ViewData root,
-          ServiceProvider&? service_provider);
+          ServiceProvider&? parent_service_provider,
+          handle<message_pipe> window_manager_pipe);
 
   // Invoked when a view's bounds have changed.
   OnViewBoundsChanged(uint32 view,

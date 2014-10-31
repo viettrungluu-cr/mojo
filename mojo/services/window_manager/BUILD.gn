@@ -32,8 +32,6 @@ source_set("lib") {
     "window_manager_delegate.h",
     "window_manager_impl.cc",
     "window_manager_impl.h",
-    "window_manager_service2_impl.cc",
-    "window_manager_service2_impl.h",
   ]
 
   public_deps = [
@@ -54,7 +52,6 @@ source_set("lib") {
     "//mojo/public/interfaces/application:application",
     "//mojo/services/public/interfaces/native_viewport",
     "//mojo/services/public/interfaces/window_manager",
-    "//mojo/services/public/interfaces/window_manager2",
   ]
 }
 
@@ -73,7 +70,6 @@ test("window_manager_unittests") {
     "//mojo/services/public/cpp/view_manager",
     "//mojo/services/public/interfaces/view_manager",
     "//mojo/services/public/interfaces/window_manager",
-    "//mojo/services/public/interfaces/window_manager2",
     "//mojo/shell:test_support",
     "//testing/gtest",
     "//ui/gl",

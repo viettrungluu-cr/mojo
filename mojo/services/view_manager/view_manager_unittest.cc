@@ -361,7 +361,8 @@ class TestViewManagerClientConnection
   void OnEmbed(ConnectionSpecificId connection_id,
                const String& creator_url,
                ViewDataPtr root,
-               InterfaceRequest<ServiceProvider> services) override {
+               InterfaceRequest<ServiceProvider> services,
+               ScopedMessagePipeHandle window_manager_pipe) override {
     tracker()->OnEmbed(connection_id, creator_url, root.Pass());
   }
   void OnViewBoundsChanged(Id view_id,
@@ -475,14 +476,22 @@ class TestWindowManagerImpl : public InterfaceImpl<WindowManager> {
   virtual void OnConnectionEstablished() override {}
 
   // WindowManager:
-  virtual void Embed(
-      const String& url,
-      InterfaceRequest<ServiceProvider> service_provider) override {
+  void Embed(const String& url,
+             InterfaceRequest<ServiceProvider> service_provider) override {
     if (!got_initial_embed_) {
       got_initial_embed_ = true;
       return;
     }
     view_manager_client_->tracker()->DelegateEmbed(url);
+  }
+  void SetCapture(Id view, const Callback<void(bool)>& callback) override {
+    callback.Run(true);
+  }
+  void FocusWindow(Id view, const Callback<void(bool)>& callback) override {
+    callback.Run(true);
+  }
+  void ActivateWindow(Id view, const Callback<void(bool)>& callback) override {
+    callback.Run(true);
   }
 
  private:
