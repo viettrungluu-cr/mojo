@@ -13,6 +13,7 @@ executable("message_generator") {
 
   deps = [
     "//base",
+    "//build/config/sanitizers:deps",
     "//mojo/common",
     "//mojo/edk/system",
     "//mojo/environment:chromium",
@@ -20,4 +21,3 @@ executable("message_generator") {
     "//testing/gtest",
   ]
 }
-
