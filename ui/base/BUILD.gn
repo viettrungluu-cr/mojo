@@ -424,9 +424,6 @@ component("base") {
       "cursor/cursor_loader_win.cc",
       "cursor/cursor_loader_win.h",
     ]
-    deps += [
-      "//third_party/wtl",
-    ]
     cflags = [
       "/wd4267",  # TODO(jschuh): C4267: http://crbug.com/167187 size_t -> int.
       "/wd4324",  # Structure was padded due to __declspec(align()), which is

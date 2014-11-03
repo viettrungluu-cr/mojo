@@ -121,11 +121,6 @@ component("aura") {
     sources -= [
       "input_state_lookup.cc",
     ]
-
-    deps += [
-      "//ui/metro_viewer",
-      "//ipc",
-    ]
   }
 
   if (use_ozone) {

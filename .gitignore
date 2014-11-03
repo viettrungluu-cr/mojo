@@ -15,6 +15,7 @@ Thumbs.db
 v8.log
 /build/util/LASTCHANGE*
 /build/linux/bin/eu-strip
+/build/win_toolchain.json
 /buildtools
 # The Chrome OS build creates a /c symlink due to http://crbug.com/54866.
 # TODO(vtl): Check if this is still true.
@@ -44,6 +45,7 @@ v8.log
 /third_party/llvm-build
 /third_party/lss
 /third_party/mesa/src
+/third_party/nss
 /third_party/ots
 /third_party/pdfium
 /third_party/pywebsocket/src

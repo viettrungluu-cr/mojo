@@ -47,6 +47,10 @@ vars = {
   # the commit queue can handle CLs rolling lss
   # and whatever else without interference from each other.
   'lss_revision': '952107fa7cea0daaabead28c0e92d579bee517eb',
+  # Three lines of non-changing comments so that
+  # the commit queue can handle CLs rolling nss
+  # and whatever else without interference from each other.
+  'nss_revision': '87b96db4268293187d7cf741907a6d5d1d8080e0',
 }
 
 # Only these hosts are allowed for dependencies in this DEPS file.
@@ -157,6 +161,14 @@ deps_os = {
     'src/third_party/freetype':
        Var('chromium_git') + '/chromium/src/third_party/freetype.git' + '@' + 'a2b9955b49034a51dfbc8bf9f4e9d312149cecac',
   },
+  'win': {
+    'src/third_party/nss':
+     Var('chromium_git') + '/chromium/deps/nss.git' + '@' + Var('nss_revision'),
+    'src/third_party/bison':
+     Var('chromium_git') + '/chromium/deps/bison.git' + '@' + '083c9a45e4affdd5464ee2b224c2df649c6e26c3',
+    'src/third_party/gperf':
+     Var('chromium_git') + '/chromium/deps/gperf.git' + '@' + 'd892d79f64f9449770443fb06da49b5a1e5d33c1',
+  }
 }
 
 
@@ -238,6 +250,17 @@ hooks = [
                 '--no_auth',
                 '--bucket', 'chromium-gn',
                 '-s', 'src/buildtools/linux64/gn.sha1',
+    ],
+  },
+  {
+    'name': 'gn_win',
+    'pattern': '.',
+    'action': [ 'download_from_google_storage',
+                '--no_resume',
+                '--platform=win*',
+                '--no_auth',
+                '--bucket', 'chromium-gn',
+                '-s', 'src/buildtools/win/gn.exe.sha1',
     ],
   },
   # Pull clang-format binaries using checked-in hashes.
