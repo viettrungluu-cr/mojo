@@ -6,6 +6,10 @@ import("//build/config/ui.gni")
 import("//mojo/public/mojo.gni")
 import("//mojo/public/tools/bindings/mojom.gni")
 
+# We don't support building in the component build since mojo apps are
+# inherently components.
+assert(!is_component_build)
+
 if (is_android) {
   import("//build/config/android/config.gni")
   import("//build/config/android/rules.gni")
@@ -26,10 +30,6 @@ executable("mojo_shell") {
     "//mojo/common",
     "//mojo/environment:chromium",
   ]
-
-  if (is_component_build) {
-    deps += ["//ui/gl"]
-  }
 }
 
 }  # !use_prebuilt_mojo_shell

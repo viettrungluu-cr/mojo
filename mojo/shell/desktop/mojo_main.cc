@@ -18,10 +18,6 @@
 #include "mojo/shell/mojo_url_resolver.h"
 #include "mojo/shell/switches.h"
 
-#if defined(COMPONENT_BUILD)
-#include "ui/gl/gl_surface.h"
-#endif
-
 namespace {
 
 #if defined(OS_LINUX)
@@ -150,9 +146,6 @@ int main(int argc, char** argv) {
               *base::CommandLine::ForCurrentProcess())) {
     child_process->Main();
   } else {
-#if defined(COMPONENT_BUILD)
-    gfx::GLSurface::InitializeOneOff();
-#endif
     // We want the shell::Context to outlive the MessageLoop so that pipes are
     // all gracefully closed / error-out before we try to shut the Context down.
     mojo::shell::Context shell_context;

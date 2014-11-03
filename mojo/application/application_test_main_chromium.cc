@@ -11,10 +11,8 @@
 #include "mojo/public/cpp/system/message_pipe.h"
 
 MojoResult MojoMain(MojoHandle shell_handle) {
-#if !defined(COMPONENT_BUILD)
   // An AtExitManager instance is needed to construct message loops.
   base::AtExitManager at_exit;
-#endif
 
   {
     // This RunLoop is used for init, and then destroyed before running tests.

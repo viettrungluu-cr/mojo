@@ -42,11 +42,6 @@ bool SetThunks(Thunks (*make_thunks)(),
 base::NativeLibrary DynamicServiceRunner::LoadAndRunService(
     const base::FilePath& app_path,
     ScopedMessagePipeHandle service_handle) {
-#if defined(COMPONENT_BUILD)
-  NOTREACHED() << "Only static builds are supported";
-  return nullptr;
-#endif
-
   DVLOG(2) << "Loading/running Mojo app in process from library: "
            << app_path.value();
   base::NativeLibraryLoadError error;

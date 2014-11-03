@@ -42,9 +42,7 @@ MojoResult ApplicationRunnerChromium::Run(MojoHandle shell_handle) {
   has_run_ = true;
 
   base::CommandLine::Init(0, NULL);
-#if !defined(COMPONENT_BUILD)
   base::AtExitManager at_exit;
-#endif
 
 #ifndef NDEBUG
   base::debug::EnableInProcessStackDumping();
