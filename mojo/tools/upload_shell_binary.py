@@ -12,7 +12,7 @@ import zipfile
 
 root_path = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                             "..", "..")
-version = subprocess.check_output(["git", "show-ref", "-s", "HEAD"]).strip()
+version = subprocess.check_output(["git", "rev-parse", "HEAD"]).strip()
 
 sys.path.insert(0, os.path.join(root_path, "tools"))
 
