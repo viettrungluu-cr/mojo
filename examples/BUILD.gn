@@ -12,6 +12,7 @@ group("examples") {
     "//examples/content_handler_demo",
     "//examples/echo",
     "//examples/png_viewer",
+    "//examples/recursive_content_handler",
     "//examples/sample_app",
     "//examples/surfaces_app",
     "//examples/wget",
@@ -32,7 +33,7 @@ group("examples") {
 
   if (!is_android) {
     deps += [
-      "//examples/pdf_viewer",  
+      "//examples/pdf_viewer",
     ]
   }
 }
