@@ -7,14 +7,8 @@ group("root") {
 
   deps = [
     "//mojo",
+    "//sky",
   ]
-
-  if (!is_win) {
-    deps += [
-      "//sky",
-    ]
-  }
-
   if (!is_android && !is_win) {
     deps += [ "//tools/xdisplaycheck" ]
   }

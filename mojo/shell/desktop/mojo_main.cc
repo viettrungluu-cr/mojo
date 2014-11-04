@@ -35,7 +35,7 @@ void SplitString(const std::string& str, std::vector<std::string>* argv) {
 }
 #endif
 
-bool IsEmpty(const std::string& s) {
+bool is_empty(const std::string& s) {
   return s.empty();
 }
 
@@ -48,7 +48,7 @@ GURL GetAppURLAndSetArgs(const base::CommandLine::StringType& app_url_and_args,
   // SplitString() returns empty strings for extra delimeter characters (' ').
   std::vector<std::string> argv;
   SplitString(app_url_and_args, &argv);
-  argv.erase(std::remove_if(argv.begin(), argv.end(), IsEmpty), argv.end());
+  argv.erase(std::remove_if(argv.begin(), argv.end(), is_empty), argv.end());
 
   if (argv.empty())
     return GURL::EmptyGURL();
@@ -101,7 +101,7 @@ bool ConfigureURLMappings(const std::string& mappings,
   return true;
 }
 
-bool IsArgsFor(const std::string& arg, std::string* value) {
+bool isArgsFor(const std::string& arg, std::string* value) {
   const std::string kArgsForSwitches[] = {
     "-" + std::string(switches::kArgsFor),
     "--" + std::string(switches::kArgsFor),
@@ -170,9 +170,9 @@ int main(int argc, char** argv) {
       // because it can appear more than once. The base::CommandLine class
       // collapses multiple occurrences of the same switch.
       for (int i = 1; i < argc; i++) {
-        std::string args_for_value;
-        if (IsArgsFor(argv[i], &args_for_value))
-          GetAppURLAndSetArgs(args_for_value, &shell_context);
+        std::string argsForValue;
+        if (isArgsFor(argv[i], &argsForValue))
+          GetAppURLAndSetArgs(argsForValue, &shell_context);
       }
 
       message_loop.PostTask(FROM_HERE, base::Bind(RunApps, &shell_context));

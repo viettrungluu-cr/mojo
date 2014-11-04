@@ -28,7 +28,6 @@ v8.log
 /testing/gtest
 /third_party/android_tools/
 /third_party/angle
-/third_party/bison
 /third_party/boringssl/src
 /third_party/brotli/src
 /third_party/colorama/src
@@ -36,7 +35,6 @@ v8.log
 /third_party/fontconfig/src
 /third_party/freetype
 /third_party/freetype2/src
-/third_party/gperf
 /third_party/icu
 /third_party/jsr-305/src
 /third_party/libc++/trunk

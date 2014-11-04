@@ -6,15 +6,7 @@
 
 #include <errno.h>
 #include <stdlib.h>
-#if defined(OS_POSIX)
 #include <unistd.h>
-#endif
-#if defined(OS_WIN)
-#include <winsock2.h>
-#define EDQUOT WSAEDQUOT
-#define EHOSTDOWN WSAEHOSTDOWN
-#define EUSERS WSAEUSERS
-#endif
 
 #include <string>
 

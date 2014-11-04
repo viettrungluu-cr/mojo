@@ -136,9 +136,7 @@ TEST_F(IncomingConnectionListenerTest, ConnectFails_SocketFileUndeletable) {
 }
 
 TEST_F(IncomingConnectionListenerTest, ConnectFails_SocketDirNonexistent) {
-  base::FilePath nonexistent_dir(temp_dir_.path()
-                                     .Append(FILE_PATH_LITERAL("dir"))
-                                     .Append(FILE_PATH_LITERAL("file")));
+  base::FilePath nonexistent_dir(temp_dir_.path().Append("dir").Append("file"));
 
   ListeningFailsDelegate fail_delegate(net::ERR_FILE_NOT_FOUND);
   IncomingConnectionListenerPosix listener(nonexistent_dir, &fail_delegate);
