@@ -10,11 +10,11 @@ import subprocess
 mojo_root_dir = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                              os.pardir, os.pardir, os.pardir)
 
-def commit(message):
-  subprocess.call(['git', 'commit', '-a', '-m', message])
+def commit(message, cwd=None):
+  subprocess.call(['git', 'commit', '-a', '-m', message], cwd=cwd)
 
-def system(command):
-  return subprocess.check_output(command)
+def system(command, cwd=None):
+  return subprocess.check_output(command, cwd=cwd)
 
 def find(patterns, start='.'):
   for path, dirs, files in os.walk(start):
