@@ -528,6 +528,7 @@ config("chromium_code") {
   if (is_win) {
     cflags = [
       "/W4",  # Warning level 4.
+      "/wd4267",  # TODO(jschuh): crbug.com/167187 size_t to int truncations.
     ]
   } else {
     cflags = [
@@ -558,6 +559,7 @@ config("no_chromium_code") {
     cflags += [
       "/W3",  # Warning level 3.
       "/wd4800",  # Disable warning when forcing value to bool.
+      "/wd4267",  # TODO(jschuh): crbug.com/167187 size_t to int truncations.
     ]
     defines += [
       "_CRT_NONSTDC_NO_WARNINGS",

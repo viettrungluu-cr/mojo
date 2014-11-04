@@ -858,7 +858,7 @@ component("base") {
     ]
 
     # TODO(jschuh): crbug.com/167187 fix size_t to int truncations.
-    #cflags = [ "/wd4267" ]
+    cflags = [ "/wd4267" ]
 
     libs = [
       "cfgmgr32.lib",

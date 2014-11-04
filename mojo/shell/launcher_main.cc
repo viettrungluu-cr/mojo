@@ -23,11 +23,11 @@ const char kShellPath[] = "shell-path";
 class Launcher {
  public:
   explicit Launcher(base::CommandLine* command_line)
-      : app_path_(command_line->GetSwitchValueASCII(kAppPath)),
+      : app_path_(command_line->GetSwitchValuePath(kAppPath)),
         app_url_(command_line->GetSwitchValueASCII(kAppURL)),
         loop_(base::MessageLoop::TYPE_IO),
-        connection_(base::FilePath(
-            command_line->GetSwitchValueASCII(kShellPath))),
+        connection_(
+            base::FilePath(command_line->GetSwitchValuePath(kShellPath))),
         connect_result_(0) {}
   ~Launcher() {}
 
@@ -89,7 +89,11 @@ class Launcher {
   scoped_ptr<base::RunLoop> run_loop_;
 };
 
+#if defined(OS_WIN)
+int main(int argc, wchar_t** argv) {
+#else
 int main(int argc, char** argv) {
+#endif
   base::AtExitManager at_exit;
   mojo::embedder::Init(scoped_ptr<mojo::embedder::PlatformSupport>(
       new mojo::embedder::SimplePlatformSupport()));
