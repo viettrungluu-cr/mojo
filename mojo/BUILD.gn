@@ -19,6 +19,7 @@ group("mojo") {
     "//mojo/common",
     "//mojo/public",
     "//mojo/services",
+    "//mojo/shell:mojo_launcher",
     "//mojo/tools/package_manager",
     "//services",
   ]

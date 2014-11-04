@@ -17,7 +17,6 @@ if (is_android) {
 
 if (!use_prebuilt_mojo_shell) {
 
-# GYP version: mojo/mojo.gyp:mojo_shell
 executable("mojo_shell") {
   sources = [
     "desktop/mojo_main.cc"
@@ -34,7 +33,35 @@ executable("mojo_shell") {
 
 }  # !use_prebuilt_mojo_shell
 
-# GYP version: mojo/mojo.gyp:mojo_shell_lib
+executable("mojo_launcher") {
+  sources = [
+    "launcher_main.cc"
+  ]
+
+  deps = [
+    ":external_application_registrar_bindings",
+    ":external_application_registrar_connection",
+    ":in_process_dynamic_service_runner",
+    "//base",
+    "//mojo/common",
+    "//mojo/edk/system",
+    "//mojo/environment:chromium",
+  ]
+}
+
+source_set("in_process_dynamic_service_runner") {
+  sources = [
+    "dynamic_service_runner.cc",
+    "dynamic_service_runner.h",
+    "in_process_dynamic_service_runner.cc",
+    "in_process_dynamic_service_runner.h",
+  ]
+
+  deps = [
+    "//mojo/gles2",
+  ]
+}
+
 source_set("lib") {
   sources = [
     "app_child_process.cc",
@@ -51,15 +78,11 @@ source_set("lib") {
     "data_pipe_peek.h",
     "dynamic_application_loader.cc",
     "dynamic_application_loader.h",
-    "dynamic_service_runner.cc",
-    "dynamic_service_runner.h",
     "external_application_listener.h",
     "external_application_listener_posix.cc",
     "external_application_listener_win.cc",
     "filename_util.cc",
     "filename_util.h",
-    "in_process_dynamic_service_runner.cc",
-    "in_process_dynamic_service_runner.h",
     "incoming_connection_listener_posix.cc",
     "incoming_connection_listener_posix.h",
     "init.cc",
@@ -82,6 +105,7 @@ source_set("lib") {
     ":app_child_process_bindings",
     ":external_application_registrar_bindings",
     ":external_service_bindings",
+    ":in_process_dynamic_service_runner",
     "//base",
     "//base/third_party/dynamic_annotations",
     "//base:base_static",
@@ -89,7 +113,6 @@ source_set("lib") {
     "//mojo/application_manager",
     "//mojo/common",
     "//mojo/edk/system",
-    "//mojo/gles2",
     "//mojo/public/interfaces/application",
     "//mojo/services/public/interfaces/network",
     "//mojo/shell/domain_socket",

@@ -48,7 +48,7 @@ void IncomingConnectionListenerPosix::StartListening() {
 
   int rv = net::OK;
   if (!base::DirectoryExists(socket_path_.DirName())) {
-    LOG(ERROR) << "Directorty for listening socket does not exist.";
+    LOG(ERROR) << "Directory for listening socket does not exist.";
     rv = net::ERR_FILE_NOT_FOUND;
   } else if (!base::PathIsWritable(socket_path_.DirName())) {
     LOG(ERROR) << "Listening socket file path is not writable.";

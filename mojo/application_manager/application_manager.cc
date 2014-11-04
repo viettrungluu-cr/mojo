@@ -223,8 +223,14 @@ void ApplicationManager::ConnectToClient(ShellImpl* shell_impl,
 void ApplicationManager::RegisterExternalApplication(
     const GURL& url,
     ScopedMessagePipeHandle shell_handle) {
-  url_to_shell_impl_[url] =
+  ShellImpl* shell_impl =
       WeakBindToPipe(new ShellImpl(this, url), shell_handle.Pass());
+  url_to_shell_impl_[url] = shell_impl;
+  URLToArgsMap::const_iterator args_it = url_to_args_.find(url);
+  Array<String> args;
+  if (args_it != url_to_args_.end())
+    args = Array<String>::From(args_it->second);
+  shell_impl->client()->Initialize(args.Pass());
 }
 
 void ApplicationManager::RegisterLoadedApplication(
