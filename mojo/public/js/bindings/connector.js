@@ -86,6 +86,8 @@ define("mojo/public/js/bindings/connector", [
     for (;;) {
       var read = core.readMessage(this.handle_,
                                   core.READ_MESSAGE_FLAG_NONE);
+      if (this.handle_ == null) // The connector has been closed.
+        return;
       if (read.result == core.RESULT_SHOULD_WAIT) {
         this.waitToReadMore_();
         return;

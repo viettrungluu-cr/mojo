@@ -26,7 +26,7 @@ define("mojo/public/js/bindings/router", [
   }
 
   Router.prototype.close = function() {
-    this.completers_ = null;  // Drop any responders.
+    this.completers_.clear();  // Drop any responders.
     this.connector_.close();
   };
 
