@@ -14,7 +14,7 @@ define("mojo/public/js/bindings/router", [
     this.connector_ = new connectorFactory(handle);
     this.incomingReceiver_ = null;
     this.nextRequestID_ = 0;
-    this.responders_ = {};
+    this.completers_ = new Map();
     this.payloadValidators_ = [];
 
     this.connector_.setIncomingReceiver({
@@ -26,7 +26,7 @@ define("mojo/public/js/bindings/router", [
   }
 
   Router.prototype.close = function() {
-    this.responders_ = {};  // Drop any responders.
+    this.completers_ = null;  // Drop any responders.
     this.connector_.close();
   };
 
@@ -38,7 +38,7 @@ define("mojo/public/js/bindings/router", [
     // TODO(mpcomplete): no way to trasmit errors over a Connection.
   };
 
-  Router.prototype.acceptWithResponder = function(message, responder) {
+  Router.prototype.acceptAndExpectResponse = function(message) {
     // Reserve 0 in case we want it to convey special meaning in the future.
     var requestID = this.nextRequestID_++;
     if (requestID == 0)
@@ -46,13 +46,15 @@ define("mojo/public/js/bindings/router", [
 
     message.setRequestID(requestID);
     var result = this.connector_.accept(message);
+    if (!result)
+      return Promise.reject(Error("Connection error"));
 
-    this.responders_[requestID] = responder;
-
-    // TODO(mpcomplete): accept should return a Promise too, maybe?
-    if (result)
-      return Promise.resolve();
-    return Promise.reject(Error("Connection error"));
+    var completer = {};
+    this.completers_.set(requestID, completer);
+    return new Promise(function(resolve, reject) {
+      completer.resolve = resolve;
+      completer.reject = reject;
+    });
   };
 
   Router.prototype.setIncomingReceiver = function(receiver) {
@@ -92,9 +94,9 @@ define("mojo/public/js/bindings/router", [
     } else if (message.isResponse()) {
       var reader = new codec.MessageReader(message);
       var requestID = reader.requestID;
-      var responder = this.responders_[requestID];
-      delete this.responders_[requestID];
-      responder.accept(message);
+      var completer = this.completers_.get(requestID);
+      this.completers_.delete(requestID);
+      completer.resolve(message);
     } else {
       if (this.incomingReceiver_)
         this.incomingReceiver_.accept(message);
@@ -106,8 +108,9 @@ define("mojo/public/js/bindings/router", [
   }
 
   Router.prototype.handleConnectionError_ = function(result) {
-    for (var each in this.responders_)
-      this.responders_[each].reject(result);
+    this.completers_.forEach(function(value) {
+      value.reject(result);
+    });
     this.close();
   };
 
