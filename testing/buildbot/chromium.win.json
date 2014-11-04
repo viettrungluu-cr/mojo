@@ -86,6 +86,20 @@
       "url_unittests",
       "views_unittests",
       "wm_unittests"
+    ],
+    "scripts": [
+      {
+        "name": "telemetry_unittests",
+        "script": "telemetry_unittests.py"
+      },
+      {
+        "name": "telemetry_perf_unittests",
+        "script": "telemetry_perf_unittests.py"
+      },
+      {
+        "name": "nacl_integration",
+        "script": "nacl_integration.py"
+      }
     ]
   },
   "Vista Tests (1)": {
@@ -181,6 +195,16 @@
       "url_unittests",
       "views_unittests",
       "wm_unittests"
+    ],
+    "scripts": [
+      {
+        "name": "telemetry_unittests",
+        "script": "telemetry_unittests.py"
+      },
+      {
+        "name": "telemetry_perf_unittests",
+        "script": "telemetry_perf_unittests.py"
+      }
     ]
   },
   "Win7 Tests (1)": {
@@ -282,6 +306,20 @@
       "url_unittests",
       "views_unittests",
       "wm_unittests"
+    ],
+    "scripts": [
+      {
+        "name": "telemetry_unittests",
+        "script": "telemetry_unittests.py"
+      },
+      {
+        "name": "telemetry_perf_unittests",
+        "script": "telemetry_perf_unittests.py"
+      },
+      {
+        "name": "nacl_integration",
+        "script": "nacl_integration.py"
+      }
     ]
   },
   "Win 7 Tests x64 (1)": {
@@ -374,6 +412,16 @@
       "url_unittests",
       "views_unittests",
       "wm_unittests"
+    ],
+    "scripts": [
+      {
+        "name": "telemetry_unittests",
+        "script": "telemetry_unittests.py"
+      },
+      {
+        "name": "nacl_integration",
+        "script": "nacl_integration.py"
+      }
     ]
   },
   "Win7 Tests (dbg)(1)": {
@@ -475,6 +523,16 @@
       "url_unittests",
       "views_unittests",
       "wm_unittests"
+    ],
+    "scripts": [
+      {
+        "name": "telemetry_unittests",
+        "script": "telemetry_unittests.py"
+      },
+      {
+        "name": "telemetry_perf_unittests",
+        "script": "telemetry_perf_unittests.py"
+      }
     ]
   },
   "Win8 Aura": {

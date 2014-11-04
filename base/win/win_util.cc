@@ -119,12 +119,14 @@ namespace win {
 
 static bool g_crash_on_process_detach = false;
 
-void GetNonClientMetrics(NONCLIENTMETRICS* metrics) {
+void GetNonClientMetrics(NONCLIENTMETRICS_XP* metrics) {
   DCHECK(metrics);
   metrics->cbSize = sizeof(*metrics);
-  const bool success =
-      !!SystemParametersInfo(
-           SPI_GETNONCLIENTMETRICS, metrics->cbSize, metrics, 0);
+  const bool success = !!SystemParametersInfo(
+      SPI_GETNONCLIENTMETRICS,
+      metrics->cbSize,
+      reinterpret_cast<NONCLIENTMETRICS*>(metrics),
+      0);
   DCHECK(success);
 }
 

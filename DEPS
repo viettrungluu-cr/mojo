@@ -22,27 +22,27 @@ vars = {
   'libcxx_revision': '48198f9110397fff47fe7c37cbfa296be7d44d3d',
   'libcxxabi_revision': '4ad1009ab3a59fa7a6896d74d5e4de5885697f95',
   'sfntly_revision': '1bdaae8fc788a5ac8936d68bf24f37d977a13dac',
-  'skia_revision': '32501a1bd4964576264795ada7e9c3bf572285b3',
+  'skia_revision': '7a10fb6bead0f63623307a7ff71b1dd323534a7f',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling Skia
   # and V8 without interference from each other.
-  'v8_revision': 'bfb312d4b40507780e15bfee2e0dc32f1391c4db', # from svn revision 24925
+  'v8_revision': '11b7b24c91c903ee08b2b6b94f0bbb17b966dd92', # from svn revision 25090
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling ANGLE
   # and whatever else without interference from each other.
-  "angle_revision": "d2f756be4fd198d630b64dc6c3568184363e6d14",
+  "angle_revision": "4de44cb67e9e36966fb1993c0be35659a47182ef",
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling build tools
   # and whatever else without interference from each other.
-  'buildtools_revision': '56bc51aff4175d3fa27dcd0faa2c345ab046c8a5',
+  'buildtools_revision': '51ca1f25a2ecea34069cb3ff35394dc53b6fd657',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling PDFium
   # and whatever else without interference from each other.
-  'pdfium_revision': '767aebbef641a89498deebc29369a078207b4dcc',
+  'pdfium_revision': '4dc95e74e1acc75f4eab08bc771874cd2a9c3a9b',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling BoringSSL
   # and whatever else without interference from each other.
-  'boringssl_revision': '751e889b1d791d2b91c1437248454fa1d4e101a5',
+  'boringssl_revision': '03a739d8d2cdc2560531a7446ead0f705409670a',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling lss
   # and whatever else without interference from each other.
@@ -102,7 +102,7 @@ deps = {
     Var('chromium_git') + '/external/ots.git' + '@' + '98897009f3ea8a5fa3e20a4a74977da7aaa8e61a',
 
   'src/third_party/brotli/src':
-    Var('chromium_git') + '/external/font-compression-reference.git' + '@' + '6cef49677dc4c650ef6e3f56041e0a41803afa8c',
+   Var('chromium_git') + '/external/font-compression-reference.git' + '@' + '65cb3326e30ef8a67eb1d4411ec563e91be6e9ae',
 
   'src/third_party/yasm/source/patched-yasm':
    Var('chromium_git') + '/chromium/deps/yasm/patched-yasm.git' + '@' + 'c960eb11ccda80b10ed50be39df4f0663b371d1d',

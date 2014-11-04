@@ -42,12 +42,14 @@ bool GLES2Context::Initialize() {
   // TODO(piman): Some contexts (such as compositor) want this to be true, so
   // this needs to be a public parameter.
   bool lose_context_when_out_of_memory = false;
+  bool support_client_side_arrays = false;
   implementation_.reset(
       new gpu::gles2::GLES2Implementation(gles2_helper_.get(),
                                           NULL,
                                           transfer_buffer_.get(),
                                           bind_generates_resource,
                                           lose_context_when_out_of_memory,
+                                          support_client_side_arrays,
                                           &command_buffer_));
   return implementation_->Initialize(kDefaultStartTransferBufferSize,
                                      kDefaultMinTransferBufferSize,

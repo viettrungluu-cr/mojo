@@ -80,9 +80,6 @@ config("compiler") {
                   # structured exceptions (only C++ ones).
       ]
     }
-    if (using_sanitizer) {
-      # Avoid error.
-    }
   } else {
     # Common GCC compiler flags setup.
     # --------------------------------
