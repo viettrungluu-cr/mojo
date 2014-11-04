@@ -444,9 +444,12 @@ def _CheckGNCheck(input_api, output_api):
     # TODO(eseidel): Currently only these are known to pass,
     # once everything passes we can just call 'gn check' once without a filter!
     KNOWN_PASSING = [
-      '//sky/*',
       '//mojo/public/*',
     ]
+    if input_api.platform != 'win32':
+      KNOWN_PASSING += [
+        '//sky/*',
+      ]
     for target_filter in KNOWN_PASSING:
       try:
         input_api.subprocess.check_output(['gn', 'check', relative_out_dir,

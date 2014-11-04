@@ -119,6 +119,16 @@ source_set("lib") {
     "//mojo/spy",
   ]
 
+  if (!is_win) {
+    deps -= [
+      "//mojo/shell/domain_socket",
+    ]
+    sources -= [
+      "external_application_listener_posix.cc",
+      "incoming_connection_listener_posix.cc",
+    ]
+  }
+
   if (is_android) {
     sources += [
       "network_application_loader.cc",
@@ -217,8 +227,8 @@ source_set("external_application_registrar_connection") {
   ]
 
   deps = [
-   ":external_application_registrar_bindings",
-   "//mojo/shell/domain_socket"
+    ":external_application_registrar_bindings",
+    "//mojo/shell/domain_socket"
   ]
 }
 
