@@ -8,6 +8,7 @@
 #include <string>
 
 #include "base/callback_forward.h"
+#include "base/threading/platform_thread.h"
 #include "mojo/common/mojo_common_export.h"
 #include "mojo/public/cpp/system/core.h"
 

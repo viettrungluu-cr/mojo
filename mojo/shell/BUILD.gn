@@ -47,6 +47,8 @@ source_set("lib") {
     "child_process_host.h",
     "context.cc",
     "context.h",
+    "data_pipe_peek.cc",
+    "data_pipe_peek.h",
     "dynamic_application_loader.cc",
     "dynamic_application_loader.h",
     "dynamic_service_runner.cc",
@@ -201,6 +203,7 @@ source_set("external_application_registrar_connection") {
 test("mojo_shell_tests") {
   sources = [
     "child_process_host_unittest.cc",
+    "data_pipe_peek_unittest.cc",
     "dynamic_application_loader_unittest.cc",
     "in_process_dynamic_service_runner_unittest.cc",
     "mojo_url_resolver_unittest.cc",

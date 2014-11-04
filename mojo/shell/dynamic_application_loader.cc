@@ -16,6 +16,7 @@
 #include "mojo/common/data_pipe_utils.h"
 #include "mojo/services/public/interfaces/network/url_loader.mojom.h"
 #include "mojo/shell/context.h"
+#include "mojo/shell/data_pipe_peek.h"
 #include "mojo/shell/filename_util.h"
 #include "mojo/shell/switches.h"
 #include "url/url_util.h"
@@ -158,6 +159,30 @@ class DynamicApplicationLoader::NetworkLoader : public Loader {
   }
 
  private:
+  bool PeekContentHandler(DataPipeConsumerHandle source,
+                          std::string* mojo_shebang,
+                          GURL* mojo_content_handler_url)
+  {
+    const char* kMojoMagic = "#!mojo:";
+    // TODO(hansmuller): Revisit this when a real peek operation is available.
+    const MojoDeadline kPeekTimeout = MOJO_DEADLINE_INDEFINITE;
+    const size_t kMaxShebangLength = 2048;
+
+    std::string magic;
+    std::string shebang;
+    if (BlockingPeekNBytes(source, &magic, strlen(kMojoMagic), kPeekTimeout) &&
+        magic == kMojoMagic &&
+        BlockingPeekLine(source, &shebang, kMaxShebangLength, kPeekTimeout)) {
+      GURL url(shebang.substr(2, std::string::npos));
+      if (url.is_valid()) {
+        *mojo_shebang = shebang;
+        *mojo_content_handler_url = url;
+        return true;
+      }
+    }
+    return false;
+  }
+
   void OnLoadComplete(URLResponsePtr response) {
     if (response->error) {
       LOG(ERROR) << "Error (" << response->error->code << ": "
@@ -167,6 +192,24 @@ class DynamicApplicationLoader::NetworkLoader : public Loader {
       return;
     }
 
+    // If the response begins with a #!mojo:<content-handler-url>, use it.
+    {
+      GURL url;
+      std::string shebang;
+      if (PeekContentHandler(response->body.get(), &shebang, &url)) {
+        uint32_t num_skip_bytes = shebang.size();
+        if (ReadDataRaw(response->body.get(),
+                        nullptr,
+                        &num_skip_bytes,
+                        MOJO_READ_DATA_FLAG_ALL_OR_NONE |
+                        MOJO_READ_DATA_FLAG_DISCARD) ==
+            MOJO_RESULT_OK) {
+          load_callbacks_->LoadWithContentHandler(url, response.Pass());
+          return;
+        }
+      }
+    }
+
     MimeTypeToURLMap::iterator iter =
         mime_type_to_url_->find(response->mime_type);
     if (iter != mime_type_to_url_->end()) {
@@ -174,11 +217,7 @@ class DynamicApplicationLoader::NetworkLoader : public Loader {
       return;
     }
 
-    LOG(INFO) << "Failed to find content handler for " << response->url
-              << " (mimetype: " << response->url << ")" << std::endl
-              << "Attempting to load as native library instead...";
-
-    // TODO(aa): Santify check that the thing we got looks vaguely like a mojo
+    // TODO(aa): Sanity check that the thing we got looks vaguely like a mojo
     // application. That could either mean looking for the platform-specific dll
     // header, or looking for some specific mojo signature prepended to the
     // library.
@@ -197,7 +236,6 @@ class DynamicApplicationLoader::NetworkLoader : public Loader {
   base::FilePath file_;
   base::WeakPtrFactory<NetworkLoader> weak_ptr_factory_;
 };
-
 DynamicApplicationLoader::DynamicApplicationLoader(
     Context* context,
     scoped_ptr<DynamicServiceRunnerFactory> runner_factory)
