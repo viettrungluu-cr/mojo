@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# This target contains utilities needed when not using Chromium's environment.
 source_set("utility") {
   sources = [
     "mutex.h",
@@ -30,4 +31,19 @@ source_set("utility") {
       "lib/thread.cc",
     ]
   }
+}
+
+# This target contains utility classes that can be used either with standalone
+# Mojo environment, or with Chromium's environment.
+source_set("util") {
+  sources = [
+    "async_waiter.h",
+    "lib/async_waiter.cc",
+  ]
+
+  deps = [
+    "//mojo/public/cpp/bindings:callback",
+    "//mojo/public/cpp/environment",
+    "//mojo/public/cpp/system",
+  ]
 }
