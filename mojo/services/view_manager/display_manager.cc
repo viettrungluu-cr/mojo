@@ -156,6 +156,8 @@ void DisplayManager::Draw() {
 }
 
 void DisplayManager::OnDestroyed() {
+  // This is called when the native_viewport is torn down before
+  // ~DisplayManager may be called.
   native_viewport_closed_callback_.Run();
 }
 

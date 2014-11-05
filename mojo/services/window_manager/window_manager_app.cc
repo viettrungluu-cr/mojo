@@ -90,7 +90,13 @@ class WindowManagerApp::WindowManagerInternalImpl
       ScopedMessagePipeHandle window_manager_pipe) override {
     // |wm_internal| is tied to the life of the pipe.
     WindowManagerImpl* wm = new WindowManagerImpl(app_, true);
-    BindToPipe(wm, window_manager_pipe.Pass());
+    WeakBindToPipe(wm, window_manager_pipe.Pass());
+  }
+
+  // InterfaceImpl:
+  void OnConnectionError() override {
+    // Necessary since we used WeakBindToPipe and are not automatically deleted.
+    delete this;
   }
 
  private:
@@ -122,7 +128,9 @@ WindowManagerApp::WindowManagerApp(
       dummy_delegate_(new DummyDelegate) {
 }
 
-WindowManagerApp::~WindowManagerApp() {}
+WindowManagerApp::~WindowManagerApp() {
+  STLDeleteElements(&connections_);
+}
 
 // static
 View* WindowManagerApp::GetViewForWindow(aura::Window* window) {

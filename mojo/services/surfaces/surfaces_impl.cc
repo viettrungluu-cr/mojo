@@ -25,6 +25,7 @@ SurfacesImpl::SurfacesImpl(cc::SurfaceManager* manager,
 }
 
 SurfacesImpl::~SurfacesImpl() {
+  factory_.DestroyAll();
 }
 
 void SurfacesImpl::CreateSurface(SurfaceIdPtr id, mojo::SizePtr size) {
