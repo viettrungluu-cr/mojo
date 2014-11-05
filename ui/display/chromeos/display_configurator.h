@@ -15,7 +15,6 @@
 #include "base/memory/scoped_ptr.h"
 #include "base/observer_list.h"
 #include "base/timer/timer.h"
-#include "third_party/cros_system_api/dbus/service_constants.h"
 #include "ui/display/display_export.h"
 #include "ui/display/types/display_constants.h"
 #include "ui/display/types/native_display_observer.h"

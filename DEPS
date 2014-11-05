@@ -133,10 +133,6 @@ deps_os = {
     'src/third_party/lss':
       Var('chromium_git') + '/external/linux-syscall-support/lss.git' + '@' + Var('lss_revision'),
 
-    # For Linux and Chromium OS.
-    'src/third_party/cros_system_api':
-     Var('chromium_git') + '/chromiumos/platform/system_api.git' + '@' + '7d5f30c6bd012260e5266c6e9624f4fed91eb852',
-
     # Note that this is different from Android's freetype repo.
     'src/third_party/freetype2/src':
      Var('chromium_git') + '/chromium/src/third_party/freetype2.git' + '@' + '495a23fce9cd125f715dc20643d14fed226d76ac',
