@@ -45,6 +45,17 @@ component("views") {
     deps += [ "//ui/display/util" ]
   }
 
+  if (is_win) {
+    sources += gypi_values.views_win_sources
+    cflags = [ "/wd4267" ]  # TODO(jschuh): crbug.com/167187 fix size_t to int truncations.
+    libs = [ "/imm32.lib", "oleacc.lib" ]
+    ldflags = [ "/DELAYLOAD:user32.dll" ]
+    deps += [
+      "//third_party/iaccessible2",
+      "//third_party/wtl",
+    ]
+  }
+
   if (use_ozone) {
     deps += [ "//ui/ozone" ]
   }

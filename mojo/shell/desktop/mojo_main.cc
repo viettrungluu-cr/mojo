@@ -25,16 +25,6 @@ namespace {
 const char kEnableHarfBuzzRenderText[] = "enable-harfbuzz-rendertext";
 #endif
 
-#if defined(OS_WIN)
-void SplitString(const base::string16& str, std::vector<std::string>* argv) {
-  base::SplitString(base::UTF16ToUTF8(str), ' ', argv);
-}
-#elif defined(OS_POSIX)
-void SplitString(const std::string& str, std::vector<std::string>* argv) {
-  base::SplitString(str, ' ', argv);
-}
-#endif
-
 bool IsEmpty(const std::string& s) {
   return s.empty();
 }
@@ -43,11 +33,11 @@ bool IsEmpty(const std::string& s) {
 // is a list of "configuration" arguments separated by spaces. If one or more
 // arguments are specified they will be available when the Mojo application
 // is initialized. See ApplicationImpl::args().
-GURL GetAppURLAndSetArgs(const base::CommandLine::StringType& app_url_and_args,
+GURL GetAppURLAndSetArgs(const std::string& app_url_and_args,
                          mojo::shell::Context* context) {
   // SplitString() returns empty strings for extra delimeter characters (' ').
   std::vector<std::string> argv;
-  SplitString(app_url_and_args, &argv);
+  base::SplitString(app_url_and_args, ' ', &argv);
   argv.erase(std::remove_if(argv.begin(), argv.end(), IsEmpty), argv.end());
 
   if (argv.empty())
@@ -60,8 +50,15 @@ GURL GetAppURLAndSetArgs(const base::CommandLine::StringType& app_url_and_args,
 
 void RunApps(mojo::shell::Context* context) {
   const auto& command_line = *base::CommandLine::ForCurrentProcess();
-  for (const auto& arg : command_line.GetArgs())
-    context->Run(GetAppURLAndSetArgs(arg, context));
+  for (const auto& arg : command_line.GetArgs()) {
+    std::string arg2;
+#if defined(OS_WIN)
+    arg2 = base::UTF16ToUTF8(arg);
+#else
+    arg2 = arg;
+#endif
+    context->Run(GetAppURLAndSetArgs(arg2, context));
+  }
 }
 
 void Usage() {

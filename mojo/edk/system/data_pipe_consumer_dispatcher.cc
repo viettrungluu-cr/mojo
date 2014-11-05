@@ -79,8 +79,8 @@ MojoResult DataPipeConsumerDispatcher::ReadDataImplNoLock(
   return data_pipe_->ConsumerReadData(
       elements,
       num_bytes,
-      (flags & MOJO_READ_DATA_FLAG_ALL_OR_NONE),
-      (flags & MOJO_READ_DATA_FLAG_PEEK));
+      !!(flags & MOJO_READ_DATA_FLAG_ALL_OR_NONE),
+      !!(flags & MOJO_READ_DATA_FLAG_PEEK));
 }
 
 MojoResult DataPipeConsumerDispatcher::BeginReadDataImplNoLock(

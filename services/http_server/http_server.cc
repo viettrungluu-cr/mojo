@@ -3,7 +3,12 @@
 // found in the LICENSE file.
 
 #include <stdio.h>
+
+#if defined(OS_WIN)
+#include <winsock2.h>
+#elif defined(OS_POSIX)
 #include <arpa/inet.h>
+#endif
 
 #include "base/bind.h"
 #include "base/memory/weak_ptr.h"

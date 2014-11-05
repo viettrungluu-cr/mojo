@@ -11,6 +11,7 @@
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/message_loop/message_loop.h"
+#include "base/strings/string_util.h"
 #include "base/strings/utf_string_conversions.h"
 #include "mojo/common/common_type_converters.h"
 #include "mojo/common/data_pipe_utils.h"
@@ -102,6 +103,7 @@ class DynamicApplicationLoader::LocalLoader : public Loader {
     base::string16 decoded_path =
         base::string16(output.data(), output.length());
 #if defined(OS_WIN)
+    base::TrimString(decoded_path, L"/", &decoded_path);
     base::FilePath path(decoded_path);
 #else
     base::FilePath path(base::UTF16ToUTF8(decoded_path));
