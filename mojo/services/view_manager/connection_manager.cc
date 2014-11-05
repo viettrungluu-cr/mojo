@@ -97,6 +97,13 @@ ConnectionSpecificId ConnectionManager::GetAndAdvanceNextConnectionId() {
 }
 
 void ConnectionManager::OnConnectionError(ViewManagerServiceImpl* connection) {
+  if (connection == window_manager_vm_service_) {
+    window_manager_vm_service_ = nullptr;
+    delegate_->OnLostConnectionToWindowManager();
+    // Assume we've been destroyed.
+    return;
+  }
+
   scoped_ptr<ViewManagerServiceImpl> connection_owner(connection);
 
   connection_map_.erase(connection->id());
@@ -106,11 +113,6 @@ void ConnectionManager::OnConnectionError(ViewManagerServiceImpl* connection) {
        i != connection_map_.end();
        ++i) {
     i->second->OnViewManagerServiceImplDestroyed(connection->id());
-  }
-
-  if (connection == window_manager_vm_service_) {
-    window_manager_vm_service_ = nullptr;
-    delegate_->OnLostConnectionToWindowManager();
   }
 }
 

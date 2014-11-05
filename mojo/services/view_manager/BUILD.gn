@@ -4,7 +4,6 @@
 
 import("//build/config/ui.gni")
 
-# GYP version: mojo/mojo_services.gypi:mojo_view_manager
 shared_library("view_manager") {
   sources = [
     "access_policy.h",
@@ -54,7 +53,6 @@ shared_library("view_manager") {
   ]
 }
 
-# GYP version: mojo/mojo_services.gypi:mojo_view_manager_unittests
 test("view_manager_unittests") {
   sources = [
     "test_change_tracker.cc",
@@ -86,4 +84,26 @@ test("view_manager_unittests") {
   if (!is_android) {  # TODO(GYP) Enable on Android when osmesa links.
     deps += [ "//third_party/mesa:osmesa" ]
   }
+}
+
+shared_library("view_manager_server_apptests") {
+  testonly = true
+
+  sources = [
+    "test_change_tracker.cc",
+    "test_change_tracker.h",
+    "view_manager_server_apptest.cc",
+  ]
+
+  deps = [
+    "//base",
+    "//mojo/application",
+    "//mojo/application:test_support",
+    "//mojo/common",
+    "//mojo/public/c/system:for_shared_library",
+    "//mojo/public/cpp/bindings",
+    "//mojo/services/public/interfaces/geometry",
+    "//mojo/services/public/interfaces/view_manager",
+    "//mojo/services/public/interfaces/window_manager",
+  ]
 }

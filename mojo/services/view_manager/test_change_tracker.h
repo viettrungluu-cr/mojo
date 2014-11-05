@@ -10,8 +10,8 @@
 
 #include "mojo/public/cpp/bindings/array.h"
 #include "mojo/services/public/cpp/view_manager/types.h"
+#include "mojo/services/public/interfaces/geometry/geometry.mojom.h"
 #include "mojo/services/public/interfaces/view_manager/view_manager.mojom.h"
-#include "ui/gfx/rect.h"
 
 namespace mojo {
 namespace service {
@@ -60,8 +60,8 @@ struct Change {
   Id view_id;
   Id view_id2;
   Id view_id3;
-  gfx::Rect bounds;
-  gfx::Rect bounds2;
+  Rect bounds;
+  Rect bounds2;
   int32 event_action;
   String creator_url;
   String embed_url;
@@ -74,6 +74,14 @@ struct Change {
 // Converts Changes to string descriptions.
 std::vector<std::string> ChangesToDescription1(
     const std::vector<Change>& changes);
+
+// Convenience for returning the description of the first item in |changes|.
+// Returns an empty string if |changes| has something other than one entry.
+std::string SingleChangeToDescription(const std::vector<Change>& changes);
+
+// Convenience for returning the description of the first item in |views|.
+// Returns an empty string if |views| has something other than one entry.
+std::string SingleViewDescription(const std::vector<TestView>& views);
 
 // Returns a string description of |changes[0].views|. Returns an empty string
 // if change.size() != 1.

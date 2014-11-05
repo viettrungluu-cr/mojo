@@ -1601,12 +1601,8 @@ TEST_F(ViewManagerTest, SetViewProperty) {
   }
 }
 
-// TODO(sky): add coverage of test that destroys connections and ensures other
-// connections get deletion notification.
-
-// TODO(sky): need to better track changes to initial connection. For example,
-// that SetBounsdViews/AddView and the like don't result in messages to the
-// originating connection.
+// WARNING: this class is deprecated and will be replaced with
+// view_manager_server_apptest soonish. Add new tests there.
 
 }  // namespace service
 }  // namespace mojo

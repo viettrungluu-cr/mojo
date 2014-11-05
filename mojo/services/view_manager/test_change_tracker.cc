@@ -7,7 +7,6 @@
 #include "base/strings/string_util.h"
 #include "base/strings/stringprintf.h"
 #include "mojo/common/common_type_converters.h"
-#include "mojo/converters/geometry/geometry_type_converters.h"
 #include "mojo/services/public/cpp/view_manager/util.h"
 
 namespace mojo {
@@ -20,9 +19,9 @@ std::string ViewIdToString(Id id) {
 
 namespace {
 
-std::string RectToString(const gfx::Rect& rect) {
-  return base::StringPrintf("%d,%d %dx%d", rect.x(), rect.y(), rect.width(),
-                            rect.height());
+std::string RectToString(const Rect& rect) {
+  return base::StringPrintf("%d,%d %dx%d", rect.x, rect.y, rect.width,
+                            rect.height);
 }
 
 std::string DirectionToString(OrderDirection direction) {
@@ -97,6 +96,18 @@ std::vector<std::string> ChangesToDescription1(
   return strings;
 }
 
+std::string SingleChangeToDescription(const std::vector<Change>& changes) {
+  if (changes.size() != 1u)
+    return std::string();
+  return ChangeToDescription1(changes[0]);
+}
+
+std::string SingleViewDescription(const std::vector<TestView>& views) {
+  if (views.size() != 1u)
+    return std::string();
+  return views[0].ToString();
+}
+
 std::string ChangeViewDescription(const std::vector<Change>& changes) {
   if (changes.size() != 1)
     return std::string();
@@ -161,8 +172,14 @@ void TestChangeTracker::OnViewBoundsChanged(Id view_id,
   Change change;
   change.type = CHANGE_TYPE_NODE_BOUNDS_CHANGED;
   change.view_id = view_id;
-  change.bounds = old_bounds.To<gfx::Rect>();
-  change.bounds2 = new_bounds.To<gfx::Rect>();
+  change.bounds.x = old_bounds->x;
+  change.bounds.y = old_bounds->y;
+  change.bounds.width = old_bounds->width;
+  change.bounds.height = old_bounds->height;
+  change.bounds2.x = new_bounds->x;
+  change.bounds2.y = new_bounds->y;
+  change.bounds2.width = new_bounds->width;
+  change.bounds2.height = new_bounds->height;
   AddChange(change);
 }
 
