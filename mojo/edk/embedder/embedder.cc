@@ -11,6 +11,7 @@
 #include "mojo/edk/embedder/platform_support.h"
 #include "mojo/edk/system/channel.h"
 #include "mojo/edk/system/channel_endpoint.h"
+#include "mojo/edk/system/channel_info.h"
 #include "mojo/edk/system/core.h"
 #include "mojo/edk/system/entrypoints.h"
 #include "mojo/edk/system/message_pipe_dispatcher.h"
@@ -19,20 +20,6 @@
 
 namespace mojo {
 namespace embedder {
-
-// This is defined here (instead of a header file), since it's opaque to the
-// outside world. But we need to define it before our (internal-only) functions
-// that use it.
-struct ChannelInfo {
-  ChannelInfo() {}
-  ~ChannelInfo() {}
-
-  scoped_refptr<system::Channel> channel;
-
-  // May be null, in which case |DestroyChannelOnIOThread()| must be used (from
-  // the IO thread), instead of |DestroyChannel()|.
-  scoped_refptr<base::TaskRunner> io_thread_task_runner;
-};
 
 namespace {
 
@@ -104,6 +91,9 @@ ScopedMessagePipeHandle CreateChannelOnIOThread(
   *channel_info = new ChannelInfo();
   (*channel_info)->channel =
       MakeChannel(core, platform_handle.Pass(), channel_endpoint);
+  // Note: We leave |channel_thread_task_runner| null, so
+  // |DestroyChannelOnIOThread()| must be used (from the I/O thread), instead of
+  // |DestroyChannel()|.
 
   return rv.Pass();
 }
@@ -125,7 +115,7 @@ ScopedMessagePipeHandle CreateChannel(
       MessagePipeHandle(core->AddDispatcher(dispatcher)));
 
   scoped_ptr<ChannelInfo> channel_info(new ChannelInfo());
-  channel_info->io_thread_task_runner = io_thread_task_runner;
+  channel_info->channel_thread_task_runner = io_thread_task_runner;
 
   if (rv.is_valid()) {
     io_thread_task_runner->PostTask(FROM_HERE,
@@ -159,7 +149,7 @@ void DestroyChannelOnIOThread(ChannelInfo* channel_info) {
 // TODO(vtl): Write tests for this.
 void DestroyChannel(ChannelInfo* channel_info) {
   DCHECK(channel_info);
-  DCHECK(channel_info->io_thread_task_runner.get());
+  DCHECK(channel_info->channel_thread_task_runner.get());
 
   if (!channel_info->channel.get()) {
     // Presumably, |Init()| on the channel failed.
@@ -167,7 +157,7 @@ void DestroyChannel(ChannelInfo* channel_info) {
   }
 
   channel_info->channel->WillShutdownSoon();
-  channel_info->io_thread_task_runner->PostTask(
+  channel_info->channel_thread_task_runner->PostTask(
       FROM_HERE, base::Bind(&DestroyChannelOnIOThread, channel_info));
 }
 

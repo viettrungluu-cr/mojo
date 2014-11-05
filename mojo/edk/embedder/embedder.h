@@ -9,6 +9,7 @@
 #include "base/memory/ref_counted.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/task_runner.h"
+#include "mojo/edk/embedder/channel_info_forward.h"
 #include "mojo/edk/embedder/scoped_platform_handle.h"
 #include "mojo/edk/system/system_impl_export.h"
 #include "mojo/public/cpp/system/core.h"
@@ -59,7 +60,6 @@ MOJO_SYSTEM_IMPL_EXPORT void Init(scoped_ptr<PlatformSupport> platform_support);
 // |CreateChannelOnIOThread()|.)
 //
 // TODO(vtl): Figure out channel teardown.
-struct ChannelInfo;
 
 // Creates a channel; must only be called from the I/O thread. |platform_handle|
 // should be a handle to a connected OS "pipe". Eventually (even on failure),

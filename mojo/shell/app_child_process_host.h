@@ -6,15 +6,11 @@
 #define MOJO_SHELL_APP_CHILD_PROCESS_HOST_H_
 
 #include "base/macros.h"
+#include "mojo/edk/embedder/channel_info_forward.h"
 #include "mojo/shell/app_child_process.mojom.h"
 #include "mojo/shell/child_process_host.h"
 
 namespace mojo {
-
-namespace embedder {
-struct ChannelInfo;
-}
-
 namespace shell {
 
 // A subclass of |ChildProcessHost| to host a |TYPE_APP| child process, which
