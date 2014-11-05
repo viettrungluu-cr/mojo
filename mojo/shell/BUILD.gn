@@ -43,6 +43,7 @@ executable("mojo_launcher") {
     ":external_application_registrar_connection",
     ":in_process_dynamic_service_runner",
     "//base",
+    "//build/config/sanitizers:deps",
     "//mojo/common",
     "//mojo/edk/system",
     "//mojo/environment:chromium",

@@ -29,6 +29,7 @@ option (which will only apply to commands which follow) should be one of:
   General options (specify before everything):
     --debug / --release - Debug (default) / Release build.
   gn options (specify before gn):
+    --asan / --no-asan - Uses Address Sanitizer / don't use asan.
     --clang / --gcc - Use clang (default) / gcc.
     --goma / --no-goma - Use goma (if \$GOMA_DIR is set or \$HOME/goma exists;
         default) / don't use goma.
@@ -113,6 +114,8 @@ COMPILER=clang
 TARGET=linux
 # Valid values: auto or disabled.
 GOMA=auto
+# Valid values: enabled or disabled.
+ASAN=disabled
 make_gn_args() {
   local args=()
   # TODO(vtl): It's a bit of a hack to infer the build type from the output
@@ -124,6 +127,14 @@ make_gn_args() {
       ;;
     Release)
       args+=("is_debug=false")
+      ;;
+  esac
+  case "$ASAN" in
+    enabled)
+      args+=("is_asan=true")
+      ;;
+    disabled)
+      args+=("is_asan=false")
       ;;
   esac
   case "$COMPILER" in
@@ -210,6 +221,12 @@ for arg in "$@"; do
       ;;
     --release)
       BUILD_TYPE=Release
+      ;;
+    --asan)
+      ASAN=enabled
+      ;;
+    --no-asan)
+      ASAN=disabled
       ;;
     --clang)
       COMPILER=clang
