@@ -110,9 +110,6 @@ deps = {
   'src/third_party/libjpeg_turbo':
    Var('chromium_git') + '/chromium/deps/libjpeg_turbo.git' + '@' + '034e9a9747e0983bc19808ea70e469bc8342081f',
 
-  'src/third_party/libyuv':
-    Var('chromium_git') + '/external/libyuv.git' + '@' + '5a09c3ef2aa3e6b6da4007746fdde04ca56dae7c', # from svn revision 1130
-
   'src/third_party/smhasher/src':
     Var('chromium_git') + '/external/smhasher.git' + '@' + 'e87738e57558e0ec472b2fc3a643b838e5b6e88f',
 
