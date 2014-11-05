@@ -76,6 +76,7 @@ DisplayManager::DisplayManager(
       in_setup_(false),
       size_(800, 600),
       draw_timer_(false, false),
+      native_viewport_closed_callback_(native_viewport_closed_callback),
       weak_factory_(this) {
   app_connection->ConnectToService("mojo:native_viewport_service",
                                    &native_viewport_);
