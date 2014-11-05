@@ -8,6 +8,7 @@
 #include "base/location.h"
 #include "base/logging.h"
 #include "base/memory/scoped_ptr.h"
+#include "base/message_loop/message_loop_proxy.h"
 #include "mojo/edk/embedder/platform_support.h"
 #include "mojo/edk/system/channel.h"
 #include "mojo/edk/system/channel_endpoint.h"
@@ -88,12 +89,9 @@ ScopedMessagePipeHandle CreateChannelOnIOThread(
   ScopedMessagePipeHandle rv(
       MessagePipeHandle(core->AddDispatcher(dispatcher)));
 
-  *channel_info = new ChannelInfo();
-  (*channel_info)->channel =
-      MakeChannel(core, platform_handle.Pass(), channel_endpoint);
-  // Note: We leave |channel_thread_task_runner| null, so
-  // |DestroyChannelOnIOThread()| must be used (from the I/O thread), instead of
-  // |DestroyChannel()|.
+  *channel_info = new ChannelInfo(
+      MakeChannel(core, platform_handle.Pass(), channel_endpoint),
+      base::MessageLoopProxy::current());
 
   return rv.Pass();
 }
@@ -104,6 +102,8 @@ ScopedMessagePipeHandle CreateChannel(
     DidCreateChannelCallback callback,
     scoped_refptr<base::TaskRunner> callback_thread_task_runner) {
   DCHECK(platform_handle.is_valid());
+  DCHECK(io_thread_task_runner.get());
+  DCHECK(!callback.is_null());
 
   scoped_refptr<system::ChannelEndpoint> channel_endpoint;
   scoped_refptr<system::MessagePipeDispatcher> dispatcher =
@@ -115,6 +115,7 @@ ScopedMessagePipeHandle CreateChannel(
       MessagePipeHandle(core->AddDispatcher(dispatcher)));
 
   scoped_ptr<ChannelInfo> channel_info(new ChannelInfo());
+  // We'll have to set |channel_info->channel| on the I/O thread.
   channel_info->channel_thread_task_runner = io_thread_task_runner;
 
   if (rv.is_valid()) {
