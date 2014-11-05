@@ -6,6 +6,8 @@ import("//mojo/public/tools/bindings/mojom.gni")
 
 mojom("public") {
   sources = [
+    "http_request.mojom",
+    "http_response.mojom",
     "http_server.mojom",
   ]
 }
