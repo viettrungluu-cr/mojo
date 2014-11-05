@@ -16,7 +16,6 @@ class MojoPythonTestRunner(object):
 
   def run(self):
     parser = argparse.ArgumentParser()
-    parser.usage = 'run_mojo_python_tests.py [options] [tests...]'
     parser.add_argument('-v', '--verbose', action='count', default=0)
     parser.add_argument('tests', nargs='*')
 
@@ -24,15 +23,15 @@ class MojoPythonTestRunner(object):
     args = parser.parse_args()
     self.apply_customization(args)
 
-    chromium_src_dir = os.path.join(os.path.dirname(__file__),
-                                    os.pardir,
-                                    os.pardir,
-                                    os.pardir)
+    root_src_dir = os.path.join(os.path.dirname(__file__),
+                                os.pardir,
+                                os.pardir,
+                                os.pardir)
 
     loader = unittest.loader.TestLoader()
     print "Running Python unit tests under %s..." % self._test_dir
 
-    pylib_dir = os.path.abspath(os.path.join(chromium_src_dir, self._test_dir))
+    pylib_dir = os.path.abspath(os.path.join(root_src_dir, self._test_dir))
     if args.tests:
       if pylib_dir not in sys.path:
         sys.path.append(pylib_dir)
