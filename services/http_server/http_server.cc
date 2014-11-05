@@ -367,7 +367,7 @@ class HttpServerApp : public ApplicationDelegate {
   void HandleRequest(Connection* connection, const HttpRequest& request) {
     printf("HandleRequest for %s\n", request.relative_url.data());
     for (auto& handler : handlers_) {
-      if (RE2::FullMatch(request.relative_url.data(), handler.pattern)) {
+      if (RE2::FullMatch(request.relative_url.data(), *handler.pattern)) {
         connection->SendResponse(handler.callback.Run(request).Pass());
         return;
       }
@@ -380,10 +380,18 @@ class HttpServerApp : public ApplicationDelegate {
   struct Handler {
     Handler(const std::string& pattern,
             const HandleRequestCallback& callback)
-        : pattern(pattern.c_str()), callback(callback) {}
+        : pattern(new RE2(pattern.c_str())), callback(callback) {}
     Handler(const Handler& handler)
-        : pattern(handler.pattern.pattern()), callback(handler.callback) {}
-    RE2 pattern;
+        : pattern(new RE2(handler.pattern->pattern())),
+          callback(handler.callback) {}
+    Handler& operator=(const Handler& handler) {
+      if (this != &handler) {
+        pattern.reset(new RE2(handler.pattern->pattern()));
+        callback = handler.callback;
+      }
+      return *this;
+    }
+    scoped_ptr<RE2> pattern;
     HandleRequestCallback callback;
   };
 
