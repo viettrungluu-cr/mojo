@@ -24,6 +24,10 @@ def rev(source_dir, chromium_dir):
     print "cloning directory %s" % d
     files = system(["git", "ls-files", d], cwd=source_dir)
     for f in files.splitlines():
+      # Don't copy presubmit files over since the code is read-only on the
+      # chromium side.
+      if os.path.basename(f) == "PRESUBMIT.py":
+        continue
       dest_path = os.path.join(chromium_dir, f)
       system(["mkdir", "-p", os.path.dirname(dest_path)])
       system(["cp", os.path.join(source_dir, f), dest_path])
