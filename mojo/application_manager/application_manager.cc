@@ -122,10 +122,11 @@ class ApplicationManager::ContentHandlerConnection : public ErrorHandler {
                            const GURL& content_handler_url)
       : manager_(manager), content_handler_url_(content_handler_url) {
     ServiceProviderPtr service_provider;
-    WeakBindToProxy(&service_provider_impl_, &service_provider);
+    StubServiceProvider* service_provider_impl =
+        BindToProxy(new StubServiceProvider, &service_provider);
     manager->ConnectToApplication(
         content_handler_url, GURL(), service_provider.Pass());
-    mojo::ConnectToService(service_provider_impl_.client(), &content_handler_);
+    mojo::ConnectToService(service_provider_impl->client(), &content_handler_);
     content_handler_.set_error_handler(this);
   }
 
@@ -139,7 +140,6 @@ class ApplicationManager::ContentHandlerConnection : public ErrorHandler {
 
   ApplicationManager* manager_;
   GURL content_handler_url_;
-  StubServiceProvider service_provider_impl_;
   ContentHandlerPtr content_handler_;
 
   DISALLOW_COPY_AND_ASSIGN(ContentHandlerConnection);
