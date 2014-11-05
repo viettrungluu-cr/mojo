@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-define("mojo/public/js/bindings/validator", [
-  "mojo/public/js/bindings/codec",
+define("mojo/public/js/validator", [
+  "mojo/public/js/codec",
 ], function(codec) {
 
   var validationError = {

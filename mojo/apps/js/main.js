@@ -14,9 +14,9 @@
 
 define("test", [
   "mojo/apps/js/mojo",
-  "mojo/public/js/bindings/core",
-  "mojo/public/js/bindings/connection",
-  "mojo/public/js/bindings/support",
+  "mojo/public/js/core",
+  "mojo/public/js/connection",
+  "mojo/public/js/support",
   "mojo/services/public/interfaces/network/network_service.mojom",
   "mojo/services/public/interfaces/network/url_loader.mojom",
   "console"

@@ -7,7 +7,7 @@
 // mojo/public/cpp/bindings/tests/validation_test_input_parser.h
 
 define([
-    "mojo/public/js/bindings/buffer"
+    "mojo/public/js/buffer"
   ], function(buffer) {
 
   // Files and Lines represent the raw text from an input string

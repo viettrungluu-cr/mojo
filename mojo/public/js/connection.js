@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-define("mojo/public/js/bindings/connection", [
-  "mojo/public/js/bindings/connector",
-  "mojo/public/js/bindings/router",
+define("mojo/public/js/connection", [
+  "mojo/public/js/connector",
+  "mojo/public/js/router",
 ], function(connector, router) {
 
   function Connection(

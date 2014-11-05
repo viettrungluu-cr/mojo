@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-define("mojo/public/js/bindings/connector", [
-  "mojo/public/js/bindings/buffer",
-  "mojo/public/js/bindings/codec",
-  "mojo/public/js/bindings/core",
-  "mojo/public/js/bindings/support",
+define("mojo/public/js/connector", [
+  "mojo/public/js/buffer",
+  "mojo/public/js/codec",
+  "mojo/public/js/core",
+  "mojo/public/js/support",
 ], function(buffer, codec, core, support) {
 
   function Connector(handle) {

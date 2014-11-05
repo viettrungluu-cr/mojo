@@ -5,9 +5,9 @@
 define('mojo/apps/js/test/js_to_cpp_unittest', [
   'console',
   'mojo/apps/js/test/js_to_cpp.mojom',
-  'mojo/public/js/bindings/connection',
-  'mojo/public/js/bindings/connector',
-  'mojo/public/js/bindings/core',
+  'mojo/public/js/connection',
+  'mojo/public/js/connector',
+  'mojo/public/js/core',
 ], function (console, jsToCpp, connection, connector, core) {
   var retainedConnection;
   var sampleData;

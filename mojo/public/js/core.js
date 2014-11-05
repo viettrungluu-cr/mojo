@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Module "mojo/public/js/bindings/core"
+// Module "mojo/public/js/core"
 //
 // Note: This file is for documentation purposes only. The code here is not
 // actually executed. The real module is implemented natively in Mojo.

@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-define("mojo/public/js/bindings/router", [
-  "mojo/public/js/bindings/codec",
-  "mojo/public/js/bindings/connector",
-  "mojo/public/js/bindings/validator",
+define("mojo/public/js/router", [
+  "mojo/public/js/codec",
+  "mojo/public/js/connector",
+  "mojo/public/js/validator",
 ], function(codec, connector, validator) {
 
   function Router(handle, connectorFactory) {

@@ -2,9 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-define("mojo/public/js/bindings/codec", [
-  "mojo/public/js/bindings/unicode",
-  "mojo/public/js/bindings/buffer",
+define("mojo/public/js/codec", [
+  "mojo/public/js/unicode",
+  "mojo/public/js/buffer",
 ], function(unicode, buffer) {
 
   var kErrorUnsigned = "Passing negative value to unsigned";

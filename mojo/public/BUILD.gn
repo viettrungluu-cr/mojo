@@ -39,7 +39,7 @@ group("sdk") {
     "//mojo/public/cpp/utility",
     "//mojo/public/cpp/utility:util",
     "//mojo/public/interfaces/application",
-    "//mojo/public/js/bindings",
+    "//mojo/public/js",
   ]
 }
 

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-define("mojo/public/js/bindings/buffer", function() {
+define("mojo/public/js/buffer", function() {
 
   var kHostIsLittleEndian = (function () {
     var endianArrayBuffer = new ArrayBuffer(2);

@@ -4,8 +4,8 @@
 
 define("mojo/apps/js/mojo", [
   "mojo/public/interfaces/application/service_provider.mojom",
-  "mojo/public/js/bindings/connection",
-  "mojo/public/js/bindings/core",
+  "mojo/public/js/connection",
+  "mojo/public/js/core",
   "mojo/apps/js/bridge",
 ], function(service, connection, core, bridge) {
 

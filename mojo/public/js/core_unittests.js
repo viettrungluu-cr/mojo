@@ -4,7 +4,7 @@
 
 define([
     "gin/test/expect",
-    "mojo/public/js/bindings/core",
+    "mojo/public/js/core",
     "gc",
   ], function(expect, core, gc) {
   runWithMessagePipe(testNop);

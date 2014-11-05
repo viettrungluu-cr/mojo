@@ -4,7 +4,7 @@
 
 define([
     "gin/test/expect",
-    "mojo/public/js/bindings/codec",
+    "mojo/public/js/codec",
     "mojo/public/interfaces/bindings/tests/rect.mojom",
     "mojo/public/interfaces/bindings/tests/sample_service.mojom",
     "mojo/public/interfaces/bindings/tests/test_structs.mojom",

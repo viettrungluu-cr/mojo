@@ -37,7 +37,6 @@ void RunTest(std::string test, bool run_until_idle) {
   path = path.AppendASCII("mojo")
              .AppendASCII("public")
              .AppendASCII("js")
-             .AppendASCII("bindings")
              .AppendASCII(test);
   TestRunnerDelegate delegate;
   gin::RunTestFromFile(path, &delegate, run_until_idle);
