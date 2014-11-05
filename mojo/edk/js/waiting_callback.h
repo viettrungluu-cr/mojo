@@ -8,8 +8,8 @@
 #include "gin/handle.h"
 #include "gin/runner.h"
 #include "gin/wrappable.h"
-#include "mojo/bindings/js/handle.h"
-#include "mojo/bindings/js/handle_close_observer.h"
+#include "mojo/edk/js/handle.h"
+#include "mojo/edk/js/handle_close_observer.h"
 #include "mojo/public/c/environment/async_waiter.h"
 #include "mojo/public/cpp/system/core.h"
 

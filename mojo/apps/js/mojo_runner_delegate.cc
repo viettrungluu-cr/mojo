@@ -14,9 +14,9 @@
 #include "mojo/apps/js/bindings/gl/module.h"
 #include "mojo/apps/js/bindings/monotonic_clock.h"
 #include "mojo/apps/js/bindings/threading.h"
-#include "mojo/bindings/js/core.h"
-#include "mojo/bindings/js/handle.h"
-#include "mojo/bindings/js/support.h"
+#include "mojo/edk/js/core.h"
+#include "mojo/edk/js/handle.h"
+#include "mojo/edk/js/support.h"
 
 namespace mojo {
 namespace apps {

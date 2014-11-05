@@ -17,7 +17,7 @@ source_set("mojo_runner") {
   ]
 
   public_deps = [
-    "//mojo/bindings/js",
+    "//mojo/edk/js",
   ]
   deps = [
     "//base",
@@ -35,7 +35,7 @@ source_set("js_apps") {
   ]
 
   public_deps = [
-    "//mojo/bindings/js",
+    "//mojo/edk/js",
   ]
   deps = [
     ":mojo_runner",

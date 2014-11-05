@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# GYP version: mojo/mojo.gyp:mojo_js_bindings
 source_set("js") {
   sources = [
     "core.cc",
@@ -23,5 +22,16 @@ source_set("js") {
     "//gin",
     "//mojo/common",
     "//v8",
+  ]
+}
+
+source_set("js_unittests") {
+  testonly = true
+  deps = [
+    "//mojo/edk/test:test_support",
+  ]
+
+  sources = [
+    "handle_unittest.cc",
   ]
 }

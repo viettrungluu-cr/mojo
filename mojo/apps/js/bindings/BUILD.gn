@@ -7,7 +7,7 @@ source_set("bindings") {
     "//base",
     "//gin",
     "//v8",
-    "//mojo/bindings/js",
+    "//mojo/edk/js",
   ]
 
   sources = [

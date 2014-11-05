@@ -15,7 +15,7 @@ source_set("gl") {
     "//base",
     "//gin",
     "//v8",
-    "//mojo/bindings/js",
+    "//mojo/edk/js",
     "//mojo/environment:chromium",
     "//mojo/public/gles2:for_shared_library",
     "//mojo/services/gles2:lib",

@@ -10,7 +10,7 @@
 #include "gin/per_isolate_data.h"
 #include "gin/wrappable.h"
 #include "mojo/apps/js/bindings/gl/context.h"
-#include "mojo/bindings/js/handle.h"
+#include "mojo/edk/js/handle.h"
 
 namespace mojo {
 namespace js {

@@ -9,8 +9,8 @@
 #include "gin/modules/timer.h"
 #include "gin/test/file_runner.h"
 #include "gin/test/gtest.h"
-#include "mojo/bindings/js/core.h"
-#include "mojo/bindings/js/support.h"
+#include "mojo/edk/js/core.h"
+#include "mojo/edk/js/support.h"
 #include "mojo/public/cpp/environment/environment.h"
 #include "testing/gtest/include/gtest/gtest.h"
 

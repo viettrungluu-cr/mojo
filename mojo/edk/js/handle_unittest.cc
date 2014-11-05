@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 
 #include "base/macros.h"
-#include "mojo/bindings/js/handle.h"
-#include "mojo/bindings/js/handle_close_observer.h"
+#include "mojo/edk/js/handle.h"
+#include "mojo/edk/js/handle_close_observer.h"
 #include "mojo/public/cpp/system/core.h"
 #include "testing/gtest/include/gtest/gtest.h"
 

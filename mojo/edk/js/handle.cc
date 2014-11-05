@@ -2,10 +2,10 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "mojo/bindings/js/handle.h"
+#include "mojo/edk/js/handle.h"
 
 #include <sstream>
-#include "mojo/bindings/js/handle_close_observer.h"
+#include "mojo/edk/js/handle_close_observer.h"
 
 namespace mojo {
 namespace js {

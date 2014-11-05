@@ -11,7 +11,7 @@
 #include "gin/test/gtest.h"
 #include "mojo/apps/js/bindings/monotonic_clock.h"
 #include "mojo/apps/js/bindings/threading.h"
-#include "mojo/bindings/js/core.h"
+#include "mojo/edk/js/core.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace mojo {

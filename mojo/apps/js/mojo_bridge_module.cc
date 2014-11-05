@@ -9,7 +9,7 @@
 #include "gin/object_template_builder.h"
 #include "gin/per_isolate_data.h"
 #include "mojo/apps/js/js_app.h"
-#include "mojo/bindings/js/handle.h"
+#include "mojo/edk/js/handle.h"
 
 namespace mojo {
 namespace apps {
