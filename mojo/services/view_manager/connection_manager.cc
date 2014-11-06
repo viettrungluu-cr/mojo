@@ -112,7 +112,7 @@ void ConnectionManager::OnConnectionError(ViewManagerServiceImpl* connection) {
   for (ConnectionMap::const_iterator i = connection_map_.begin();
        i != connection_map_.end();
        ++i) {
-    i->second->OnViewManagerServiceImplDestroyed(connection->id());
+    i->second->OnWillDestroyViewManagerServiceImpl(connection);
   }
 }
 

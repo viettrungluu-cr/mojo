@@ -365,6 +365,9 @@ class TestViewManagerClientConnection
                ScopedMessagePipeHandle window_manager_pipe) override {
     tracker()->OnEmbed(connection_id, creator_url, root.Pass());
   }
+  void OnEmbeddedAppDisconnected(Id view_id) override {
+    // Coverage of this is in view_manager_server_apptest.
+  }
   void OnViewBoundsChanged(Id view_id,
                            RectPtr old_bounds,
                            RectPtr new_bounds) override {

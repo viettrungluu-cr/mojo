@@ -235,6 +235,9 @@ class ViewManagerClientImpl : public InterfaceImpl<ViewManagerClient>,
     if (embed_run_loop_)
       embed_run_loop_->Quit();
   }
+  void OnEmbeddedAppDisconnected(Id view_id) override {
+    tracker()->OnEmbeddedAppDisconnected(view_id);
+  }
   void OnViewBoundsChanged(Id view_id,
                            RectPtr old_bounds,
                            RectPtr new_bounds) override {
@@ -1269,6 +1272,22 @@ TEST_F(ViewManagerServerAppTest, SetViewProperty) {
     EXPECT_EQ("PropertyChanged view=1,1 key=one value=NULL",
               SingleChangeToDescription(*changes2()));
   }
+}
+
+TEST_F(ViewManagerServerAppTest, OnEmbeddedAppDisconnected) {
+  // Create connection 2 and 3.
+  ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(true));
+  ASSERT_TRUE(CreateView(vm2(), BuildViewId(2, 2)));
+  ASSERT_TRUE(AddView(vm2(), BuildViewId(1, 1), BuildViewId(2, 2)));
+  changes2()->clear();
+  ASSERT_NO_FATAL_FAILURE(EstablishThirdConnection(vm2(), BuildViewId(2, 2)));
+
+  // Close connection 3. Connection 2 (which had previously embedded 3) should
+  // be notified of this.
+  vm_client3_.reset();
+  vm_client2_->WaitForChangeCount(1);
+  EXPECT_EQ("OnEmbeddedAppDisconnected view=2,2",
+            SingleChangeToDescription(*changes2()));
 }
 
 // TODO(sky): add coverage of test that destroys connections and ensures other

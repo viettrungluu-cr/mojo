@@ -34,6 +34,10 @@ std::string ChangeToDescription1(const Change& change) {
       return base::StringPrintf("OnEmbed creator=%s",
                                 change.creator_url.data());
 
+    case CHANGE_TYPE_EMBEDDED_APP_DISCONNECTED:
+      return base::StringPrintf("OnEmbeddedAppDisconnected view=%s",
+                                ViewIdToString(change.view_id).c_str());
+
     case CHANGE_TYPE_NODE_BOUNDS_CHANGED:
       return base::StringPrintf(
           "BoundsChanged view=%s old_bounds=%s new_bounds=%s",
@@ -163,6 +167,13 @@ void TestChangeTracker::OnEmbed(ConnectionSpecificId connection_id,
   change.connection_id = connection_id;
   change.creator_url = creator_url;
   change.views.push_back(ViewDataToTestView(root));
+  AddChange(change);
+}
+
+void TestChangeTracker::OnEmbeddedAppDisconnected(Id view_id) {
+  Change change;
+  change.type = CHANGE_TYPE_EMBEDDED_APP_DISCONNECTED;
+  change.view_id = view_id;
   AddChange(change);
 }
 

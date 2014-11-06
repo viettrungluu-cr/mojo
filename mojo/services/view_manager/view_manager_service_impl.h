@@ -41,6 +41,8 @@ class MOJO_VIEW_MANAGER_EXPORT ViewManagerServiceImpl
     : public InterfaceImpl<ViewManagerService>,
       public AccessPolicyDelegate {
  public:
+  using ViewIdSet = base::hash_set<Id>;
+
   ViewManagerServiceImpl(ConnectionManager* connection_manager,
                          ConnectionSpecificId creator_id,
                          const std::string& creator_url,
@@ -62,9 +64,10 @@ class MOJO_VIEW_MANAGER_EXPORT ViewManagerServiceImpl
 
   // Returns true if this has |id| as a root.
   bool HasRoot(const ViewId& id) const;
+  const ViewIdSet& roots() const { return roots_; }
 
-  // Invoked when a connection is destroyed.
-  void OnViewManagerServiceImplDestroyed(ConnectionSpecificId id);
+  // Invoked when a connection is about to be destroyed.
+  void OnWillDestroyViewManagerServiceImpl(ViewManagerServiceImpl* connection);
 
   // The following methods are invoked after the corresponding change has been
   // processed. They do the appropriate bookkeeping and update the client as
@@ -102,9 +105,15 @@ class MOJO_VIEW_MANAGER_EXPORT ViewManagerServiceImpl
 
  private:
   typedef std::map<ConnectionSpecificId, ServerView*> ViewMap;
-  typedef base::hash_set<Id> ViewIdSet;
 
   bool IsViewKnown(const ServerView* view) const;
+
+  // Returns true if this ViewManagerServiceImpl is providing a root for
+  // |connection|. That is, |connection| is embedded in one of our views. If
+  // this ViewManagerServiceImpl does provide a root, |root_id|
+  // is set to that root.
+  bool ProvidesRoot(const ViewManagerServiceImpl* connection,
+                    ViewId* root_id) const;
 
   // These functions return true if the corresponding mojom function is allowed
   // for this connection.

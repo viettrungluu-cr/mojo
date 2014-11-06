@@ -54,10 +54,13 @@ bool ViewManagerServiceImpl::HasRoot(const ViewId& id) const {
   return roots_.find(ViewIdToTransportId(id)) != roots_.end();
 }
 
-void ViewManagerServiceImpl::OnViewManagerServiceImplDestroyed(
-    ConnectionSpecificId id) {
-  if (creator_id_ == id)
+void ViewManagerServiceImpl::OnWillDestroyViewManagerServiceImpl(
+    ViewManagerServiceImpl* connection) {
+  if (creator_id_ == connection->id())
     creator_id_ = kInvalidConnectionId;
+  ViewId embedded_root_id;
+  if (ProvidesRoot(connection, &embedded_root_id))
+    client()->OnEmbeddedAppDisconnected(ViewIdToTransportId(embedded_root_id));
 }
 
 void ViewManagerServiceImpl::ProcessViewBoundsChanged(
@@ -199,6 +202,19 @@ void ViewManagerServiceImpl::OnConnectionError() {
 
 bool ViewManagerServiceImpl::IsViewKnown(const ServerView* view) const {
   return known_views_.count(ViewIdToTransportId(view->id())) > 0;
+}
+
+bool ViewManagerServiceImpl::ProvidesRoot(
+    const ViewManagerServiceImpl* connection,
+    ViewId* root_id) const {
+  for (Id transport_id : connection->roots()) {
+    const ViewId view_id(ViewIdFromTransportId(transport_id));
+    if (id_ == view_id.connection_id && view_map_.count(view_id.view_id) > 0) {
+      *root_id = view_id;
+      return true;
+    }
+  }
+  return false;
 }
 
 bool ViewManagerServiceImpl::CanReorderView(const ServerView* view,

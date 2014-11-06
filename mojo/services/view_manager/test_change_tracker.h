@@ -18,6 +18,7 @@ namespace service {
 
 enum ChangeType {
   CHANGE_TYPE_EMBED,
+  CHANGE_TYPE_EMBEDDED_APP_DISCONNECTED,
   // TODO(sky): NODE->VIEW.
   CHANGE_TYPE_NODE_BOUNDS_CHANGED,
   CHANGE_TYPE_NODE_HIERARCHY_CHANGED,
@@ -119,6 +120,7 @@ class TestChangeTracker {
   void OnEmbed(ConnectionSpecificId connection_id,
                const String& creator_url,
                ViewDataPtr root);
+  void OnEmbeddedAppDisconnected(Id view_id);
   void OnViewBoundsChanged(Id view_id, RectPtr old_bounds, RectPtr new_bounds);
   void OnViewHierarchyChanged(Id view_id,
                               Id new_parent_id,
