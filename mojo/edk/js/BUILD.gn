@@ -20,7 +20,6 @@ source_set("js") {
   public_deps = [
     "//base",
     "//gin",
-    "//mojo/common",
     "//v8",
   ]
 }
