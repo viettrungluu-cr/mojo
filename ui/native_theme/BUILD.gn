@@ -27,6 +27,15 @@ component("native_theme") {
     ]
   }
 
+  if (is_win) {
+    sources += [
+      "native_theme_aurawin.cc",
+      "native_theme_aurawin.h",
+      "native_theme_win.cc",
+      "native_theme_win.h",
+    ]
+  }
+
   defines = [
     "NATIVE_THEME_IMPLEMENTATION",
   ]

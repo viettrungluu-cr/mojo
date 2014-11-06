@@ -267,7 +267,7 @@ void NativeThemeWin::Paint(SkCanvas* canvas,
       CommonThemePaintMenuGutter(canvas, rect);
       return;
     case kMenuPopupSeparator:
-      CommonThemePaintMenuSeparator(canvas, rect);
+      CommonThemePaintMenuSeparator(canvas, rect, extra.menu_separator);
       return;
     case kMenuPopupBackground:
       CommonThemePaintMenuBackground(canvas, rect);

@@ -120,6 +120,9 @@ component("aura") {
       "input_state_lookup.cc",
       "window_tree_host_x11.cc",
     ]
+    deps += [
+      "//ui/platform_window/win",
+    ]
   }
 
   if (use_ozone) {
