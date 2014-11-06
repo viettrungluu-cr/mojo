@@ -42,6 +42,12 @@ group("mojo") {
     ]
   }
 
+  if (mojo_use_dart) {
+    deps += [
+      "//mojo/dart",
+    ]
+  }
+
   if (is_linux) {
     deps += [
       "//mojo/python",

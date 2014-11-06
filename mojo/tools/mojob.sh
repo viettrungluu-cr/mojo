@@ -33,6 +33,7 @@ option (which will only apply to commands which follow) should be one of:
     --clang / --gcc - Use clang (default) / gcc.
     --goma / --no-goma - Use goma (if \$GOMA_DIR is set or \$HOME/goma exists;
         default) / don't use goma.
+    --with-dart - Configure the Dart bindings.
 
 Note: It will abort on the first failure (if any).
 EOF
@@ -95,6 +96,11 @@ do_skytests() {
   fi
 }
 
+do_darttests() {
+  echo "Running dart tests in out/$1 ..."
+  dart mojo/tools/dart_test_runner.dart out/$1/gen || exit 1
+}
+
 do_gn() {
   local gn_args="$(make_gn_args $1)"
   local out_dir="$(get_outdir $1)"
@@ -116,6 +122,8 @@ TARGET=linux
 GOMA=auto
 # Valid values: enabled or disabled.
 ASAN=disabled
+# Whether the Dart bindings should be built.
+DART=disabled
 make_gn_args() {
   local args=()
   # TODO(vtl): It's a bit of a hack to infer the build type from the output
@@ -159,6 +167,11 @@ make_gn_args() {
       args+=("use_goma=false")
       ;;
   esac
+  case "$DART" in
+    enabled)
+      args+=("mojo_use_dart=true")
+    ;;
+  esac
   case "$TARGET" in
     android)
       args+=("os=\"android\"" "cpu_arch=\"arm\"")
@@ -200,6 +213,9 @@ for arg in "$@"; do
     pytest)
       do_pytests "$BUILD_TYPE"
       ;;
+    darttest)
+      do_darttests "$BUILD_TYPE"
+      ;;
     gn)
       do_gn "$BUILD_TYPE"
       ;;
@@ -239,6 +255,9 @@ for arg in "$@"; do
       ;;
     --no-goma)
       GOMA=disabled
+      ;;
+    --with-dart)
+      DART=enabled
       ;;
     --android)
       TARGET=android

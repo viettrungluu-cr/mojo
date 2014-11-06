@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//mojo/public/mojo.gni")
+
 group("public") {
   # Meta-target, don't link into production code.
   testonly = true
@@ -19,6 +21,12 @@ group("public") {
   if (is_linux) {
     deps += [
       "//mojo/public/python",
+    ]
+  }
+
+  if (mojo_use_dart) {
+    deps += [
+      "//mojo/public/dart",
     ]
   }
 
