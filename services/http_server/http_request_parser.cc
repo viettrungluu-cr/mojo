@@ -66,7 +66,7 @@ HttpRequestParser::ParseResult HttpRequestParser::ParseRequest() {
   // available in the buffer.
   if (state_ == STATE_HEADERS) {
     ParseResult parse_result = ParseHeaders();
-    if (parse_result == ACCEPTED || parse_result == ERROR)
+    if (parse_result == ACCEPTED || parse_result == PARSE_ERROR)
       return parse_result;
   }
   // This should not be 'else if' of the previous block, as |state_| can be
