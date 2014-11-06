@@ -174,7 +174,7 @@ const ViewManagerServiceImpl* ConnectionManager::GetConnectionWithRoot(
   for (ConnectionMap::const_iterator i = connection_map_.begin();
        i != connection_map_.end();
        ++i) {
-    if (i->second->HasRoot(id))
+    if (i->second->IsRoot(id))
       return i->second;
   }
   return NULL;

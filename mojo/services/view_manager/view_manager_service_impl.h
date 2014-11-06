@@ -62,9 +62,8 @@ class MOJO_VIEW_MANAGER_EXPORT ViewManagerServiceImpl
   }
   const ServerView* GetView(const ViewId& id) const;
 
-  // Returns true if this has |id| as a root.
-  bool HasRoot(const ViewId& id) const;
-  const ViewIdSet& roots() const { return roots_; }
+  // Returns true if this connection's root is |id|.
+  bool IsRoot(const ViewId& id) const;
 
   // Invoked when a connection is about to be destroyed.
   void OnWillDestroyViewManagerServiceImpl(ViewManagerServiceImpl* connection);
@@ -108,13 +107,6 @@ class MOJO_VIEW_MANAGER_EXPORT ViewManagerServiceImpl
 
   bool IsViewKnown(const ServerView* view) const;
 
-  // Returns true if this ViewManagerServiceImpl is providing a root for
-  // |connection|. That is, |connection| is embedded in one of our views. If
-  // this ViewManagerServiceImpl does provide a root, |root_id|
-  // is set to that root.
-  bool ProvidesRoot(const ViewManagerServiceImpl* connection,
-                    ViewId* root_id) const;
-
   // These functions return true if the corresponding mojom function is allowed
   // for this connection.
   bool CanReorderView(const ServerView* view,
@@ -136,8 +128,8 @@ class MOJO_VIEW_MANAGER_EXPORT ViewManagerServiceImpl
   void RemoveFromKnown(const ServerView* view,
                        std::vector<ServerView*>* local_views);
 
-  // Removes |view_id| from the set of roots this connection knows about.
-  void RemoveRoot(const ViewId& view_id);
+  // Resets the root of this connection.
+  void RemoveRoot();
 
   void RemoveChildrenAsPartOfEmbed(const ViewId& view_id);
 
@@ -198,7 +190,7 @@ class MOJO_VIEW_MANAGER_EXPORT ViewManagerServiceImpl
   void OnConnectionEstablished() override;
 
   // AccessPolicyDelegate:
-  const base::hash_set<Id>& GetRootsForAccessPolicy() const override;
+  bool IsRootForAccessPolicy(const ViewId& id) const override;
   bool IsViewKnownForAccessPolicy(const ServerView* view) const override;
   bool IsViewRootOfAnotherConnectionForAccessPolicy(
       const ServerView* view) const override;
@@ -227,13 +219,10 @@ class MOJO_VIEW_MANAGER_EXPORT ViewManagerServiceImpl
   // The set of views that has been communicated to the client.
   ViewIdSet known_views_;
 
-  // Set of root views from other connections. More specifically any time
-  // Embed() is invoked the id of the view is added to this set for the child
-  // connection. The connection Embed() was invoked on (the parent) doesn't
-  // directly track which connections are attached to which of its views. That
-  // information can be found by looking through the |roots_| of all
-  // connections.
-  ViewIdSet roots_;
+  // The root of this connection. This is a scoped_ptr to reinforce the
+  // connection may have no root. A connection has no root if either the root
+  // is destroyed or Embed() is invoked on the root.
+  scoped_ptr<ViewId> root_;
 
   InterfaceRequest<ServiceProvider> service_provider_;
 

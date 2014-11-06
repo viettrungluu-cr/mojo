@@ -24,14 +24,14 @@ bool DefaultAccessPolicy::CanRemoveViewFromParent(
   if (!WasCreatedByThisConnection(view))
     return false;  // Can only unparent views we created.
 
-  return IsViewInRoots(view->parent()) ||
+  return delegate_->IsRootForAccessPolicy(view->parent()->id()) ||
          WasCreatedByThisConnection(view->parent());
 }
 
 bool DefaultAccessPolicy::CanAddView(const ServerView* parent,
                                      const ServerView* child) const {
   return WasCreatedByThisConnection(child) &&
-         (IsViewInRoots(parent) ||
+         (delegate_->IsRootForAccessPolicy(parent->id()) ||
           (WasCreatedByThisConnection(parent) &&
            !delegate_->IsViewRootOfAnotherConnectionForAccessPolicy(parent)));
 }
@@ -48,7 +48,8 @@ bool DefaultAccessPolicy::CanDeleteView(const ServerView* view) const {
 }
 
 bool DefaultAccessPolicy::CanGetViewTree(const ServerView* view) const {
-  return WasCreatedByThisConnection(view) || IsViewInRoots(view);
+  return WasCreatedByThisConnection(view) ||
+         delegate_->IsRootForAccessPolicy(view->id());
 }
 
 bool DefaultAccessPolicy::CanDescendIntoViewForViewTree(
@@ -63,7 +64,8 @@ bool DefaultAccessPolicy::CanEmbed(const ServerView* view) const {
 
 bool DefaultAccessPolicy::CanChangeViewVisibility(
     const ServerView* view) const {
-  return WasCreatedByThisConnection(view) || IsViewInRoots(view);
+  return WasCreatedByThisConnection(view) ||
+         delegate_->IsRootForAccessPolicy(view->id());
 }
 
 bool DefaultAccessPolicy::CanSetViewSurfaceId(const ServerView* view) const {
@@ -71,7 +73,8 @@ bool DefaultAccessPolicy::CanSetViewSurfaceId(const ServerView* view) const {
   // call SetViewSurfaceId() - this ability is transferred to the embedded app.
   if (delegate_->IsViewRootOfAnotherConnectionForAccessPolicy(view))
     return false;
-  return WasCreatedByThisConnection(view) || IsViewInRoots(view);
+  return WasCreatedByThisConnection(view) ||
+         delegate_->IsRootForAccessPolicy(view->id());
 }
 
 bool DefaultAccessPolicy::CanSetViewBounds(const ServerView* view) const {
@@ -90,20 +93,15 @@ bool DefaultAccessPolicy::ShouldNotifyOnHierarchyChange(
     return false;
 
   if (*new_parent && !WasCreatedByThisConnection(*new_parent) &&
-      !IsViewInRoots(*new_parent)) {
+      !delegate_->IsRootForAccessPolicy((*new_parent)->id())) {
     *new_parent = NULL;
   }
 
   if (*old_parent && !WasCreatedByThisConnection(*old_parent) &&
-      !IsViewInRoots(*old_parent)) {
+      !delegate_->IsRootForAccessPolicy((*old_parent)->id())) {
     *old_parent = NULL;
   }
   return true;
-}
-
-bool DefaultAccessPolicy::IsViewInRoots(const ServerView* view) const {
-  return delegate_->GetRootsForAccessPolicy().count(
-             ViewIdToTransportId(view->id())) > 0;
 }
 
 bool DefaultAccessPolicy::WasCreatedByThisConnection(

@@ -31,7 +31,7 @@ ViewManagerServiceImpl::ViewManagerServiceImpl(
       creator_url_(creator_url),
       service_provider_(service_provider.Pass()) {
   CHECK(GetView(root_id));
-  roots_.insert(ViewIdToTransportId(root_id));
+  root_.reset(new ViewId(root_id));
   if (root_id == RootViewId())
     access_policy_.reset(new WindowManagerAccessPolicy(id_, this));
   else
@@ -50,17 +50,19 @@ const ServerView* ViewManagerServiceImpl::GetView(const ViewId& id) const {
   return connection_manager_->GetView(id);
 }
 
-bool ViewManagerServiceImpl::HasRoot(const ViewId& id) const {
-  return roots_.find(ViewIdToTransportId(id)) != roots_.end();
+bool ViewManagerServiceImpl::IsRoot(const ViewId& id) const {
+  return root_.get() && *root_ == id;
 }
 
 void ViewManagerServiceImpl::OnWillDestroyViewManagerServiceImpl(
     ViewManagerServiceImpl* connection) {
   if (creator_id_ == connection->id())
     creator_id_ = kInvalidConnectionId;
-  ViewId embedded_root_id;
-  if (ProvidesRoot(connection, &embedded_root_id))
-    client()->OnEmbeddedAppDisconnected(ViewIdToTransportId(embedded_root_id));
+  if (connection->root_ && connection->root_->connection_id == id_ &&
+      view_map_.count(connection->root_->view_id) > 0) {
+    client()->OnEmbeddedAppDisconnected(
+        ViewIdToTransportId(*connection->root_));
+  }
 }
 
 void ViewManagerServiceImpl::ProcessViewBoundsChanged(
@@ -160,7 +162,8 @@ void ViewManagerServiceImpl::ProcessViewDeleted(const ViewId& view,
   view_map_.erase(view.view_id);
 
   const bool in_known = known_views_.erase(ViewIdToTransportId(view)) > 0;
-  roots_.erase(ViewIdToTransportId(view));
+  if (IsRoot(view))
+    root_.reset();
 
   if (originated_change)
     return;
@@ -202,19 +205,6 @@ void ViewManagerServiceImpl::OnConnectionError() {
 
 bool ViewManagerServiceImpl::IsViewKnown(const ServerView* view) const {
   return known_views_.count(ViewIdToTransportId(view->id())) > 0;
-}
-
-bool ViewManagerServiceImpl::ProvidesRoot(
-    const ViewManagerServiceImpl* connection,
-    ViewId* root_id) const {
-  for (Id transport_id : connection->roots()) {
-    const ViewId view_id(ViewIdFromTransportId(transport_id));
-    if (id_ == view_id.connection_id && view_map_.count(view_id.view_id) > 0) {
-      *root_id = view_id;
-      return true;
-    }
-  }
-  return false;
 }
 
 bool ViewManagerServiceImpl::CanReorderView(const ServerView* view,
@@ -280,23 +270,21 @@ void ViewManagerServiceImpl::RemoveFromKnown(
     RemoveFromKnown(children[i], local_views);
 }
 
-void ViewManagerServiceImpl::RemoveRoot(const ViewId& view_id) {
-  const Id transport_view_id(ViewIdToTransportId(view_id));
-  CHECK(roots_.count(transport_view_id) > 0);
-
-  roots_.erase(transport_view_id);
-
+void ViewManagerServiceImpl::RemoveRoot() {
+  CHECK(root_.get());
+  const ViewId root_id(*root_);
+  root_.reset();
   // No need to do anything if we created the view.
-  if (view_id.connection_id == id_)
+  if (root_id.connection_id == id_)
     return;
 
-  client()->OnViewDeleted(transport_view_id);
+  client()->OnViewDeleted(ViewIdToTransportId(root_id));
   connection_manager_->OnConnectionMessagedClient(id_);
 
   // This connection no longer knows about the view. Unparent any views that
   // were parented to views in the root.
   std::vector<ServerView*> local_views;
-  RemoveFromKnown(GetView(view_id), &local_views);
+  RemoveFromKnown(GetView(root_id), &local_views);
   for (size_t i = 0; i < local_views.size(); ++i)
     local_views[i]->parent()->Remove(local_views[i]);
 }
@@ -356,16 +344,17 @@ void ViewManagerServiceImpl::GetViewTreeImpl(
 
 void ViewManagerServiceImpl::NotifyDrawnStateChanged(const ServerView* view,
                                                      bool new_drawn_value) {
-  // Even though we don't know about view, it may be an ancestor of one of our
-  // roots, in which case the change may effect our roots drawn state.
-  for (ViewIdSet::iterator i = roots_.begin(); i != roots_.end(); ++i) {
-    const ServerView* root = GetView(ViewIdFromTransportId(*i));
-    DCHECK(root);
-    if (view->Contains(root) &&
-        (new_drawn_value != root->IsDrawn(connection_manager_->root()))) {
-      client()->OnViewDrawnStateChanged(ViewIdToTransportId(root->id()),
-                                        new_drawn_value);
-    }
+  // Even though we don't know about view, it may be an ancestor of our root, in
+  // which case the change may effect our roots drawn state.
+  if (!root_.get())
+    return;
+
+  const ServerView* root = GetView(*root_);
+  DCHECK(root);
+  if (view->Contains(root) &&
+      (new_drawn_value != root->IsDrawn(connection_manager_->root()))) {
+    client()->OnViewDrawnStateChanged(ViewIdToTransportId(root->id()),
+                                      new_drawn_value);
   }
 }
 
@@ -555,7 +544,7 @@ void ViewManagerServiceImpl::Embed(
   if (existing_owner) {
     // Never message the originating connection.
     connection_manager_->OnConnectionMessagedClient(id_);
-    existing_owner->RemoveRoot(view_id);
+    existing_owner->RemoveRoot();
   }
   connection_manager_->EmbedAtView(id_, url, transport_view_id, spir.Pass());
   callback.Run(true);
@@ -563,8 +552,8 @@ void ViewManagerServiceImpl::Embed(
 
 void ViewManagerServiceImpl::OnConnectionEstablished() {
   std::vector<const ServerView*> to_send;
-  for (ViewIdSet::const_iterator i = roots_.begin(); i != roots_.end(); ++i)
-    GetUnknownViewsFrom(GetView(ViewIdFromTransportId(*i)), &to_send);
+  if (root_.get())
+    GetUnknownViewsFrom(GetView(*root_), &to_send);
 
   MessagePipe pipe;
   connection_manager_->wm_internal()->CreateWindowManagerForViewManagerClient(
@@ -576,9 +565,8 @@ void ViewManagerServiceImpl::OnConnectionEstablished() {
                     pipe.handle0.Pass());
 }
 
-const base::hash_set<Id>&
-ViewManagerServiceImpl::GetRootsForAccessPolicy() const {
-  return roots_;
+bool ViewManagerServiceImpl::IsRootForAccessPolicy(const ViewId& id) const {
+  return IsRoot(id);
 }
 
 bool ViewManagerServiceImpl::IsViewKnownForAccessPolicy(

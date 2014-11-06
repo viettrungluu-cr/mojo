@@ -66,8 +66,7 @@ bool WindowManagerAccessPolicy::CanSetViewSurfaceId(
   if (delegate_->IsViewRootOfAnotherConnectionForAccessPolicy(view))
     return false;
   return view->id().connection_id == connection_id_ ||
-         (delegate_->GetRootsForAccessPolicy().count(
-              ViewIdToTransportId(view->id())) > 0);
+         (delegate_->IsRootForAccessPolicy(view->id()));
 }
 
 bool WindowManagerAccessPolicy::CanSetViewBounds(const ServerView* view) const {

@@ -18,9 +18,8 @@ class ServerView;
 // Delegate used by the AccessPolicy implementations to get state.
 class AccessPolicyDelegate {
  public:
-  // Returns the ids of the roots views for this connection. That is, this is
-  // the set of views the connection was embedded at.
-  virtual const base::hash_set<Id>& GetRootsForAccessPolicy() const = 0;
+  // Returns true if |id| is the root of the connection.
+  virtual bool IsRootForAccessPolicy(const ViewId& id) const = 0;
 
   // Returns true if |view| has been exposed to the client.
   virtual bool IsViewKnownForAccessPolicy(const ServerView* view) const = 0;

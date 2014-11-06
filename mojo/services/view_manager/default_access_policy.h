@@ -41,8 +41,6 @@ class DefaultAccessPolicy : public AccessPolicy {
       const ServerView** old_parent) const override;
 
  private:
-  bool IsViewInRoots(const ServerView* view) const;
-
   bool WasCreatedByThisConnection(const ServerView* view) const;
 
   const ConnectionSpecificId connection_id_;
