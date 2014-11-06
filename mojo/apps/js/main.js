@@ -9,7 +9,7 @@
 // example:
 //   (cd YOUR_DIR/mojo/apps/js; python -m SimpleHTTPServer ) &
 //   mojo_shell \
-//    --content-handlers=application/javascript,mojo://js_content_handler \
+//    --content-handlers=application/javascript,mojo:js_content_handler \
 //    http://localhost:8000/test.js
 
 define("test", [

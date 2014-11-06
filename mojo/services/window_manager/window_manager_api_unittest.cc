@@ -182,7 +182,7 @@ class WindowManagerApiTest : public testing::Test {
     test_helper_.reset(new shell::ShellTestHelper);
     test_helper_->Init();
     test_helper_->AddCustomMapping(GURL("mojo:window_manager"),
-                                   GURL("mojo://core_window_manager"));
+                                   GURL("mojo:core_window_manager"));
     test_helper_->SetLoaderForURL(
         scoped_ptr<ApplicationLoader>(new TestApplicationLoader(base::Bind(
             &WindowManagerApiTest::OnRootAdded, base::Unretained(this)))),
