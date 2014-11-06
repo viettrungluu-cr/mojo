@@ -106,5 +106,10 @@ bool DefaultAccessPolicy::IsViewInRoots(const ServerView* view) const {
              ViewIdToTransportId(view->id())) > 0;
 }
 
+bool DefaultAccessPolicy::WasCreatedByThisConnection(
+    const ServerView* view) const {
+  return view->id().connection_id == connection_id_;
+}
+
 }  // namespace service
 }  // namespace mojo

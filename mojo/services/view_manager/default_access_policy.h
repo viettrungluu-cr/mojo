@@ -43,10 +43,7 @@ class DefaultAccessPolicy : public AccessPolicy {
  private:
   bool IsViewInRoots(const ServerView* view) const;
 
-  template <typename T>
-  bool WasCreatedByThisConnection(const T* t) const {
-    return t->id().connection_id == connection_id_;
-  }
+  bool WasCreatedByThisConnection(const ServerView* view) const;
 
   const ConnectionSpecificId connection_id_;
   AccessPolicyDelegate* delegate_;

@@ -15,10 +15,6 @@ namespace service {
 // ViewManagerServiceImpl ever gets this id.
 const ConnectionSpecificId kInvalidConnectionId = 0;
 
-// TODO(sky): remove this, temporary while window manager API is in existing
-// api.
-const ConnectionSpecificId kWindowManagerConnection = 1;
-
 // Adds a bit of type safety to view ids.
 struct ViewId {
   ViewId(ConnectionSpecificId connection_id, ConnectionSpecificId view_id)
