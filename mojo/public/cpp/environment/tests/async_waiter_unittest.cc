@@ -3,8 +3,8 @@
 // found in the LICENSE file.
 
 #include "mojo/public/cpp/bindings/callback.h"
+#include "mojo/public/cpp/environment/async_waiter.h"
 #include "mojo/public/cpp/test_support/test_utils.h"
-#include "mojo/public/cpp/utility/async_waiter.h"
 #include "mojo/public/cpp/utility/run_loop.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
@@ -61,8 +61,7 @@ TEST_F(AsyncWaiterTest, CallbackNotified) {
   MessagePipe test_pipe;
   EXPECT_TRUE(test::WriteTextMessage(test_pipe.handle1.get(), std::string()));
 
-  AsyncWaiter waiter(test_pipe.handle0.get(),
-                     MOJO_HANDLE_SIGNAL_READABLE,
+  AsyncWaiter waiter(test_pipe.handle0.get(), MOJO_HANDLE_SIGNAL_READABLE,
                      ManualCallback(&callback));
   RunLoop::current()->Run();
   EXPECT_EQ(1, callback.result_count());
@@ -78,11 +77,9 @@ TEST_F(AsyncWaiterTest, TwoCallbacksNotified) {
   EXPECT_TRUE(test::WriteTextMessage(test_pipe1.handle1.get(), std::string()));
   EXPECT_TRUE(test::WriteTextMessage(test_pipe2.handle1.get(), std::string()));
 
-  AsyncWaiter waiter1(test_pipe1.handle0.get(),
-                      MOJO_HANDLE_SIGNAL_READABLE,
+  AsyncWaiter waiter1(test_pipe1.handle0.get(), MOJO_HANDLE_SIGNAL_READABLE,
                       ManualCallback(&callback1));
-  AsyncWaiter waiter2(test_pipe2.handle0.get(),
-                      MOJO_HANDLE_SIGNAL_READABLE,
+  AsyncWaiter waiter2(test_pipe2.handle0.get(), MOJO_HANDLE_SIGNAL_READABLE,
                       ManualCallback(&callback2));
 
   RunLoop::current()->Run();
@@ -99,8 +96,7 @@ TEST_F(AsyncWaiterTest, CancelCallback) {
   EXPECT_TRUE(test::WriteTextMessage(test_pipe.handle1.get(), std::string()));
 
   {
-    AsyncWaiter waiter(test_pipe.handle0.get(),
-                       MOJO_HANDLE_SIGNAL_READABLE,
+    AsyncWaiter waiter(test_pipe.handle0.get(), MOJO_HANDLE_SIGNAL_READABLE,
                        ManualCallback(&callback));
   }
   RunLoop::current()->Run();

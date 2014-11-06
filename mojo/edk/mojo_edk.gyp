@@ -112,6 +112,7 @@
       ],
       'include_dirs': [ '../..' ],
       'sources': [
+        '../public/cpp/environment/tests/async_wait_unittest.cc',
         '../public/cpp/environment/tests/async_waiter_unittest.cc',
         '../public/cpp/environment/tests/logger_unittest.cc',
         '../public/cpp/environment/tests/logging_unittest.cc',

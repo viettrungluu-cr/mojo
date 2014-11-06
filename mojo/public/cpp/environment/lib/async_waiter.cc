@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "mojo/public/cpp/utility/async_waiter.h"
+#include "mojo/public/cpp/environment/async_waiter.h"
 
 namespace mojo {
 
@@ -12,11 +12,8 @@ AsyncWaiter::AsyncWaiter(Handle handle,
     : waiter_(Environment::GetDefaultAsyncWaiter()),
       id_(0),
       callback_(callback) {
-  id_ = waiter_->AsyncWait(handle.value(),
-                           signals,
-                           MOJO_DEADLINE_INDEFINITE,
-                           &AsyncWaiter::WaitComplete,
-                           this);
+  id_ = waiter_->AsyncWait(handle.value(), signals, MOJO_DEADLINE_INDEFINITE,
+                           &AsyncWaiter::WaitComplete, this);
 }
 
 AsyncWaiter::~AsyncWaiter() {
