@@ -156,7 +156,7 @@ HttpRequestParser::ParseResult HttpRequestParser::ParseHeaders() {
   if (result != MOJO_RESULT_OK) {
     NOTREACHED() << "Couldn't create data pipe of size "
                  << declared_content_length_;
-    return ERROR;
+    return PARSE_ERROR;
   }
 
   // The request has not yet been parsed yet, content data is still to be

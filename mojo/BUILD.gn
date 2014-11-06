@@ -19,7 +19,6 @@ group("mojo") {
     "//mojo/common",
     "//mojo/public",
     "//mojo/services",
-    "//mojo/shell:mojo_launcher",
     "//mojo/tools/package_manager",
     "//services",
   ]
@@ -53,6 +52,12 @@ group("mojo") {
       "//mojo/python",
     ]
   }
+
+  if (!is_win) {
+    deps += [
+      "//mojo/shell:mojo_launcher",
+    ]
+  }
 }
 
 group("tests") {
@@ -73,10 +78,15 @@ group("tests") {
     "//mojo/public/cpp/utility/tests:mojo_public_utility_unittests",
     "//mojo/services/clipboard:clipboard_unittests",
     "//mojo/services/network:unittests",
-    "//mojo/shell:external_application_tests",
     "//mojo/shell:mojo_shell_tests",
     "//mojo/tools:message_generator",
   ]
+
+  if (!is_win) {
+    deps += [
+      "//mojo/shell:external_application_tests",
+    ]
+  }
 
   if (use_aura) {
     deps += [

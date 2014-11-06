@@ -22,7 +22,7 @@ class HttpRequestParser {
   enum ParseResult {
     WAITING,  // A request is not completed yet, waiting for more data.
     ACCEPTED,  // A request has been parsed and it is ready to be processed.
-    ERROR,  // There was an error parsing the request.
+    PARSE_ERROR,  // There was an error parsing the request.
   };
 
   HttpRequestParser();

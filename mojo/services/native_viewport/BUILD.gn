@@ -98,4 +98,10 @@ source_set("lib") {
   } else {
     sources -= [ "platform_viewport_x11.cc" ]
   }
+  
+  if (is_win) {
+    deps += [
+      "//ui/platform_window/win",
+    ]
+  }
 }

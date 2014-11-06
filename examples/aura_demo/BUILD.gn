@@ -42,6 +42,7 @@ shared_library("init") {
     "//base",
     "//mojo/application",
     "//mojo/public/c/system:for_shared_library",
+    "//mojo/services/public/cpp/view_manager",
     "//mojo/services/public/interfaces/view_manager",
   ]
 }
