@@ -487,12 +487,12 @@
       # Enable Google Now.
       'enable_google_now%': 1,
 
-      # Enable printing support and UI. This variable is used to configure
-      # which parts of printing will be built. 0 disables printing completely,
-      # 1 enables it fully, and 2 enables only the codepath to generate a
-      # Metafile (e.g. usually a PDF or EMF) and disables print preview, cloud
-      # print, UI, etc.
-      'enable_printing%': 1,
+      # Enable basic printing support and UI.
+      'enable_basic_printing%': 1,
+
+      # Enable printing with print preview. It does not imply
+      # enable_basic_printing. It's possible to build Chrome with preview only.
+      'enable_print_preview%': 1,
 
       # Set the version of CLD.
       #   0: Don't specify the version. This option is for the Finch testing.
@@ -770,7 +770,8 @@
           'arm_neon_optional%': 1,
           'native_discardable_memory%': 1,
           'native_memory_pressure_signals%': 1,
-          'enable_printing%': 2,
+          'enable_basic_printing%': 1,
+          'enable_print_preview%': 0,
           'enable_task_manager%':0,
           'video_hole%': 1,
         }],
@@ -809,7 +810,8 @@
           'enable_extensions%': 0,
           'enable_google_now%': 0,
           'cld_version%': 1,
-          'enable_printing%': 0,
+          'enable_basic_printing%': 0,
+          'enable_print_preview%': 0,
           'enable_session_service%': 0,
           'enable_themes%': 0,
           'enable_webrtc%': 0,
@@ -905,6 +907,8 @@
         }],
 
         ['chromeos==1', {
+          'enable_basic_printing%': 0,
+          'enable_print_preview%': 1,
           # When building for ChromeOS we dont want Chromium to use libjpeg_turbo.
           'use_libjpeg_turbo%': 0,
         }],
@@ -979,7 +983,8 @@
         # Disable various features by default on embedded.
         ['embedded==1', {
           'remoting%': 0,
-          'enable_printing%': 0,
+          'enable_basic_printing%': 0,
+          'enable_print_preview%': 0,
         }],
 
         # By default, use ICU data file (icudtl.dat) on all platforms
@@ -1175,7 +1180,8 @@
     'test_isolation_mode%': '<(test_isolation_mode)',
     'test_isolation_outdir%': '<(test_isolation_outdir)',
     'test_isolation_fail_on_missing': '<(test_isolation_fail_on_missing)',
-    'enable_printing%': '<(enable_printing)',
+    'enable_basic_printing%': '<(enable_basic_printing)',
+    'enable_print_preview%': '<(enable_print_preview)',
     'enable_spellcheck%': '<(enable_spellcheck)',
     'enable_google_now%': '<(enable_google_now)',
     'cld_version%': '<(cld_version)',
@@ -2096,11 +2102,11 @@
       ['enable_plugins!=0', {
         'grit_defines': ['-D', 'enable_plugins'],
       }],
-      ['enable_printing!=0', {
+      ['enable_basic_printing==1 or enable_print_preview==1', {
         'grit_defines': ['-D', 'enable_printing'],
       }],
-      ['enable_printing==1', {
-        'grit_defines': ['-D', 'enable_full_printing'],
+      ['enable_print_preview==1', {
+        'grit_defines': ['-D', 'enable_print_preview'],
       }],
       ['enable_themes==1', {
         'grit_defines': ['-D', 'enable_themes'],
@@ -2348,6 +2354,7 @@
       }, {
          'use_seccomp_bpf%': 0,
       }],
+
       # Set component build with LTO until all tests pass.
       # This also reduces link time.
       ['use_lto==1', {
@@ -2386,7 +2393,7 @@
     # Whether to allow building of the GPU-related isolates.
     'archive_gpu_tests%': 0,
 
-     # Whether to allow building of chromoting related isolates.
+    # Whether to allow building of chromoting related isolates.
     'archive_chromoting_tests%': 0,
   },
   'target_defaults': {
@@ -2923,11 +2930,18 @@
         # chrome://translate-internals
         'defines': ['CLD2_DATA_SOURCE=<(cld2_data_source)'],
       }],
-      ['enable_printing==1', {
-        'defines': ['ENABLE_FULL_PRINTING=1', 'ENABLE_PRINTING=1'],
-      }],
-      ['enable_printing==2', {
+      ['enable_basic_printing==1 or enable_print_preview==1', {
+        # Convenience define for ENABLE_BASIC_PRINTING || ENABLE_PRINT_PREVIEW.
         'defines': ['ENABLE_PRINTING=1'],
+      }],
+      ['enable_basic_printing==1', {
+        # Enable basic printing support and UI.
+        'defines': ['ENABLE_BASIC_PRINTING=1'],
+      }],
+      ['enable_print_preview==1', {
+        # Enable printing with print preview.
+        # Can be defined without ENABLE_BASIC_PRINTING.
+        'defines': ['ENABLE_PRINT_PREVIEW=1'],
       }],
       ['enable_spellcheck==1', {
         'defines': ['ENABLE_SPELLCHECK=1'],
@@ -4641,10 +4655,19 @@
                   '--sysroot=<(android_ndk_sysroot)',
                   '-nostdlib',
                 ],
+                'variables': {
+                  'conditions': [
+                    ['target_arch=="arm" and arm_thumb==1', {
+                      'thumb_option%': '-mthumb',
+                    }, {
+                      'thumb_option%': '',
+                    }],
+                  ],
+                },
                 'libraries': [
                   '-l<(android_stlport_library)',
                   # Manually link the libgcc.a that the cross compiler uses.
-                  '<!(<(android_toolchain)/*-gcc -print-libgcc-file-name)',
+                  '<!(<(android_toolchain)/*-gcc <(thumb_option) -print-libgcc-file-name)',
                   '-lc',
                   '-ldl',
                   '-lm',
@@ -4709,8 +4732,12 @@
                 'cflags': [
                   '-isystem<(android_stlport_include)',
                 ],
-                'ldflags': [
-                  '-L<(android_stlport_libs_dir)',
+                'conditions': [
+                  ['target_arch=="arm" and arm_thumb==1', {
+                    'ldflags': [ '-L<(android_stlport_libs_dir)/thumb' ]
+                  }, {
+                    'ldflags': [ '-L<(android_stlport_libs_dir)' ]
+                  }],
                 ],
               }, { # else: android_webview_build!=0
                 'aosp_build_settings': {
@@ -5151,9 +5178,7 @@
     ['OS=="ios"', {
       'target_defaults': {
         'xcode_settings' : {
-          # TODO(stuartmorgan): switch to c++0x (see TODOs in the clang
-          # section above).
-          'CLANG_CXX_LANGUAGE_STANDARD': 'gnu++0x',
+          'CLANG_CXX_LANGUAGE_STANDARD': 'c++11',
 
           'conditions': [
             # Older Xcodes do not support -Wno-deprecated-register, so pass an
@@ -5719,13 +5744,17 @@
     # the default on the current development version of AOSP but we force it
     # here in case we need to compile against an older release version. We also
     # explicitly set it to false for target binaries to avoid causing problems
-    # for the work to enable clang by default in AOSP.
+    # for the work to enable clang by default in AOSP. We also force the use of
+    # libstdc++ on host as peculiarities of the android gyp backend mean that
+    # using libc++ doesn't work, and Chromium doesn't yet require a more modern
+    # C++ library.
     ['android_webview_build==1', {
       'target_defaults': {
         'target_conditions': [
           ['_toolset=="host"', {
             'aosp_build_settings': {
               'LOCAL_CLANG': 'true',
+              'LOCAL_CXX_STL': 'libstdc++',
             },
           }, {  # else: _toolset != "host"
             'aosp_build_settings': {

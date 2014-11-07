@@ -46,7 +46,6 @@
 #include "cc/test/fake_picture_layer_impl.h"
 #include "cc/test/fake_picture_pile_impl.h"
 #include "cc/test/fake_proxy.h"
-#include "cc/test/fake_rendering_stats_instrumentation.h"
 #include "cc/test/geometry_test_utils.h"
 #include "cc/test/layer_test_common.h"
 #include "cc/test/render_pass_test_common.h"
@@ -5948,7 +5947,7 @@ TEST_F(LayerTreeHostImplTest, MaskLayerForSurfaceWithClippedLayer) {
 
 class GLRendererWithSetupQuadForAntialiasing : public GLRenderer {
  public:
-  using GLRenderer::SetupQuadForAntialiasing;
+  using GLRenderer::ShouldAntialiasQuad;
 };
 
 TEST_F(LayerTreeHostImplTest, FarAwayQuadsDontNeedAA) {
@@ -6006,11 +6005,9 @@ TEST_F(LayerTreeHostImplTest, FarAwayQuadsDontNeedAA) {
   ASSERT_LE(1u, frame.render_passes[0]->quad_list.size());
   const DrawQuad* quad = frame.render_passes[0]->quad_list.front();
 
-  float edge[24];
-  gfx::QuadF device_layer_quad;
   bool antialiased =
-      GLRendererWithSetupQuadForAntialiasing::SetupQuadForAntialiasing(
-          quad->quadTransform(), quad, &device_layer_quad, edge);
+      GLRendererWithSetupQuadForAntialiasing::ShouldAntialiasQuad(
+          quad->quadTransform(), quad, false);
   EXPECT_FALSE(antialiased);
 
   host_impl_->DrawLayers(&frame, gfx::FrameTime::Now());

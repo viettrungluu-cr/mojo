@@ -798,6 +798,19 @@ public class Linker {
     }
 
     /**
+     * Enable the fallback due to lack of support for mapping the APK file with
+     * executable permission (see crbug.com/398425).
+     */
+    public static void enableNoMapExecSupportFallback() {
+        synchronized (Linker.class) {
+            ensureInitializedLocked();
+
+            if (DEBUG) Log.i(TAG, "Enabling no map executable support fallback");
+            nativeEnableNoMapExecSupportFallback();
+        }
+    }
+
+    /**
      * Determine whether a library is the linker library. Also deal with the
      * component build that adds a .cr suffix to the name.
      */
@@ -812,46 +825,50 @@ public class Linker {
      * @return the library path.
      */
     public static String getLibraryFilePathInZipFile(String library) throws FileNotFoundException {
-        String path = nativeGetLibraryFilePathInZipFile(library);
-        if (path.equals("")) {
-            throw new FileNotFoundException(
-                    "Failed to retrieve path in zip file for library " + library);
+        synchronized (Linker.class) {
+            ensureInitializedLocked();
+
+            String path = nativeGetLibraryFilePathInZipFile(library);
+            if (path.equals("")) {
+                throw new FileNotFoundException(
+                        "Failed to retrieve path in zip file for library " + library);
+            }
+            return path;
         }
-        return path;
     }
 
     /**
-     * Check whether the device supports loading a library directly from the APK file.
+     * Check whether the device supports mapping the APK file with executable permission.
      *
      * @param apkFile Filename of the APK.
      * @return true if supported.
      */
-    public static boolean checkLibraryLoadFromApkSupport(String apkFile) {
+    public static boolean checkMapExecSupport(String apkFile) {
         assert apkFile != null;
         synchronized (Linker.class) {
             ensureInitializedLocked();
 
-            if (DEBUG) Log.i(TAG, "checkLibraryLoadFromApkSupported: " + apkFile);
-            boolean supported = nativeCheckLibraryLoadFromApkSupport(apkFile);
-            if (DEBUG) Log.i(TAG, "Loading a library directly from the APK file "
+            if (DEBUG) Log.i(TAG, "checkMapExecSupport: " + apkFile);
+            boolean supported = nativeCheckMapExecSupport(apkFile);
+            if (DEBUG) Log.i(TAG, "Mapping the APK file with executable permission "
                     + (supported ? "" : "NOT ") + "supported");
             return supported;
         }
     }
 
     /**
-     * Check whether a library is page aligned in the APK file.
+     * Check whether a library is page aligned and uncompressed in the APK file.
      *
      * @param apkFile Filename of the APK.
      * @param library The library's base name.
-     * @return true if page aligned.
+     * @return true if page aligned and uncompressed.
      */
-    public static boolean checkLibraryAlignedInApk(String apkFile, String library) {
+    public static boolean checkLibraryIsMappableInApk(String apkFile, String library) {
         synchronized (Linker.class) {
             ensureInitializedLocked();
 
-            if (DEBUG) Log.i(TAG, "checkLibraryAlignedInApk: " + apkFile + ", " + library);
-            boolean aligned = nativeCheckLibraryAlignedInApk(apkFile, library);
+            if (DEBUG) Log.i(TAG, "checkLibraryIsMappableInApk: " + apkFile + ", " + library);
+            boolean aligned = nativeCheckLibraryIsMappableInApk(apkFile, library);
             if (DEBUG) Log.i(TAG, library + " is " + (aligned ? "" : "NOT ")
                     + "page aligned in " + apkFile);
             return aligned;
@@ -909,6 +926,12 @@ public class Linker {
                                                              LibInfo libInfo);
 
     /**
+     * Native method used to enable the fallback due to lack of support for
+     * mapping the APK file with executable permission.
+     */
+    private static native void nativeEnableNoMapExecSupportFallback();
+
+    /**
      * Native method used to create a shared RELRO section.
      * If the library was already loaded at the same address using
      * nativeLoadLibrary(), this creates the RELRO for it. Otherwise,
@@ -964,22 +987,23 @@ public class Linker {
     private static native String nativeGetLibraryFilePathInZipFile(String library);
 
     /**
-     * Native method which checks whether the device supports loading a library
-     * directly from the APK file.
+     * Native method which checks whether the device supports mapping the APK file
+     * with executable permission.
      *
      * @param apkFile Filename of the APK.
      * @return true if supported.
      */
-    private static native boolean nativeCheckLibraryLoadFromApkSupport(String apkFile);
+    private static native boolean nativeCheckMapExecSupport(String apkFile);
 
     /**
-     * Native method which checks whether a library is page aligned in the APK file.
+     * Native method which checks whether a library is page aligned and
+     * uncompressed in the APK file.
      *
      * @param apkFile Filename of the APK.
      * @param library The library's base name.
-     * @return true if page aligned.
+     * @return true if page aligned and uncompressed.
      */
-    private static native boolean nativeCheckLibraryAlignedInApk(String apkFile, String library);
+    private static native boolean nativeCheckLibraryIsMappableInApk(String apkFile, String library);
 
     /**
      * Record information for a given library.

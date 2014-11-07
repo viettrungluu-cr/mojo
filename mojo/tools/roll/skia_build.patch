@@ -1,10 +1,10 @@
 diff --git a/skia/BUILD.gn b/skia/BUILD.gn
-index 356c6ae..042d03d 100644
+index 1944183..a57b6a1 100644
 --- a/skia/BUILD.gn
 +++ b/skia/BUILD.gn
 @@ -11,15 +11,6 @@ if (cpu_arch == "arm") {
  skia_support_gpu = !is_ios
- skia_support_pdf = !is_ios && printing_mode != 0
+ skia_support_pdf = !is_ios && (enable_basic_printing || enable_print_preview)
  
 -# The list of Skia defines that are to be set for blink.
 -gypi_blink_skia_defines = exec_script(
@@ -18,7 +18,7 @@ index 356c6ae..042d03d 100644
  # The list of Skia defines that are to be set for chromium.
  gypi_skia_defines = exec_script(
      "//build/gypi_to_gn.py",
-@@ -107,8 +98,7 @@ config("skia_config") {
+@@ -108,8 +99,7 @@ config("skia_config") {
      "//third_party/skia/src/lazy",
    ]
  

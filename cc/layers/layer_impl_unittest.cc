@@ -434,6 +434,8 @@ class LayerImplScrollTest : public testing::Test {
     return host_impl_.active_tree()->root_layer()->children()[0];
   }
 
+  LayerTreeHostImpl& host_impl() { return host_impl_; }
+
   LayerTreeImpl* tree() { return host_impl_.active_tree(); }
 
   LayerTreeSettings settings() {
@@ -497,7 +499,13 @@ TEST_F(LayerImplScrollTest, ScrollByWithNonZeroOffset) {
 
 class ScrollDelegateIgnore : public LayerImpl::ScrollOffsetDelegate {
  public:
-  void SetTotalScrollOffset(const gfx::ScrollOffset& new_value) override {}
+  void SetTotalScrollOffset(const gfx::ScrollOffset& new_value) override {
+    last_attempted_set_offset_ = new_value;
+  }
+  gfx::ScrollOffset last_attempted_set_offset() const {
+    return last_attempted_set_offset_;
+  }
+
   gfx::ScrollOffset GetTotalScrollOffset() override {
     return gfx::ScrollOffset(fixed_offset_);
   }
@@ -509,6 +517,7 @@ class ScrollDelegateIgnore : public LayerImpl::ScrollOffsetDelegate {
   }
 
  private:
+  gfx::ScrollOffset last_attempted_set_offset_;
   gfx::Vector2dF fixed_offset_;
 };
 
@@ -632,6 +641,8 @@ TEST_F(LayerImplScrollTest, ApplySentScrollsWithIgnoringDelegate) {
 
   layer()->ApplySentScrollDeltasFromAbortedCommit();
 
+  EXPECT_VECTOR_EQ(fixed_offset, delegate.last_attempted_set_offset());
+
   EXPECT_VECTOR_EQ(fixed_offset, layer()->TotalScrollOffset());
   EXPECT_VECTOR_EQ(gfx::ScrollOffsetWithDelta(scroll_offset, sent_scroll_delta),
                    layer()->scroll_offset());
@@ -673,6 +684,31 @@ TEST_F(LayerImplScrollTest, ScrollUserUnscrollableLayer) {
 
   EXPECT_VECTOR_EQ(gfx::Vector2dF(0, 8.5f), unscrolled);
   EXPECT_VECTOR_EQ(gfx::Vector2dF(30.5f, 5), layer()->TotalScrollOffset());
+}
+
+TEST_F(LayerImplScrollTest, PushPropertiesToMirrorsTotalScrollOffset) {
+  gfx::ScrollOffset scroll_offset(10, 5);
+  gfx::Vector2dF scroll_delta(12, 18);
+
+  host_impl().CreatePendingTree();
+
+  layer()->SetScrollOffset(scroll_offset);
+  gfx::Vector2dF unscrolled = layer()->ScrollBy(scroll_delta);
+
+  EXPECT_VECTOR_EQ(gfx::Vector2dF(0, 0), unscrolled);
+  EXPECT_VECTOR_EQ(gfx::Vector2dF(22, 23), layer()->TotalScrollOffset());
+
+  layer()->SetSentScrollDelta(scroll_delta);
+
+  scoped_ptr<LayerImpl> pending_layer =
+      LayerImpl::Create(host_impl().sync_tree(), layer()->id());
+  pending_layer->SetScrollOffset(layer()->TotalScrollOffset());
+
+  pending_layer->PushPropertiesTo(layer());
+
+  EXPECT_VECTOR_EQ(gfx::Vector2dF(22, 23), layer()->TotalScrollOffset());
+  EXPECT_VECTOR_EQ(layer()->TotalScrollOffset(),
+                   pending_layer->TotalScrollOffset());
 }
 
 TEST_F(LayerImplScrollTest, SetNewScrollbarParameters) {

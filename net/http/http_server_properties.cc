@@ -20,10 +20,9 @@ const char* const kAlternateProtocolStrings[] = {
   "npn-spdy/2",
   "npn-spdy/3",
   "npn-spdy/3.1",
-  "npn-h2-14",  // HTTP/2 draft 14. Called SPDY4 internally.
+  "npn-h2-15",  // HTTP/2 draft-15. Called SPDY4 internally.
   "quic"
 };
-const char kBrokenAlternateProtocol[] = "Broken";
 
 COMPILE_ASSERT(
     arraysize(kAlternateProtocolStrings) == NUM_VALID_ALTERNATE_PROTOCOLS,
@@ -57,8 +56,6 @@ const char* AlternateProtocolToString(AlternateProtocol protocol) {
       DCHECK(IsAlternateProtocolValid(protocol));
       return kAlternateProtocolStrings[
           protocol - ALTERNATE_PROTOCOL_MINIMUM_VALID_VERSION];
-    case ALTERNATE_PROTOCOL_BROKEN:
-      return kBrokenAlternateProtocol;
     case UNINITIALIZED_ALTERNATE_PROTOCOL:
       return "Uninitialized";
   }
@@ -73,8 +70,6 @@ AlternateProtocol AlternateProtocolFromString(const std::string& str) {
     if (str == AlternateProtocolToString(protocol))
       return protocol;
   }
-  if (str == kBrokenAlternateProtocol)
-    return ALTERNATE_PROTOCOL_BROKEN;
   return UNINITIALIZED_ALTERNATE_PROTOCOL;
 }
 
@@ -101,9 +96,10 @@ AlternateProtocol AlternateProtocolFromNextProto(NextProto next_proto) {
 }
 
 std::string AlternateProtocolInfo::ToString() const {
-  return base::StringPrintf("%d:%s p=%f", port,
+  return base::StringPrintf("%d:%s p=%f%s", port,
                             AlternateProtocolToString(protocol),
-                            probability);
+                            probability,
+                            is_broken ? " (broken)" : "");
 }
 
 }  // namespace net

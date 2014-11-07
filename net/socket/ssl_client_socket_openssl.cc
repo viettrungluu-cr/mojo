@@ -101,9 +101,9 @@ int GetNetSSLVersion(SSL* ssl) {
       return SSL_CONNECTION_VERSION_SSL3;
     case TLS1_VERSION:
       return SSL_CONNECTION_VERSION_TLS1;
-    case 0x0302:
+    case TLS1_1_VERSION:
       return SSL_CONNECTION_VERSION_TLS1_1;
-    case 0x0303:
+    case TLS1_2_VERSION:
       return SSL_CONNECTION_VERSION_TLS1_2;
     default:
       return SSL_CONNECTION_VERSION_UNKNOWN;
@@ -1094,6 +1094,9 @@ int SSLClientSocketOpenSSL::DoVerifyCertComplete(int result) {
       UMA_HISTOGRAM_TIMES("Net.SSLCertVerificationTimeError", verify_time);
     }
   }
+
+  if (result == OK)
+    RecordConnectionTypeMetrics(GetNetSSLVersion(ssl_));
 
   const CertStatus cert_status = server_cert_verify_result_.cert_status;
   if (transport_security_state_ &&

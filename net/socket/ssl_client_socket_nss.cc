@@ -86,7 +86,6 @@
 #include "crypto/rsa_private_key.h"
 #include "crypto/scoped_nss_types.h"
 #include "net/base/address_list.h"
-#include "net/base/connection_type_histograms.h"
 #include "net/base/dns_util.h"
 #include "net/base/io_buffer.h"
 #include "net/base/net_errors.h"
@@ -1631,6 +1630,11 @@ void SSLClientSocketNSS::Core::HandshakeCallback(
 }
 
 void SSLClientSocketNSS::Core::HandshakeSucceeded() {
+  // TODO(vadimt): Remove ScopedProfile below once crbug.com/424386 is fixed.
+  tracked_objects::ScopedProfile tracking_profile(
+      FROM_HERE_WITH_EXPLICIT_FUNCTION(
+          "424386 SSLClientSocketNSS::Core::HandshakeSucceeded"));
+
   DCHECK(OnNSSTaskRunner());
 
   PRBool last_handshake_resumed;
@@ -1657,6 +1661,11 @@ void SSLClientSocketNSS::Core::HandshakeSucceeded() {
 }
 
 int SSLClientSocketNSS::Core::HandleNSSError(PRErrorCode nss_error) {
+  // TODO(vadimt): Remove ScopedProfile below once crbug.com/424386 is fixed.
+  tracked_objects::ScopedProfile tracking_profile(
+      FROM_HERE_WITH_EXPLICIT_FUNCTION(
+          "424386 SSLClientSocketNSS::Core::HandleNSSError"));
+
   DCHECK(OnNSSTaskRunner());
 
   int net_error = MapNSSClientError(nss_error);
@@ -1803,6 +1812,11 @@ int SSLClientSocketNSS::Core::DoHandshake() {
 
   int net_error = OK;
   SECStatus rv = SSL_ForceHandshake(nss_fd_);
+
+  // TODO(vadimt): Remove ScopedProfile below once crbug.com/424386 is fixed.
+  tracked_objects::ScopedProfile tracking_profile1(
+      FROM_HERE_WITH_EXPLICIT_FUNCTION(
+          "424386 SSLClientSocketNSS::Core::DoHandshake 1"));
 
   // Note: this function may be called multiple times during the handshake, so
   // even though channel id and client auth are separate else cases, they can
@@ -2473,8 +2487,6 @@ void SSLClientSocketNSS::Core::UpdateConnectionStatus() {
          SSL_CONNECTION_COMPRESSION_MASK) <<
         SSL_CONNECTION_COMPRESSION_SHIFT;
 
-    // NSS 3.14.x doesn't have a version macro for TLS 1.2 (because NSS didn't
-    // support it yet), so use 0x0303 directly.
     int version = SSL_CONNECTION_VERSION_UNKNOWN;
     if (channel_info.protocolVersion < SSL_LIBRARY_VERSION_3_0) {
       // All versions less than SSL_LIBRARY_VERSION_3_0 are treated as SSL
@@ -2482,11 +2494,11 @@ void SSLClientSocketNSS::Core::UpdateConnectionStatus() {
       version = SSL_CONNECTION_VERSION_SSL2;
     } else if (channel_info.protocolVersion == SSL_LIBRARY_VERSION_3_0) {
       version = SSL_CONNECTION_VERSION_SSL3;
-    } else if (channel_info.protocolVersion == SSL_LIBRARY_VERSION_3_1_TLS) {
+    } else if (channel_info.protocolVersion == SSL_LIBRARY_VERSION_TLS_1_0) {
       version = SSL_CONNECTION_VERSION_TLS1;
     } else if (channel_info.protocolVersion == SSL_LIBRARY_VERSION_TLS_1_1) {
       version = SSL_CONNECTION_VERSION_TLS1_1;
-    } else if (channel_info.protocolVersion == 0x0303) {
+    } else if (channel_info.protocolVersion == SSL_LIBRARY_VERSION_TLS_1_2) {
       version = SSL_CONNECTION_VERSION_TLS1_2;
     }
     nss_handshake_state_.ssl_connection_status |=
@@ -3492,8 +3504,11 @@ int SSLClientSocketNSS::DoVerifyCertComplete(int result) {
   // TODO(hclam): Skip logging if server cert was expected to be bad because
   // |server_cert_verify_result_| doesn't contain all the information about
   // the cert.
-  if (result == OK)
-    LogConnectionTypeMetrics();
+  if (result == OK) {
+    int ssl_version =
+        SSLConnectionStatusToVersion(core_->state().ssl_connection_status);
+    RecordConnectionTypeMetrics(ssl_version);
+  }
 
   const CertStatus cert_status = server_cert_verify_result_.cert_status;
   if (transport_security_state_ &&
@@ -3559,29 +3574,6 @@ void SSLClientSocketNSS::VerifyCT() {
           << " Verified scts: " << ct_verify_result_.verified_scts.size()
           << " scts from unknown logs: "
           << ct_verify_result_.unknown_logs_scts.size();
-}
-
-void SSLClientSocketNSS::LogConnectionTypeMetrics() const {
-  UpdateConnectionTypeHistograms(CONNECTION_SSL);
-  int ssl_version = SSLConnectionStatusToVersion(
-      core_->state().ssl_connection_status);
-  switch (ssl_version) {
-    case SSL_CONNECTION_VERSION_SSL2:
-      UpdateConnectionTypeHistograms(CONNECTION_SSL_SSL2);
-      break;
-    case SSL_CONNECTION_VERSION_SSL3:
-      UpdateConnectionTypeHistograms(CONNECTION_SSL_SSL3);
-      break;
-    case SSL_CONNECTION_VERSION_TLS1:
-      UpdateConnectionTypeHistograms(CONNECTION_SSL_TLS1);
-      break;
-    case SSL_CONNECTION_VERSION_TLS1_1:
-      UpdateConnectionTypeHistograms(CONNECTION_SSL_TLS1_1);
-      break;
-    case SSL_CONNECTION_VERSION_TLS1_2:
-      UpdateConnectionTypeHistograms(CONNECTION_SSL_TLS1_2);
-      break;
-  };
 }
 
 void SSLClientSocketNSS::EnsureThreadIdAssigned() const {

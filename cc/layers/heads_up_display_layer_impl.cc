@@ -385,6 +385,8 @@ SkRect HeadsUpDisplayLayerImpl::DrawFPSDisplay(
   const std::string min_max_text =
       base::StringPrintf("%.0f-%.0f", fps_graph_.min, fps_graph_.max);
 
+  VLOG(1) << value_text;
+
   paint.setColor(DebugColors::FPSDisplayTextAndGraphColor());
   DrawText(canvas,
            &paint,
@@ -565,13 +567,8 @@ SkRect HeadsUpDisplayLayerImpl::DrawPaintTimeDisplay(
       "%.1f-%.1f", paint_time_graph_.min, paint_time_graph_.max);
 
   paint.setColor(DebugColors::PaintTimeDisplayTextAndGraphColor());
-  DrawText(canvas,
-           &paint,
-           "Page paint time (ms)",
-           SkPaint::kLeft_Align,
-           kFontHeight,
-           text_bounds.left(),
-           text_bounds.bottom());
+  DrawText(canvas, &paint, "Compositor frame time (ms)", SkPaint::kLeft_Align,
+           kFontHeight, text_bounds.left(), text_bounds.bottom());
   DrawText(canvas,
            &paint,
            value_text,

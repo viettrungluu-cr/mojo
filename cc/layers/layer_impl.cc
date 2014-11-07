@@ -397,23 +397,22 @@ bool LayerImpl::user_scrollable(ScrollbarOrientation orientation) const {
 }
 
 void LayerImpl::ApplySentScrollDeltasFromAbortedCommit() {
+  if (sent_scroll_delta_.IsZero())
+    return;
+
   // Pending tree never has sent scroll deltas
   DCHECK(layer_tree_impl()->IsActiveTree());
 
+  // The combination of pending tree and aborted commits with impl scrolls
+  // shouldn't happen; we don't know how to update its deltas correctly.
+  DCHECK(!layer_tree_impl()->FindPendingTreeLayerById(id()));
+
   // Apply sent scroll deltas to scroll position / scroll delta as if the
   // main thread had applied them and then committed those values.
-  //
-  // This function should not change the total scroll offset; it just shifts
-  // some of the scroll delta to the scroll offset.  Therefore, adjust these
-  // variables directly rather than calling the scroll offset delegate to
-  // avoid sending it multiple spurious calls.
-  //
-  // Because of the way scroll delta is calculated with a delegate, this will
-  // leave the total scroll offset unchanged on this layer regardless of
-  // whether a delegate is being used.
-  scroll_offset_ += gfx::ScrollOffset(sent_scroll_delta_);
-  scroll_delta_ -= sent_scroll_delta_;
-  sent_scroll_delta_ = gfx::Vector2dF();
+  SetScrollOffsetAndDelta(
+      scroll_offset_ + gfx::ScrollOffset(sent_scroll_delta_),
+      ScrollDelta() - sent_scroll_delta_);
+  SetSentScrollDelta(gfx::Vector2dF());
 }
 
 void LayerImpl::ApplyScrollDeltasSinceBeginMainFrame() {
@@ -550,10 +549,14 @@ void LayerImpl::PushPropertiesTo(LayerImpl* layer) {
                                                : Layer::INVALID_ID);
   layer->set_user_scrollable_horizontal(user_scrollable_horizontal_);
   layer->set_user_scrollable_vertical(user_scrollable_vertical_);
-  layer->SetScrollOffsetAndDelta(
-      scroll_offset_,
-      layer->ScrollDelta() - layer->sent_scroll_delta());
+
+  // Save the difference but clear the sent delta so that we don't subtract
+  // it again in SetScrollOffsetAndDelta's pending twin mirroring logic.
+  gfx::Vector2dF remaining_delta =
+      layer->ScrollDelta() - layer->sent_scroll_delta();
   layer->SetSentScrollDelta(gfx::Vector2dF());
+  layer->SetScrollOffsetAndDelta(scroll_offset_, remaining_delta);
+
   layer->Set3dSortingContextId(sorting_context_id_);
   layer->SetNumDescendantsThatDrawContent(num_descendants_that_draw_content_);
 

@@ -187,16 +187,14 @@ void QuicPacketCreator::StopSendingVersion() {
 
 void QuicPacketCreator::UpdateSequenceNumberLength(
       QuicPacketSequenceNumber least_packet_awaited_by_peer,
-      QuicByteCount congestion_window) {
+      QuicPacketCount max_packets_in_flight) {
   DCHECK_LE(least_packet_awaited_by_peer, sequence_number_ + 1);
   // Since the packet creator will not change sequence number length mid FEC
   // group, include the size of an FEC group to be safe.
   const QuicPacketSequenceNumber current_delta =
       max_packets_per_fec_group_ + sequence_number_ + 1
       - least_packet_awaited_by_peer;
-  const uint64 congestion_window_packets =
-      congestion_window / max_packet_length_;
-  const uint64 delta = max(current_delta, congestion_window_packets);
+  const uint64 delta = max(current_delta, max_packets_in_flight);
   next_sequence_number_length_ =
       QuicFramer::GetMinSequenceNumberLength(delta * 4);
 }
@@ -505,16 +503,31 @@ bool QuicPacketCreator::AddFrame(const QuicFrame& frame,
 }
 
 void QuicPacketCreator::MaybeAddPadding() {
-  if (queued_retransmittable_frames_.get() == nullptr) {
-    return;
-  }
-  if (!queued_retransmittable_frames_->HasCryptoHandshake()) {
-    return;
-  }
   if (BytesFree() == 0) {
     // Don't pad full packets.
     return;
   }
+
+  // Since ReserializeAllFrames does not populate queued_retransmittable_frames_
+  // it's not sufficient to simply call
+  // queued_retransmittable_frames_->HasCryptoHandshake().
+  // TODO(rch): we should really make ReserializeAllFrames not be a special
+  // case!
+
+  // If any of the frames in the current packet are on the crypto stream
+  // then they contain handshake messagses, and we should pad them.
+  bool is_handshake = false;
+  for (const QuicFrame& frame : queued_frames_) {
+    if (frame.type == STREAM_FRAME &&
+        frame.stream_frame->stream_id == kCryptoStreamId) {
+      is_handshake = true;
+      break;
+    }
+  }
+  if (!is_handshake) {
+    return;
+  }
+
   QuicPaddingFrame padding;
   bool success = AddFrame(QuicFrame(&padding), false);
   DCHECK(success);

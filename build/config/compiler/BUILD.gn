@@ -46,7 +46,9 @@ config("default_include_dirs") {
 }
 
 # TODO(GYP): is_ubsan, is_ubsan_vptr
-using_sanitizer = is_asan || is_lsan || is_tsan || is_msan
+if (!is_win) {
+  using_sanitizer = is_asan || is_lsan || is_tsan || is_msan
+}
 
 # compiler ---------------------------------------------------------------------
 #
@@ -79,9 +81,6 @@ config("compiler") {
         "/EHsc",  # Assume C functions can't throw exceptions and don't catch
                   # structured exceptions (only C++ ones).
       ]
-    }
-    if (using_sanitizer) {
-      # Avoid error.
     }
   } else {
     # Common GCC compiler flags setup.
@@ -486,7 +485,11 @@ config("runtime_library") {
       "-isystem" + rebase_path("$android_stlport_root/stlport",
                                root_build_dir)
     ]
-    lib_dirs += [ "$android_stlport_root/libs/$android_app_abi" ]
+    if (arm_use_thumb) {
+      lib_dirs += [ "$android_stlport_root/libs/$android_app_abi/thumb" ]
+    } else {
+      lib_dirs += [ "$android_stlport_root/libs/$android_app_abi" ]
+    }
 
     if (component_mode == "shared_library") {
       libs += [ "stlport_shared" ]
@@ -528,12 +531,10 @@ config("chromium_code") {
   if (is_win) {
     cflags = [
       "/W4",  # Warning level 4.
-      "/wd4267",  # TODO(jschuh): crbug.com/167187 size_t to int truncations.
     ]
   } else {
     cflags = [
       "-Wall",
-      "-Wextra",
 
       # GCC turns on -Wsign-compare for C++ under -Wall, but clang doesn't,
       # so we specify it explicitly.
@@ -559,7 +560,6 @@ config("no_chromium_code") {
     cflags += [
       "/W3",  # Warning level 3.
       "/wd4800",  # Disable warning when forcing value to bool.
-      "/wd4267",  # TODO(jschuh): crbug.com/167187 size_t to int truncations.
     ]
     defines += [
       "_CRT_NONSTDC_NO_WARNINGS",

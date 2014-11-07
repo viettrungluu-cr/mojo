@@ -96,8 +96,8 @@ class RasterTaskImpl : public RasterTask {
 
     DCHECK(raster_source);
 
-    raster_source->PerformSolidColorAnalysis(
-        content_rect_, contents_scale_, &analysis_, rendering_stats_);
+    raster_source->PerformSolidColorAnalysis(content_rect_, contents_scale_,
+                                             &analysis_);
 
     // Record the solid color prediction.
     UMA_HISTOGRAM_BOOLEAN("Renderer4.SolidColorTilesAnalyzed",
@@ -113,30 +113,10 @@ class RasterTaskImpl : public RasterTask {
     devtools_instrumentation::ScopedLayerTask layer_task(
         devtools_instrumentation::kRasterTask, layer_id_);
 
-    base::TimeDelta prev_rasterize_time =
-        rendering_stats_->impl_thread_rendering_stats().rasterize_time;
-
-    // Only record rasterization time for highres tiles, because
-    // lowres tiles are not required for activation and therefore
-    // introduce noise in the measurement (sometimes they get rasterized
-    // before we draw and sometimes they aren't)
-    RenderingStatsInstrumentation* stats =
-        tile_resolution_ == HIGH_RESOLUTION ? rendering_stats_ : NULL;
     DCHECK(raster_source);
 
-    raster_buffer_->Playback(
-        raster_source_.get(), content_rect_, contents_scale_, stats);
-
-    if (rendering_stats_->record_rendering_stats()) {
-      base::TimeDelta current_rasterize_time =
-          rendering_stats_->impl_thread_rendering_stats().rasterize_time;
-      LOCAL_HISTOGRAM_CUSTOM_COUNTS(
-          "Renderer4.PictureRasterTimeUS",
-          (current_rasterize_time - prev_rasterize_time).InMicroseconds(),
-          0,
-          100000,
-          100);
-    }
+    raster_buffer_->Playback(raster_source_.get(), content_rect_,
+                             contents_scale_);
   }
 
   RasterSource::SolidColorAnalysis analysis_;
@@ -581,6 +561,7 @@ void TileManager::AssignGpuMemoryToTiles(
 
     ManagedTileState& mts = tile->managed_state();
     mts.scheduled_priority = schedule_priority++;
+    mts.resolution = priority.resolution;
 
     DCHECK(mts.draw_info.mode() ==
                ManagedTileState::DrawInfo::PICTURE_PILE_MODE ||
@@ -856,6 +837,7 @@ void TileManager::SetRasterizerForTesting(Rasterizer* rasterizer) {
 }
 
 bool TileManager::IsReadyToActivate() const {
+  TRACE_EVENT0("cc", "TileManager::IsReadyToActivate");
   const std::vector<PictureLayerImpl*>& layers = client_->GetPictureLayers();
 
   for (std::vector<PictureLayerImpl*>::const_iterator it = layers.begin();

@@ -124,13 +124,15 @@ class CC_EXPORT GLRenderer : public DirectRenderer {
       scoped_ptr<CopyOutputRequest> request) override;
   void FinishDrawingQuadList() override;
 
-  // Check if quad needs antialiasing and if so, inflate the quad and
-  // fill edge array for fragment shader.  local_quad is set to
-  // inflated quad if antialiasing is required, otherwise it is left
-  // unchanged.  edge array is filled with inflated quad's edge data
-  // if antialiasing is required, otherwise it is left unchanged.
   // Returns true if quad requires antialiasing and false otherwise.
-  static bool SetupQuadForAntialiasing(const gfx::Transform& device_transform,
+  static bool ShouldAntialiasQuad(const gfx::Transform& device_transform,
+                                  const DrawQuad* quad,
+                                  bool force_antialiasing);
+
+  // Inflate the quad and fill edge array for fragment shader.
+  // |local_quad| is set to inflated quad. |edge| array is filled with
+  // inflated quad's edge data.
+  static void SetupQuadForAntialiasing(const gfx::Transform& device_transform,
                                        const DrawQuad* quad,
                                        gfx::QuadF* local_quad,
                                        float edge[24]);
@@ -168,7 +170,7 @@ class CC_EXPORT GLRenderer : public DirectRenderer {
   scoped_ptr<ScopedResource> ApplyInverseTransformForBackgroundFilters(
       DrawingFrame* frame,
       const RenderPassDrawQuad* quad,
-      const gfx::Transform& contents_device_transform_inverse,
+      const gfx::Transform& contents_device_transform,
       skia::RefPtr<SkImage> backdrop_bitmap,
       const gfx::Rect& backdrop_bounding_rect);
 
@@ -186,6 +188,13 @@ class CC_EXPORT GLRenderer : public DirectRenderer {
   void DrawContentQuad(const DrawingFrame* frame,
                        const ContentDrawQuadBase* quad,
                        ResourceProvider::ResourceId resource_id);
+  void DrawContentQuadAA(const DrawingFrame* frame,
+                         const ContentDrawQuadBase* quad,
+                         ResourceProvider::ResourceId resource_id,
+                         const gfx::Transform& device_transform);
+  void DrawContentQuadNoAA(const DrawingFrame* frame,
+                           const ContentDrawQuadBase* quad,
+                           ResourceProvider::ResourceId resource_id);
   void DrawYUVVideoQuad(const DrawingFrame* frame,
                         const YUVVideoDrawQuad* quad);
   void DrawPictureQuad(const DrawingFrame* frame,

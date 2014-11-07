@@ -8,9 +8,11 @@
 #include "base/metrics/sparse_histogram.h"
 #include "base/strings/string_util.h"
 #include "crypto/ec_private_key.h"
+#include "net/base/connection_type_histograms.h"
 #include "net/base/host_port_pair.h"
 #include "net/ssl/channel_id_service.h"
 #include "net/ssl/ssl_config_service.h"
+#include "net/ssl/ssl_connection_status_flags.h"
 
 namespace net {
 
@@ -35,8 +37,8 @@ NextProto SSLClientSocket::NextProtoFromString(
     return kProtoSPDY3;
   } else if (proto_string == "spdy/3.1") {
     return kProtoSPDY31;
-  } else if (proto_string == "h2-14") {
-    // This is the HTTP/2 draft 14 identifier. For internal
+  } else if (proto_string == "h2-15") {
+    // This is the HTTP/2 draft-15 identifier. For internal
     // consistency, HTTP/2 is named SPDY4 within Chromium.
     return kProtoSPDY4;
   } else if (proto_string == "quic/1+spdy/3") {
@@ -58,9 +60,9 @@ const char* SSLClientSocket::NextProtoToString(NextProto next_proto) {
     case kProtoSPDY31:
       return "spdy/3.1";
     case kProtoSPDY4:
-      // This is the HTTP/2 draft 14 identifier. For internal
+      // This is the HTTP/2 draft-15 identifier. For internal
       // consistency, HTTP/2 is named SPDY4 within Chromium.
-      return "h2-14";
+      return "h2-15";
     case kProtoQUIC1SPDY3:
       return "quic/1+spdy/3";
     case kProtoUnknown:
@@ -179,6 +181,28 @@ void SSLClientSocket::RecordChannelIDSupport(
   }
   UMA_HISTOGRAM_ENUMERATION("DomainBoundCerts.Support", supported,
                             CHANNEL_ID_USAGE_MAX);
+}
+
+// static
+void SSLClientSocket::RecordConnectionTypeMetrics(int ssl_version) {
+  UpdateConnectionTypeHistograms(CONNECTION_SSL);
+  switch (ssl_version) {
+    case SSL_CONNECTION_VERSION_SSL2:
+      UpdateConnectionTypeHistograms(CONNECTION_SSL_SSL2);
+      break;
+    case SSL_CONNECTION_VERSION_SSL3:
+      UpdateConnectionTypeHistograms(CONNECTION_SSL_SSL3);
+      break;
+    case SSL_CONNECTION_VERSION_TLS1:
+      UpdateConnectionTypeHistograms(CONNECTION_SSL_TLS1);
+      break;
+    case SSL_CONNECTION_VERSION_TLS1_1:
+      UpdateConnectionTypeHistograms(CONNECTION_SSL_TLS1_1);
+      break;
+    case SSL_CONNECTION_VERSION_TLS1_2:
+      UpdateConnectionTypeHistograms(CONNECTION_SSL_TLS1_2);
+      break;
+  }
 }
 
 // static

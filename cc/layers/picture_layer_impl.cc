@@ -173,10 +173,11 @@ void PictureLayerImpl::AppendQuads(RenderPass* render_pass,
                                    AppendQuadsData* append_quads_data) {
   DCHECK(!needs_post_commit_initialization_);
   // The bounds and the pile size may differ if the pile wasn't updated (ie.
-  // PictureLayer::Update didn't happen). But that should never be the case if
-  // the layer is part of the visible frame, which is why we're appending quads
-  // in the first place
-  DCHECK_EQ(bounds().ToString(), pile_->tiling_size().ToString());
+  // PictureLayer::Update didn't happen). In that case the pile will be empty.
+  DCHECK_IMPLIES(!pile_->tiling_size().IsEmpty(),
+                 bounds() == pile_->tiling_size())
+      << " bounds " << bounds().ToString() << " pile "
+      << pile_->tiling_size().ToString();
 
   SharedQuadState* shared_quad_state =
       render_pass->CreateAndAppendSharedQuadState();
@@ -468,7 +469,6 @@ void PictureLayerImpl::AppendQuads(RenderPass* render_pass,
 
 void PictureLayerImpl::UpdateTiles(const Occlusion& occlusion_in_content_space,
                                    bool resourceless_software_draw) {
-  TRACE_EVENT0("cc", "PictureLayerImpl::UpdateTiles");
   DCHECK_EQ(1.f, contents_scale_x());
   DCHECK_EQ(1.f, contents_scale_y());
 
@@ -516,9 +516,6 @@ void PictureLayerImpl::UpdateTiles(const Occlusion& occlusion_in_content_space,
 void PictureLayerImpl::UpdateTilePriorities(
     const Occlusion& occlusion_in_content_space) {
   DCHECK(!pile_->is_solid_color() || !tilings_->num_tilings());
-
-  TRACE_EVENT0("cc", "PictureLayerImpl::UpdateTilePriorities");
-
   double current_frame_time_in_seconds =
       (layer_tree_impl()->CurrentBeginFrameArgs().frame_time -
        base::TimeTicks()).InSecondsF();
@@ -790,7 +787,6 @@ gfx::Size PictureLayerImpl::CalculateTileSize(
 }
 
 void PictureLayerImpl::SyncFromActiveLayer(const PictureLayerImpl* other) {
-  TRACE_EVENT0("cc", "SyncFromActiveLayer");
   DCHECK(!other->needs_post_commit_initialization_);
   DCHECK(other->tilings_);
 
@@ -1087,9 +1083,6 @@ void PictureLayerImpl::RecalculateRasterScales() {
         raster_contents_scale_ / raster_device_scale_ / raster_source_scale_;
   }
 
-  raster_contents_scale_ =
-      std::max(raster_contents_scale_, MinimumContentsScale());
-
   // If we're not re-rasterizing during animation, rasterize at the maximum
   // scale that will occur during the animation, if the maximum scale is
   // known. However we want to avoid excessive memory use. If the scale is
@@ -1121,6 +1114,9 @@ void PictureLayerImpl::RecalculateRasterScales() {
       raster_contents_scale_ = 1.f * ideal_page_scale_ * ideal_device_scale_;
   }
 
+  raster_contents_scale_ =
+      std::max(raster_contents_scale_, MinimumContentsScale());
+
   // If this layer would create zero or one tiles at this content scale,
   // don't create a low res tiling.
   gfx::Size raster_bounds = gfx::ToCeiledSize(
@@ -1138,6 +1134,8 @@ void PictureLayerImpl::RecalculateRasterScales() {
   low_res_raster_contents_scale_ = std::max(
       raster_contents_scale_ * low_res_factor,
       MinimumContentsScale());
+  DCHECK_LE(low_res_raster_contents_scale_, raster_contents_scale_);
+  DCHECK_GE(low_res_raster_contents_scale_, MinimumContentsScale());
 }
 
 void PictureLayerImpl::CleanUpTilingsOnActiveLayer(
@@ -1406,8 +1404,6 @@ bool PictureLayerImpl::HasValidTilePriorities() const {
 }
 
 bool PictureLayerImpl::AllTilesRequiredForActivationAreReadyToDraw() const {
-  TRACE_EVENT0("cc",
-               "PictureLayerImpl::AllTilesRequiredForActivationAreReadyToDraw");
   if (!layer_tree_impl()->IsPendingTree())
     return true;
 
