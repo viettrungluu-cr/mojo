@@ -100,8 +100,10 @@ bool BlockingCopyFromFile(const base::FilePath& source,
       return result == MOJO_RESULT_FAILED_PRECONDITION;
     }
   }
+#if !defined(OS_WIN)
   NOTREACHED();
   return false;
+#endif
 }
 
 } // namespace
