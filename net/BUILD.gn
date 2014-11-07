@@ -588,6 +588,11 @@ static_library("http_server") {
     ":net",
     "//base",
   ]
+  if (is_win) {
+    cflags = [
+      "/wd4267",
+    ]
+  }
 }
 
 executable("dump_cache") {

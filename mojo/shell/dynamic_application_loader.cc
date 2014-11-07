@@ -85,7 +85,7 @@ class DynamicApplicationLoader::Loader {
     if (PeekContentHandler(&shebang, &url)) {
       load_callbacks_->LoadWithContentHandler(
           url, AsURLResponse(context_->task_runners()->blocking_pool(),
-                             shebang.size()));
+                             static_cast<int>(shebang.size())));
       return;
     }
 
