@@ -15,8 +15,10 @@ component("system") {
   deps = [
     "//base",
     "//base/third_party/dynamic_annotations",
-    "//mojo/edk/embedder",
+    "//mojo/public/c/system",
   ]
+
+  public_deps = [ "//mojo/edk/embedder" ]
 
   defines = [
     "MOJO_SYSTEM_IMPL_IMPLEMENTATION",
@@ -94,8 +96,10 @@ test("mojo_system_unittests") {
   deps = [
     ":system",
     "//base",
+    "//base/test:test_support",
     "//mojo/edk/embedder:embedder_unittests",
     "//mojo/edk/test:test_support",
+    "//mojo/public/c/system",
     "//testing/gtest",
   ]
 

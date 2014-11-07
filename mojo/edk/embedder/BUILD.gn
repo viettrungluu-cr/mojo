@@ -7,7 +7,10 @@ source_set("embedder") {
   # mojo_system_impl component.
   visibility = [ "//mojo/edk/system" ]
 
-  deps = [ "//base", ]
+  deps = [
+    "//base",
+    "//mojo/public/cpp/system",
+  ]
 
   defines = [
     "MOJO_SYSTEM_IMPL_IMPLEMENTATION",

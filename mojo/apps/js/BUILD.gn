@@ -21,6 +21,7 @@ source_set("js_apps") {
   ]
   deps = [
     "//mojo/application",
+    "//mojo/common",
     "//mojo/public/c/system:for_shared_library",
     "//mojo/public/cpp/utility",
   ]
