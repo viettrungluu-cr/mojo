@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef MOJO_BINDINGS_JS_HANDLE_H_
-#define MOJO_BINDINGS_JS_HANDLE_H_
+#ifndef MOJO_EDK_JS_HANDLE_H_
+#define MOJO_EDK_JS_HANDLE_H_
 
 #include "base/observer_list.h"
 #include "gin/converter.h"
@@ -101,4 +101,4 @@ struct Converter<gin::Handle<mojo::js::HandleWrapper> > {
 
 }  // namespace gin
 
-#endif  // MOJO_BINDINGS_JS_HANDLE_H_
+#endif  // MOJO_EDK_JS_HANDLE_H_

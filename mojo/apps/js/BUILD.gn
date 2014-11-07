@@ -10,24 +10,6 @@ group("js") {
   ]
 }
 
-source_set("mojo_runner") {
-  sources = [
-    "mojo_runner_delegate.cc",
-    "mojo_runner_delegate.h",
-  ]
-
-  public_deps = [
-    "//mojo/edk/js",
-  ]
-  deps = [
-    "//base",
-    "//gin",
-    "//mojo/apps/js/bindings",
-    "//mojo/apps/js/bindings/gl",
-    "//v8",
-  ]
-}
-
 source_set("js_apps") {
   sources = [
     "js_app.cc",
@@ -38,7 +20,6 @@ source_set("js_apps") {
     "//mojo/edk/js",
   ]
   deps = [
-    ":mojo_runner",
     "//mojo/application",
     "//mojo/public/c/system:for_shared_library",
     "//mojo/public/cpp/utility",

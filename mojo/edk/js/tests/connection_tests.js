@@ -60,7 +60,7 @@ define([
     "mojo/public/js/connection",
     "mojo/public/interfaces/bindings/tests/sample_interfaces.mojom",
     "mojo/public/interfaces/bindings/tests/sample_service.mojom",
-    "mojo/apps/js/bindings/threading",
+    "mojo/public/js/threading",
     "gc",
 ], function(expect,
             mockSupport,

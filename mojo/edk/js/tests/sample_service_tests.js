@@ -4,7 +4,7 @@
 
 define([
     "console",
-    "mojo/apps/js/test/hexdump",
+    "mojo/edk/js/test/hexdump",
     "gin/test/expect",
     "mojo/public/interfaces/bindings/tests/sample_service.mojom",
     "mojo/public/interfaces/bindings/tests/sample_import.mojom",

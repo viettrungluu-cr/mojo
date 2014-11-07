@@ -2,14 +2,14 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef MOJO_APPS_JS_BINDINGS_THREADING_H_
-#define MOJO_APPS_JS_BINDINGS_THREADING_H_
+#ifndef MOJO_EDK_JS_THREADING_H_
+#define MOJO_EDK_JS_THREADING_H_
 
 #include "gin/public/wrapper_info.h"
 #include "v8/include/v8.h"
 
 namespace mojo {
-namespace apps {
+namespace js {
 
 class Threading {
  public:
@@ -19,7 +19,7 @@ class Threading {
   Threading();
 };
 
-}  // namespace apps
+}  // namespace js
 }  // namespace mojo
 
-#endif  // MOJO_APPS_JS_BINDINGS_THREADING_H_
+#endif  // MOJO_EDK_JS_THREADING_H_

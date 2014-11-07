@@ -11,8 +11,12 @@ source_set("js") {
     "handle.cc",
     "handle.h",
     "handle_close_observer.h",
+    "mojo_runner_delegate.cc",
+    "mojo_runner_delegate.h",
     "support.cc",
     "support.h",
+    "threading.cc",
+    "threading.h",
     "waiting_callback.cc",
     "waiting_callback.h",
   ]

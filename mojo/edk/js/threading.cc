@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "mojo/apps/js/bindings/threading.h"
+#include "mojo/edk/js/threading.h"
 
 #include "base/message_loop/message_loop.h"
 #include "gin/object_template_builder.h"
@@ -10,7 +10,7 @@
 #include "mojo/edk/js/handle.h"
 
 namespace mojo {
-namespace apps {
+namespace js {
 
 namespace {
 
@@ -22,7 +22,7 @@ gin::WrapperInfo g_wrapper_info = { gin::kEmbedderNativeGin };
 
 }  // namespace
 
-const char Threading::kModuleName[] = "mojo/apps/js/bindings/threading";
+const char Threading::kModuleName[] = "mojo/public/js/threading";
 
 v8::Local<v8::Value> Threading::GetModule(v8::Isolate* isolate) {
   gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
@@ -43,5 +43,5 @@ v8::Local<v8::Value> Threading::GetModule(v8::Isolate* isolate) {
 Threading::Threading() {
 }
 
-}  // namespace apps
+}  // namespace js
 }  // namespace mojo

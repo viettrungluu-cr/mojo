@@ -2,15 +2,15 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef MOJO_APPS_JS_MOJO_RUNNER_DELEGATE_H_
-#define MOJO_APPS_JS_MOJO_RUNNER_DELEGATE_H_
+#ifndef MOJO_EDK_JS_MOJO_RUNNER_DELEGATE_H_
+#define MOJO_EDK_JS_MOJO_RUNNER_DELEGATE_H_
 
 #include "base/macros.h"
 #include "gin/modules/module_runner_delegate.h"
 #include "mojo/public/c/system/core.h"
 
 namespace mojo {
-namespace apps {
+namespace js {
 
 class MojoRunnerDelegate : public gin::ModuleRunnerDelegate {
  public:
@@ -27,7 +27,7 @@ class MojoRunnerDelegate : public gin::ModuleRunnerDelegate {
   DISALLOW_COPY_AND_ASSIGN(MojoRunnerDelegate);
 };
 
-}  // namespace apps
+}  // namespace js
 }  // namespace mojo
 
-#endif  // MOJO_APPS_JS_MOJO_RUNNER_DELEGATE_H_
+#endif  // MOJO_EDK_JS_MOJO_RUNNER_DELEGATE_H_

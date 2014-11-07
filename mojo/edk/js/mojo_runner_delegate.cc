@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "mojo/apps/js/mojo_runner_delegate.h"
+#include "mojo/edk/js/mojo_runner_delegate.h"
 
 #include "base/bind.h"
 #include "base/path_service.h"
@@ -11,15 +11,13 @@
 #include "gin/modules/module_registry.h"
 #include "gin/modules/timer.h"
 #include "gin/try_catch.h"
-#include "mojo/apps/js/bindings/gl/module.h"
-#include "mojo/apps/js/bindings/monotonic_clock.h"
-#include "mojo/apps/js/bindings/threading.h"
 #include "mojo/edk/js/core.h"
 #include "mojo/edk/js/handle.h"
 #include "mojo/edk/js/support.h"
+#include "mojo/edk/js/threading.h"
 
 namespace mojo {
-namespace apps {
+namespace js {
 
 namespace {
 
@@ -53,9 +51,7 @@ MojoRunnerDelegate::MojoRunnerDelegate()
   AddBuiltinModule(gin::TimerModule::kName, gin::TimerModule::GetModule);
   AddBuiltinModule(js::Core::kModuleName, js::Core::GetModule);
   AddBuiltinModule(js::Support::kModuleName, js::Support::GetModule);
-  AddBuiltinModule(js::gl::kModuleName, js::gl::GetModule);
-  AddBuiltinModule(MonotonicClock::kModuleName, MonotonicClock::GetModule);
-  AddBuiltinModule(Threading::kModuleName, Threading::GetModule);
+  AddBuiltinModule(js::Threading::kModuleName, js::Threading::GetModule);
 }
 
 MojoRunnerDelegate::~MojoRunnerDelegate() {
@@ -78,5 +74,5 @@ void MojoRunnerDelegate::UnhandledException(gin::ShellRunner* runner,
   LOG(ERROR) << try_catch.GetStackTrace();
 }
 
-}  // namespace apps
+}  // namespace js
 }  // namespace mojo

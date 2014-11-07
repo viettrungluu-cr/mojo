@@ -11,8 +11,6 @@ source_set("bindings") {
   ]
 
   sources = [
-    "threading.cc",
-    "threading.h",
     "monotonic_clock.cc",
     "monotonic_clock.h",
   ]

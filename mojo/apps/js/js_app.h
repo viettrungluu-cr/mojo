@@ -10,7 +10,7 @@
 #include "gin/public/isolate_holder.h"
 #include "gin/shell_runner.h"
 #include "mojo/application/content_handler_factory.h"
-#include "mojo/apps/js/mojo_runner_delegate.h"
+#include "mojo/edk/js/mojo_runner_delegate.h"
 #include "mojo/public/cpp/application/application_delegate.h"
 #include "mojo/public/interfaces/application/application.mojom.h"
 #include "mojo/public/interfaces/application/shell.mojom.h"
@@ -50,7 +50,7 @@ class JSApp : public InterfaceImpl<Application>,
   void QuitInternal();
 
   ShellPtr shell_;
-  MojoRunnerDelegate runner_delegate;
+  js::MojoRunnerDelegate runner_delegate;
   gin::IsolateHolder isolate_holder_;
   scoped_ptr<gin::ShellRunner> shell_runner_;
   std::string source_;

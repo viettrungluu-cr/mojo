@@ -11,9 +11,8 @@
 #include "base/strings/utf_string_conversions.h"
 #include "gin/array_buffer.h"
 #include "gin/public/isolate_holder.h"
-#include "mojo/apps/js/mojo_runner_delegate.h"
-#include "mojo/apps/js/test/js_to_cpp.mojom.h"
-#include "mojo/common/common_type_converters.h"
+#include "mojo/edk/js/mojo_runner_delegate.h"
+#include "mojo/edk/js/tests/js_to_cpp.mojom.h"
 #include "mojo/edk/test/test_utils.h"
 #include "mojo/public/cpp/system/core.h"
 #include "mojo/public/cpp/system/macros.h"
@@ -52,19 +51,6 @@ const float kExpectedFloatNan = std::numeric_limits<float>::quiet_NaN();
 
 // NaN has the property that it is not equal to itself.
 #define EXPECT_NAN(x) EXPECT_NE(x, x)
-
-bool IsRunningOnIsolatedBot() {
-  // TODO(yzshen): Remove this check once isolated tests are supported on the
-  // Chromium waterfall. (http://crbug.com/351214)
-  const base::FilePath test_file_path(
-      test::GetFilePathForJSResource(
-          "mojo/public/interfaces/bindings/tests/sample_interfaces.mojom"));
-  if (!base::PathExists(test_file_path)) {
-    LOG(WARNING) << "Mojom binding files don't exist. Skipping the test.";
-    return true;
-  }
-  return false;
-}
 
 void CheckDataPipe(MojoHandle data_pipe_handle) {
   unsigned char buffer[100];
@@ -389,7 +375,7 @@ class JsToCppTest : public testing::Test {
     gin::IsolateHolder::Initialize(gin::IsolateHolder::kStrictMode,
                                    gin::ArrayBufferAllocator::SharedInstance());
     gin::IsolateHolder instance;
-    apps::MojoRunnerDelegate delegate;
+    MojoRunnerDelegate delegate;
     gin::ShellRunner runner(&delegate, instance.isolate());
     delegate.Start(&runner, pipe.handle1.release().value(), test);
 
@@ -405,38 +391,26 @@ class JsToCppTest : public testing::Test {
 };
 
 TEST_F(JsToCppTest, Ping) {
-  if (IsRunningOnIsolatedBot())
-    return;
-
   PingCppSideConnection cpp_side_connection;
-  RunTest("mojo/apps/js/test/js_to_cpp_unittest", &cpp_side_connection);
+  RunTest("mojo/edk/js/tests/js_to_cpp_tests", &cpp_side_connection);
   EXPECT_TRUE(cpp_side_connection.DidSucceed());
 }
 
 TEST_F(JsToCppTest, Echo) {
-  if (IsRunningOnIsolatedBot())
-    return;
-
   EchoCppSideConnection cpp_side_connection;
-  RunTest("mojo/apps/js/test/js_to_cpp_unittest", &cpp_side_connection);
+  RunTest("mojo/edk/js/tests/js_to_cpp_tests", &cpp_side_connection);
   EXPECT_TRUE(cpp_side_connection.DidSucceed());
 }
 
 TEST_F(JsToCppTest, BitFlip) {
-  if (IsRunningOnIsolatedBot())
-    return;
-
   BitFlipCppSideConnection cpp_side_connection;
-  RunTest("mojo/apps/js/test/js_to_cpp_unittest", &cpp_side_connection);
+  RunTest("mojo/edk/js/tests/js_to_cpp_tests", &cpp_side_connection);
   EXPECT_TRUE(cpp_side_connection.DidSucceed());
 }
 
 TEST_F(JsToCppTest, BackPointer) {
-  if (IsRunningOnIsolatedBot())
-    return;
-
   BackPointerCppSideConnection cpp_side_connection;
-  RunTest("mojo/apps/js/test/js_to_cpp_unittest", &cpp_side_connection);
+  RunTest("mojo/edk/js/tests/js_to_cpp_tests", &cpp_side_connection);
   EXPECT_TRUE(cpp_side_connection.DidSucceed());
 }
 
