@@ -159,7 +159,7 @@ class Context::NativeViewportApplicationLoader
 };
 #endif
 
-Context::Context() {
+Context::Context() : application_manager_(this) {
   DCHECK(!base::MessageLoop::current());
 }
 
@@ -168,7 +168,6 @@ Context::~Context() {
 }
 
 void Context::Init() {
-  application_manager_.set_delegate(this);
   setup.Get();
   task_runners_.reset(
       new TaskRunners(base::MessageLoop::current()->message_loop_proxy()));
@@ -242,12 +241,16 @@ void Context::Init() {
     listener_->WaitForListening();
 }
 
-void Context::OnApplicationError(const GURL& gurl) {
-  if (app_urls_.find(gurl) != app_urls_.end()) {
-    app_urls_.erase(gurl);
+void Context::OnApplicationError(const GURL& url) {
+  if (app_urls_.find(url) != app_urls_.end()) {
+    app_urls_.erase(url);
     if (app_urls_.empty() && base::MessageLoop::current()->is_running())
       base::MessageLoop::current()->Quit();
   }
+}
+
+GURL Context::ResolveURL(const GURL& url) {
+  return mojo_url_resolver_.Resolve(url);
 }
 
 void Context::Run(const GURL& url) {

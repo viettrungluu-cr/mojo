@@ -33,9 +33,6 @@ class Context : ApplicationManager::Delegate {
 
   void Init();
 
-  // ApplicationManager::Delegate override.
-  void OnApplicationError(const GURL& gurl) override;
-
   void Run(const GURL& url);
   ScopedMessagePipeHandle ConnectToServiceByName(
       const GURL& application_url,
@@ -52,6 +49,10 @@ class Context : ApplicationManager::Delegate {
 
  private:
   class NativeViewportApplicationLoader;
+
+  // ApplicationManager::Delegate override.
+  void OnApplicationError(const GURL& url) override;
+  GURL ResolveURL(const GURL& url) override;
 
   std::set<GURL> app_urls_;
   scoped_ptr<TaskRunners> task_runners_;

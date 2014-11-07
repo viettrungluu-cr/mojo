@@ -36,17 +36,30 @@ class StubServiceProvider : public InterfaceImpl<ServiceProvider> {
 
 }  // namespace
 
-ApplicationManager::Delegate::~Delegate() {}
+
+ApplicationManager::Delegate::~Delegate() {
+}
+
+void ApplicationManager::Delegate::OnApplicationError(const GURL& url) {
+  LOG(ERROR) << "Communication error with application: " << url.spec();
+}
+
+GURL ApplicationManager::Delegate::ResolveURL(const GURL& url) {
+  return url;
+}
+
 
 class ApplicationManager::LoadCallbacksImpl
     : public ApplicationLoader::LoadCallbacks {
  public:
   LoadCallbacksImpl(base::WeakPtr<ApplicationManager> manager,
                     const GURL& requested_url,
+                    const GURL& resolved_url,
                     const GURL& requestor_url,
                     ServiceProviderPtr service_provider)
       : manager_(manager),
         requested_url_(requested_url),
+        resolved_url_(resolved_url),
         requestor_url_(requestor_url),
         service_provider_(service_provider.Pass()) {}
 
@@ -58,6 +71,7 @@ class ApplicationManager::LoadCallbacksImpl
     ScopedMessagePipeHandle shell_handle;
     if (manager_) {
       manager_->RegisterLoadedApplication(requested_url_,
+                                          resolved_url_,
                                           requestor_url_,
                                           service_provider_.Pass(),
                                           &shell_handle);
@@ -69,6 +83,7 @@ class ApplicationManager::LoadCallbacksImpl
                               URLResponsePtr url_response) override {
     if (manager_) {
       manager_->LoadWithContentHandler(requested_url_,
+                                       resolved_url_,
                                        requestor_url_,
                                        content_handler_url,
                                        url_response.Pass(),
@@ -78,14 +93,17 @@ class ApplicationManager::LoadCallbacksImpl
 
   base::WeakPtr<ApplicationManager> manager_;
   GURL requested_url_;
+  GURL resolved_url_;
   GURL requestor_url_;
   ServiceProviderPtr service_provider_;
 };
 
 class ApplicationManager::ShellImpl : public InterfaceImpl<Shell> {
  public:
-  ShellImpl(ApplicationManager* manager, const GURL& url)
-      : manager_(manager), url_(url) {}
+  ShellImpl(ApplicationManager* manager,
+            const GURL& requested_url,
+            const GURL& url)
+      : manager_(manager), requested_url_(requested_url), url_(url) {}
 
   ~ShellImpl() override {}
 
@@ -106,11 +124,13 @@ class ApplicationManager::ShellImpl : public InterfaceImpl<Shell> {
   }
 
   const GURL& url() const { return url_; }
+  const GURL& requested_url() const { return requested_url_; }
 
  private:
   void OnConnectionError() override { manager_->OnShellImplError(this); }
 
   ApplicationManager* const manager_;
+  const GURL requested_url_;
   const GURL url_;
 
   DISALLOW_COPY_AND_ASSIGN(ShellImpl);
@@ -162,8 +182,8 @@ bool ApplicationManager::TestAPI::HasFactoryForURL(const GURL& url) const {
          manager_->url_to_shell_impl_.end();
 }
 
-ApplicationManager::ApplicationManager()
-    : delegate_(NULL),
+ApplicationManager::ApplicationManager(Delegate* delegate)
+    : delegate_(delegate),
       interceptor_(NULL),
       weak_ptr_factory_(this) {
 }
@@ -180,31 +200,49 @@ void ApplicationManager::TerminateShellConnections() {
   STLDeleteElements(&content_shell_impls_);
 }
 
-// static
-ApplicationManager* ApplicationManager::GetInstance() {
-  static base::LazyInstance<ApplicationManager> instance =
-      LAZY_INSTANCE_INITIALIZER;
-  has_created_instance = true;
-  return &instance.Get();
-}
-
 void ApplicationManager::ConnectToApplication(
-    const GURL& url,
+    const GURL& requested_url,
     const GURL& requestor_url,
     ServiceProviderPtr service_provider) {
-  URLToShellImplMap::const_iterator shell_it = url_to_shell_impl_.find(url);
+  ApplicationLoader* loader = GetLoaderForURL(requested_url,
+                                              DONT_INCLUDE_DEFAULT_LOADER);
+  if (loader) {
+    ConnectToApplicationImpl(requested_url, requested_url, requestor_url,
+                             service_provider.Pass(), loader);
+    return;
+  }
+
+  GURL resolved_url = delegate_->ResolveURL(requested_url);
+  loader = GetLoaderForURL(resolved_url, INCLUDE_DEFAULT_LOADER);
+  if (loader) {
+    ConnectToApplicationImpl(requested_url, resolved_url, requestor_url,
+                             service_provider.Pass(), loader);
+    return;
+  }
+
+  LOG(WARNING) << "Could not find loader to load application: "
+               << requested_url.spec();
+}
+
+void ApplicationManager::ConnectToApplicationImpl(
+    const GURL& requested_url, const GURL& resolved_url,
+    const GURL& requestor_url, ServiceProviderPtr service_provider,
+    ApplicationLoader* loader) {
+  URLToShellImplMap::const_iterator shell_it =
+      url_to_shell_impl_.find(resolved_url);
   if (shell_it != url_to_shell_impl_.end()) {
-    ConnectToClient(
-        shell_it->second, url, requestor_url, service_provider.Pass());
+    ConnectToClient(shell_it->second, resolved_url, requestor_url,
+                    service_provider.Pass());
     return;
   }
 
   scoped_refptr<LoadCallbacksImpl> callbacks(
       new LoadCallbacksImpl(weak_ptr_factory_.GetWeakPtr(),
-                            url,
+                            requested_url,
+                            resolved_url,
                             requestor_url,
                             service_provider.Pass()));
-  GetLoaderForURL(url)->Load(this, url, callbacks);
+  loader->Load(this, resolved_url, callbacks);
 }
 
 void ApplicationManager::ConnectToClient(ShellImpl* shell_impl,
@@ -223,23 +261,18 @@ void ApplicationManager::ConnectToClient(ShellImpl* shell_impl,
 void ApplicationManager::RegisterExternalApplication(
     const GURL& url,
     ScopedMessagePipeHandle shell_handle) {
-  ShellImpl* shell_impl =
-      WeakBindToPipe(new ShellImpl(this, url), shell_handle.Pass());
-  url_to_shell_impl_[url] = shell_impl;
-  URLToArgsMap::const_iterator args_it = url_to_args_.find(url);
-  Array<String> args;
-  if (args_it != url_to_args_.end())
-    args = Array<String>::From(args_it->second);
-  shell_impl->client()->Initialize(args.Pass());
+  url_to_shell_impl_[url] =
+      WeakBindToPipe(new ShellImpl(this, url, url), shell_handle.Pass());
 }
 
 void ApplicationManager::RegisterLoadedApplication(
-    const GURL& url,
+    const GURL& requested_url,
+    const GURL& resolved_url,
     const GURL& requestor_url,
     ServiceProviderPtr service_provider,
     ScopedMessagePipeHandle* shell_handle) {
   ShellImpl* shell_impl = NULL;
-  URLToShellImplMap::iterator iter = url_to_shell_impl_.find(url);
+  URLToShellImplMap::iterator iter = url_to_shell_impl_.find(resolved_url);
   if (iter != url_to_shell_impl_.end()) {
     // This can happen because services are loaded asynchronously. So if we get
     // two requests for the same service close to each other, we might get here
@@ -247,17 +280,20 @@ void ApplicationManager::RegisterLoadedApplication(
     shell_impl = iter->second;
   } else {
     MessagePipe pipe;
-    shell_impl = WeakBindToPipe(new ShellImpl(this, url), pipe.handle1.Pass());
-    url_to_shell_impl_[url] = shell_impl;
+    shell_impl = WeakBindToPipe(
+        new ShellImpl(this, requested_url, resolved_url), pipe.handle1.Pass());
+    url_to_shell_impl_[resolved_url] = shell_impl;
     *shell_handle = pipe.handle0.Pass();
-    shell_impl->client()->Initialize(GetArgsForURL(url));
+    shell_impl->client()->Initialize(GetArgsForURL(requested_url));
   }
 
-  ConnectToClient(shell_impl, url, requestor_url, service_provider.Pass());
+  ConnectToClient(shell_impl, resolved_url, requestor_url,
+                  service_provider.Pass());
 }
 
 void ApplicationManager::LoadWithContentHandler(
-    const GURL& content_url,
+    const GURL& requested_url,
+    const GURL& resolved_url,
     const GURL& requestor_url,
     const GURL& content_handler_url,
     URLResponsePtr url_response,
@@ -273,15 +309,15 @@ void ApplicationManager::LoadWithContentHandler(
   }
 
   ShellPtr shell_proxy;
-  ShellImpl* shell_impl =
-      WeakBindToProxy(new ShellImpl(this, content_url), &shell_proxy);
+  ShellImpl* shell_impl = WeakBindToProxy(
+      new ShellImpl(this, requested_url, resolved_url), &shell_proxy);
   content_shell_impls_.insert(shell_impl);
-  shell_impl->client()->Initialize(GetArgsForURL(content_url));
+  shell_impl->client()->Initialize(GetArgsForURL(requested_url));
 
   connection->content_handler()->StartApplication(shell_proxy.Pass(),
                                                   url_response.Pass());
   ConnectToClient(
-      shell_impl, content_url, requestor_url, service_provider.Pass());
+      shell_impl, resolved_url, requestor_url, service_provider.Pass());
 }
 
 void ApplicationManager::SetLoaderForURL(scoped_ptr<ApplicationLoader> loader,
@@ -310,15 +346,17 @@ void ApplicationManager::SetInterceptor(Interceptor* interceptor) {
   interceptor_ = interceptor;
 }
 
-ApplicationLoader* ApplicationManager::GetLoaderForURL(const GURL& url) {
-  URLToLoaderMap::const_iterator url_it = url_to_loader_.find(url);
+ApplicationLoader* ApplicationManager::GetLoaderForURL(
+    const GURL& url, IncludeDefaultLoader include_default_loader) {
+  auto url_it = url_to_loader_.find(url);
   if (url_it != url_to_loader_.end())
     return url_it->second;
-  SchemeToLoaderMap::const_iterator scheme_it =
-      scheme_to_loader_.find(url.scheme());
+  auto scheme_it = scheme_to_loader_.find(url.scheme());
   if (scheme_it != scheme_to_loader_.end())
     return scheme_it->second;
-  return default_loader_.get();
+  if (include_default_loader == INCLUDE_DEFAULT_LOADER)
+    return default_loader_.get();
+  return NULL;
 }
 
 void ApplicationManager::OnShellImplError(ShellImpl* shell_impl) {
@@ -330,16 +368,17 @@ void ApplicationManager::OnShellImplError(ShellImpl* shell_impl) {
     return;
   }
   const GURL url = shell_impl->url();
+  const GURL requested_url = shell_impl->requested_url();
   // Remove the shell.
   URLToShellImplMap::iterator it = url_to_shell_impl_.find(url);
   DCHECK(it != url_to_shell_impl_.end());
   delete it->second;
   url_to_shell_impl_.erase(it);
-  ApplicationLoader* loader = GetLoaderForURL(url);
+  ApplicationLoader* loader = GetLoaderForURL(requested_url,
+                                              INCLUDE_DEFAULT_LOADER);
   if (loader)
     loader->OnApplicationError(this, url);
-  if (delegate_)
-    delegate_->OnApplicationError(url);
+  delegate_->OnApplicationError(requested_url);
 }
 
 void ApplicationManager::OnContentHandlerError(

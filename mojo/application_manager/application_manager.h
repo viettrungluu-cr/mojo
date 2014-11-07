@@ -26,7 +26,8 @@ class MOJO_APPLICATION_MANAGER_EXPORT ApplicationManager {
     virtual ~Delegate();
     // Send when the Application holding the handle on the other end of the
     // Shell pipe goes away.
-    virtual void OnApplicationError(const GURL& url) = 0;
+    virtual void OnApplicationError(const GURL& url);
+    virtual GURL ResolveURL(const GURL& url);
   };
 
   // API for testing.
@@ -56,13 +57,8 @@ class MOJO_APPLICATION_MANAGER_EXPORT ApplicationManager {
         ServiceProviderPtr service_provider) = 0;
   };
 
-  ApplicationManager();
+  ApplicationManager(Delegate* delegate);
   ~ApplicationManager();
-
-  // Returns a shared instance, creating it if necessary.
-  static ApplicationManager* GetInstance();
-
-  void SetDelegate(Delegate* delegate) { delegate_ = delegate; }
 
   // Loads a service if necessary and establishes a new client connection.
   void ConnectToApplication(const GURL& application_url,
@@ -83,8 +79,6 @@ class MOJO_APPLICATION_MANAGER_EXPORT ApplicationManager {
 
   void RegisterExternalApplication(const GURL& application_url,
                                    ScopedMessagePipeHandle shell);
-
-  void set_delegate(Delegate* delegate) { delegate_ = delegate; }
 
   // Sets the default Loader to be used if not overridden by SetLoaderForURL()
   // or SetLoaderForScheme().
@@ -109,6 +103,11 @@ class MOJO_APPLICATION_MANAGER_EXPORT ApplicationManager {
   void TerminateShellConnections();
 
  private:
+  enum IncludeDefaultLoader {
+    INCLUDE_DEFAULT_LOADER,
+    DONT_INCLUDE_DEFAULT_LOADER,
+  };
+
   class ContentHandlerConnection;
   class LoadCallbacksImpl;
   class ShellImpl;
@@ -119,26 +118,34 @@ class MOJO_APPLICATION_MANAGER_EXPORT ApplicationManager {
   typedef std::map<GURL, ContentHandlerConnection*> URLToContentHandlerMap;
   typedef std::map<GURL, std::vector<std::string> > URLToArgsMap;
 
+  void ConnectToApplicationImpl(const GURL& url,
+                                const GURL& original_url,
+                                const GURL& requestor_url,
+                                ServiceProviderPtr service_provider,
+                                ApplicationLoader* loader);
+
   void ConnectToClient(ShellImpl* shell_impl,
                        const GURL& url,
                        const GURL& requestor_url,
                        ServiceProviderPtr service_provider);
 
-  void RegisterLoadedApplication(const GURL& service_url,
+  void RegisterLoadedApplication(const GURL& requested_url,
+                                 const GURL& resolved_url,
                                  const GURL& requestor_url,
                                  ServiceProviderPtr service_provider,
                                  ScopedMessagePipeHandle* shell_handle);
 
-  void LoadWithContentHandler(const GURL& content_url,
+  void LoadWithContentHandler(const GURL& requested_url,
+                              const GURL& resolved_url,
                               const GURL& requestor_url,
                               const GURL& content_handler_url,
                               URLResponsePtr url_response,
                               ServiceProviderPtr service_provider);
 
-  // Returns the Loader to use for a url (using default if not overridden.)
-  // The preference is to use a loader that's been specified for an url first,
-  // then one that's been specified for a scheme, then the default.
-  ApplicationLoader* GetLoaderForURL(const GURL& url);
+  // Return the appropriate loader for |url|. This can return NULL if there is
+  // no default loader configured.
+  ApplicationLoader* GetLoaderForURL(const GURL& url,
+                                     IncludeDefaultLoader fallback);
 
   // Removes a ShellImpl when it encounters an error.
   void OnShellImplError(ShellImpl* shell_impl);
