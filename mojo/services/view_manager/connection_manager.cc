@@ -139,10 +139,10 @@ void ConnectionManager::EmbedAtView(
                                  creator_id,
                                  creator_url,
                                  url.To<std::string>(),
-                                 ViewIdFromTransportId(transport_view_id),
-                                 service_provider.Pass());
+                                 ViewIdFromTransportId(transport_view_id));
   AddConnection(connection);
   WeakBindToPipe(connection, pipe.handle0.Pass());
+  connection->Init(service_provider.Pass());
   OnConnectionMessagedClient(connection->id());
 }
 
@@ -362,10 +362,10 @@ void ConnectionManager::Create(ApplicationConnection* connection,
                                  kInvalidConnectionId,
                                  std::string(),
                                  std::string("mojo:window_manager"),
-                                 RootViewId(),
-                                 InterfaceRequest<ServiceProvider>());
+                                 RootViewId());
   AddConnection(window_manager_vm_service_);
   WeakBindToRequest(window_manager_vm_service_, &request);
+  window_manager_vm_service_->Init(InterfaceRequest<ServiceProvider>());
 }
 
 void ConnectionManager::Create(

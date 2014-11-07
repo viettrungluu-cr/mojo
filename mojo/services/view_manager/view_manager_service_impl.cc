@@ -22,14 +22,12 @@ ViewManagerServiceImpl::ViewManagerServiceImpl(
     ConnectionSpecificId creator_id,
     const std::string& creator_url,
     const std::string& url,
-    const ViewId& root_id,
-    InterfaceRequest<ServiceProvider> service_provider)
+    const ViewId& root_id)
     : connection_manager_(connection_manager),
       id_(connection_manager_->GetAndAdvanceNextConnectionId()),
       url_(url),
       creator_id_(creator_id),
-      creator_url_(creator_url),
-      service_provider_(service_provider.Pass()) {
+      creator_url_(creator_url) {
   CHECK(GetView(root_id));
   root_.reset(new ViewId(root_id));
   if (root_id == RootViewId())
@@ -40,6 +38,22 @@ ViewManagerServiceImpl::ViewManagerServiceImpl(
 
 ViewManagerServiceImpl::~ViewManagerServiceImpl() {
   DestroyViews();
+}
+
+void ViewManagerServiceImpl::Init(
+    InterfaceRequest<ServiceProvider> service_provider) {
+  std::vector<const ServerView*> to_send;
+  if (root_.get())
+    GetUnknownViewsFrom(GetView(*root_), &to_send);
+
+  MessagePipe pipe;
+  connection_manager_->wm_internal()->CreateWindowManagerForViewManagerClient(
+      id_, pipe.handle1.Pass());
+  client()->OnEmbed(id_,
+                    creator_url_,
+                    ViewToViewData(to_send.front()),
+                    service_provider.Pass(),
+                    pipe.handle0.Pass());
 }
 
 const ServerView* ViewManagerServiceImpl::GetView(const ViewId& id) const {
@@ -548,21 +562,6 @@ void ViewManagerServiceImpl::Embed(
   }
   connection_manager_->EmbedAtView(id_, url, transport_view_id, spir.Pass());
   callback.Run(true);
-}
-
-void ViewManagerServiceImpl::OnConnectionEstablished() {
-  std::vector<const ServerView*> to_send;
-  if (root_.get())
-    GetUnknownViewsFrom(GetView(*root_), &to_send);
-
-  MessagePipe pipe;
-  connection_manager_->wm_internal()->CreateWindowManagerForViewManagerClient(
-      id_, pipe.handle1.Pass());
-  client()->OnEmbed(id_,
-                    creator_url_,
-                    ViewToViewData(to_send.front()),
-                    service_provider_.Pass(),
-                    pipe.handle0.Pass());
 }
 
 bool ViewManagerServiceImpl::IsRootForAccessPolicy(const ViewId& id) const {

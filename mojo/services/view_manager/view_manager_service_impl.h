@@ -47,9 +47,12 @@ class MOJO_VIEW_MANAGER_EXPORT ViewManagerServiceImpl
                          ConnectionSpecificId creator_id,
                          const std::string& creator_url,
                          const std::string& url,
-                         const ViewId& root_id,
-                         InterfaceRequest<ServiceProvider> service_provider);
+                         const ViewId& root_id);
   ~ViewManagerServiceImpl() override;
+
+  // Called after bound. |service_provider| is the ServiceProvider to pass to
+  // the client via OnEmbed().
+  void Init(InterfaceRequest<ServiceProvider> service_provider);
 
   ConnectionSpecificId id() const { return id_; }
   ConnectionSpecificId creator_id() const { return creator_id_; }
@@ -186,9 +189,6 @@ class MOJO_VIEW_MANAGER_EXPORT ViewManagerServiceImpl
              ServiceProviderPtr service_provider,
              const Callback<void(bool)>& callback) override;
 
-  // InterfaceImpl:
-  void OnConnectionEstablished() override;
-
   // AccessPolicyDelegate:
   bool IsRootForAccessPolicy(const ViewId& id) const override;
   bool IsViewKnownForAccessPolicy(const ServerView* view) const override;
@@ -223,8 +223,6 @@ class MOJO_VIEW_MANAGER_EXPORT ViewManagerServiceImpl
   // connection may have no root. A connection has no root if either the root
   // is destroyed or Embed() is invoked on the root.
   scoped_ptr<ViewId> root_;
-
-  InterfaceRequest<ServiceProvider> service_provider_;
 
   DISALLOW_COPY_AND_ASSIGN(ViewManagerServiceImpl);
 };
