@@ -9,11 +9,11 @@ import sys
 from filecmp import dircmp
 from shutil import rmtree
 from tempfile import mkdtemp
+from mopy.paths import Paths
 
-_script_dir = os.path.dirname(os.path.abspath(__file__))
-_mojo_dir = os.path.join(_script_dir, os.pardir)
-_chromium_src_dir = os.path.join(_mojo_dir, os.pardir)
-sys.path.insert(0, os.path.join(_mojo_dir, "public", "tools", "bindings",
+paths = Paths()
+
+sys.path.insert(0, os.path.join(paths.mojo_dir, "public", "tools", "bindings",
                                 "pylib"))
 from mojom_tests.support.find_files import FindFiles
 from mojom_tests.support.run_bindings_generator import RunBindingsGenerator
@@ -68,14 +68,14 @@ def main():
   if args.verbose:
     print "Generating files to %s ..." % out_dir
 
-  mojom_files = FindFiles(_mojo_dir, "*.mojom")
+  mojom_files = FindFiles(paths.mojo_dir, "*.mojom")
   for mojom_file in mojom_files:
     if args.verbose:
-      print "  Processing %s ..." % os.path.relpath(mojom_file, _mojo_dir)
+      print "  Processing %s ..." % os.path.relpath(mojom_file, paths.mojo_dir)
     # TODO(vtl): This may wrong, since the path can be overridden in the .gyp
     # file.
-    RunBindingsGenerator(out_dir, _mojo_dir, mojom_file,
-                         ["-I", os.path.abspath(_chromium_src_dir)])
+    RunBindingsGenerator(out_dir, paths.mojo_dir, mojom_file,
+                         ["-I", paths.src_root])
 
   if args.generate_golden_files:
     return 0

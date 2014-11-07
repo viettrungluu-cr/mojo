@@ -12,10 +12,7 @@ import sys
 
 _logging = logging.getLogger()
 
-_script_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(_script_dir, "pylib"))
-
-from transitive_hash import transitive_hash
+from mopy.transitive_hash import transitive_hash
 
 def main(argv):
   logging.basicConfig()

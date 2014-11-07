@@ -6,10 +6,7 @@
 import os
 import sys
 
-_script_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(_script_dir, "pylib"))
-
-from mojo_python_tests_runner import MojoPythonTestRunner
+from mopy.mojo_python_tests_runner import MojoPythonTestRunner
 
 
 def main():

@@ -6,14 +6,10 @@
 import os
 import sys
 
-_script_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(_script_dir, "pylib"))
-
-from mojo_python_tests_runner import MojoPythonTestRunner
+from mopy.mojo_python_tests_runner import MojoPythonTestRunner
 
 
 class PythonBindingsTestRunner(MojoPythonTestRunner):
-
   def add_custom_commandline_options(self, parser):
     parser.add_argument('--build-dir', action='store',
                         help='path to the build output directory')
