@@ -29,6 +29,13 @@ void MOJO_COMMON_EXPORT CopyToFile(
     base::TaskRunner* task_runner,
     const base::Callback<void(bool /*success*/)>& callback);
 
+void MOJO_COMMON_EXPORT
+CopyFromFile(const base::FilePath& source,
+             ScopedDataPipeProducerHandle destination,
+             uint32_t skip,
+             base::TaskRunner* task_runner,
+             const base::Callback<void(bool /*success*/)>& callback);
+
 // Copies the data from |source| into |contents| and returns true on success and
 // false on error.  In case of I/O error, |contents| holds the data that could
 // be read from source before the error occurred.

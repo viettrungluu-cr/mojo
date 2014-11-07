@@ -20,8 +20,8 @@ namespace {
 bool BlockingCopyHelper(ScopedDataPipeConsumerHandle source,
     const base::Callback<size_t(const void*, uint32_t)>& write_bytes) {
   for (;;) {
-    const void* buffer;
-    uint32_t num_bytes;
+    const void* buffer = nullptr;
+    uint32_t num_bytes = 0;
     MojoResult result = BeginReadDataRaw(
         source.get(), &buffer, &num_bytes, MOJO_READ_DATA_FLAG_NONE);
     if (result == MOJO_RESULT_OK) {
@@ -59,6 +59,51 @@ size_t CopyToFileHelper(FILE* fp, const void* buffer, uint32_t num_bytes) {
   return fwrite(buffer, 1, num_bytes, fp);
 }
 
+bool BlockingCopyFromFile(const base::FilePath& source,
+                          ScopedDataPipeProducerHandle destination,
+                          uint32_t skip) {
+  base::File file(source, base::File::FLAG_OPEN | base::File::FLAG_READ);
+  if (!file.IsValid())
+    return false;
+  if (file.Seek(base::File::FROM_BEGIN, skip) != skip) {
+    return false;
+  }
+  for (;;) {
+    void* buffer = nullptr;
+    uint32_t buffer_num_bytes = 0;
+    MojoResult result =
+        BeginWriteDataRaw(destination.get(), &buffer, &buffer_num_bytes,
+                          MOJO_WRITE_DATA_FLAG_NONE);
+    if (result == MOJO_RESULT_OK) {
+      int bytes_read =
+          file.ReadAtCurrentPos(static_cast<char*>(buffer), buffer_num_bytes);
+      if (bytes_read >= 0) {
+        EndWriteDataRaw(destination.get(), bytes_read);
+        if (bytes_read == 0) {
+          // eof
+          return true;
+        }
+      } else {
+        // error
+        EndWriteDataRaw(destination.get(), 0);
+        return false;
+      }
+    } else if (result == MOJO_RESULT_SHOULD_WAIT) {
+      result = Wait(destination.get(), MOJO_HANDLE_SIGNAL_WRITABLE,
+                    MOJO_DEADLINE_INDEFINITE);
+      if (result != MOJO_RESULT_OK) {
+        // If the consumer handle was closed, then treat as EOF.
+        return result == MOJO_RESULT_FAILED_PRECONDITION;
+      }
+    } else {
+      // If the consumer handle was closed, then treat as EOF.
+      return result == MOJO_RESULT_FAILED_PRECONDITION;
+    }
+  }
+  NOTREACHED();
+  return false;
+}
+
 } // namespace
 
 // TODO(hansmuller): Add a max_size parameter.
@@ -88,6 +133,17 @@ void CopyToFile(ScopedDataPipeConsumerHandle source,
       FROM_HERE,
       base::Bind(&BlockingCopyToFile, base::Passed(&source), destination),
       callback);
+}
+
+void CopyFromFile(const base::FilePath& source,
+                  ScopedDataPipeProducerHandle destination,
+                  uint32_t skip,
+                  base::TaskRunner* task_runner,
+                  const base::Callback<void(bool)>& callback) {
+  base::PostTaskAndReplyWithResult(task_runner, FROM_HERE,
+                                   base::Bind(&BlockingCopyFromFile, source,
+                                              base::Passed(&destination), skip),
+                                   callback);
 }
 
 }  // namespace common

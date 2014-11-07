@@ -8,13 +8,17 @@
 #include "base/command_line.h"
 #include "base/files/file_path.h"
 #include "base/files/file_util.h"
+#include "base/format_macros.h"
+#include "base/logging.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
 #include "base/message_loop/message_loop.h"
 #include "base/strings/string_util.h"
+#include "base/strings/stringprintf.h"
 #include "base/strings/utf_string_conversions.h"
 #include "mojo/common/common_type_converters.h"
 #include "mojo/common/data_pipe_utils.h"
+#include "mojo/public/cpp/system/data_pipe.h"
 #include "mojo/services/public/interfaces/network/url_loader.mojom.h"
 #include "mojo/shell/context.h"
 #include "mojo/shell/data_pipe_peek.h"
@@ -24,6 +28,16 @@
 
 namespace mojo {
 namespace shell {
+
+namespace {
+
+static const char kMojoMagic[] = "#!mojo:";
+static const size_t kMaxShebangLength = 2048;
+
+void IgnoreResult(bool result) {
+}
+
+}  // namespace
 
 // Encapsulates loading and running one individual application.
 //
@@ -36,48 +50,104 @@ namespace shell {
 // while the async operation is outstanding.
 class DynamicApplicationLoader::Loader {
  public:
-  Loader(Context* context,
+  Loader(MimeTypeToURLMap* mime_type_to_url,
+         Context* context,
          DynamicServiceRunnerFactory* runner_factory,
          scoped_refptr<ApplicationLoader::LoadCallbacks> load_callbacks,
          const LoaderCompleteCallback& loader_complete_callback)
       : load_callbacks_(load_callbacks),
         loader_complete_callback_(loader_complete_callback),
         context_(context),
+        mime_type_to_url_(mime_type_to_url),
         runner_factory_(runner_factory),
         weak_ptr_factory_(this) {}
 
   virtual ~Loader() {}
 
  protected:
+  virtual URLResponsePtr AsURLResponse(base::TaskRunner* task_runner,
+                                       uint32_t skip) = 0;
+
+  virtual void AsPath(
+      base::TaskRunner* task_runner,
+      base::Callback<void(const base::FilePath&, bool)> callback) = 0;
+
+  virtual std::string MimeType() = 0;
+
+  virtual bool HasMojoMagic() = 0;
+
+  virtual bool PeekFirstLine(std::string* line) = 0;
+
+  void Load() {
+    // If the response begins with a #!mojo:<content-handler-url>, use it.
+    GURL url;
+    std::string shebang;
+    if (PeekContentHandler(&shebang, &url)) {
+      load_callbacks_->LoadWithContentHandler(
+          url, AsURLResponse(context_->task_runners()->blocking_pool(),
+                             shebang.size()));
+      return;
+    }
+
+    MimeTypeToURLMap::iterator iter = mime_type_to_url_->find(MimeType());
+    if (iter != mime_type_to_url_->end()) {
+      load_callbacks_->LoadWithContentHandler(
+          iter->second,
+          AsURLResponse(context_->task_runners()->blocking_pool(), 0));
+      return;
+    }
+
+    // TODO(aa): Sanity check that the thing we got looks vaguely like a mojo
+    // application. That could either mean looking for the platform-specific dll
+    // header, or looking for some specific mojo signature prepended to the
+    // library.
+
+    AsPath(context_->task_runners()->blocking_pool(),
+           base::Bind(&Loader::RunLibrary, weak_ptr_factory_.GetWeakPtr()));
+  }
+
+  void ReportComplete() { loader_complete_callback_.Run(this); }
+
+ private:
+  bool PeekContentHandler(std::string* mojo_shebang,
+                          GURL* mojo_content_handler_url) {
+    std::string shebang;
+    if (HasMojoMagic() && PeekFirstLine(&shebang)) {
+      GURL url(shebang.substr(2, std::string::npos));
+      if (url.is_valid()) {
+        *mojo_shebang = shebang;
+        *mojo_content_handler_url = url;
+        return true;
+      }
+    }
+    return false;
+  }
+
   void RunLibrary(const base::FilePath& path, bool path_exists) {
     ScopedMessagePipeHandle shell_handle =
         load_callbacks_->RegisterApplication();
     if (!shell_handle.is_valid()) {
-      LoaderComplete();
+      ReportComplete();
       return;
     }
 
     if (!path_exists) {
       LOG(ERROR) << "Library not started because library path '" << path.value()
                  << "' does not exist.";
-      LoaderComplete();
+      ReportComplete();
       return;
     }
 
     runner_ = runner_factory_->Create(context_);
     runner_->Start(
-        path,
-        shell_handle.Pass(),
-        base::Bind(&Loader::LoaderComplete, weak_ptr_factory_.GetWeakPtr()));
+        path, shell_handle.Pass(),
+        base::Bind(&Loader::ReportComplete, weak_ptr_factory_.GetWeakPtr()));
   }
-
-  void LoaderComplete() { loader_complete_callback_.Run(this); }
 
   scoped_refptr<ApplicationLoader::LoadCallbacks> load_callbacks_;
   LoaderCompleteCallback loader_complete_callback_;
   Context* context_;
-
- private:
+  MimeTypeToURLMap* mime_type_to_url_;
   DynamicServiceRunnerFactory* runner_factory_;
   scoped_ptr<DynamicServiceRunner> runner_;
   base::WeakPtrFactory<Loader> weak_ptr_factory_;
@@ -87,15 +157,23 @@ class DynamicApplicationLoader::Loader {
 class DynamicApplicationLoader::LocalLoader : public Loader {
  public:
   LocalLoader(const GURL& url,
+              MimeTypeToURLMap* mime_type_to_url,
               Context* context,
               DynamicServiceRunnerFactory* runner_factory,
               scoped_refptr<ApplicationLoader::LoadCallbacks> load_callbacks,
               const LoaderCompleteCallback& loader_complete_callback)
-      : Loader(context,
+      : Loader(mime_type_to_url,
+               context,
                runner_factory,
                load_callbacks,
                loader_complete_callback),
-        weak_ptr_factory_(this) {
+        url_(url),
+        path_(UrlToFile(url)) {
+    Load();
+  }
+
+ private:
+  static base::FilePath UrlToFile(const GURL& url) {
     DCHECK(url.SchemeIsFile());
     url::RawCanonOutputW<1024> output;
     url::DecodeURLEscapeSequences(
@@ -108,38 +186,128 @@ class DynamicApplicationLoader::LocalLoader : public Loader {
 #else
     base::FilePath path(base::UTF16ToUTF8(decoded_path));
 #endif
-
-    // Async for consistency with network case.
-    base::MessageLoop::current()->PostTask(
-        FROM_HERE,
-        base::Bind(&LocalLoader::RunLibrary,
-                   weak_ptr_factory_.GetWeakPtr(),
-                   path,
-                   base::PathExists(path)));
+    return path;
   }
 
-  ~LocalLoader() override {}
+  URLResponsePtr AsURLResponse(base::TaskRunner* task_runner,
+                               uint32_t skip) override {
+    URLResponsePtr response(URLResponse::New());
+    response->url = String::From(url_);
+    DataPipe data_pipe;
+    response->body = data_pipe.consumer_handle.Pass();
+    int64 file_size;
+    if (base::GetFileSize(path_, &file_size)) {
+      response->headers = Array<String>(1);
+      response->headers[0] =
+          base::StringPrintf("Content-Length: %" PRId64, file_size);
+    }
+    common::CopyFromFile(path_, data_pipe.producer_handle.Pass(), skip,
+                         task_runner, base::Bind(&IgnoreResult));
+    return response.Pass();
+  }
 
- private:
-  base::WeakPtrFactory<LocalLoader> weak_ptr_factory_;
+  void AsPath(
+      base::TaskRunner* task_runner,
+      base::Callback<void(const base::FilePath&, bool)> callback) override {
+    // Async for consistency with network case.
+    base::MessageLoop::current()->PostTask(
+        FROM_HERE, base::Bind(callback, path_, base::PathExists(path_)));
+  }
+
+  std::string MimeType() override { return ""; }
+
+  bool HasMojoMagic() override {
+    std::string magic;
+    ReadFileToString(path_, &magic, strlen(kMojoMagic));
+    return magic == kMojoMagic;
+  }
+
+  bool PeekFirstLine(std::string* line) override {
+    std::string start_of_file;
+    ReadFileToString(path_, &start_of_file, kMaxShebangLength);
+    size_t return_position = start_of_file.find('\n');
+    if (return_position == std::string::npos)
+      return false;
+    *line = start_of_file.substr(0, return_position + 1);
+    return true;
+  }
+
+  GURL url_;
+  base::FilePath path_;
+
+  DISALLOW_COPY_AND_ASSIGN(LocalLoader);
 };
 
 // A loader for network files.
 class DynamicApplicationLoader::NetworkLoader : public Loader {
  public:
   NetworkLoader(const GURL& url,
+                NetworkService* network_service,
                 MimeTypeToURLMap* mime_type_to_url,
                 Context* context,
                 DynamicServiceRunnerFactory* runner_factory,
-                NetworkService* network_service,
                 scoped_refptr<ApplicationLoader::LoadCallbacks> load_callbacks,
                 const LoaderCompleteCallback& loader_complete_callback)
-      : Loader(context,
+      : Loader(mime_type_to_url,
+               context,
                runner_factory,
                load_callbacks,
                loader_complete_callback),
-        mime_type_to_url_(mime_type_to_url),
         weak_ptr_factory_(this) {
+    StartNetworkRequest(url, network_service);
+  }
+
+  ~NetworkLoader() override {
+    if (!path_.empty())
+      base::DeleteFile(path_, false);
+  }
+
+ private:
+  // TODO(hansmuller): Revisit this when a real peek operation is available.
+  static const MojoDeadline kPeekTimeout = MOJO_DEADLINE_INDEFINITE;
+
+  URLResponsePtr AsURLResponse(base::TaskRunner* task_runner,
+                               uint32_t skip) override {
+    if (skip != 0) {
+      MojoResult result = ReadDataRaw(
+          response_->body.get(), nullptr, &skip,
+          MOJO_READ_DATA_FLAG_ALL_OR_NONE | MOJO_READ_DATA_FLAG_DISCARD);
+      DCHECK_EQ(result, MOJO_RESULT_OK);
+    }
+    return response_.Pass();
+  }
+
+  void AsPath(
+      base::TaskRunner* task_runner,
+      base::Callback<void(const base::FilePath&, bool)> callback) override {
+    if (!path_.empty() || !response_) {
+      base::MessageLoop::current()->PostTask(
+          FROM_HERE, base::Bind(callback, path_, base::PathExists(path_)));
+      return;
+    }
+    base::CreateTemporaryFile(&path_);
+    common::CopyToFile(response_->body.Pass(), path_, task_runner,
+                       base::Bind(callback, path_));
+  }
+
+  std::string MimeType() override {
+    DCHECK(response_);
+    return response_->mime_type;
+  }
+
+  bool HasMojoMagic() override {
+    std::string magic;
+    return BlockingPeekNBytes(response_->body.get(), &magic, strlen(kMojoMagic),
+                              kPeekTimeout) &&
+           magic == kMojoMagic;
+  }
+
+  bool PeekFirstLine(std::string* line) override {
+    return BlockingPeekLine(response_->body.get(), line, kMaxShebangLength,
+                            kPeekTimeout);
+  }
+
+  void StartNetworkRequest(const GURL& url, NetworkService* network_service) {
     URLRequestPtr request(URLRequest::New());
     request->url = String::From(url);
     request->auto_follow_redirects = true;
@@ -155,89 +323,26 @@ class DynamicApplicationLoader::NetworkLoader : public Loader {
                                   weak_ptr_factory_.GetWeakPtr()));
   }
 
-  ~NetworkLoader() override {
-    if (!file_.empty())
-      base::DeleteFile(file_, false);
-  }
-
- private:
-  bool PeekContentHandler(DataPipeConsumerHandle source,
-                          std::string* mojo_shebang,
-                          GURL* mojo_content_handler_url)
-  {
-    const char* kMojoMagic = "#!mojo:";
-    // TODO(hansmuller): Revisit this when a real peek operation is available.
-    const MojoDeadline kPeekTimeout = MOJO_DEADLINE_INDEFINITE;
-    const size_t kMaxShebangLength = 2048;
-
-    std::string magic;
-    std::string shebang;
-    if (BlockingPeekNBytes(source, &magic, strlen(kMojoMagic), kPeekTimeout) &&
-        magic == kMojoMagic &&
-        BlockingPeekLine(source, &shebang, kMaxShebangLength, kPeekTimeout)) {
-      GURL url(shebang.substr(2, std::string::npos));
-      if (url.is_valid()) {
-        *mojo_shebang = shebang;
-        *mojo_content_handler_url = url;
-        return true;
-      }
-    }
-    return false;
-  }
-
   void OnLoadComplete(URLResponsePtr response) {
     if (response->error) {
       LOG(ERROR) << "Error (" << response->error->code << ": "
                  << response->error->description << ") while fetching "
                  << response->url;
-      LoaderComplete();
+      ReportComplete();
       return;
     }
-
-    // If the response begins with a #!mojo:<content-handler-url>, use it.
-    {
-      GURL url;
-      std::string shebang;
-      if (PeekContentHandler(response->body.get(), &shebang, &url)) {
-        uint32_t num_skip_bytes = shebang.size();
-        if (ReadDataRaw(response->body.get(),
-                        nullptr,
-                        &num_skip_bytes,
-                        MOJO_READ_DATA_FLAG_ALL_OR_NONE |
-                        MOJO_READ_DATA_FLAG_DISCARD) ==
-            MOJO_RESULT_OK) {
-          load_callbacks_->LoadWithContentHandler(url, response.Pass());
-          return;
-        }
-      }
-    }
-
-    MimeTypeToURLMap::iterator iter =
-        mime_type_to_url_->find(response->mime_type);
-    if (iter != mime_type_to_url_->end()) {
-      load_callbacks_->LoadWithContentHandler(iter->second, response.Pass());
-      return;
-    }
-
-    // TODO(aa): Sanity check that the thing we got looks vaguely like a mojo
-    // application. That could either mean looking for the platform-specific dll
-    // header, or looking for some specific mojo signature prepended to the
-    // library.
-
-    base::CreateTemporaryFile(&file_);
-    common::CopyToFile(
-        response->body.Pass(),
-        file_,
-        context_->task_runners()->blocking_pool(),
-        base::Bind(
-            &NetworkLoader::RunLibrary, weak_ptr_factory_.GetWeakPtr(), file_));
+    response_ = response.Pass();
+    Load();
   }
 
-  MimeTypeToURLMap* mime_type_to_url_;
   URLLoaderPtr url_loader_;
-  base::FilePath file_;
+  URLResponsePtr response_;
+  base::FilePath path_;
   base::WeakPtrFactory<NetworkLoader> weak_ptr_factory_;
+
+  DISALLOW_COPY_AND_ASSIGN(NetworkLoader);
 };
+
 DynamicApplicationLoader::DynamicApplicationLoader(
     Context* context,
     scoped_ptr<DynamicServiceRunnerFactory> runner_factory)
@@ -265,10 +370,8 @@ void DynamicApplicationLoader::Load(
     const GURL& url,
     scoped_refptr<LoadCallbacks> load_callbacks) {
   if (url.SchemeIsFile()) {
-    loaders_.push_back(new LocalLoader(url,
-                                       context_,
-                                       runner_factory_.get(),
-                                       load_callbacks,
+    loaders_.push_back(new LocalLoader(url, &mime_type_to_url_, context_,
+                                       runner_factory_.get(), load_callbacks,
                                        loader_complete_callback_));
     return;
   }
@@ -278,13 +381,9 @@ void DynamicApplicationLoader::Load(
         GURL("mojo:network_service"), &network_service_);
   }
 
-  loaders_.push_back(new NetworkLoader(url,
-                                       &mime_type_to_url_,
-                                       context_,
-                                       runner_factory_.get(),
-                                       network_service_.get(),
-                                       load_callbacks,
-                                       loader_complete_callback_));
+  loaders_.push_back(new NetworkLoader(
+      url, network_service_.get(), &mime_type_to_url_, context_,
+      runner_factory_.get(), load_callbacks, loader_complete_callback_));
 }
 
 void DynamicApplicationLoader::OnApplicationError(ApplicationManager* manager,

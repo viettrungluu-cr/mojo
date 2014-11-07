@@ -47,6 +47,7 @@ test("mojo_common_unittests") {
 
   sources = [
     "common_type_converters_unittest.cc",
+    "data_pipe_utils_unittest.cc",
     "handle_watcher_unittest.cc",
     "message_pump_mojo_unittest.cc",
   ]
