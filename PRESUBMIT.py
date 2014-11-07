@@ -1341,6 +1341,7 @@ def _CommonChecks(input_api, output_api):
   results.extend(_CheckForIPCRules(input_api, output_api))
   results.extend(_CheckForOverrideAndFinalRules(input_api, output_api))
   results.extend(_CheckGNCheck(input_api, output_api))
+  results.extend(_CheckForMojoURL(input_api, output_api))
 
   if any('PRESUBMIT.py' == f.LocalPath() for f in input_api.AffectedFiles()):
     results.extend(input_api.canned_checks.RunUnitTestsInDirectory(
@@ -1524,6 +1525,20 @@ def _CheckForIPCRules(input_api, output_api):
         _IPC_ENUM_TRAITS_DEPRECATED, problems)]
   else:
     return []
+
+
+def _CheckForMojoURL(input_api, output_api):
+  """Check that mojo url do not use mojo://."""
+  errors = []
+  for f in input_api.AffectedFiles():
+    if f.LocalPath() != 'PRESUBMIT.py':
+      for lnum, line in f.ChangedContents():
+        # Disallow mojo://
+        if input_api.re.search(r'mojo://', line):
+          errors.append(output_api.PresubmitError(
+            ('%s:%d uses mojo:// url format. Please use mojo: instead.')
+             % (f.LocalPath(), lnum)))
+  return errors
 
 
 def CheckChangeOnUpload(input_api, output_api):
