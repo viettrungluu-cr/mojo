@@ -444,20 +444,7 @@ def _CheckGNCheck(input_api, output_api):
     # TODO(eseidel): Currently only these are known to pass,
     # once everything passes we can just call 'gn check' once without a filter!
     KNOWN_PASSING = [
-      '//build/*',
-      '//mojo/application/*',
-      '//mojo/apps/*',
-      '//mojo/aura/*',
-      '//mojo/cc/*',
-      '//mojo/common/*',
       '//mojo/public/*',
-      '//mojo/spy/*',
-      '//mojo/tools/*',
-      '//mojo/views/*',
-      '//skia/*',
-      '//testing/*',
-      '//tools/*',
-      '//ui/*',
     ]
     if input_api.platform != 'win32':
       KNOWN_PASSING += [

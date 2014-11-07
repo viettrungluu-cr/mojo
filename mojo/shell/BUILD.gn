@@ -47,7 +47,6 @@ executable("mojo_launcher") {
     "//mojo/common",
     "//mojo/edk/system",
     "//mojo/environment:chromium",
-    "//url",
   ]
 }
 
@@ -60,10 +59,7 @@ source_set("in_process_dynamic_service_runner") {
   ]
 
   deps = [
-    "//base",
     "//mojo/gles2",
-    "//mojo/public/cpp/system",
-    "//mojo/public/gles2:for_shared_library",
   ]
 }
 
@@ -114,19 +110,14 @@ source_set("lib") {
     "//base",
     "//base/third_party/dynamic_annotations",
     "//base:base_static",
-    "//gpu/command_buffer/service",
     "//mojo/application",
     "//mojo/application_manager",
     "//mojo/common",
     "//mojo/edk/system",
-    "//mojo/public/cpp/bindings",
-    "//mojo/public/cpp/system",
     "//mojo/public/interfaces/application",
     "//mojo/services/public/interfaces/network",
     "//mojo/shell/domain_socket",
     "//mojo/spy",
-    "//mojo/services/native_viewport:lib",
-    "//ui/gl",
   ]
 
   if (is_win) {
@@ -234,12 +225,6 @@ source_set("external_application_registrar_connection") {
 
   deps = [
     ":external_application_registrar_bindings",
-    "//base",
-    "//mojo/common",
-    "//mojo/edk/system",
-    "//mojo/public/cpp/bindings",
-    "//mojo/public/interfaces/application",
-    "//url",
   ]
 
   if (!is_win) {
@@ -264,21 +249,18 @@ test("mojo_shell_tests") {
   ]
 
   deps = [
-    ":in_process_dynamic_service_runner",
     ":lib",
     "//base",
-    "//base/test:test_support",
     "//base:i18n",
+    "//base/test:test_support",
+    "//testing/gtest",
+    "//net:test_support",
+    "//url",
     "//mojo/application_manager",
     "//mojo/common",
     "//mojo/edk/system",
     "//mojo/environment:chromium",
-    "//mojo/public/cpp/bindings",
-    "//mojo/public/cpp/system",
     "//mojo/services/test_service:bindings",
-    "//net:test_support",
-    "//testing/gtest",
-    "//url",
   ]
 
   datadeps = [
@@ -302,10 +284,8 @@ source_set("test_support") {
   ]
 
   deps = [
-    "//base",
-    "//mojo/application_manager",
-    "//mojo/edk/system",
     ":lib",
+    "//mojo/edk/system",
   ]
 }
 
@@ -319,17 +299,15 @@ test("external_application_tests") {
 
   deps = [
     ":lib",
-    ":external_application_registrar_bindings",
     ":external_application_registrar_connection",
     "//base",
     "//base/test:test_support",
+    "//testing/gtest",
+    "//url",
     "//mojo/application_manager",
     "//mojo/common",
     "//mojo/edk/system",
     "//mojo/environment:chromium",
-    "//mojo/shell/domain_socket",
     "//mojo/shell/domain_socket:tests",
-    "//testing/gtest",
-    "//url",
   ]
 }

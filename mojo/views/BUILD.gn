@@ -27,9 +27,8 @@ static_library("views") {
 
   deps = [
     "//base",
-    "//base/third_party/dynamic_annotations",
     "//base:i18n",
-    "//mojo/converters/geometry",
+    "//base/third_party/dynamic_annotations",
     "//skia",
     "//third_party/icu",
     "//ui/aura",

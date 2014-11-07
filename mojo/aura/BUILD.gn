@@ -22,7 +22,12 @@ source_set("aura") {
   ]
   deps = [
     "//cc",
-    "//cc/surfaces",
+    "//skia",
+    "//ui/aura",
+    "//ui/compositor",
+    "//ui/events",
+    "//ui/events:events_base",
+    "//ui/gl",
     "//mojo/cc",
     "//mojo/converters/geometry",
     "//mojo/converters/surfaces",
@@ -33,11 +38,5 @@ source_set("aura") {
     "//mojo/services/public/interfaces/gpu",
     "//mojo/services/public/interfaces/native_viewport",
     "//mojo/services/public/interfaces/surfaces",
-    "//skia",
-    "//ui/aura",
-    "//ui/compositor",
-    "//ui/events",
-    "//ui/events:events_base",
-    "//ui/gl",
   ]
 }

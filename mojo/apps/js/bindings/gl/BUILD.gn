@@ -14,11 +14,10 @@ source_set("gl") {
   deps = [
     "//base",
     "//gin",
+    "//v8",
     "//mojo/edk/js",
     "//mojo/environment:chromium",
-    "//mojo/public/cpp/environment",
     "//mojo/public/gles2:for_shared_library",
     "//mojo/services/gles2:lib",
-    "//v8",
   ]
 }

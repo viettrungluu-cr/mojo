@@ -6,9 +6,8 @@ source_set("bindings") {
   deps = [
     "//base",
     "//gin",
-    "//mojo/edk/js",
-    "//mojo/public/cpp/system",
     "//v8",
+    "//mojo/edk/js",
   ]
 
   sources = [

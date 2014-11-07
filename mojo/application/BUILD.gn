@@ -16,23 +16,20 @@ source_set("application") {
     "//base",
     "//mojo/common",
     "//mojo/environment:chromium",
-    "//mojo/public/cpp/system",
   ]
 }
 
 source_set("content_handler") {
   sources = [
     "content_handler_factory.cc",
-    "content_handler_factory.h",
+    "content_hander_factory.h",
   ]
   deps = [
     ":application",
     "//base",
     "//mojo/common",
     "//mojo/environment:chromium",
-    "//mojo/public/interfaces/application",
     "//mojo/services/public/interfaces/content_handler",
-    "//mojo/services/public/interfaces/network",
   ]
 }
 
@@ -46,7 +43,5 @@ source_set("test_support") {
   deps = [
     "//base",
     "//mojo/environment:chromium",
-    "//mojo/public/cpp/application",
-    "//mojo/public/cpp/system",
   ]
 }

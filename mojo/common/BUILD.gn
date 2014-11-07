@@ -26,8 +26,6 @@ component("common") {
     "//base",
     "//base/third_party/dynamic_annotations",
     "//mojo/public/c/system:for_component",
-    "//mojo/public/cpp/bindings",
-    "//mojo/public/cpp/system",
     "//url",
   ]
 }
@@ -37,13 +35,11 @@ test("mojo_common_unittests") {
   deps = [
     ":common",
     "//base",
-    "//base/test:test_support",
     "//base:message_loop_tests",
     "//mojo/edk/test:run_all_unittests",
     "//mojo/edk/test:test_support",
     "//mojo/environment:chromium",
     "//mojo/public/cpp/bindings",
-    "//mojo/public/cpp/system",
     "//mojo/public/cpp/test_support:test_utils",
     "//testing/gtest",
     "//url",
