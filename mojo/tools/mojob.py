@@ -11,6 +11,8 @@ import platform
 import subprocess
 import sys
 
+import mopy.paths
+
 
 def get_out_dir(args):
   out_dir = "out"
@@ -169,6 +171,8 @@ def darttest(args):
 
 
 def main():
+  os.chdir(mopy.paths.Paths().src_root)
+
   parser = argparse.ArgumentParser(description='A script to make building'
       '/testing Mojo components easier.')
 
