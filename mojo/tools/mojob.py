@@ -38,6 +38,10 @@ def gn(args):
   gn_args.append('is_asan=' + ('true' if args.asan else 'false'))
   gn_args.append('is_clang=' + ('true' if args.clang else 'false'))
 
+  if platform.system() == 'Windows':
+    # Force x64 for now to avoid .asm build problems
+    gn_args.append('force_win64=true')
+
   goma_dir = os.environ.get('GOMA_DIR')
   goma_home_dir = os.path.join(os.getenv('HOME', ''), 'goma')
   if args.goma and goma_dir:
@@ -67,6 +71,8 @@ def gn(args):
 
 
 def get_gn_arg_value(out_dir, arg):
+  if platform.system() == 'Windows':
+    return None  # TODO(jam): implement
   command = (r'''grep -m 1 "^[[:space:]]*\<%s\>" "%s/args.gn" |
       sed -n 's/.* = "\?\([^"]*\)"\?$/\1/p' ''') % (arg, out_dir)
   return subprocess.check_output(command, shell=True).strip()
@@ -240,6 +246,9 @@ def main():
 
   # Android always wants GCC.
   if args.android:
+    args.clang = False
+
+  if platform.system() == 'Windows':
     args.clang = False
 
   return args.func(args)
