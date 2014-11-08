@@ -124,6 +124,9 @@ deps = {
 
   'src/third_party/boringssl/src':
    'https://boringssl.googlesource.com/boringssl.git' + '@' +  Var('boringssl_revision'),
+
+  'src/tools/gyp':
+    Var('chromium_git') + '/external/gyp.git' + '@' + '487c0b6ae8b44932e45347211bca0e8387718436', # from svn revision 1998
 }
 
 
@@ -161,8 +164,6 @@ deps_os = {
         Var('chromium_git') + '/chromium/deps/bison.git' + '@' + '083c9a45e4affdd5464ee2b224c2df649c6e26c3',
     'src/third_party/gperf':
         Var('chromium_git') + '/chromium/deps/gperf.git' + '@' + 'd892d79f64f9449770443fb06da49b5a1e5d33c1',
-    'src/tools/gyp':
-        Var('chromium_git') + '/external/gyp.git' + '@' + '487c0b6ae8b44932e45347211bca0e8387718436', # from svn revision 1998
   }
 }
 
