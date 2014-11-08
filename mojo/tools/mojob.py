@@ -237,6 +237,11 @@ def main():
   darttest_parser.set_defaults(func=darttest)
 
   args = parser.parse_args()
+
+  # Android always wants GCC.
+  if args.android:
+    args.clang = False
+
   return args.func(args)
 
 
