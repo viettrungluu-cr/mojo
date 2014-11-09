@@ -54,6 +54,7 @@ class CoreTest(mojo_unittest.MojoTestCase):
     self.assertGreaterEqual(system.READ_DATA_FLAG_ALL_OR_NONE, 0)
     self.assertGreaterEqual(system.READ_DATA_FLAG_DISCARD, 0)
     self.assertGreaterEqual(system.READ_DATA_FLAG_QUERY, 0)
+    self.assertGreaterEqual(system.READ_DATA_FLAG_PEEK, 0)
     self.assertGreaterEqual(system.MAP_BUFFER_FLAG_NONE, 0)
 
   def testGetTimeTicksNow(self):
@@ -225,6 +226,9 @@ class CoreTest(mojo_unittest.MojoTestCase):
     data = _GetRandomBuffer(DATA_SIZE)
     self.assertEquals((system.RESULT_OK, DATA_SIZE),
                       pipes.producer_handle.WriteData(data))
+    self.assertEquals((system.RESULT_OK, data),
+                      pipes.consumer_handle.ReadData(
+                          bytearray(DATA_SIZE), system.READ_DATA_FLAG_PEEK))
     self.assertEquals((system.RESULT_OK, data),
                       pipes.consumer_handle.ReadData(bytearray(DATA_SIZE)))
 

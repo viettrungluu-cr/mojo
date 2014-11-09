@@ -105,6 +105,16 @@ define([
     expect(write.result).toBe(core.RESULT_OK);
     expect(write.numBytes).toBe(42);
 
+    var peeked = core.readData(
+         pipe.consumerHandle,
+         core.READ_DATA_FLAG_PEEK | core.READ_DATA_FLAG_ALL_OR_NONE);
+    expect(peeked.result).toBe(core.RESULT_OK);
+    expect(peeked.buffer.byteLength).toBe(42);
+
+    var peeked_memory = new Uint8Array(peeked.buffer);
+    for (var i = 0; i < peeked_memory.length; ++i)
+      expect(peeked_memory[i]).toBe((i * i) & 0xFF);
+
     var read = core.readData(
       pipe.consumerHandle, core.READ_DATA_FLAG_ALL_OR_NONE);
 

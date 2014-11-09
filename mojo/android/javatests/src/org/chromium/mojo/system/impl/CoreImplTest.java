@@ -136,6 +136,17 @@ public class CoreImplTest extends MojoTestCase {
         result = out.readData(null, DataPipe.ReadFlags.none().query(true));
         assertEquals(bytes.length, result);
 
+        // Peek data into a buffer.
+        ByteBuffer peekBuffer = ByteBuffer.allocateDirect(bytes.length);
+        result = out.readData(peekBuffer,
+                              DataPipe.ReadFlags.none().peek(true));
+        assertEquals(bytes.length, result);
+        assertEquals(0, peekBuffer.position());
+        assertEquals(bytes.length, peekBuffer.limit());
+        byte[] peekBytes = new byte[bytes.length];
+        peekBuffer.get(peekBytes);
+        assertTrue(Arrays.equals(bytes, peekBytes));
+
         // Read into a buffer.
         ByteBuffer receiveBuffer = ByteBuffer.allocateDirect(bytes.length);
         result = out.readData(receiveBuffer, DataPipe.ReadFlags.NONE);
