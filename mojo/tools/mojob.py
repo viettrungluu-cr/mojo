@@ -88,7 +88,9 @@ def build(args):
     # Use the configured goma directory.
     local_goma_dir = get_gn_arg_value(out_dir, 'goma_dir')
     print 'Ensuring goma (in %s) started ...' % local_goma_dir
-    command = [os.path.join(local_goma_dir, 'goma_ctl.py'), 'ensure_start']
+    command = ['python',
+               os.path.join(local_goma_dir, 'goma_ctl.py'),
+               'ensure_start']
     exit_code = subprocess.call(command)
     if exit_code:
       return exit_code
