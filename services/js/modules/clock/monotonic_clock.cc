@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "mojo/apps/js/bindings/monotonic_clock.h"
+#include "services/js/modules/clock/monotonic_clock.h"
 
 #include "base/time/time.h"
 #include "gin/object_template_builder.h"
@@ -11,7 +11,7 @@
 #include "mojo/public/cpp/system/core.h"
 
 namespace mojo {
-namespace apps {
+namespace js {
 
 namespace {
 
@@ -24,7 +24,7 @@ double GetMonotonicSeconds() {
 
 }  // namespace
 
-const char MonotonicClock::kModuleName[] = "monotonic_clock";
+const char MonotonicClock::kModuleName[] = "services/js/modules/clock";
 
 v8::Local<v8::Value> MonotonicClock::GetModule(v8::Isolate* isolate) {
   gin::PerIsolateData* data = gin::PerIsolateData::From(isolate);
@@ -39,5 +39,5 @@ v8::Local<v8::Value> MonotonicClock::GetModule(v8::Isolate* isolate) {
   return templ->NewInstance();
 }
 
-}  // namespace apps
+}  // namespace js
 }  // namespace mojo

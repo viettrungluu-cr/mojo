@@ -5,9 +5,9 @@
 define([
   "console",
   "gin/test/expect",
-  "monotonic_clock",
+  "services/js/modules/clock",
   "timer",
-  "mojo/apps/js/bindings/threading"
+  "mojo/public/js/threading"
 ], function(console, expect, monotonicClock, timer, threading) {
   var global = this;
   var then = monotonicClock.seconds();

@@ -2,20 +2,20 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-test("apps_js_unittests") {
+source_set("test") {
+  testonly = true
   deps = [
     "//gin:gin_test",
-    "//mojo/apps/js/bindings",
     "//mojo/edk/js",
-    "//mojo/common",
     "//mojo/edk/test:run_all_unittests",
     "//mojo/edk/test:test_support",
     "//mojo/public/cpp/bindings",
     "//mojo/public/cpp/system",
     "//mojo/public/interfaces/bindings/tests:test_interfaces",
+    "//services/js/modules/clock",
   ]
 
   sources = [
-    "run_apps_js_tests.cc",
+    "run_clock_tests.cc",
   ]
 }

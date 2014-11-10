@@ -7,13 +7,13 @@
 #include "gin/public/isolate_holder.h"
 #include "mojo/application/application_runner_chromium.h"
 #include "mojo/application/content_handler_factory.h"
-#include "mojo/apps/js/js_app.h"
 #include "mojo/public/c/system/main.h"
 #include "mojo/public/cpp/application/application_impl.h"
 #include "mojo/public/cpp/application/interface_factory_impl.h"
+#include "services/js/js_app.h"
 
 namespace mojo {
-namespace apps {
+namespace js {
 
 class JsContentHandler : public ApplicationDelegate,
                          public ContentHandlerFactory::Delegate {
@@ -46,10 +46,10 @@ class JsContentHandler : public ApplicationDelegate,
   DISALLOW_COPY_AND_ASSIGN(JsContentHandler);
 };
 
-}  // namespace apps
+}  // namespace js
 }  // namespace mojo
 
 MojoResult MojoMain(MojoHandle shell_handle) {
-  mojo::ApplicationRunnerChromium runner(new mojo::apps::JsContentHandler);
+  mojo::ApplicationRunnerChromium runner(new mojo::js::JsContentHandler);
   return runner.Run(shell_handle);
 }

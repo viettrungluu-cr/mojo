@@ -2,17 +2,17 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "mojo/apps/js/mojo_bridge_module.h"
+#include "services/js/mojo_bridge_module.h"
 
 #include "gin/arguments.h"
 #include "gin/converter.h"
 #include "gin/object_template_builder.h"
 #include "gin/per_isolate_data.h"
-#include "mojo/apps/js/js_app.h"
 #include "mojo/edk/js/handle.h"
+#include "services/js/js_app.h"
 
 namespace mojo {
-namespace apps {
+namespace js {
 
 namespace {
 
@@ -20,7 +20,7 @@ gin::WrapperInfo g_wrapper_info = {gin::kEmbedderNativeGin};
 
 }  // namespace
 
-const char MojoInternals::kModuleName[] = "mojo/apps/js/bridge";
+const char MojoInternals::kModuleName[] = "services/js/bridge";
 
 v8::Local<v8::Value> MojoInternals::GetModule(JSApp* js_app,
                                               v8::Isolate* isolate) {
@@ -45,5 +45,5 @@ v8::Local<v8::Value> MojoInternals::GetModule(JSApp* js_app,
   return templ->NewInstance();
 }
 
-}  // namespace apps
+}  // namespace js
 }  // namespace mojo

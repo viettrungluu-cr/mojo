@@ -2,16 +2,16 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "mojo/apps/js/js_app.h"
+#include "services/js/js_app.h"
 
 #include "base/bind.h"
 #include "gin/array_buffer.h"
 #include "gin/converter.h"
-#include "mojo/apps/js/mojo_bridge_module.h"
 #include "mojo/common/data_pipe_utils.h"
+#include "services/js/mojo_bridge_module.h"
 
 namespace mojo {
-namespace apps {
+namespace js {
 
 JSApp::JSApp(ShellPtr shell, URLResponsePtr response) : shell_(shell.Pass()) {
   // TODO(hansmuller): handle load failure here and below.
@@ -66,5 +66,5 @@ void JSApp::QuitInternal() {
   base::MessageLoop::current()->QuitWhenIdle();
 }
 
-}  // namespace apps
+}  // namespace js
 }  // namespace mojo

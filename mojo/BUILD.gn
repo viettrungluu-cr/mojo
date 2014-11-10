@@ -15,7 +15,6 @@ group("mojo") {
   deps = [
     ":tests",
     "//examples",
-    "//mojo/apps/js:js_content_handler",
     "//mojo/common",
     "//mojo/public",
     "//mojo/services",
@@ -80,6 +79,7 @@ group("tests") {
     "//mojo/services/network:unittests",
     "//mojo/shell:mojo_shell_tests",
     "//mojo/tools:message_generator",
+    "//services/js:js_services_unittests",
   ]
 
   if (!is_win) {

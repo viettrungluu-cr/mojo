@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# GYP version: part of mojo/mojo_apps.gypi:mojo_js_lib
 source_set("gl") {
   sources = [
     "context.cc",
@@ -18,6 +17,5 @@ source_set("gl") {
     "//mojo/edk/js",
     "//mojo/environment:chromium",
     "//mojo/public/gles2:for_shared_library",
-    "//mojo/services/gles2:lib",
   ]
 }

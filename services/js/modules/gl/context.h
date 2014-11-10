@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef MOJO_APPS_JS_BINDINGS_GL_CONTEXT_H_
-#define MOJO_APPS_JS_BINDINGS_GL_CONTEXT_H_
+#ifndef MOJO_SERVICES_JS_MODULES_GL_CONTEXT_H_
+#define MOJO_SERVICES_JS_MODULES_GL_CONTEXT_H_
 
 #include <GLES2/gl2.h>
 
@@ -74,4 +74,4 @@ class Context : public gin::Wrappable<Context> {
 }  // namespace js
 }  // namespace mojo
 
-#endif  // MOJO_APPS_JS_BINDINGS_GL_CONTEXT_H_
+#endif  // MOJO_SERVICES_JS_MODULES_GL_CONTEXT_H_

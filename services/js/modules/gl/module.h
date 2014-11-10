@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef MOJO_APPS_JS_BINDINGS_GL_MODULE_H_
-#define MOJO_APPS_JS_BINDINGS_GL_MODULE_H_
+#ifndef MOJO_SERVICES_JS_MODULES_GL_MODULE_H_
+#define MOJO_SERVICES_JS_MODULES_GL_MODULE_H_
 
 #include "gin/public/wrapper_info.h"
 #include "v8/include/v8.h"
@@ -19,4 +19,5 @@ v8::Local<v8::Value> GetModule(v8::Isolate* isolate);
 }  // namespace js
 }  // namespace mojo
 
-#endif  // MOJO_APPS_JS_BINDINGS_GL_H_
+#endif // MOJO_SERVICES_JS_MODULES_GL_MODULE_H_
+

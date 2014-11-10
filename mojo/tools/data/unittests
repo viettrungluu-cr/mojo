@@ -25,6 +25,7 @@ view_manager_unittests
 # JavaScript tests:
 *js_unittests
 *js_integration_tests
+*js_services_unittests
 
 # Shell integration tests:
 *mojo_shell_tests

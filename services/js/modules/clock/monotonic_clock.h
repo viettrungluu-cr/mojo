@@ -2,13 +2,13 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef MOJO_APPS_JS_BINDING_MONOTONIC_CLOCK_H_
-#define MOJO_APPS_JS_BINDING_MONOTONIC_CLOCK_H_
+#ifndef MOJO_SERVICES_JS_MODULES_CLOCK_MONOTONIC_CLOCK_H_
+#define MOJO_SERVICES_JS_MODULES_CLOCK_MONOTONIC_CLOCK_H_
 
 #include "v8/include/v8.h"
 
 namespace mojo {
-namespace apps {
+namespace js {
 
 class MonotonicClock {
  public:
@@ -16,7 +16,7 @@ class MonotonicClock {
   static v8::Local<v8::Value> GetModule(v8::Isolate* isolate);
 };
 
-}  // namespace apps
+}  // namespace js
 }  // namespace mojo
 
-#endif  // MOJO_APPS_JS_BINDING_MONOTONIC_CLOCK_H_
+#endif // MOJO_SERVICES_JS_MODULES_CLOCK_MONOTONIC_CLOCK_H_

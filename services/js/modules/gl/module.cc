@@ -2,21 +2,21 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "mojo/apps/js/bindings/gl/module.h"
+#include "services/js/modules/gl/module.h"
 
 #include "base/logging.h"
 #include "gin/arguments.h"
 #include "gin/object_template_builder.h"
 #include "gin/per_isolate_data.h"
 #include "gin/wrappable.h"
-#include "mojo/apps/js/bindings/gl/context.h"
 #include "mojo/edk/js/handle.h"
+#include "services/js/modules/gl/context.h"
 
 namespace mojo {
 namespace js {
 namespace gl {
 
-const char* kModuleName = "mojo/apps/js/bindings/gl";
+const char* kModuleName = "services/js/modules/gl";
 
 namespace {
 

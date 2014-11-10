@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef MOJO_APPS_JS_JS_APP_H_
-#define MOJO_APPS_JS_JS_APP_H_
+#ifndef MOJO_SERVICES_JS_JS_APP_H_
+#define MOJO_SERVICES_JS_JS_APP_H_
 
 #include "base/memory/ref_counted.h"
 #include "base/threading/thread.h"
@@ -17,7 +17,7 @@
 #include "mojo/services/public/interfaces/network/url_loader.mojom.h"
 
 namespace mojo {
-namespace apps {
+namespace js {
 
 class JSApp;
 class ApplicationDelegateImpl;
@@ -60,7 +60,7 @@ class JSApp : public InterfaceImpl<Application>,
   DISALLOW_COPY_AND_ASSIGN(JSApp);
 };
 
-}  // namespace apps
+}  // namespace js
 }  // namespace mojo
 
-#endif  // MOJO_APPS_JS_JS_APP_H_
+#endif  // MOJO_SERVICES_JS_JS_APP_H_

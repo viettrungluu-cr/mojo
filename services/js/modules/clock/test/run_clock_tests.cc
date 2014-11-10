@@ -9,8 +9,9 @@
 #include "gin/modules/timer.h"
 #include "gin/test/file_runner.h"
 #include "gin/test/gtest.h"
-#include "mojo/apps/js/bindings/monotonic_clock.h"
 #include "mojo/edk/js/core.h"
+#include "mojo/edk/js/threading.h"
+#include "services/js/modules/clock/monotonic_clock.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace mojo {
@@ -23,8 +24,8 @@ class TestRunnerDelegate : public gin::FileRunnerDelegate {
     AddBuiltinModule(gin::Console::kModuleName, gin::Console::GetModule);
     AddBuiltinModule(Core::kModuleName, Core::GetModule);
     AddBuiltinModule(gin::TimerModule::kName, gin::TimerModule::GetModule);
-    AddBuiltinModule(apps::MonotonicClock::kModuleName,
-                     apps::MonotonicClock::GetModule);
+    AddBuiltinModule(MonotonicClock::kModuleName, MonotonicClock::GetModule);
+    AddBuiltinModule(Threading::kModuleName, Threading::GetModule);
   }
 
  private:
@@ -34,10 +35,10 @@ class TestRunnerDelegate : public gin::FileRunnerDelegate {
 void RunTest(std::string test, bool run_until_idle) {
   base::FilePath path;
   PathService::Get(base::DIR_SOURCE_ROOT, &path);
-  path = path.AppendASCII("mojo")
-             .AppendASCII("apps")
+  path = path.AppendASCII("services")
              .AppendASCII("js")
-             .AppendASCII("bindings")
+             .AppendASCII("modules")
+             .AppendASCII("clock")
              .AppendASCII(test);
   TestRunnerDelegate delegate;
   gin::RunTestFromFile(path, &delegate, run_until_idle);

@@ -2,11 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-define("mojo/apps/js/mojo", [
+define("mojo/services/public/js/mojo", [
   "mojo/public/interfaces/application/service_provider.mojom",
   "mojo/public/js/connection",
   "mojo/public/js/core",
-  "mojo/apps/js/bridge",
+  "services/js/bridge",
 ], function(service, connection, core, bridge) {
 
   function Shell() {

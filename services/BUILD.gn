@@ -6,5 +6,6 @@ group("services") {
   deps = [
     "//services/http_server",
     "//services/http_server/public",
+    "//services/js",
   ]
 }

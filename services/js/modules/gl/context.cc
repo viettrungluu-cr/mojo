@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "mojo/apps/js/bindings/gl/context.h"
+#include "services/js/modules/gl/context.h"
 
 #include <GLES2/gl2.h>
 

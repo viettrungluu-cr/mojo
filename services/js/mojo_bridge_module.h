@@ -2,19 +2,20 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef MOJO_APPS_JS_MOJO_MODULE_H_
-#define MOJO_APPS_JS_MOJO_MODULE_H_
+#ifndef MOJO_SERVICES_JS_MOJO_MODULE_H_
+#define MOJO_SERVICES_JS_MOJO_MODULE_H_
 
 #include "gin/gin_export.h"
 #include "v8/include/v8.h"
 
 namespace mojo {
-namespace apps {
+namespace js {
 
 class JSApp;
 
-// The JavaScript "mojo/apps/js/mojo" module depends on this built-in module.
-// It provides the bridge between the JSApp class and JavaScript.
+// The JavaScript "services/public/js/mojo" module depends on this
+// built-in module. It provides the bridge between the JSApp class and
+// JavaScript.
 
 class MojoInternals {
  public:
@@ -22,7 +23,7 @@ class MojoInternals {
   static v8::Local<v8::Value> GetModule(JSApp* js_app, v8::Isolate* isolate);
 };
 
-}  // namespace apps
+}  // namespace js
 }  // namespace mojo
 
-#endif  // MOJO_APPS_JS_MOJO_MODULE_H_
+#endif  // MOJO_SERVICES_JS_MOJO_MODULE_H_
