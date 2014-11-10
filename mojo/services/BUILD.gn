@@ -9,6 +9,7 @@ group("services") {
     "//mojo/services/clipboard",
     "//mojo/services/gles2:lib",
     "//mojo/services/network",
+    "//mojo/services/public/interfaces/accessibility",
     "//mojo/services/public/interfaces/clipboard",
     "//mojo/services/public/interfaces/content_handler",
     "//mojo/services/public/interfaces/geometry",
