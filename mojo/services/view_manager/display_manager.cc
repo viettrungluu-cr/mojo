@@ -73,7 +73,6 @@ DisplayManager::DisplayManager(
     ConnectionManager* connection_manager,
     const Callback<void()>& native_viewport_closed_callback)
     : connection_manager_(connection_manager),
-      in_setup_(false),
       size_(800, 600),
       draw_timer_(false, false),
       native_viewport_closed_callback_(native_viewport_closed_callback),

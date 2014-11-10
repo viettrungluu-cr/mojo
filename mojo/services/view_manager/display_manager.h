@@ -47,9 +47,6 @@ class MOJO_VIEW_MANAGER_EXPORT DisplayManager
 
   void SetViewportSize(const gfx::Size& size);
 
-  // See description above field for details.
-  bool in_setup() const { return in_setup_; }
-
  private:
   void OnCreatedNativeViewport(uint64_t native_viewport_id);
   void OnSurfaceConnectionCreated(SurfacePtr surface, uint32_t id_namespace);
@@ -63,9 +60,6 @@ class MOJO_VIEW_MANAGER_EXPORT DisplayManager
   void ReturnResources(Array<ReturnedResourcePtr> resources) override;
 
   ConnectionManager* connection_manager_;
-
-  // Returns true if adding the root view's window to |window_tree_host_|.
-  bool in_setup_;
 
   gfx::Size size_;
   gfx::Rect dirty_rect_;

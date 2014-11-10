@@ -260,7 +260,7 @@ void ConnectionManager::OnWillChangeViewHierarchy(
     const ServerView* view,
     const ServerView* new_parent,
     const ServerView* old_parent) {
-  if (!in_destructor_ && !display_manager_.in_setup())
+  if (!in_destructor_)
     ProcessWillChangeViewHierarchy(view, new_parent, old_parent);
 }
 
@@ -270,8 +270,7 @@ void ConnectionManager::OnViewHierarchyChanged(const ServerView* view,
   if (in_destructor_)
     return;
 
-  if (!display_manager_.in_setup())
-    ProcessViewHierarchyChanged(view, new_parent, old_parent);
+  ProcessViewHierarchyChanged(view, new_parent, old_parent);
 
   // TODO(beng): optimize.
   if (old_parent) {
