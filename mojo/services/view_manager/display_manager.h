@@ -16,7 +16,6 @@
 #include "mojo/services/public/interfaces/native_viewport/native_viewport.mojom.h"
 #include "mojo/services/public/interfaces/surfaces/surfaces.mojom.h"
 #include "mojo/services/public/interfaces/surfaces/surfaces_service.mojom.h"
-#include "mojo/services/view_manager/view_manager_export.h"
 #include "ui/gfx/rect.h"
 
 namespace cc {
@@ -33,9 +32,9 @@ class ConnectionManager;
 class ServerView;
 
 // DisplayManager binds the root node to an actual display.
-class MOJO_VIEW_MANAGER_EXPORT DisplayManager
-    : NON_EXPORTED_BASE(public NativeViewportClient),
-      NON_EXPORTED_BASE(public SurfaceClient) {
+class DisplayManager
+    : public NativeViewportClient,
+      public SurfaceClient {
  public:
   DisplayManager(ApplicationConnection* app_connection,
                  ConnectionManager* connection_manager,

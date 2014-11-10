@@ -11,7 +11,6 @@
 #include "cc/surfaces/surface_id.h"
 #include "mojo/services/public/interfaces/view_manager/view_manager.mojom.h"
 #include "mojo/services/view_manager/ids.h"
-#include "mojo/services/view_manager/view_manager_export.h"
 #include "ui/gfx/geometry/rect.h"
 
 namespace mojo {
@@ -25,7 +24,7 @@ class ServerViewDelegate;
 // It is assumed that all functions that mutate the tree have validated the
 // mutation is possible before hand. For example, Reorder() assumes the supplied
 // view is a child and not already in position.
-class MOJO_VIEW_MANAGER_EXPORT ServerView {
+class ServerView {
  public:
   ServerView(ServerViewDelegate* delegate, const ViewId& id);
   virtual ~ServerView();

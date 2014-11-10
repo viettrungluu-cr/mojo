@@ -16,7 +16,6 @@
 #include "mojo/services/public/interfaces/view_manager/view_manager.mojom.h"
 #include "mojo/services/view_manager/access_policy_delegate.h"
 #include "mojo/services/view_manager/ids.h"
-#include "mojo/services/view_manager/view_manager_export.h"
 
 namespace gfx {
 class Rect;
@@ -29,15 +28,8 @@ class AccessPolicy;
 class ConnectionManager;
 class ServerView;
 
-#if defined(OS_WIN)
-// Equivalent of NON_EXPORTED_BASE which does not work with the template snafu
-// below.
-#pragma warning(push)
-#pragma warning(disable : 4275)
-#endif
-
 // Manages a connection from the client.
-class MOJO_VIEW_MANAGER_EXPORT ViewManagerServiceImpl
+class ViewManagerServiceImpl
     : public InterfaceImpl<ViewManagerService>,
       public AccessPolicyDelegate {
  public:

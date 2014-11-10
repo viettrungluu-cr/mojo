@@ -18,7 +18,6 @@
 #include "mojo/services/view_manager/ids.h"
 #include "mojo/services/view_manager/server_view.h"
 #include "mojo/services/view_manager/server_view_delegate.h"
-#include "mojo/services/view_manager/view_manager_export.h"
 
 namespace mojo {
 
@@ -32,7 +31,7 @@ class WindowManagerInternalClientImpl;
 
 // ConnectionManager manages the set of connections to the ViewManager (all the
 // ViewManagerServiceImpls) as well as providing the root of the hierarchy.
-class MOJO_VIEW_MANAGER_EXPORT ConnectionManager
+class ConnectionManager
     : public ServerViewDelegate,
       public WindowManagerInternalClient,
       public InterfaceFactory<ViewManagerService>,

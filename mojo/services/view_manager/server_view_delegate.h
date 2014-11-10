@@ -5,8 +5,6 @@
 #ifndef MOJO_SERVICES_VIEW_MANAGER_SERVER_VIEW_DELEGATE_H_
 #define MOJO_SERVICES_VIEW_MANAGER_SERVER_VIEW_DELEGATE_H_
 
-#include "mojo/services/view_manager/view_manager_export.h"
-
 namespace gfx {
 class Rect;
 }
@@ -16,7 +14,7 @@ namespace service {
 
 class ServerView;
 
-class MOJO_VIEW_MANAGER_EXPORT ServerViewDelegate {
+class ServerViewDelegate {
  public:
   // Invoked at the end of the View's destructor (after it has been removed from
   // the hierarchy).
