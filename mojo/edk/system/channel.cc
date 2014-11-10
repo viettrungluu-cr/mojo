@@ -20,7 +20,8 @@ namespace system {
 Channel::Channel(embedder::PlatformSupport* platform_support)
     : platform_support_(platform_support),
       is_running_(false),
-      is_shutting_down_(false) {
+      is_shutting_down_(false),
+      channel_manager_(nullptr) {
 }
 
 bool Channel::Init(scoped_ptr<RawChannel> raw_channel) {
@@ -39,6 +40,15 @@ bool Channel::Init(scoped_ptr<RawChannel> raw_channel) {
 
   is_running_ = true;
   return true;
+}
+
+void Channel::SetChannelManager(ChannelManager* channel_manager) {
+  DCHECK(channel_manager);
+
+  base::AutoLock locker(lock_);
+  DCHECK(!is_shutting_down_);
+  DCHECK(!channel_manager_);
+  channel_manager_ = channel_manager;
 }
 
 void Channel::Shutdown() {
@@ -80,6 +90,7 @@ void Channel::Shutdown() {
 void Channel::WillShutdownSoon() {
   base::AutoLock locker(lock_);
   is_shutting_down_ = true;
+  channel_manager_ = nullptr;
 }
 
 // Note: |endpoint| being a |scoped_refptr| makes this function safe, since it

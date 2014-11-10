@@ -239,6 +239,8 @@
         'system/channel_endpoint_id.h',
         'system/channel_info.cc',
         'system/channel_info.h',
+        'system/channel_manager.cc',
+        'system/channel_manager.h',
         'system/constants.h',
         'system/core.cc',
         'system/core.h',

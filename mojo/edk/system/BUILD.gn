@@ -34,6 +34,8 @@ component("system") {
     "channel_endpoint_id.h",
     "channel_info.cc",
     "channel_info.h",
+    "channel_manager.cc",
+    "channel_manager.h",
     "constants.h",
     "core.cc",
     "core.h",
