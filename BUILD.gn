@@ -6,7 +6,9 @@ group("root") {
   testonly = true
 
   deps = [
+    "//examples",
     "//mojo",
+    "//services",
   ]
 
   if (!is_win) {
