@@ -47,7 +47,7 @@ mojo/tools/mojo_demo.sh --browser
 
 Run the tests:
 ```
-mojo/tools/mojob.sh test
+mojo/tools/mojob.py test
 ```
 
 
