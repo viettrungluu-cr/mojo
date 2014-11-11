@@ -12,10 +12,14 @@ config("system_config") {
 component("system") {
   output_name = "mojo_system_impl"
 
+  public_deps = [
+    "//mojo/edk/embedder",
+    "//mojo/public/c/system",
+  ]
+
   deps = [
     "//base",
     "//base/third_party/dynamic_annotations",
-    "//mojo/edk/embedder",
   ]
 
   defines = [
@@ -96,6 +100,7 @@ test("mojo_system_unittests") {
   deps = [
     ":system",
     "//base",
+    "//base/test:test_support",
     "//mojo/edk/embedder:embedder_unittests",
     "//mojo/edk/test:test_support",
     "//testing/gtest",

@@ -7,7 +7,9 @@ source_set("embedder") {
   # mojo_system_impl component.
   visibility = [ "//mojo/edk/system" ]
 
-  deps = [ "//base", ]
+  public_deps = [ "//mojo/public/cpp/system" ]
+
+  deps = [ "//base" ]
 
   defines = [
     "MOJO_SYSTEM_IMPL_IMPLEMENTATION",
@@ -59,6 +61,7 @@ source_set("embedder_unittests") {
 
   deps = [
     "//base",
+    "//base/test:test_support",
     "//mojo/edk/test:test_support",
     "//mojo/edk/system",
     "//testing/gtest",
