@@ -8,7 +8,6 @@
 #include "base/observer_list.h"
 #include "gin/converter.h"
 #include "gin/handle.h"
-#include "gin/object_template_builder.h"
 #include "gin/wrappable.h"
 #include "mojo/public/cpp/system/core.h"
 
@@ -26,11 +25,6 @@ class HandleWrapper : public gin::Wrappable<HandleWrapper> {
                                            MojoHandle handle) {
     return gin::CreateHandle(isolate, new HandleWrapper(handle));
   }
-
-  std::string ToString();
-
-  gin::ObjectTemplateBuilder GetObjectTemplateBuilder(v8::Isolate* isolate)
-      override;
 
   mojo::Handle get() const { return handle_.get(); }
   mojo::Handle release() { return handle_.release(); }
