@@ -104,7 +104,7 @@ def build(args):
 def run_unittests(args):
   out_dir = get_out_dir(args)
   print 'Running unit tests in %s ...' % out_dir
-  command = []
+  command = ['python']
   if platform.system() == 'Linux':
     command.append('./testing/xvfb.py')
     command.append(out_dir)
@@ -134,15 +134,19 @@ def run_skytests(args):
 
 
 def run_pytests(args):
+  if platform.system() == 'Windows':
+    print ('pytests aren\'t supported on Windows because the Python bindings '
+           'aren\'t build there.')
+    return
   out_dir = get_out_dir(args)
   print 'Running python tests in %s ...' % out_dir
-  command = []
+  command = ['python']
   command.append(os.path.join('mojo', 'tools', 'run_mojo_python_tests.py'))
   exit_code = subprocess.call(command)
   if exit_code:
     return exit_code
 
-  command = []
+  command = ['python']
   command.append(os.path.join('mojo', 'tools',
                               'run_mojo_python_bindings_tests.py'))
   command.append('--build-dir=' + out_dir)

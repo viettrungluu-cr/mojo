@@ -2,7 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import hashlib
 import logging
+import platform
 import subprocess
 import sys
 
@@ -30,13 +32,23 @@ def _memoize(f):
 def _file_hash(filename):
   """Returns a string representing the hash of the given file."""
   _logging.debug("Hashing %s ...", filename)
-  rv = subprocess.check_output(['sha256sum', '-b', filename]).split(None, 1)[0]
-  _logging.debug("  => %s", rv)
-  return rv
+  with open(filename, mode='rb') as f:
+    m = hashlib.sha256()
+    while True:
+      block = f.read(4096)
+      if not block:
+        break
+      m.update(block)
+  _logging.debug("  => %s", m.hexdigest())
+  return m.hexdigest()
 
 @_memoize
 def _get_dependencies(filename):
   """Returns a list of filenames for files that the given file depends on."""
+  if platform.system() == 'Windows':
+    # There's no ldd on Windows. We can try to bundle or require depends, but
+    # given that we're not supporting component build this seems low priority.
+    return []
   _logging.debug("Getting dependencies for %s ...", filename)
   lines = subprocess.check_output(['ldd', filename]).splitlines()
   rv = []

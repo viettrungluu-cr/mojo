@@ -7,6 +7,7 @@
 
 import logging
 import os
+import platform
 import subprocess
 import sys
 
@@ -70,6 +71,9 @@ def main(argv):
       cacheable = False
     else:
       cacheable = True
+
+    if platform.system() == 'Windows':
+      gtest += ".exe"
 
     if successes_cache_file and cacheable:
       _logging.debug("Getting transitive hash for %s ... " % gtest)
