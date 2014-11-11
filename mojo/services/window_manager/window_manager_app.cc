@@ -49,6 +49,7 @@ class WindowManagerApp::WindowManagerInternalImpl
   // InterfaceImpl:
   void OnConnectionError() override {
     // Necessary since we used WeakBindToPipe and are not automatically deleted.
+    // crbug.com/431911
     delete this;
   }
 
