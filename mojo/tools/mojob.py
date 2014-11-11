@@ -118,7 +118,7 @@ def run_unittests(args):
 
 def run_skytests(args):
   out_dir = get_out_dir(args)
-  if platform.system != 'Linux':
+  if platform.system() != 'Linux':
     return 0
 
   command = []
@@ -126,7 +126,7 @@ def run_skytests(args):
   command.append(out_dir)
   command.append('sky/tools/test_sky')
   command.append('-t')
-  command.append('--debug' if args.debug else '--release')
+  command.append('Debug' if args.debug else 'Release')
   command.append('--no-new-test-results')
   command.append('--no-show-results')
   command.append('--verbose')
