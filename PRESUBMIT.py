@@ -445,6 +445,7 @@ def _CheckGNCheck(input_api, output_api):
     # once everything passes we can just call 'gn check' once without a filter!
     KNOWN_PASSING = [
       '//mojo/edk/system/*',
+      '//mojo/edk/test/*',
       '//mojo/public/*',
     ]
     if input_api.platform != 'win32':
