@@ -4,6 +4,8 @@
 
 import("//build/config/ui.gni")
 
+if (use_aura) {
+
 # GYP version: mojo/mojo_services.gypi:mojo_core_window_manager
 shared_library("window_manager") {
   sources = [ "main.cc" ]
@@ -23,12 +25,6 @@ shared_library("window_manager") {
 # GYP version: mojo/mojo_services.gypi:mojo_core_window_manager_lib
 source_set("lib") {
   sources = [
-    "basic_focus_rules.cc",
-    "basic_focus_rules.h",
-    "focus_controller.cc",
-    "focus_controller.h",
-    "focus_controller_observer.h",
-    "focus_rules.h",
     "native_viewport_event_dispatcher_impl.cc",
     "native_viewport_event_dispatcher_impl.h",
     "window_manager_app.cc",
@@ -36,12 +32,10 @@ source_set("lib") {
     "window_manager_delegate.h",
     "window_manager_impl.cc",
     "window_manager_impl.h",
-    "view_event_dispatcher.cc",
-    "view_event_dispatcher.h",
-    "view_target.cc",
-    "view_target.h",
-    "view_targeter.cc",
-    "view_targeter.h",
+  ]
+
+  public_deps = [
+    "//mojo/aura",
   ]
 
   deps = [
@@ -50,6 +44,7 @@ source_set("lib") {
     "//ui/gfx",
     "//ui/gfx/geometry",
     "//ui/wm",
+    "//mojo/aura",
     "//mojo/application",
     "//mojo/common",
     "//mojo/converters/input_events",
@@ -84,3 +79,5 @@ test("window_manager_unittests") {
     deps += [ "//ui/gfx/x" ]
   }
 }
+
+}  # use_aura

@@ -7,8 +7,13 @@
 
 #include "base/memory/scoped_ptr.h"
 #include "mojo/services/public/cpp/view_manager/view_observer.h"
-#include "mojo/services/window_manager/focus_controller.h"
 #include "ui/gfx/geometry/rect.h"
+
+namespace aura {
+namespace client {
+class ActivationClient;
+}
+}
 
 namespace mojo {
 class NativeWidgetViewManager;
@@ -30,6 +35,7 @@ class FrameController : mojo::ViewObserver {
   FrameController(mojo::Shell* shell,
                   mojo::View* view,
                   mojo::View** app_view,
+                  aura::client::ActivationClient* activation_client,
                   mojo::WindowManagerApp* window_manager_app);
   virtual ~FrameController();
 
@@ -52,6 +58,7 @@ class FrameController : mojo::ViewObserver {
   views::Widget* widget_;
   bool maximized_;
   gfx::Rect restored_bounds_;
+  aura::client::ActivationClient* activation_client_;
   mojo::WindowManagerApp* window_manager_app_;
   scoped_ptr<FrameEventHandler> frame_event_handler_;
 

@@ -9,6 +9,7 @@
 
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/scoped_vector.h"
+#include "mojo/aura/window_tree_host_mojo.h"
 #include "mojo/public/cpp/application/application_delegate.h"
 #include "mojo/public/cpp/application/interface_factory_impl.h"
 #include "mojo/public/cpp/bindings/string.h"
@@ -17,24 +18,32 @@
 #include "mojo/services/public/cpp/view_manager/view_manager_delegate.h"
 #include "mojo/services/public/cpp/view_manager/view_observer.h"
 #include "mojo/services/public/interfaces/window_manager/window_manager_internal.mojom.h"
-#include "mojo/services/window_manager/focus_controller_observer.h"
 #include "mojo/services/window_manager/native_viewport_event_dispatcher_impl.h"
-#include "mojo/services/window_manager/view_target.h"
 #include "mojo/services/window_manager/window_manager_impl.h"
+#include "ui/aura/client/focus_change_observer.h"
 #include "ui/events/event_handler.h"
+#include "ui/wm/public/activation_change_observer.h"
 
-namespace gfx {
-class Size;
+namespace aura {
+namespace client {
+class ActivationClient;
+class FocusClient;
+}
+class Window;
+}
+
+namespace wm {
+class FocusRules;
+class ScopedCaptureClient;
 }
 
 namespace mojo {
 
-class FocusController;
-class FocusRules;
+class AuraInit;
+class DummyDelegate;
 class WindowManagerClient;
 class WindowManagerDelegate;
 class WindowManagerImpl;
-class ViewEventDispatcher;
 
 // Implements core window manager functionality that could conceivably be shared
 // across multiple window managers implementing superficially different user
@@ -44,23 +53,23 @@ class ViewEventDispatcher;
 // delegate interfaces exposed by the view manager, this object provides the
 // canonical implementation of said interfaces but will call out to the wrapped
 // instances.
+// This object maintains an aura::WindowTreeHost containing a hierarchy of
+// aura::Windows. Window manager functionality (e.g. focus, activation,
+// modality, etc.) are implemented using aura core window manager components.
 class WindowManagerApp : public ApplicationDelegate,
                          public ViewManagerDelegate,
                          public ViewObserver,
                          public ui::EventHandler,
-                         public FocusControllerObserver,
+                         public aura::client::FocusChangeObserver,
+                         public aura::client::ActivationChangeObserver,
                          public InterfaceFactory<WindowManagerInternal> {
  public:
   WindowManagerApp(ViewManagerDelegate* view_manager_delegate,
                    WindowManagerDelegate* window_manager_delegate);
   ~WindowManagerApp() override;
 
-  static View* GetViewForViewTarget(ViewTarget* view);
-  ViewTarget* GetViewTargetForViewId(Id view);
-
-  mojo::ViewEventDispatcher* event_dispatcher() {
-    return view_event_dispatcher_.get();
-  }
+  static View* GetViewForWindow(aura::Window* window);
+  aura::Window* GetWindowForViewId(Id view);
 
   // Register/deregister new connections to the window manager service.
   void AddConnection(WindowManagerImpl* connection);
@@ -71,13 +80,15 @@ class WindowManagerApp : public ApplicationDelegate,
   void FocusWindow(Id view);
   void ActivateWindow(Id view);
 
-  void SetViewportSize(const gfx::Size& size);
+  void SetViewportSize(const gfx::Size&);
 
   bool IsReady() const;
 
-  FocusController* focus_controller() { return focus_controller_.get(); }
+  // A client of this object will use this accessor to gain access to the
+  // aura::Window hierarchy and attach event handlers.
+  WindowTreeHostMojo* host() { return window_tree_host_.get(); }
 
-  void InitFocus(scoped_ptr<FocusRules> rules);
+  void InitFocus(wm::FocusRules* rules);
 
   // WindowManagerImpl::Embed() forwards to this. If connected to ViewManager
   // then forwards to delegate, otherwise waits for connection to establish then
@@ -92,23 +103,10 @@ class WindowManagerApp : public ApplicationDelegate,
  private:
   // TODO(sky): rename this. Connections is ambiguous.
   typedef std::set<WindowManagerImpl*> Connections;
-  typedef std::map<Id, ViewTarget*> ViewIdToViewTargetMap;
+  typedef std::map<Id, aura::Window*> ViewIdToWindowMap;
 
   struct PendingEmbed;
   class WindowManagerInternalImpl;
-
-  // Creates an ViewTarget for every view in the hierarchy beneath |view|,
-  // and adds to the registry so that it can be retrieved later via
-  // GetViewTargetForViewId().
-  // TODO(beng): perhaps View should have a property bag.
-  void RegisterSubtree(View* view, ViewTarget* parent);
-
-  // Recursively invokes Unregister() for |view| and all its descendants.
-  void UnregisterSubtree(View* view);
-
-  // Deletes the ViewTarget associated with the hierarchy beneath |id|,
-  // and removes from the registry.
-  void Unregister(View* view);
 
   // Overridden from ViewManagerDelegate:
   void OnEmbed(ViewManager* view_manager,
@@ -127,9 +125,24 @@ class WindowManagerApp : public ApplicationDelegate,
   // Overridden from ui::EventHandler:
   void OnEvent(ui::Event* event) override;
 
-  // Overridden from mojo::FocusControllerObserver:
-  void OnViewFocused(View* gained_focus, View* lost_focus) override;
-  void OnViewActivated(View* gained_active, View* lost_active) override;
+  // Overridden from aura::client::FocusChangeObserver:
+  void OnWindowFocused(aura::Window* gained_focus,
+                       aura::Window* lost_focus) override;
+
+  // Overridden from aura::client::ActivationChangeObserver:
+  void OnWindowActivated(aura::Window* gained_active,
+                         aura::Window* lost_active) override;
+
+  // Creates an aura::Window for every view in the hierarchy beneath |view|,
+  // and adds to the registry so that it can be retrieved later via
+  // GetWindowForViewId().
+  // TODO(beng): perhaps View should have a property bag.
+  void RegisterSubtree(View* view, aura::Window* parent);
+  // Recursively invokes Unregister() for |view| and all its descendants.
+  void UnregisterSubtree(View* view);
+  // Deletes the aura::Windows associated with the hierarchy beneath |id|,
+  // and removes from the registry.
+  void Unregister(View* view);
 
   // Creates the connection to the ViewManager.
   void LaunchViewManager(ApplicationImpl* app);
@@ -154,18 +167,23 @@ class WindowManagerApp : public ApplicationDelegate,
   scoped_ptr<ViewManagerClientFactory> view_manager_client_factory_;
   View* root_;
 
-  scoped_ptr<mojo::FocusController> focus_controller_;
+  scoped_ptr<AuraInit> aura_init_;
+  scoped_ptr<WindowTreeHostMojo> window_tree_host_;
+
+  scoped_ptr<wm::ScopedCaptureClient> capture_client_;
+  scoped_ptr<aura::client::FocusClient> focus_client_;
+  aura::client::ActivationClient* activation_client_;
 
   Connections connections_;
-  ViewIdToViewTargetMap view_id_to_view_target_map_;
+  ViewIdToWindowMap view_id_to_window_map_;
+
+  scoped_ptr<DummyDelegate> dummy_delegate_;
 
   WindowManagerInternalClientPtr window_manager_client_;
 
   ScopedVector<PendingEmbed> pending_embeds_;
 
   scoped_ptr<ViewManagerClient> view_manager_client_;
-
-  scoped_ptr<ViewEventDispatcher> view_event_dispatcher_;
 
   DISALLOW_COPY_AND_ASSIGN(WindowManagerApp);
 };

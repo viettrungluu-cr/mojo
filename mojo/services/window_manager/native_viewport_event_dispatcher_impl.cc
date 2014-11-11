@@ -6,7 +6,6 @@
 
 #include "mojo/aura/window_tree_host_mojo.h"
 #include "mojo/converters/input_events/input_events_type_converters.h"
-#include "mojo/services/window_manager/view_event_dispatcher.h"
 #include "mojo/services/window_manager/window_manager_app.h"
 
 namespace mojo {
@@ -18,18 +17,12 @@ NativeViewportEventDispatcherImpl::NativeViewportEventDispatcherImpl(
 NativeViewportEventDispatcherImpl::~NativeViewportEventDispatcherImpl() {
 }
 
-ui::EventProcessor* NativeViewportEventDispatcherImpl::GetEventProcessor() {
-  return app_->event_dispatcher();
-}
-
 void NativeViewportEventDispatcherImpl::OnEvent(
     mojo::EventPtr event,
     const mojo::Callback<void()>& callback) {
   scoped_ptr<ui::Event> ui_event = event.To<scoped_ptr<ui::Event>>();
-
   if (ui_event)
-    SendEventToProcessor(ui_event.get());
-
+    app_->host()->SendEventToProcessor(ui_event.get());
   callback.Run();
 }
 
