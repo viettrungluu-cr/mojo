@@ -219,10 +219,6 @@ class ViewManagerServiceImpl
   DISALLOW_COPY_AND_ASSIGN(ViewManagerServiceImpl);
 };
 
-#if defined(OS_WIN)
-#pragma warning(pop)
-#endif
-
 }  // namespace service
 }  // namespace mojo
 

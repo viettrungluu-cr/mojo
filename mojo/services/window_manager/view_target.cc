@@ -24,7 +24,7 @@ ViewTarget::~ViewTarget() {
 }
 
 bool ViewTarget::HasParent() const {
-  return view_->parent();
+  return !!view_->parent();
 }
 
 bool ViewTarget::IsVisible() const {
