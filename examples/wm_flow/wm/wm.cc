@@ -14,76 +14,12 @@
 #include "mojo/services/public/cpp/view_manager/view_manager_delegate.h"
 #include "mojo/services/public/cpp/view_manager/view_observer.h"
 #include "mojo/services/public/interfaces/input_events/input_events.mojom.h"
+#include "mojo/services/window_manager/basic_focus_rules.h"
 #include "mojo/services/window_manager/window_manager_app.h"
 #include "mojo/services/window_manager/window_manager_delegate.h"
 #include "mojo/views/views_init.h"
-#include "ui/aura/window.h"
-#include "ui/wm/core/focus_rules.h"
-#include "ui/wm/public/activation_client.h"
 
 namespace examples {
-
-namespace {
-
-class WMFocusRules : public wm::FocusRules {
- public:
-  WMFocusRules(mojo::WindowManagerApp* window_manager_app,
-               mojo::View* window_container)
-      : window_container_(window_container),
-        window_manager_app_(window_manager_app) {}
-  virtual ~WMFocusRules() {}
-
- private:
-  // Overridden from wm::FocusRules:
-  virtual bool IsToplevelWindow(aura::Window* window) const override {
-    return mojo::WindowManagerApp::GetViewForWindow(window)->parent() ==
-        window_container_;
-  }
-  virtual bool CanActivateWindow(aura::Window* window) const override {
-    return mojo::WindowManagerApp::GetViewForWindow(window)->parent() ==
-        window_container_;
-  }
-  virtual bool CanFocusWindow(aura::Window* window) const override {
-    return true;
-  }
-  virtual aura::Window* GetToplevelWindow(aura::Window* window) const override {
-    mojo::View* view = mojo::WindowManagerApp::GetViewForWindow(window);
-    while (view->parent() != window_container_) {
-      view = view->parent();
-      // Unparented hierarchy, there is no "top level" window.
-      if (!view)
-        return NULL;
-    }
-
-    return window_manager_app_->GetWindowForViewId(view->id());
-  }
-  virtual aura::Window* GetActivatableWindow(
-      aura::Window* window) const override {
-    return GetToplevelWindow(window);
-  }
-  virtual aura::Window* GetFocusableWindow(
-      aura::Window* window) const override {
-    return window;
-  }
-  virtual aura::Window* GetNextActivatableWindow(
-      aura::Window* ignore) const override {
-    aura::Window* activatable = GetActivatableWindow(ignore);
-    const aura::Window::Windows& children = activatable->parent()->children();
-    for (aura::Window::Windows::const_reverse_iterator it = children.rbegin();
-         it != children.rend(); ++it) {
-      if (*it != ignore)
-        return *it;
-    }
-    return NULL;
-  }
-
-  mojo::View* window_container_;
-  mojo::WindowManagerApp* window_manager_app_;
-
-  DISALLOW_COPY_AND_ASSIGN(WMFocusRules);
-};
-
-}  // namespace
 
 class SimpleWM : public mojo::ApplicationDelegate,
                  public mojo::ViewManagerDelegate,
@@ -128,8 +64,9 @@ class SimpleWM : public mojo::ApplicationDelegate,
     window_container_->SetBounds(root_->bounds());
     root_->AddChild(window_container_);
 
-    window_manager_app_->InitFocus(new WMFocusRules(window_manager_app_.get(),
-                                                    window_container_));
+    window_manager_app_->InitFocus(scoped_ptr<mojo::FocusRules>(
+        new mojo::BasicFocusRules(window_manager_app_.get(),
+                                  window_container_)));
   }
   virtual void OnViewManagerDisconnected(
       mojo::ViewManager* view_manager) override {
@@ -183,10 +120,8 @@ class SimpleWM : public mojo::ApplicationDelegate,
     frame_view->SetBounds(rect);
     next_window_origin_.Offset(50, 50);
 
-    aura::client::ActivationClient* client = aura::client::GetActivationClient(
-        window_manager_app_->host()->window());
     new FrameController(
-        shell_, frame_view, app_view, client, window_manager_app_.get());
+        shell_, frame_view, app_view, window_manager_app_.get());
     return frame_view;
   }
 

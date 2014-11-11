@@ -99,7 +99,6 @@ FrameController::FrameController(
     mojo::Shell* shell,
     mojo::View* view,
     mojo::View** app_view,
-    aura::client::ActivationClient* activation_client,
     mojo::WindowManagerApp* window_manager_app)
     : view_(view),
       app_view_(mojo::View::Create(view->view_manager())),
@@ -107,7 +106,6 @@ FrameController::FrameController(
       frame_view_layout_manager_(new LayoutManager(this)),
       widget_(new views::Widget),
       maximized_(false),
-      activation_client_(activation_client),
       window_manager_app_(window_manager_app) {
   view_->AddChild(app_view_);
   view_->AddObserver(this);
@@ -146,8 +144,7 @@ void FrameController::ToggleMaximize() {
 }
 
 void FrameController::ActivateWindow() {
-  aura::Window* window = window_manager_app_->GetWindowForViewId(view_->id());
-  activation_client_->ActivateWindow(window);
+  window_manager_app_->focus_controller()->ActivateView(view_);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
