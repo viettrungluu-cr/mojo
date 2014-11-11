@@ -415,7 +415,7 @@
         'mojo_common_test_support',
         'mojo_run_all_unittests',
         'mojo_js_lib',
-        '../public/mojo_public.gyp:mojo_environment_chromium',
+        '../mojo_base.gyp:mojo_environment_chromium',
         '../public/mojo_public.gyp:mojo_public_test_interfaces',
         '../public/mojo_public.gyp:mojo_utility',
       ],
