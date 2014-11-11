@@ -42,7 +42,7 @@ void SurfacesServiceApplication::FrameSubmitted() {
 }
 
 void SurfacesServiceApplication::SetDisplay(cc::Display* display) {
-  draw_timer.Stop();
+  draw_timer_.Stop();
   display_ = display;
 }
 
