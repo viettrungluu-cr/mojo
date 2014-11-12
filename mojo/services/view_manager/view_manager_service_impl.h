@@ -204,8 +204,7 @@ class ViewManagerServiceImpl
 
   scoped_ptr<AccessPolicy> access_policy_;
 
-  // The views and views created by this connection. This connection owns these
-  // objects.
+  // The views created by this connection. This connection owns these objects.
   ViewMap view_map_;
 
   // The set of views that has been communicated to the client.

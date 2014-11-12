@@ -173,7 +173,8 @@ void ViewManagerServiceImpl::ProcessViewReorder(const ServerView* view,
 
 void ViewManagerServiceImpl::ProcessViewDeleted(const ViewId& view,
                                                 bool originated_change) {
-  view_map_.erase(view.view_id);
+  if (view.connection_id == id_)
+    view_map_.erase(view.view_id);
 
   const bool in_known = known_views_.erase(ViewIdToTransportId(view)) > 0;
   if (IsRoot(view))

@@ -1292,6 +1292,21 @@ TEST_F(ViewManagerServerAppTest, OnEmbeddedAppDisconnected) {
             SingleChangeToDescription(*changes2()));
 }
 
+// Verifies ViewManagerServiceImpl doesn't incorrectly erase from it's internal
+// map when a view from another connection with the same view_id is removed.
+TEST_F(ViewManagerServerAppTest, DontCleanMapOnDestroy) {
+  ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(true));
+  ASSERT_TRUE(CreateView(vm2(), BuildViewId(2, 1)));
+  changes1()->clear();
+  vm_client2_.reset();
+  vm_client1_.WaitForChangeCount(1);
+  EXPECT_EQ("OnEmbeddedAppDisconnected view=1,1",
+            SingleChangeToDescription(*changes1()));
+  std::vector<TestView> views;
+  GetViewTree(vm1(), BuildViewId(1, 1), &views);
+  EXPECT_FALSE(views.empty());
+}
+
 // TODO(sky): add coverage of test that destroys connections and ensures other
 // connections get deletion notification.
 
