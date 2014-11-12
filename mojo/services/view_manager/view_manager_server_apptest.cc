@@ -875,13 +875,15 @@ TEST_F(ViewManagerServerAppTest, GetViewTree) {
     EXPECT_EQ("view=2,3 parent=1,1", views[4].ToString());
   }
 
-  // Verifies GetViewTree() on the view 1,1. This does not include any children
-  // as they are not from this connection.
+  // Verifies GetViewTree() on the view 1,1 from vm2(). vm2() sees 1,1 as 1,1
+  // is vm2()'s root and vm2() sees all the views it created.
   {
     std::vector<TestView> views;
     GetViewTree(vm2(), BuildViewId(1, 1), &views);
-    ASSERT_EQ(1u, views.size());
+    ASSERT_EQ(3u, views.size());
     EXPECT_EQ("view=1,1 parent=null", views[0].ToString());
+    EXPECT_EQ("view=2,2 parent=1,1", views[1].ToString());
+    EXPECT_EQ("view=2,3 parent=1,1", views[2].ToString());
   }
 
   // Connection 2 shouldn't be able to get the root tree.

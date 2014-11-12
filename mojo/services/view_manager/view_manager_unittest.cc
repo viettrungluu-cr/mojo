@@ -588,7 +588,6 @@ class ViewManagerTest : public testing::Test {
     native_viewport_args.push_back(kUseTestConfig);
     test_helper_.application_manager()->SetArgsForURL(
         native_viewport_args, GURL("mojo:native_viewport_service"));
-    printf("Setting args\n");
 
 #if defined(OS_WIN)
     // As we unload the wndproc of window classes we need to be sure to
@@ -1191,13 +1190,16 @@ TEST_F(ViewManagerTest, GetViewTree) {
     EXPECT_EQ("view=2,3 parent=1,1", views[4].ToString());
   }
 
-  // Verifies GetViewTree() on the view 1,1. This does not include any children
-  // as they are not from this connection.
+  // Verifies GetViewTree() from connection2 for 1,1. connection2 should see 1,1
+  // as 1,1 is the root for connection2 and all of 1,1's children as connection2
+  // created them.
   {
     std::vector<TestView> views;
     connection2_->GetViewTree(BuildViewId(1, 1), &views);
-    ASSERT_EQ(1u, views.size());
+    ASSERT_EQ(3u, views.size());
     EXPECT_EQ("view=1,1 parent=null", views[0].ToString());
+    EXPECT_EQ("view=2,2 parent=1,1", views[1].ToString());
+    EXPECT_EQ("view=2,3 parent=1,1", views[2].ToString());
   }
 
   // Connection 2 shouldn't be able to get the root tree.

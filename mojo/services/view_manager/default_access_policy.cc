@@ -54,8 +54,9 @@ bool DefaultAccessPolicy::CanGetViewTree(const ServerView* view) const {
 
 bool DefaultAccessPolicy::CanDescendIntoViewForViewTree(
     const ServerView* view) const {
-  return WasCreatedByThisConnection(view) &&
-         !delegate_->IsViewRootOfAnotherConnectionForAccessPolicy(view);
+  return (WasCreatedByThisConnection(view) &&
+          !delegate_->IsViewRootOfAnotherConnectionForAccessPolicy(view)) ||
+      delegate_->IsRootForAccessPolicy(view->id());
 }
 
 bool DefaultAccessPolicy::CanEmbed(const ServerView* view) const {
