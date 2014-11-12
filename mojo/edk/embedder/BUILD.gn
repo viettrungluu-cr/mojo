@@ -14,6 +14,8 @@ source_set("embedder") {
     "configuration.h",
     "embedder.cc",
     "embedder.h",
+    "entrypoints.cc",
+    "entrypoints.h",
     # Test-only code:
     # TODO(vtl): It's a little unfortunate that these end up in the same
     # component as non-test-only code. In the static build, this code should

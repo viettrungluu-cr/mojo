@@ -9,13 +9,13 @@
 #include "base/logging.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/message_loop/message_loop_proxy.h"
+#include "mojo/edk/embedder/entrypoints.h"
 #include "mojo/edk/embedder/platform_support.h"
 #include "mojo/edk/system/channel.h"
 #include "mojo/edk/system/channel_endpoint.h"
 #include "mojo/edk/system/channel_info.h"
 #include "mojo/edk/system/configuration.h"
 #include "mojo/edk/system/core.h"
-#include "mojo/edk/system/entrypoints.h"
 #include "mojo/edk/system/message_pipe_dispatcher.h"
 #include "mojo/edk/system/platform_handle_dispatcher.h"
 #include "mojo/edk/system/raw_channel.h"
@@ -71,7 +71,7 @@ void CreateChannelHelper(
 }  // namespace
 
 void Init(scoped_ptr<PlatformSupport> platform_support) {
-  system::entrypoints::SetCore(new system::Core(platform_support.Pass()));
+  internal::SetCore(new system::Core(platform_support.Pass()));
 }
 
 Configuration* GetConfiguration() {
@@ -89,7 +89,7 @@ ScopedMessagePipeHandle CreateChannelOnIOThread(
   scoped_refptr<system::MessagePipeDispatcher> dispatcher =
       system::MessagePipeDispatcher::CreateRemoteMessagePipe(&channel_endpoint);
 
-  system::Core* core = system::entrypoints::GetCore();
+  system::Core* core = internal::GetCore();
   DCHECK(core);
   ScopedMessagePipeHandle rv(
       MessagePipeHandle(core->AddDispatcher(dispatcher)));
@@ -114,7 +114,7 @@ ScopedMessagePipeHandle CreateChannel(
   scoped_refptr<system::MessagePipeDispatcher> dispatcher =
       system::MessagePipeDispatcher::CreateRemoteMessagePipe(&channel_endpoint);
 
-  system::Core* core = system::entrypoints::GetCore();
+  system::Core* core = internal::GetCore();
   DCHECK(core);
   ScopedMessagePipeHandle rv(
       MessagePipeHandle(core->AddDispatcher(dispatcher)));
@@ -180,7 +180,7 @@ MojoResult CreatePlatformHandleWrapper(
   scoped_refptr<system::Dispatcher> dispatcher(
       new system::PlatformHandleDispatcher(platform_handle.Pass()));
 
-  system::Core* core = system::entrypoints::GetCore();
+  system::Core* core = internal::GetCore();
   DCHECK(core);
   MojoHandle h = core->AddDispatcher(dispatcher);
   if (h == MOJO_HANDLE_INVALID) {
@@ -197,7 +197,7 @@ MojoResult PassWrappedPlatformHandle(MojoHandle platform_handle_wrapper_handle,
                                      ScopedPlatformHandle* platform_handle) {
   DCHECK(platform_handle);
 
-  system::Core* core = system::entrypoints::GetCore();
+  system::Core* core = internal::GetCore();
   DCHECK(core);
   scoped_refptr<system::Dispatcher> dispatcher(
       core->GetDispatcher(platform_handle_wrapper_handle));

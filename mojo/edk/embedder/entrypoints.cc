@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "mojo/edk/system/entrypoints.h"
+#include "mojo/edk/embedder/entrypoints.h"
 
 #include "mojo/edk/system/core.h"
 #include "mojo/public/c/system/buffer.h"
@@ -10,24 +10,24 @@
 #include "mojo/public/c/system/functions.h"
 #include "mojo/public/c/system/message_pipe.h"
 
-static mojo::system::Core* g_core = nullptr;
-
 using mojo::system::MakeUserPointer;
 
-namespace mojo {
-namespace system {
-namespace entrypoints {
+static mojo::system::Core* g_core = nullptr;
 
-void SetCore(Core* core) {
+namespace mojo {
+namespace embedder {
+namespace internal {
+
+void SetCore(system::Core* core) {
   g_core = core;
 }
 
-Core* GetCore() {
+system::Core* GetCore() {
   return g_core;
 }
 
-}  // namespace entrypoints
-}  // namepace system
+}  // namespace internal
+}  // namepace embedder
 }  // namespace mojo
 
 // Definitions of the system functions.
@@ -43,8 +43,8 @@ MojoResult MojoClose(MojoHandle handle) {
 MojoResult MojoWait(MojoHandle handle,
                     MojoHandleSignals signals,
                     MojoDeadline deadline) {
-  return g_core->Wait(
-      handle, signals, deadline, mojo::system::NullUserPointer());
+  return g_core->Wait(handle, signals, deadline,
+                      mojo::system::NullUserPointer());
 }
 
 MojoResult MojoWaitMany(const MojoHandle* handles,
@@ -52,12 +52,9 @@ MojoResult MojoWaitMany(const MojoHandle* handles,
                         uint32_t num_handles,
                         MojoDeadline deadline) {
   uint32_t result_index = static_cast<uint32_t>(-1);
-  MojoResult result = g_core->WaitMany(MakeUserPointer(handles),
-                                       MakeUserPointer(signals),
-                                       num_handles,
-                                       deadline,
-                                       MakeUserPointer(&result_index),
-                                       mojo::system::NullUserPointer());
+  MojoResult result = g_core->WaitMany(
+      MakeUserPointer(handles), MakeUserPointer(signals), num_handles, deadline,
+      MakeUserPointer(&result_index), mojo::system::NullUserPointer());
   return (result == MOJO_RESULT_OK) ? static_cast<MojoResult>(result_index)
                                     : result;
 }
@@ -76,11 +73,8 @@ MojoResult MojoWriteMessage(MojoHandle message_pipe_handle,
                             const MojoHandle* handles,
                             uint32_t num_handles,
                             MojoWriteMessageFlags flags) {
-  return g_core->WriteMessage(message_pipe_handle,
-                              MakeUserPointer(bytes),
-                              num_bytes,
-                              MakeUserPointer(handles),
-                              num_handles,
+  return g_core->WriteMessage(message_pipe_handle, MakeUserPointer(bytes),
+                              num_bytes, MakeUserPointer(handles), num_handles,
                               flags);
 }
 
@@ -90,12 +84,9 @@ MojoResult MojoReadMessage(MojoHandle message_pipe_handle,
                            MojoHandle* handles,
                            uint32_t* num_handles,
                            MojoReadMessageFlags flags) {
-  return g_core->ReadMessage(message_pipe_handle,
-                             MakeUserPointer(bytes),
-                             MakeUserPointer(num_bytes),
-                             MakeUserPointer(handles),
-                             MakeUserPointer(num_handles),
-                             flags);
+  return g_core->ReadMessage(
+      message_pipe_handle, MakeUserPointer(bytes), MakeUserPointer(num_bytes),
+      MakeUserPointer(handles), MakeUserPointer(num_handles), flags);
 }
 
 MojoResult MojoCreateDataPipe(const MojoCreateDataPipeOptions* options,
@@ -110,10 +101,8 @@ MojoResult MojoWriteData(MojoHandle data_pipe_producer_handle,
                          const void* elements,
                          uint32_t* num_elements,
                          MojoWriteDataFlags flags) {
-  return g_core->WriteData(data_pipe_producer_handle,
-                           MakeUserPointer(elements),
-                           MakeUserPointer(num_elements),
-                           flags);
+  return g_core->WriteData(data_pipe_producer_handle, MakeUserPointer(elements),
+                           MakeUserPointer(num_elements), flags);
 }
 
 MojoResult MojoBeginWriteData(MojoHandle data_pipe_producer_handle,
@@ -122,8 +111,7 @@ MojoResult MojoBeginWriteData(MojoHandle data_pipe_producer_handle,
                               MojoWriteDataFlags flags) {
   return g_core->BeginWriteData(data_pipe_producer_handle,
                                 MakeUserPointer(buffer),
-                                MakeUserPointer(buffer_num_elements),
-                                flags);
+                                MakeUserPointer(buffer_num_elements), flags);
 }
 
 MojoResult MojoEndWriteData(MojoHandle data_pipe_producer_handle,
@@ -135,10 +123,8 @@ MojoResult MojoReadData(MojoHandle data_pipe_consumer_handle,
                         void* elements,
                         uint32_t* num_elements,
                         MojoReadDataFlags flags) {
-  return g_core->ReadData(data_pipe_consumer_handle,
-                          MakeUserPointer(elements),
-                          MakeUserPointer(num_elements),
-                          flags);
+  return g_core->ReadData(data_pipe_consumer_handle, MakeUserPointer(elements),
+                          MakeUserPointer(num_elements), flags);
 }
 
 MojoResult MojoBeginReadData(MojoHandle data_pipe_consumer_handle,
@@ -147,8 +133,7 @@ MojoResult MojoBeginReadData(MojoHandle data_pipe_consumer_handle,
                              MojoReadDataFlags flags) {
   return g_core->BeginReadData(data_pipe_consumer_handle,
                                MakeUserPointer(buffer),
-                               MakeUserPointer(buffer_num_elements),
-                               flags);
+                               MakeUserPointer(buffer_num_elements), flags);
 }
 
 MojoResult MojoEndReadData(MojoHandle data_pipe_consumer_handle,
@@ -160,8 +145,7 @@ MojoResult MojoCreateSharedBuffer(
     const struct MojoCreateSharedBufferOptions* options,
     uint64_t num_bytes,
     MojoHandle* shared_buffer_handle) {
-  return g_core->CreateSharedBuffer(MakeUserPointer(options),
-                                    num_bytes,
+  return g_core->CreateSharedBuffer(MakeUserPointer(options), num_bytes,
                                     MakeUserPointer(shared_buffer_handle));
 }
 
@@ -169,8 +153,7 @@ MojoResult MojoDuplicateBufferHandle(
     MojoHandle buffer_handle,
     const struct MojoDuplicateBufferHandleOptions* options,
     MojoHandle* new_buffer_handle) {
-  return g_core->DuplicateBufferHandle(buffer_handle,
-                                       MakeUserPointer(options),
+  return g_core->DuplicateBufferHandle(buffer_handle, MakeUserPointer(options),
                                        MakeUserPointer(new_buffer_handle));
 }
 
@@ -179,8 +162,8 @@ MojoResult MojoMapBuffer(MojoHandle buffer_handle,
                          uint64_t num_bytes,
                          void** buffer,
                          MojoMapBufferFlags flags) {
-  return g_core->MapBuffer(
-      buffer_handle, offset, num_bytes, MakeUserPointer(buffer), flags);
+  return g_core->MapBuffer(buffer_handle, offset, num_bytes,
+                           MakeUserPointer(buffer), flags);
 }
 
 MojoResult MojoUnmapBuffer(void* buffer) {

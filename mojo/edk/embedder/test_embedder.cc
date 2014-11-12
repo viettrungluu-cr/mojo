@@ -8,9 +8,9 @@
 #include "base/macros.h"
 #include "base/memory/scoped_ptr.h"
 #include "mojo/edk/embedder/embedder.h"
+#include "mojo/edk/embedder/entrypoints.h"
 #include "mojo/edk/embedder/simple_platform_support.h"
 #include "mojo/edk/system/core.h"
-#include "mojo/edk/system/entrypoints.h"
 #include "mojo/edk/system/handle_table.h"
 
 namespace mojo {
@@ -46,9 +46,9 @@ void InitWithSimplePlatformSupport() {
 }
 
 bool Shutdown() {
-  system::Core* core = system::entrypoints::GetCore();
+  system::Core* core = internal::GetCore();
   CHECK(core);
-  system::entrypoints::SetCore(nullptr);
+  internal::SetCore(nullptr);
 
   bool rv = system::internal::ShutdownCheckNoLeaks(core);
   delete core;
