@@ -205,6 +205,7 @@
         'MOJO_USE_SYSTEM_IMPL',
       ],
       'sources': [
+        'embedder/configuration.h',
         'embedder/channel_info_forward.h',
         'embedder/channel_init.cc',
         'embedder/channel_init.h',
@@ -241,7 +242,8 @@
         'system/channel_info.h',
         'system/channel_manager.cc',
         'system/channel_manager.h',
-        'system/constants.h',
+        'system/configuration.cc',
+        'system/configuration.h',
         'system/core.cc',
         'system/core.h',
         'system/data_pipe.cc',

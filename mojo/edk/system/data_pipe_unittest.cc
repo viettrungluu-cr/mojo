@@ -9,7 +9,7 @@
 
 #include <limits>
 
-#include "mojo/edk/system/constants.h"
+#include "mojo/edk/system/configuration.h"
 #include "testing/gtest/include/gtest/gtest.h"
 
 namespace mojo {
@@ -48,10 +48,10 @@ void RevalidateCreateOptions(
 // checks done by |RevalidateCreateOptions()|.)
 void CheckDefaultCapacity(const MojoCreateDataPipeOptions& validated_options) {
   EXPECT_LE(validated_options.capacity_num_bytes,
-            kDefaultDataPipeCapacityBytes);
+            GetConfiguration().default_data_pipe_capacity_bytes);
   EXPECT_GT(validated_options.capacity_num_bytes +
                 validated_options.element_num_bytes,
-            kDefaultDataPipeCapacityBytes);
+            GetConfiguration().default_data_pipe_capacity_bytes);
 }
 
 // Tests valid inputs to |ValidateCreateOptions()|.

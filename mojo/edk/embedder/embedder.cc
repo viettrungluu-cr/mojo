@@ -13,6 +13,7 @@
 #include "mojo/edk/system/channel.h"
 #include "mojo/edk/system/channel_endpoint.h"
 #include "mojo/edk/system/channel_info.h"
+#include "mojo/edk/system/configuration.h"
 #include "mojo/edk/system/core.h"
 #include "mojo/edk/system/entrypoints.h"
 #include "mojo/edk/system/message_pipe_dispatcher.h"
@@ -71,6 +72,10 @@ void CreateChannelHelper(
 
 void Init(scoped_ptr<PlatformSupport> platform_support) {
   system::entrypoints::SetCore(new system::Core(platform_support.Pass()));
+}
+
+Configuration* GetConfiguration() {
+  return system::GetMutableConfiguration();
 }
 
 // TODO(vtl): Write tests for this.

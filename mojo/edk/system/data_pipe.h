@@ -35,7 +35,7 @@ class MOJO_SYSTEM_IMPL_EXPORT DataPipe
   // The default options for |MojoCreateDataPipe()|. (Real uses should obtain
   // this via |ValidateCreateOptions()| with a null |in_options|; this is
   // exposed directly for testing convenience.)
-  static const MojoCreateDataPipeOptions kDefaultCreateOptions;
+  static MojoCreateDataPipeOptions GetDefaultCreateOptions();
 
   // Validates and/or sets default options for |MojoCreateDataPipeOptions|. If
   // non-null, |in_options| must point to a struct of at least

@@ -17,10 +17,17 @@
 namespace mojo {
 namespace embedder {
 
+struct Configuration;
 class PlatformSupport;
 
-// Must be called first to initialize the (global, singleton) system.
+// Must be called first, or just after setting configuration parameters,
+// to initialize the (global, singleton) system.
 MOJO_SYSTEM_IMPL_EXPORT void Init(scoped_ptr<PlatformSupport> platform_support);
+
+// Returns the global configuration. In general there should be no need to
+// change the configuration, but if you do so this must be done before calling
+// |Init()|.
+MOJO_SYSTEM_IMPL_EXPORT Configuration* GetConfiguration();
 
 // A "channel" is a connection on top of an OS "pipe", on top of which Mojo
 // message pipes (etc.) can be multiplexed. It must "live" on some I/O thread.

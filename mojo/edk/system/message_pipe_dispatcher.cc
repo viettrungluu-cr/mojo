@@ -8,7 +8,7 @@
 #include "mojo/edk/system/channel.h"
 #include "mojo/edk/system/channel_endpoint.h"
 #include "mojo/edk/system/channel_endpoint_id.h"
-#include "mojo/edk/system/constants.h"
+#include "mojo/edk/system/configuration.h"
 #include "mojo/edk/system/local_message_pipe_endpoint.h"
 #include "mojo/edk/system/memory.h"
 #include "mojo/edk/system/message_pipe.h"
@@ -173,12 +173,13 @@ MojoResult MessagePipeDispatcher::WriteMessageImplNoLock(
     uint32_t num_bytes,
     std::vector<DispatcherTransport>* transports,
     MojoWriteMessageFlags flags) {
-  DCHECK(!transports || (transports->size() > 0 &&
-                         transports->size() <= kMaxMessageNumHandles));
+  DCHECK(!transports ||
+         (transports->size() > 0 &&
+          transports->size() <= GetConfiguration().max_message_num_handles));
 
   lock().AssertAcquired();
 
-  if (num_bytes > kMaxMessageNumBytes)
+  if (num_bytes > GetConfiguration().max_message_num_bytes)
     return MOJO_RESULT_RESOURCE_EXHAUSTED;
 
   return message_pipe_->WriteMessage(

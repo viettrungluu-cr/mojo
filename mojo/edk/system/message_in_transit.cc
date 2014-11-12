@@ -8,7 +8,7 @@
 
 #include "base/compiler_specific.h"
 #include "base/logging.h"
-#include "mojo/edk/system/constants.h"
+#include "mojo/edk/system/configuration.h"
 #include "mojo/edk/system/transport_data.h"
 
 namespace mojo {
@@ -38,16 +38,6 @@ struct MessageInTransit::PrivateStructForCompileAsserts {
   // The size of |Header| must be a multiple of the alignment.
   static_assert(sizeof(Header) % kMessageAlignment == 0,
                 "sizeof(MessageInTransit::Header) invalid");
-  // Avoid dangerous situations, but making sure that the size of the "header" +
-  // the size of the data fits into a 31-bit number.
-  static_assert(static_cast<uint64_t>(sizeof(Header)) + kMaxMessageNumBytes <=
-                    0x7fffffffULL,
-                "kMaxMessageNumBytes too big");
-
-  // We assume (to avoid extra rounding code) that the maximum message (data)
-  // size is a multiple of the alignment.
-  static_assert(kMaxMessageNumBytes % kMessageAlignment == 0,
-                "kMessageAlignment not a multiple of alignment");
 };
 
 MessageInTransit::View::View(size_t message_size, const void* buffer)
@@ -62,9 +52,21 @@ MessageInTransit::View::View(size_t message_size, const void* buffer)
 
 bool MessageInTransit::View::IsValid(size_t serialized_platform_handle_size,
                                      const char** error_message) const {
+  size_t max_message_num_bytes = GetConfiguration().max_message_num_bytes;
+  // Avoid dangerous situations, but making sure that the size of the "header" +
+  // the size of the data fits into a 31-bit number.
+  DCHECK_LE(static_cast<uint64_t>(sizeof(Header)) + max_message_num_bytes,
+            0x7fffffffULL)
+      << "GetConfiguration().max_message_num_bytes too big";
+
+  // We assume (to avoid extra rounding code) that the maximum message (data)
+  // size is a multiple of the alignment.
+  DCHECK_EQ(max_message_num_bytes % kMessageAlignment, 0U)
+      << "GetConfiguration().max_message_num_bytes not a multiple of alignment";
+
   // Note: This also implies a check on the |main_buffer_size()|, which is just
   // |RoundUpMessageAlignment(sizeof(Header) + num_bytes())|.
-  if (num_bytes() > kMaxMessageNumBytes) {
+  if (num_bytes() > max_message_num_bytes) {
     *error_message = "Message data payload too large";
     return false;
   }
@@ -195,7 +197,7 @@ void MessageInTransit::SerializeAndCloseDispatchers(Channel* channel) {
 void MessageInTransit::ConstructorHelper(Type type,
                                          Subtype subtype,
                                          uint32_t num_bytes) {
-  DCHECK_LE(num_bytes, kMaxMessageNumBytes);
+  DCHECK_LE(num_bytes, GetConfiguration().max_message_num_bytes);
 
   // |total_size| is updated below, from the other values.
   header()->type = type;

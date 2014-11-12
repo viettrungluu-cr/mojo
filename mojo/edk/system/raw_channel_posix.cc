@@ -421,7 +421,7 @@ RawChannel::IOResult RawChannelPosix::ReadImpl(size_t* bytes_read) {
     // then received the message data plus the first set of handles for the next
     // message in the subsequent |recvmsg()|.)
     if (read_platform_handles_.size() >
-        (TransportData::kMaxPlatformHandles +
+        (TransportData::GetMaxPlatformHandles() +
          embedder::kPlatformChannelMaxNumHandles)) {
       LOG(ERROR) << "Received too many platform handles";
       embedder::CloseAllPlatformHandles(&read_platform_handles_);

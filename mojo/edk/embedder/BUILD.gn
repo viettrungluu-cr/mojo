@@ -22,6 +22,7 @@ source_set("embedder") {
     "channel_info_forward.h",
     "channel_init.cc",
     "channel_init.h",
+    "configuration.h",
     "embedder.cc",
     "embedder.h",
     "platform_channel_pair.cc",

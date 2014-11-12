@@ -5,7 +5,7 @@
 #include "mojo/edk/system/dispatcher.h"
 
 #include "base/logging.h"
-#include "mojo/edk/system/constants.h"
+#include "mojo/edk/system/configuration.h"
 #include "mojo/edk/system/message_pipe_dispatcher.h"
 #include "mojo/edk/system/platform_handle_dispatcher.h"
 #include "mojo/edk/system/shared_buffer_dispatcher.h"
@@ -107,8 +107,9 @@ MojoResult Dispatcher::WriteMessage(
     uint32_t num_bytes,
     std::vector<DispatcherTransport>* transports,
     MojoWriteMessageFlags flags) {
-  DCHECK(!transports || (transports->size() > 0 &&
-                         transports->size() < kMaxMessageNumHandles));
+  DCHECK(!transports ||
+         (transports->size() > 0 &&
+          transports->size() < GetConfiguration().max_message_num_handles));
 
   base::AutoLock locker(lock_);
   if (is_closed_)

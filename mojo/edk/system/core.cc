@@ -10,7 +10,7 @@
 #include "base/time/time.h"
 #include "mojo/edk/embedder/platform_shared_buffer.h"
 #include "mojo/edk/embedder/platform_support.h"
-#include "mojo/edk/system/constants.h"
+#include "mojo/edk/system/configuration.h"
 #include "mojo/edk/system/data_pipe.h"
 #include "mojo/edk/system/data_pipe_consumer_dispatcher.h"
 #include "mojo/edk/system/data_pipe_producer_dispatcher.h"
@@ -145,7 +145,7 @@ MojoResult Core::WaitMany(UserPointer<const MojoHandle> handles,
                           UserPointer<MojoHandleSignalsState> signals_states) {
   if (num_handles < 1)
     return MOJO_RESULT_INVALID_ARGUMENT;
-  if (num_handles > kMaxWaitManyNumHandles)
+  if (num_handles > GetConfiguration().max_wait_many_num_handles)
     return MOJO_RESULT_RESOURCE_EXHAUSTED;
 
   UserPointer<const MojoHandle>::Reader handles_reader(handles, num_handles);
@@ -246,7 +246,7 @@ MojoResult Core::WriteMessage(MojoHandle message_pipe_handle,
   // validity, even for dispatchers that don't support |WriteMessage()| and will
   // simply return failure unconditionally. It also breaks the usual
   // left-to-right verification order of arguments.)
-  if (num_handles > kMaxMessageNumHandles)
+  if (num_handles > GetConfiguration().max_message_num_handles)
     return MOJO_RESULT_RESOURCE_EXHAUSTED;
 
   UserPointer<const MojoHandle>::Reader handles_reader(handles, num_handles);
