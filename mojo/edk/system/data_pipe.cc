@@ -24,7 +24,8 @@ MojoCreateDataPipeOptions DataPipe::GetDefaultCreateOptions() {
       static_cast<uint32_t>(sizeof(MojoCreateDataPipeOptions)),
       MOJO_CREATE_DATA_PIPE_OPTIONS_FLAG_NONE,
       1u,
-      GetConfiguration().default_data_pipe_capacity_bytes};
+      static_cast<uint32_t>(
+          GetConfiguration().default_data_pipe_capacity_bytes)};
   return result;
 }
 
