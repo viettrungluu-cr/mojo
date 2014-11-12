@@ -35,13 +35,13 @@ source_set("content_handler") {
 
 source_set("test_support") {
   testonly = true
-  sources = [ "application_test_main_chromium.cc", ]
+  sources = [ "application_test_main_chromium.cc" ]
 
-  public_deps = [
-    "//mojo/public/cpp/application:test_support",
-  ]
+  public_deps = [ "//mojo/public/cpp/application:test_support" ]
   deps = [
     "//base",
     "//mojo/environment:chromium",
+    "//mojo/public/cpp/application",
+    "//mojo/public/cpp/system",
   ]
 }
