@@ -61,5 +61,6 @@ v8.log
 /tools/gn/bin/win
 /tools/grit
 /v8
+/dart
 /webkit/Debug
 /webkit/Release
