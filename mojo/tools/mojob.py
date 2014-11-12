@@ -134,10 +134,6 @@ def run_skytests(args):
 
 
 def run_pytests(args):
-  if platform.system() == 'Windows':
-    print ('pytests aren\'t supported on Windows because the Python bindings '
-           'aren\'t build there.')
-    return
   out_dir = get_out_dir(args)
   print 'Running python tests in %s ...' % out_dir
   command = ['python']
@@ -145,6 +141,10 @@ def run_pytests(args):
   exit_code = subprocess.call(command)
   if exit_code:
     return exit_code
+
+  if platform.system() != 'Linux':
+    print ('Python bindings tests are only supported on Linux.')
+    return
 
   command = ['python']
   command.append(os.path.join('mojo', 'tools',
