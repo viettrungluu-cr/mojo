@@ -26,6 +26,9 @@ group("mojo") {
     deps += [ "//mojo/public/tools:copy_mojo_shell" ]
   } else {
     deps += [ "//mojo/shell:mojo_shell" ]
+    if (is_android) {
+      deps += [ "//mojo/shell:mojo_shell_apk" ]
+    }
   }
 
   if (is_android) {
