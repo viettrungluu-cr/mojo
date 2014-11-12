@@ -329,6 +329,10 @@ void WindowManagerApp::Unregister(View* view) {
   view_id_to_view_target_map_.erase(it);
 }
 
+void WindowManagerApp::DispatchInputEventToView(View* view, EventPtr event) {
+  window_manager_client_->DispatchInputEventToView(view->id(), event.Pass());
+}
+
 void WindowManagerApp::SetViewportSize(const gfx::Size& size) {
   window_manager_client_->SetViewportSize(Size::From(size));
 }

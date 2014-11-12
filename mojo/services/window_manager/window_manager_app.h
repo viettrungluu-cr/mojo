@@ -71,6 +71,7 @@ class WindowManagerApp : public ApplicationDelegate,
   void FocusWindow(Id view);
   void ActivateWindow(Id view);
 
+  void DispatchInputEventToView(View* view, EventPtr event);
   void SetViewportSize(const gfx::Size& size);
 
   bool IsReady() const;
