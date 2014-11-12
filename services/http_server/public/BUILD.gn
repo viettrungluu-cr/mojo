@@ -17,4 +17,8 @@ source_set("util") {
     "http_server_util.cc",
     "http_server_util.h",
   ]
+
+  deps = [
+    ":public",
+  ]
 }
