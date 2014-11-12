@@ -67,10 +67,10 @@ test("unittests") {
   deps = [
     ":network",
     "//base",
+    "//base/test:run_all_unittests",
     "//base/test:test_support",
     "//mojo/application_manager",
     "//mojo/edk/system",
-    "//mojo/edk/test:run_all_unittests",
     "//mojo/environment:chromium",
     "//mojo/services/public/cpp/network",
     "//mojo/services/public/interfaces/network",

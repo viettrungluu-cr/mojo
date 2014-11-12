@@ -75,6 +75,8 @@ system::Core* g_core = nullptr;
 }  // namespace internal
 
 void Init(scoped_ptr<PlatformSupport> platform_support) {
+  // TODO(vtl): Uncomment after fixing Python bindings tests. crbug.com/432670
+  // DCHECK(!internal::g_core);
   internal::g_core = new system::Core(platform_support.Pass());
 }
 
