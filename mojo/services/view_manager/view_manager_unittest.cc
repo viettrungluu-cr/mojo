@@ -189,7 +189,7 @@ class ViewManagerProxy : public TestChangeTracker::Delegate {
     view_manager_->Embed(
         url,
         view_id,
-        services.Pass(),
+        MakeRequest<ServiceProvider>(services.PassMessagePipe()),
         base::Bind(
             &ViewManagerProxy::GotResult, base::Unretained(this), &result));
     RunMainLoop();

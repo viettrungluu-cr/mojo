@@ -537,11 +537,8 @@ void ViewManagerServiceImpl::SetViewProperty(
 void ViewManagerServiceImpl::Embed(
     const String& url,
     Id transport_view_id,
-    ServiceProviderPtr service_provider,
+    InterfaceRequest<ServiceProvider> service_provider,
     const Callback<void(bool)>& callback) {
-  InterfaceRequest<ServiceProvider> spir;
-  spir.Bind(service_provider.PassMessagePipe());
-
   const ServerView* view = GetView(ViewIdFromTransportId(transport_view_id));
   if (!view || !access_policy_->CanEmbed(view)) {
     callback.Run(false);
@@ -560,7 +557,8 @@ void ViewManagerServiceImpl::Embed(
     connection_manager_->OnConnectionMessagedClient(id_);
     existing_owner->RemoveRoot();
   }
-  connection_manager_->EmbedAtView(id_, url, transport_view_id, spir.Pass());
+  connection_manager_->EmbedAtView(id_, url, transport_view_id,
+                                   service_provider.Pass());
   callback.Run(true);
 }
 

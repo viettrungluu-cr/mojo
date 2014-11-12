@@ -178,7 +178,7 @@ class ViewManagerServiceImpl
                        const Callback<void(bool)>& callback) override;
   void Embed(const String& url,
              Id view_id,
-             ServiceProviderPtr service_provider,
+             InterfaceRequest<ServiceProvider> service_provider,
              const Callback<void(bool)>& callback) override;
 
   // AccessPolicyDelegate:

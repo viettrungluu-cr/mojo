@@ -63,9 +63,9 @@ bool Embed(ViewManagerService* vm, Id root_id) {
   bool result = false;
   base::RunLoop run_loop;
   {
-    ServiceProviderPtr services;
+    ServiceProviderPtr sp;
     vm->Embed("mojo:view_manager_server_apptests", root_id,
-              services.Pass(),
+              MakeRequest<ServiceProvider>(sp.PassMessagePipe()),
               base::Bind(&BoolResultCallback, &run_loop, &result));
   }
   run_loop.Run();

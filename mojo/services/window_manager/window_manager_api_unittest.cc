@@ -164,9 +164,9 @@ class WindowManagerApiTest : public testing::Test {
     base::RunLoop run_loop;
     ServiceProviderPtr sp;
     BindToProxy(new ServiceProviderImpl, &sp);
-    window_manager_->Embed(url,
-                           MakeRequest<ServiceProvider>(sp.PassMessagePipe())),
-        run_loop.Run();
+    window_manager_->Embed(
+      url, MakeRequest<ServiceProvider>(sp.PassMessagePipe()));
+    run_loop.Run();
     return WaitForEmbed();
   }
 
