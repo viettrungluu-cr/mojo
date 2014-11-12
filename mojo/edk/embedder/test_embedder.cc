@@ -18,10 +18,10 @@ namespace mojo {
 namespace system {
 namespace internal {
 
-bool ShutdownCheckNoLeaks(Core* core_impl) {
+bool ShutdownCheckNoLeaks(Core* core) {
   // No point in taking the lock.
   const HandleTable::HandleToEntryMap& handle_to_entry_map =
-      core_impl->handle_table_.handle_to_entry_map_;
+      core->handle_table_.handle_to_entry_map_;
 
   if (handle_to_entry_map.empty())
     return true;

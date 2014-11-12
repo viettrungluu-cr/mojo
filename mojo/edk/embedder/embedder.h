@@ -12,7 +12,7 @@
 #include "mojo/edk/embedder/channel_info_forward.h"
 #include "mojo/edk/embedder/scoped_platform_handle.h"
 #include "mojo/edk/system/system_impl_export.h"
-#include "mojo/public/cpp/system/core.h"
+#include "mojo/public/cpp/system/message_pipe.h"
 
 namespace mojo {
 namespace embedder {

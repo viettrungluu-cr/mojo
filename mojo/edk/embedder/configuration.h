@@ -14,7 +14,7 @@ namespace embedder {
 // be consistent across all processes on the same system.
 //
 // In general, there should be no need to change these values from their
-// defaults. However, if you do change them, this must do so before
+// defaults. However, if you do change them, you must do so before
 // initialization.
 struct Configuration {
   // Maximum number of open (Mojo) handles. The default is 1,000,000.
@@ -26,7 +26,7 @@ struct Configuration {
   // Maximum number of active memory mappings. The default is 1,000,000.
   size_t max_mapping_table_sze;
 
-  // Upper limit of |MojoWaitMany()|'s |num_handles|.  The default is 1,000,000.
+  // Upper limit of |MojoWaitMany()|'s |num_handles|. The default is 1,000,000.
   // Must be same as or smaller than |max_handle_table_size|.
   size_t max_wait_many_num_handles;
 
@@ -38,9 +38,9 @@ struct Configuration {
   // message pipes. The default is 10,000.
   size_t max_message_num_handles;
 
-  // Maximum capacity of a data pipe, in bytes.  The default is 256MB. This
-  // value must fit into a |uint32_t|.  WARNING: If you bump it closer to 2^32,
-  // you must audit all the code to check that we don't overflow (2^31 would
+  // Maximum capacity of a data pipe, in bytes. The default is 256MB. This value
+  // must fit into a |uint32_t|. WARNING: If you bump it closer to 2^32, you
+  // must audit all the code to check that we don't overflow (2^31 would
   // definitely be risky; up to 2^30 is probably okay).
   size_t max_data_pipe_capacity_bytes;
 

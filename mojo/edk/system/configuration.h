@@ -9,10 +9,9 @@
 
 namespace mojo {
 namespace system {
+
 namespace internal {
-
 extern embedder::Configuration g_configuration;
-
 }  // namespace internal
 
 inline const embedder::Configuration& GetConfiguration() {

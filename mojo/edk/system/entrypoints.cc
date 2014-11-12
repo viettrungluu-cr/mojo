@@ -4,7 +4,6 @@
 
 #include "mojo/edk/system/entrypoints.h"
 
-#include "base/logging.h"
 #include "mojo/edk/system/core.h"
 #include "mojo/public/c/system/buffer.h"
 #include "mojo/public/c/system/data_pipe.h"
