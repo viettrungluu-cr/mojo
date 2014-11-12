@@ -5,6 +5,7 @@
 group("dart") {
   deps = [
     ":testing",
+    ":init_library",
   ]
 }
 
@@ -12,9 +13,44 @@ group("dart") {
 copy("testing") {
   sources = [
     "test/codec_test.dart",
+    "test/core_test.dart",
     "testing/expect.dart",
   ]
   outputs = [
     "{{source_gen_dir}}/{{source_file_part}}"
+  ]
+}
+
+
+group("init_library") {
+  deps = [
+    ":mojo_dart_init",
+    ":copy_init_library",
+  ]
+}
+
+
+shared_library("mojo_dart_init") {
+  defines = ["DART_SHARED_LIB"]
+  sources = [
+    "system/mojo_dart_init.cc",
+  ]
+  deps = [
+    "//mojo/edk/system",
+  ]
+}
+
+
+# This library is copied alongside the Dart sources so that it can be found
+# under the Dart package root.
+copy("copy_init_library") {
+  sources = [
+    "$root_out_dir/libmojo_dart_init.so",
+  ]
+  outputs = [
+    "$root_out_dir/gen/mojo/public/dart/src/libmojo_dart_init.so"
+  ]
+  deps =[
+    ":mojo_dart_init"
   ]
 }
