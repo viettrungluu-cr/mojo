@@ -21,10 +21,10 @@ public class MojoMain {
     /**
      * Initializes the native system.
      **/
-    public static void ensureInitialized(Context context) {
+    public static void ensureInitialized(Context applicationContext) {
         if (sInitialized)
             return;
-        nativeInit(context);
+        nativeInit(applicationContext);
         sInitialized = true;
     }
 
