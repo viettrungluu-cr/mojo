@@ -12,23 +12,6 @@ config("system_config") {
 component("system") {
   output_name = "mojo_system_impl"
 
-  public_deps = [
-    "//mojo/edk/embedder",
-    "//mojo/public/c/system",
-  ]
-
-  deps = [
-    "//base",
-    "//base/third_party/dynamic_annotations",
-  ]
-
-  defines = [
-    "MOJO_SYSTEM_IMPL_IMPLEMENTATION",
-    "MOJO_SYSTEM_IMPLEMENTATION",
-  ]
-
-  all_dependent_configs = [ ":system_config" ]
-
   sources = [
     "channel.cc",
     "channel.h",
@@ -94,19 +77,30 @@ component("system") {
     "waiter_list.cc",
     "waiter_list.h",
   ]
+
+  defines = [
+    "MOJO_SYSTEM_IMPL_IMPLEMENTATION",
+    "MOJO_SYSTEM_IMPLEMENTATION",
+  ]
+
+  all_dependent_configs = [ ":system_config" ]
+
+  public_deps = [
+    "//mojo/edk/embedder",
+    "//mojo/edk/embedder:platform",
+    "//mojo/public/c/system",
+  ]
+
+  deps = [
+    "//base",
+    "//base/third_party/dynamic_annotations",
+  ]
+
+  allow_circular_includes_from = [ "//mojo/edk/embedder" ]
 }
 
 # GYP version: mojo/edk/mojo_edk.gyp:mojo_system_unittests
 test("mojo_system_unittests") {
-  deps = [
-    ":system",
-    "//base",
-    "//base/test:test_support",
-    "//mojo/edk/embedder:embedder_unittests",
-    "//mojo/edk/test:test_support",
-    "//testing/gtest",
-  ]
-
   sources = [
     "../test/multiprocess_test_helper_unittest.cc",
     "channel_endpoint_id_unittest.cc",
@@ -130,6 +124,7 @@ test("mojo_system_unittests") {
     "run_all_unittests.cc",
     "shared_buffer_dispatcher_unittest.cc",
     "simple_dispatcher_unittest.cc",
+    # TODO(vtl): Factor test_utils.* into their own source set.
     "test_utils.cc",
     "test_utils.h",
     "waiter_list_unittest.cc",
@@ -137,10 +132,29 @@ test("mojo_system_unittests") {
     "waiter_test_utils.h",
     "waiter_unittest.cc",
   ]
+
+  deps = [
+    ":system",
+    "//base",
+    "//base/test:test_support",
+    "//mojo/edk/embedder:embedder_unittests",
+    "//mojo/edk/test:test_support",
+    "//testing/gtest",
+  ]
+
+  allow_circular_includes_from = [ "//mojo/edk/embedder:embedder_unittests" ]
 }
 
 # GYP version: mojo/edk/mojo_edk.gyp:mojo_message_pipe_perftests
 test("mojo_message_pipe_perftests") {
+  sources = [
+    "message_pipe_perftest.cc",
+    "message_pipe_test_utils.h",
+    "message_pipe_test_utils.cc",
+    "test_utils.cc",
+    "test_utils.h",
+  ]
+
   deps = [
     ":system",
     "//base",
@@ -148,13 +162,5 @@ test("mojo_message_pipe_perftests") {
     "//base/test:test_support_perf",
     "//mojo/edk/test:test_support",
     "//testing/gtest",
-  ]
-
-  sources = [
-    "message_pipe_perftest.cc",
-    "message_pipe_test_utils.h",
-    "message_pipe_test_utils.cc",
-    "test_utils.cc",
-    "test_utils.h",
   ]
 }

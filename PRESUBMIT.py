@@ -444,6 +444,7 @@ def _CheckGNCheck(input_api, output_api):
     # TODO(eseidel): Currently only these are known to pass,
     # once everything passes we can just call 'gn check' once without a filter!
     KNOWN_PASSING = [
+      '//mojo/edk/embedder/*',
       '//mojo/edk/system/*',
       '//mojo/edk/test/*',
       '//mojo/public/*',

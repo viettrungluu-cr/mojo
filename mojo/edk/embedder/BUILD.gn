@@ -3,20 +3,9 @@
 # found in the LICENSE file.
 
 source_set("embedder") {
-  # This isn't really a standalone target, it must be linked into the
+  # This isn't really a standalone target; it must be linked into the
   # mojo_system_impl component.
   visibility = [ "//mojo/edk/system" ]
-
-  public_deps = [ "//mojo/public/cpp/system" ]
-
-  deps = [ "//base" ]
-
-  defines = [
-    "MOJO_SYSTEM_IMPL_IMPLEMENTATION",
-    "MOJO_SYSTEM_IMPLEMENTATION",
-  ]
-
-  configs += [ "//mojo/edk/system:system_config" ]
 
   sources = [
     "channel_info_forward.h",
@@ -25,6 +14,38 @@ source_set("embedder") {
     "configuration.h",
     "embedder.cc",
     "embedder.h",
+    # Test-only code:
+    # TODO(vtl): It's a little unfortunate that these end up in the same
+    # component as non-test-only code. In the static build, this code should
+    # hopefully be dead-stripped.
+    "test_embedder.cc",
+    "test_embedder.h",
+  ]
+
+  defines = [
+    "MOJO_SYSTEM_IMPL_IMPLEMENTATION",
+    "MOJO_SYSTEM_IMPLEMENTATION",
+  ]
+
+  configs += [ "//mojo/edk/system:system_config" ]
+
+  public_deps = [
+    ":platform",
+    "//mojo/public/cpp/system",
+  ]
+
+  deps = [ "//base" ]
+}
+
+source_set("platform") {
+  # This isn't really a standalone target; it must be linked into the
+  # mojo_system_impl component.
+  visibility = [
+    ":embedder",
+    "//mojo/edk/system",
+  ]
+
+  sources = [
     "platform_channel_pair.cc",
     "platform_channel_pair.h",
     "platform_channel_pair_posix.cc",
@@ -46,19 +67,24 @@ source_set("embedder") {
     "simple_platform_shared_buffer_win.cc",
     "simple_platform_support.cc",
     "simple_platform_support.h",
-    # Test-only code:
-    # TODO(vtl): It's a little unfortunate that these end up in the same
-    # component as non-test-only code. In the static build, this code should
-    # hopefully be dead-stripped.
-    "test_embedder.cc",
-    "test_embedder.h",
   ]
+
+  defines = [ "MOJO_SYSTEM_IMPL_IMPLEMENTATION" ]
+
+  configs += [ "//mojo/edk/system:system_config" ]
+
+  deps = [ "//base" ]
 }
 
 source_set("embedder_unittests") {
   testonly = true
   visibility = [ "//mojo/edk/system:mojo_system_unittests" ]
-  testonly = true
+
+  sources = [
+    "embedder_unittest.cc",
+    "platform_channel_pair_posix_unittest.cc",
+    "simple_platform_shared_buffer_unittest.cc",
+  ]
 
   deps = [
     "//base",
@@ -66,11 +92,5 @@ source_set("embedder_unittests") {
     "//mojo/edk/test:test_support",
     "//mojo/edk/system",
     "//testing/gtest",
-  ]
-
-  sources = [
-    "embedder_unittest.cc",
-    "platform_channel_pair_posix_unittest.cc",
-    "simple_platform_shared_buffer_unittest.cc",
   ]
 }
