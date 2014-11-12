@@ -28,8 +28,7 @@ bool ShutdownCheckNoLeaks(Core* core) {
 
   for (HandleTable::HandleToEntryMap::const_iterator it =
            handle_to_entry_map.begin();
-       it != handle_to_entry_map.end();
-       ++it) {
+       it != handle_to_entry_map.end(); ++it) {
     LOG(ERROR) << "Mojo embedder shutdown: Leaking handle " << (*it).first;
   }
   return false;

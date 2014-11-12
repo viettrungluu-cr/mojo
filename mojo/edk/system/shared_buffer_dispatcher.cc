@@ -163,8 +163,8 @@ MojoResult SharedBufferDispatcher::ValidateDuplicateOptions(
   if (!reader.is_valid())
     return MOJO_RESULT_INVALID_ARGUMENT;
 
-  if (!OPTIONS_STRUCT_HAS_MEMBER(
-          MojoDuplicateBufferHandleOptions, flags, reader))
+  if (!OPTIONS_STRUCT_HAS_MEMBER(MojoDuplicateBufferHandleOptions, flags,
+                                 reader))
     return MOJO_RESULT_OK;
   if ((reader.options().flags & ~kKnownFlags))
     return MOJO_RESULT_UNIMPLEMENTED;

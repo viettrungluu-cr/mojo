@@ -43,8 +43,8 @@ struct MessageInTransit::PrivateStructForCompileAsserts {
 MessageInTransit::View::View(size_t message_size, const void* buffer)
     : buffer_(buffer) {
   size_t next_message_size = 0;
-  DCHECK(MessageInTransit::GetNextMessageSize(
-      buffer_, message_size, &next_message_size));
+  DCHECK(MessageInTransit::GetNextMessageSize(buffer_, message_size,
+                                              &next_message_size));
   DCHECK_EQ(message_size, next_message_size);
   // This should be equivalent.
   DCHECK_EQ(message_size, total_size());
@@ -72,10 +72,9 @@ bool MessageInTransit::View::IsValid(size_t serialized_platform_handle_size,
   }
 
   if (transport_data_buffer_size() > 0) {
-    const char* e =
-        TransportData::ValidateBuffer(serialized_platform_handle_size,
-                                      transport_data_buffer(),
-                                      transport_data_buffer_size());
+    const char* e = TransportData::ValidateBuffer(
+        serialized_platform_handle_size, transport_data_buffer(),
+        transport_data_buffer_size());
     if (e) {
       *error_message = e;
       return false;
@@ -95,8 +94,7 @@ MessageInTransit::MessageInTransit(Type type,
   ConstructorHelper(type, subtype, num_bytes);
   if (bytes) {
     memcpy(MessageInTransit::bytes(), bytes, num_bytes);
-    memset(static_cast<char*>(MessageInTransit::bytes()) + num_bytes,
-           0,
+    memset(static_cast<char*>(MessageInTransit::bytes()) + num_bytes, 0,
            main_buffer_size_ - sizeof(Header) - num_bytes);
   } else {
     memset(MessageInTransit::bytes(), 0, main_buffer_size_ - sizeof(Header));

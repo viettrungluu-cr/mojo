@@ -72,8 +72,7 @@ void Channel::Shutdown() {
   size_t num_live = 0;
   size_t num_zombies = 0;
   for (IdToEndpointMap::iterator it = to_destroy.begin();
-       it != to_destroy.end();
-       ++it) {
+       it != to_destroy.end(); ++it) {
     if (it->second.get()) {
       num_live++;
       it->second->OnDisconnect();
@@ -131,8 +130,7 @@ ChannelEndpointId Channel::AttachAndRunEndpoint(
 
   if (!is_bootstrap) {
     if (!SendControlMessage(
-            MessageInTransit::kSubtypeChannelAttachAndRunEndpoint,
-            local_id,
+            MessageInTransit::kSubtypeChannelAttachAndRunEndpoint, local_id,
             remote_id)) {
       HandleLocalError(base::StringPrintf(
           "Failed to send message to run remote message pipe endpoint (local "
@@ -196,8 +194,7 @@ void Channel::DetachEndpoint(ChannelEndpoint* endpoint,
   }
 
   if (!SendControlMessage(
-          MessageInTransit::kSubtypeChannelRemoveMessagePipeEndpoint,
-          local_id,
+          MessageInTransit::kSubtypeChannelRemoveMessagePipeEndpoint, local_id,
           remote_id)) {
     HandleLocalError(base::StringPrintf(
         "Failed to send message to remove remote message pipe endpoint (local "
@@ -470,8 +467,7 @@ bool Channel::OnRemoveMessagePipeEndpoint(ChannelEndpointId local_id,
 
   if (!SendControlMessage(
           MessageInTransit::kSubtypeChannelRemoveMessagePipeEndpointAck,
-          local_id,
-          remote_id)) {
+          local_id, remote_id)) {
     HandleLocalError(base::StringPrintf(
         "Failed to send message to remove remote message pipe endpoint ack "
         "(local ID %u, remote ID %u)",

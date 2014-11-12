@@ -52,15 +52,15 @@ MojoResult DataPipe::ValidateCreateOptions(
 
   // Checks for fields beyond |flags|:
 
-  if (!OPTIONS_STRUCT_HAS_MEMBER(
-          MojoCreateDataPipeOptions, element_num_bytes, reader))
+  if (!OPTIONS_STRUCT_HAS_MEMBER(MojoCreateDataPipeOptions, element_num_bytes,
+                                 reader))
     return MOJO_RESULT_OK;
   if (reader.options().element_num_bytes == 0)
     return MOJO_RESULT_INVALID_ARGUMENT;
   out_options->element_num_bytes = reader.options().element_num_bytes;
 
-  if (!OPTIONS_STRUCT_HAS_MEMBER(
-          MojoCreateDataPipeOptions, capacity_num_bytes, reader) ||
+  if (!OPTIONS_STRUCT_HAS_MEMBER(MojoCreateDataPipeOptions, capacity_num_bytes,
+                                 reader) ||
       reader.options().capacity_num_bytes == 0) {
     // Round the default capacity down to a multiple of the element size (but at
     // least one element).
@@ -155,8 +155,8 @@ MojoResult DataPipe::ProducerBeginWriteData(
       return MOJO_RESULT_INVALID_ARGUMENT;
   }
 
-  MojoResult rv = ProducerBeginWriteDataImplNoLock(
-      buffer, buffer_num_bytes, min_num_bytes_to_write);
+  MojoResult rv = ProducerBeginWriteDataImplNoLock(buffer, buffer_num_bytes,
+                                                   min_num_bytes_to_write);
   if (rv != MOJO_RESULT_OK)
     return rv;
   // Note: No need to awake producer waiters, even though we're going from
@@ -352,8 +352,8 @@ MojoResult DataPipe::ConsumerBeginReadData(
       return MOJO_RESULT_INVALID_ARGUMENT;
   }
 
-  MojoResult rv = ConsumerBeginReadDataImplNoLock(
-      buffer, buffer_num_bytes, min_num_bytes_to_read);
+  MojoResult rv = ConsumerBeginReadDataImplNoLock(buffer, buffer_num_bytes,
+                                                  min_num_bytes_to_read);
   if (rv != MOJO_RESULT_OK)
     return rv;
   DCHECK(consumer_in_two_phase_read_no_lock());

@@ -117,12 +117,11 @@ class MOJO_SYSTEM_IMPL_EXPORT DataPipe
 
   virtual void ConsumerCloseImplNoLock() = 0;
   // |*num_bytes| will be a nonzero multiple of |element_num_bytes_|.
-  virtual MojoResult ConsumerReadDataImplNoLock(
-      UserPointer<void> elements,
-      UserPointer<uint32_t> num_bytes,
-      uint32_t max_num_bytes_to_read,
-      uint32_t min_num_bytes_to_read,
-      bool peek) = 0;
+  virtual MojoResult ConsumerReadDataImplNoLock(UserPointer<void> elements,
+                                                UserPointer<uint32_t> num_bytes,
+                                                uint32_t max_num_bytes_to_read,
+                                                uint32_t min_num_bytes_to_read,
+                                                bool peek) = 0;
   virtual MojoResult ConsumerDiscardDataImplNoLock(
       UserPointer<uint32_t> num_bytes,
       uint32_t max_num_bytes_to_discard,

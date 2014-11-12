@@ -58,8 +58,8 @@ bool Dispatcher::TransportDataAccess::EndSerializeAndClose(
     size_t* actual_size,
     embedder::PlatformHandleVector* platform_handles) {
   DCHECK(dispatcher);
-  return dispatcher->EndSerializeAndClose(
-      channel, destination, actual_size, platform_handles);
+  return dispatcher->EndSerializeAndClose(channel, destination, actual_size,
+                                          platform_handles);
 }
 
 // static
@@ -130,8 +130,8 @@ MojoResult Dispatcher::ReadMessage(UserPointer<void> bytes,
   if (is_closed_)
     return MOJO_RESULT_INVALID_ARGUMENT;
 
-  return ReadMessageImplNoLock(
-      bytes, num_bytes, dispatchers, num_dispatchers, flags);
+  return ReadMessageImplNoLock(bytes, num_bytes, dispatchers, num_dispatchers,
+                               flags);
 }
 
 MojoResult Dispatcher::WriteData(UserPointer<const void> elements,
@@ -474,8 +474,8 @@ bool Dispatcher::EndSerializeAndClose(
   base::AutoLock locker(lock_);
 #endif
 
-  return EndSerializeAndCloseImplNoLock(
-      channel, destination, actual_size, platform_handles);
+  return EndSerializeAndCloseImplNoLock(channel, destination, actual_size,
+                                        platform_handles);
 }
 
 // DispatcherTransport ---------------------------------------------------------

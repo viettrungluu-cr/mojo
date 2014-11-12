@@ -126,13 +126,11 @@ ScopedMessagePipeHandle CreateChannel(
   channel_info->channel_thread_task_runner = io_thread_task_runner;
 
   if (rv.is_valid()) {
-    io_thread_task_runner->PostTask(FROM_HERE,
-                                    base::Bind(&CreateChannelHelper,
-                                               base::Passed(&platform_handle),
-                                               base::Passed(&channel_info),
-                                               channel_endpoint,
-                                               callback,
-                                               callback_thread_task_runner));
+    io_thread_task_runner->PostTask(
+        FROM_HERE,
+        base::Bind(&CreateChannelHelper, base::Passed(&platform_handle),
+                   base::Passed(&channel_info), channel_endpoint, callback,
+                   callback_thread_task_runner));
   } else {
     (callback_thread_task_runner.get() ? callback_thread_task_runner
                                        : io_thread_task_runner)

@@ -182,8 +182,8 @@ MojoResult MessagePipeDispatcher::WriteMessageImplNoLock(
   if (num_bytes > GetConfiguration().max_message_num_bytes)
     return MOJO_RESULT_RESOURCE_EXHAUSTED;
 
-  return message_pipe_->WriteMessage(
-      port_, bytes, num_bytes, transports, flags);
+  return message_pipe_->WriteMessage(port_, bytes, num_bytes, transports,
+                                     flags);
 }
 
 MojoResult MessagePipeDispatcher::ReadMessageImplNoLock(
@@ -193,8 +193,8 @@ MojoResult MessagePipeDispatcher::ReadMessageImplNoLock(
     uint32_t* num_dispatchers,
     MojoReadMessageFlags flags) {
   lock().AssertAcquired();
-  return message_pipe_->ReadMessage(
-      port_, bytes, num_bytes, dispatchers, num_dispatchers, flags);
+  return message_pipe_->ReadMessage(port_, bytes, num_bytes, dispatchers,
+                                    num_dispatchers, flags);
 }
 
 HandleSignalsState MessagePipeDispatcher::GetHandleSignalsStateImplNoLock()
@@ -209,8 +209,8 @@ MojoResult MessagePipeDispatcher::AddWaiterImplNoLock(
     uint32_t context,
     HandleSignalsState* signals_state) {
   lock().AssertAcquired();
-  return message_pipe_->AddWaiter(
-      port_, waiter, signals, context, signals_state);
+  return message_pipe_->AddWaiter(port_, waiter, signals, context,
+                                  signals_state);
 }
 
 void MessagePipeDispatcher::RemoveWaiterImplNoLock(

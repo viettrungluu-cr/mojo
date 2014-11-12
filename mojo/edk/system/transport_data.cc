@@ -149,10 +149,7 @@ TransportData::TransportData(scoped_ptr<DispatcherVector> dispatchers,
     void* destination = buffer_.get() + current_offset;
     size_t actual_size = 0;
     if (Dispatcher::TransportDataAccess::EndSerializeAndClose(
-            dispatcher,
-            channel,
-            destination,
-            &actual_size,
+            dispatcher, channel, destination, &actual_size,
             platform_handles_.get())) {
       handle_table[i].type = static_cast<int32_t>(dispatcher->GetType());
       handle_table[i].offset = static_cast<uint32_t>(current_offset);
