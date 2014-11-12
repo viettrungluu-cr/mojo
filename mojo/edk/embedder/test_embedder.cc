@@ -8,7 +8,7 @@
 #include "base/macros.h"
 #include "base/memory/scoped_ptr.h"
 #include "mojo/edk/embedder/embedder.h"
-#include "mojo/edk/embedder/entrypoints.h"
+#include "mojo/edk/embedder/embedder_internal.h"
 #include "mojo/edk/embedder/simple_platform_support.h"
 #include "mojo/edk/system/core.h"
 #include "mojo/edk/system/handle_table.h"
@@ -46,9 +46,9 @@ void InitWithSimplePlatformSupport() {
 }
 
 bool Shutdown() {
-  system::Core* core = internal::GetCore();
+  system::Core* core = internal::g_core;
   CHECK(core);
-  internal::SetCore(nullptr);
+  internal::g_core = nullptr;
 
   bool rv = system::internal::ShutdownCheckNoLeaks(core);
   delete core;

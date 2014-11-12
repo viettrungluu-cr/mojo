@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#ifndef MOJO_EDK_EMBEDDER_ENTRYPOINTS_H_
-#define MOJO_EDK_EMBEDDER_ENTRYPOINTS_H_
+#ifndef MOJO_EDK_EMBEDDER_EMBEDDER_INTERNAL_H_
+#define MOJO_EDK_EMBEDDER_EMBEDDER_INTERNAL_H_
 
 namespace mojo {
 
@@ -14,15 +14,12 @@ class Core;
 namespace embedder {
 namespace internal {
 
-// Sets the instance of |Core| used by the system functions.
-void SetCore(system::Core* core);
-
-// Gets the instance of |Core| used by the system functions.
-system::Core* GetCore();
+// Instance of |Core| used by the system functions (|Mojo...()|).
+extern system::Core* g_core;
 
 }  // namespace internal
 }  // namepace embedder
 
 }  // namespace mojo
 
-#endif  // MOJO_EDK_EMBEDDER_ENTRYPOINTS_H_
+#endif  // MOJO_EDK_EMBEDDER_EMBEDDER_INTERNAL_H_
