@@ -1292,7 +1292,27 @@ TEST_F(ViewManagerServerAppTest, OnEmbeddedAppDisconnected) {
             SingleChangeToDescription(*changes2()));
 }
 
-// Verifies ViewManagerServiceImpl doesn't incorrectly erase from it's internal
+// Verifies when the parent of an Embed() is destroyed the embedded app gets
+// a ViewDeleted (and doesn't trigger a DCHECK).
+TEST_F(ViewManagerServerAppTest, OnParentOfEmbedDisconnects) {
+  // Create connection 2 and 3.
+  ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(true));
+  ASSERT_TRUE(AddView(vm1(), BuildViewId(0, 1), BuildViewId(1, 1)));
+  ASSERT_TRUE(CreateView(vm2(), BuildViewId(2, 2)));
+  ASSERT_TRUE(AddView(vm2(), BuildViewId(1, 1), BuildViewId(2, 2)));
+  ASSERT_TRUE(CreateView(vm2(), BuildViewId(2, 3)));
+  ASSERT_TRUE(AddView(vm2(), BuildViewId(2, 2), BuildViewId(2, 3)));
+  changes2()->clear();
+  ASSERT_NO_FATAL_FAILURE(EstablishThirdConnection(vm2(), BuildViewId(2, 3)));
+  changes3()->clear();
+
+  // Close connection 2. Connection 3 should get a delete (for its root).
+  vm_client2_.reset();
+  vm_client3_->WaitForChangeCount(1);
+  EXPECT_EQ("ViewDeleted view=2,3", SingleChangeToDescription(*changes3()));
+}
+
+// Verifies ViewManagerServiceImpl doesn't incorrectly erase from its internal
 // map when a view from another connection with the same view_id is removed.
 TEST_F(ViewManagerServerAppTest, DontCleanMapOnDestroy) {
   ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(true));
@@ -1306,9 +1326,6 @@ TEST_F(ViewManagerServerAppTest, DontCleanMapOnDestroy) {
   GetViewTree(vm1(), BuildViewId(1, 1), &views);
   EXPECT_FALSE(views.empty());
 }
-
-// TODO(sky): add coverage of test that destroys connections and ensures other
-// connections get deletion notification.
 
 // TODO(sky): need to better track changes to initial connection. For example,
 // that SetBounsdViews/AddView and the like don't result in messages to the

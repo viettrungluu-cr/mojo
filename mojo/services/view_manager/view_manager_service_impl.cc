@@ -77,6 +77,8 @@ void ViewManagerServiceImpl::OnWillDestroyViewManagerServiceImpl(
     client()->OnEmbeddedAppDisconnected(
         ViewIdToTransportId(*connection->root_));
   }
+  if (root_.get() && root_->connection_id == connection->id())
+    root_.reset();
 }
 
 void ViewManagerServiceImpl::ProcessViewBoundsChanged(
@@ -365,10 +367,7 @@ void ViewManagerServiceImpl::NotifyDrawnStateChanged(const ServerView* view,
     return;
 
   const ServerView* root = GetView(*root_);
-  // TODO(sky): Find out why this DCHECK gets hit when running
-  // sky/tools/skydb sky/tests/lowlevel/iframe.sky
-  // http://crbug.com/432658
-  // DCHECK(root);
+  DCHECK(root);
   if (view->Contains(root) &&
       (new_drawn_value != root->IsDrawn(connection_manager_->root()))) {
     client()->OnViewDrawnStateChanged(ViewIdToTransportId(root->id()),
