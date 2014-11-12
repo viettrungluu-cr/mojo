@@ -11,3 +11,10 @@ mojom("public") {
     "http_server.mojom",
   ]
 }
+
+source_set("util") {
+  sources = [
+    "http_server_util.cc",
+    "http_server_util.h",
+  ]
+}

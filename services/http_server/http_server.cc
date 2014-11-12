@@ -19,12 +19,15 @@
 #include "mojo/public/cpp/application/application_delegate.h"
 #include "mojo/public/cpp/application/application_impl.h"
 #include "mojo/public/cpp/application/application_runner.h"
+#include "mojo/public/cpp/application/interface_factory.h"
 #include "mojo/public/cpp/environment/async_waiter.h"
 #include "mojo/public/cpp/system/data_pipe.h"
 #include "mojo/services/public/interfaces/network/network_service.mojom.h"
 #include "services/http_server/http_request_parser.h"
 #include "services/http_server/public/http_request.mojom.h"
 #include "services/http_server/public/http_response.mojom.h"
+#include "services/http_server/public/http_server.mojom.h"
+#include "services/http_server/public/http_server_util.h"
 #include "third_party/re2/re2/re2.h"
 
 namespace mojo {
@@ -32,8 +35,7 @@ namespace examples {
 
 class Connection;
 
-typedef base::Callback<HttpResponsePtr(
-    const HttpRequest& request)> HandleRequestCallback;
+typedef base::Callback<void(HttpRequestPtr, Connection*)> HandleRequestCallback;
 
 const char* GetHttpReasonPhrase(uint32_t code_in) {
   switch (code_in) {
@@ -54,7 +56,7 @@ class Connection {
  public:
   // Callback called when a request is parsed. Response should be sent
   // using Connection::SendResponse() on the |connection| argument.
-  typedef base::Callback<void(Connection*, const HttpRequest&)> Callback;
+  typedef base::Callback<void(Connection*, HttpRequestPtr)> Callback;
 
   Connection(TCPConnectedSocketPtr conn,
              ScopedDataPipeProducerHandle sender,
@@ -116,7 +118,6 @@ class Connection {
     uint32_t num_bytes = 0;
     result = ReadDataRaw(receiver_.get(), NULL, &num_bytes,
                          MOJO_READ_DATA_FLAG_QUERY);
-    printf("ReadDataRaw result = %d, num_bytes = %d\n", result, num_bytes);
     if (!num_bytes)
       return;
 
@@ -126,8 +127,7 @@ class Connection {
 
     request_parser_.ProcessChunk(reinterpret_cast<char*>(buffer.get()));
     if (request_parser_.ParseRequest() == HttpRequestParser::ACCEPTED) {
-      HttpRequestPtr http_request = request_parser_.GetRequest();
-      handle_request_callback_.Run(this, *http_request.get());
+      handle_request_callback_.Run(this, request_parser_.GetRequest());
     }
   }
 
@@ -235,35 +235,47 @@ class Connection {
   size_t response_offset_;
 };
 
-HttpResponsePtr CreateResponse(int code, const std::string& data) {
-  HttpResponsePtr response = HttpResponse::New();
-
-  ScopedDataPipeProducerHandle producer_handle;
-  MojoCreateDataPipeOptions options = {sizeof(MojoCreateDataPipeOptions),
-                                       MOJO_CREATE_DATA_PIPE_OPTIONS_FLAG_NONE,
-                                       1,
-                                       data.size()};
-  MojoResult result = CreateDataPipe(
-      &options, &producer_handle, &response->body);
-  DCHECK_EQ(MOJO_RESULT_OK, result);
-  uint32_t num_bytes = data.size();
-  result = WriteDataRaw(
-      producer_handle.get(), data.c_str(), &num_bytes,
-      MOJO_WRITE_DATA_FLAG_ALL_OR_NONE);
-  DCHECK_EQ(MOJO_RESULT_OK, result);
-  response->content_length = num_bytes;
-  return response.Pass();
+void FooHandler(HttpRequestPtr request, Connection* connection) {
+  connection->SendResponse(CreateHttpResponse(200, "Foo"));
 }
 
-HttpResponsePtr FooHandler(const HttpRequest& request) {
-  return CreateResponse(200, "Foo").Pass();
+void BarHandler(HttpRequestPtr request, Connection* connection) {
+  connection->SendResponse(CreateHttpResponse(200, "Bar"));
 }
 
-HttpResponsePtr BarHandler(const HttpRequest& request) {
-  return CreateResponse(200, "Bar").Pass();
-}
+class HttpServerApp;
 
-class HttpServerApp : public ApplicationDelegate {
+class HttpServerServiceImpl : public InterfaceImpl<HttpServerService> {
+ public:
+  HttpServerServiceImpl(ApplicationConnection* connection,
+                        HttpServerApp* app)
+      : app_(app) {}
+  virtual ~HttpServerServiceImpl();
+
+ private:
+  // HttpServerService:
+  void AddHandler(const mojo::String& path,
+                  const mojo::Callback<void(bool)>& callback) override;
+  void RemoveHandler(const mojo::String& path,
+                     const mojo::Callback<void(bool)>& callback) override;
+
+  void OnRequest(HttpRequestPtr request, Connection* connection) {
+    client()->OnHandleRequest(
+        request.Pass(),
+        base::Bind(&HttpServerServiceImpl::OnResponse, base::Unretained(this),
+                   connection));
+  }
+
+  void OnResponse(Connection* connection, HttpResponsePtr response) {
+    connection->SendResponse(response.Pass());
+  }
+
+  HttpServerApp* app_;
+  std::vector<std::string> paths_;
+};
+
+class HttpServerApp : public ApplicationDelegate,
+                      public InterfaceFactory<HttpServerService> {
  public:
   HttpServerApp() : weak_ptr_factory_(this) {}
   virtual void Initialize(ApplicationImpl* app) override {
@@ -276,12 +288,42 @@ class HttpServerApp : public ApplicationDelegate {
   }
 
   // Add a handler for the given regex path.
-  void AddHandler(const std::string& path,
+  bool AddHandler(const std::string& path,
                   const HandleRequestCallback& handler) {
+    for (auto& handler : handlers_) {
+      if (handler.pattern->pattern() == path)
+        return false;
+    }
+
     handlers_.push_back(Handler(path, handler));
+    return true;
+  }
+
+  bool RemoveHandler(const std::string& path) {
+    for (auto i = handlers_.begin(); i != handlers_.end(); ++i) {
+      if (i->pattern->pattern() == path) {
+        handlers_.erase(i);
+        return true;
+      }
+    }
+
+    return false;
   }
 
  private:
+  // ApplicationDelegate:
+  bool ConfigureIncomingConnection(
+      ApplicationConnection* connection) override {
+    connection->AddService(this);
+    return true;
+  }
+
+  // InterfaceFactory<HttpServerService>:
+  void Create(ApplicationConnection* connection,
+              InterfaceRequest<HttpServerService> request) override {
+    mojo::BindToRequest(new HttpServerServiceImpl(connection, this), &request);
+  }
+
   void OnSocketBound(NetworkErrorPtr err, NetAddressPtr bound_address) {
     if (err->code != 0) {
       printf("Bound err = %d\n", err->code);
@@ -349,7 +391,7 @@ class HttpServerApp : public ApplicationDelegate {
     net_address->ipv4->addr[1] = 0;
     net_address->ipv4->addr[2] = 0;
     net_address->ipv4->addr[3] = 1;
-    net_address->ipv4->port = 0;
+    net_address->ipv4->port = 80;
 
     // Note that we can start using the proxies right away even thought the
     // callbacks have not been called yet. If a previous step fails, they'll
@@ -364,17 +406,16 @@ class HttpServerApp : public ApplicationDelegate {
     WaitForNextConnection();
   }
 
-  void HandleRequest(Connection* connection, const HttpRequest& request) {
-    printf("HandleRequest for %s\n", request.relative_url.data());
+  void HandleRequest(Connection* connection, HttpRequestPtr request) {
     for (auto& handler : handlers_) {
-      if (RE2::FullMatch(request.relative_url.data(), *handler.pattern)) {
-        connection->SendResponse(handler.callback.Run(request).Pass());
+      if (RE2::FullMatch(request->relative_url.data(), *handler.pattern)) {
+        handler.callback.Run(request.Pass(), connection);
         return;
       }
     }
 
     connection->SendResponse(
-        CreateResponse(404, "No registered handler").Pass());
+        CreateHttpResponse(404, "No registered handler").Pass());
   }
 
   struct Handler {
@@ -407,6 +448,35 @@ class HttpServerApp : public ApplicationDelegate {
 
   std::vector<Handler> handlers_;
 };
+
+HttpServerServiceImpl::~HttpServerServiceImpl() {
+  for (auto& path : paths_)
+    app_->RemoveHandler(path);
+}
+
+void HttpServerServiceImpl::AddHandler(
+    const mojo::String& path,
+    const mojo::Callback<void(bool)>& callback) {
+  bool rv = app_->AddHandler(path,
+                             base::Bind(&HttpServerServiceImpl::OnRequest,
+                                        base::Unretained(this)));
+  callback.Run(rv);
+  if (rv)
+    paths_.push_back(path);
+}
+
+void HttpServerServiceImpl::RemoveHandler(
+    const mojo::String& path,
+    const mojo::Callback<void(bool)>& callback) {
+  bool rv = app_->RemoveHandler(path);
+  callback.Run(rv);
+  for (auto i = paths_.begin(); i != paths_.end(); ++i) {
+    if (*i == path) {
+      paths_.erase(i);
+      break;
+    }
+  }
+}
 
 }  // namespace examples
 }  // namespace mojo

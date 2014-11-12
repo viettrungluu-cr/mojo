@@ -1,0 +1,18 @@
+# Copyright 2014 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+shared_library("http_handler") {
+  sources = [
+    "http_handler.cc"
+  ]
+
+  deps = [
+    "//mojo/application",
+    "//mojo/public/c/system:for_shared_library",
+    "//mojo/public/cpp/bindings",
+    "//services/http_server",
+    "//services/http_server/public",
+    "//services/http_server/public:util",
+  ]
+}

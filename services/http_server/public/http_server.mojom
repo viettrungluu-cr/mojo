@@ -4,4 +4,18 @@
 
 module mojo;
 
-// TODO(jam): interface for http_server
+import "services/http_server/public/http_request.mojom";
+import "services/http_server/public/http_response.mojom";
+
+[Client=HttpServerClient]
+interface HttpServerService {
+  // Add a handler for the given regex path.
+  AddHandler(string path) => (bool success);
+
+  // Remove a previously registered handler.
+  RemoveHandler(string path) => (bool success);
+};
+
+interface HttpServerClient {
+  OnHandleRequest(HttpRequest request) => (HttpResponse response);
+};
