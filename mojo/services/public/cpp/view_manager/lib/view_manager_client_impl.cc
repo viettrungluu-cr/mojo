@@ -92,8 +92,16 @@ class RootObserver : public ViewObserver {
 };
 
 ViewManagerClientImpl::ViewManagerClientImpl(ViewManagerDelegate* delegate,
-                                             Shell* shell)
-    : connected_(false), connection_id_(0), next_id_(1), delegate_(delegate) {
+                                             Shell* shell,
+                                             ScopedMessagePipeHandle handle,
+                                             bool delete_on_error)
+    : connected_(false),
+      connection_id_(0),
+      next_id_(1),
+      delegate_(delegate),
+      binding_(this, handle.Pass()),
+      service_(binding_.client()),
+      delete_on_error_(delete_on_error) {
 }
 
 ViewManagerClientImpl::~ViewManagerClientImpl() {
@@ -229,13 +237,6 @@ const std::vector<View*>& ViewManagerClientImpl::GetRoots() const {
 View* ViewManagerClientImpl::GetViewById(Id id) {
   IdToViewMap::const_iterator it = views_.find(id);
   return it != views_.end() ? it->second : NULL;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-// ViewManagerClientImpl, InterfaceImpl overrides:
-
-void ViewManagerClientImpl::OnConnectionEstablished() {
-  service_ = client();
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -394,6 +395,13 @@ void ViewManagerClientImpl::OnFocusChanged(Id old_focused_view_id,
 
 void ViewManagerClientImpl::OnActiveWindowChanged(Id old_focused_window,
                                                   Id new_focused_window) {}
+
+////////////////////////////////////////////////////////////////////////////////
+// OnConnectionError, private:
+void ViewManagerClientImpl::OnConnectionError() {
+  if (delete_on_error_)
+    delete this;
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // ViewManagerClientImpl, private:
