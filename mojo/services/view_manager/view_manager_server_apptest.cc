@@ -213,9 +213,6 @@ class ViewManagerClientImpl : public InterfaceImpl<ViewManagerClient>,
     base::RunLoop run_loop;
   };
 
-  // InterfaceImpl:
-  void OnConnectionEstablished() override {}
-
   // TestChangeTracker::Delegate:
   void OnChangeAdded() override {
     if (wait_state_.get() &&

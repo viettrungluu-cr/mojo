@@ -32,11 +32,12 @@ bool TestServiceApplication::ConfigureIncomingConnection(
 void TestServiceApplication::Create(ApplicationConnection* connection,
                                     InterfaceRequest<TestService> request) {
   BindToRequest(new TestServiceImpl(connection, this), &request);
+  AddRef();
 }
 
 void TestServiceApplication::Create(ApplicationConnection* connection,
                                     InterfaceRequest<TestTimeService> request) {
-  BindToRequest(new TestTimeServiceImpl(connection), &request);
+  new TestTimeServiceImpl(connection, request.Pass());
 }
 
 void TestServiceApplication::AddRef() {

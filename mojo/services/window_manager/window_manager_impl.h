@@ -36,9 +36,6 @@ class WindowManagerImpl : public InterfaceImpl<WindowManager> {
   void ActivateWindow(uint32_t view_id,
                       const Callback<void(bool)>& callback) override;
 
-  // InterfaceImpl:
-  void OnConnectionEstablished() override;
-
   WindowManagerApp* window_manager_;
 
   // Whether this connection originated from the ViewManager. Connections that

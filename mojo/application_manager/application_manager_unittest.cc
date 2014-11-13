@@ -57,6 +57,7 @@ class TestServiceImpl : public InterfaceImpl<TestService> {
     if (!base::MessageLoop::current()->is_running())
       return;
     base::MessageLoop::current()->Quit();
+    InterfaceImpl::OnConnectionError();
   }
 
   // TestService implementation:

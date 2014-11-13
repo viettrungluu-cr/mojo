@@ -6,6 +6,8 @@
 #define MOJO_SERVICES_TEST_SERVICE_TEST_TIME_SERVICE_IMPL_H_
 
 #include "base/memory/scoped_ptr.h"
+#include "mojo/public/cpp/bindings/interface_request.h"
+#include "mojo/public/cpp/bindings/strong_binding.h"
 #include "mojo/public/cpp/system/macros.h"
 #include "mojo/services/test_service/test_service.mojom.h"
 
@@ -17,9 +19,10 @@ namespace test {
 
 class TestRequestTrackerClientImpl;
 
-class TestTimeServiceImpl : public InterfaceImpl<TestTimeService> {
+class TestTimeServiceImpl : public TestTimeService {
  public:
-  explicit TestTimeServiceImpl(ApplicationConnection* application);
+  TestTimeServiceImpl(ApplicationConnection* application,
+                      InterfaceRequest<TestTimeService> request);
   ~TestTimeServiceImpl() override;
 
   // |TestTimeService| methods:
@@ -30,6 +33,7 @@ class TestTimeServiceImpl : public InterfaceImpl<TestTimeService> {
  private:
   ApplicationConnection* application_;
   scoped_ptr<TestRequestTrackerClientImpl> tracking_;
+  StrongBinding<TestTimeService> binding_;
   MOJO_DISALLOW_COPY_AND_ASSIGN(TestTimeServiceImpl);
 };
 

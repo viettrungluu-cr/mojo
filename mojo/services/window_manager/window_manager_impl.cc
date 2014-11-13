@@ -74,7 +74,4 @@ void WindowManagerImpl::ActivateWindow(Id view,
   callback.Run(success);
 }
 
-void WindowManagerImpl::OnConnectionEstablished() {
-}
-
 }  // namespace mojo

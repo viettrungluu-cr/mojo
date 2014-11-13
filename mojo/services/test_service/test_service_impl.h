@@ -23,7 +23,6 @@ class TestServiceImpl : public InterfaceImpl<TestService> {
   ~TestServiceImpl() override;
 
   // |TestService| methods:
-  void OnConnectionEstablished() override;
   void OnConnectionError() override;
   void Ping(const mojo::Callback<void()>& callback) override;
   void ConnectToAppAndGetTime(

@@ -23,10 +23,6 @@ TestServiceImpl::TestServiceImpl(ApplicationConnection* connection,
 TestServiceImpl::~TestServiceImpl() {
 }
 
-void TestServiceImpl::OnConnectionEstablished() {
-  application_->AddRef();
-}
-
 void TestServiceImpl::OnConnectionError() {
   application_->ReleaseRef();
 }

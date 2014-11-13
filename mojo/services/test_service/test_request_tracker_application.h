@@ -15,8 +15,10 @@ namespace test {
 class TestTimeService;
 
 // Embeds TestRequestTracker mojo services into an application.
-class TestRequestTrackerApplication : public ApplicationDelegate,
-                                      public InterfaceFactory<TestTimeService> {
+class TestRequestTrackerApplication
+    : public ApplicationDelegate,
+      public InterfaceFactory<TestTimeService>,
+      public InterfaceFactory<TestRequestTracker> {
  public:
   TestRequestTrackerApplication();
   ~TestRequestTrackerApplication() override;
@@ -28,16 +30,16 @@ class TestRequestTrackerApplication : public ApplicationDelegate,
   void Create(ApplicationConnection* connection,
               InterfaceRequest<TestTimeService> request) override;
 
+  // InterfaceFactory<TestRequestTracker> methods:
+  void Create(ApplicationConnection* connection,
+              InterfaceRequest<TestRequestTracker> request) override;
+
  private:
   TrackingContext context_;
   typedef InterfaceFactoryImplWithContext<TestTrackedRequestServiceImpl,
                                           TrackingContext>
       TestTrackedRequestFactory;
   TestTrackedRequestFactory test_tracked_request_factory_;
-  typedef InterfaceFactoryImplWithContext<TestRequestTrackerImpl,
-                                          TrackingContext>
-      TestRequestTrackerFactory;
-  TestRequestTrackerFactory test_request_tracker_factory_;
   MOJO_DISALLOW_COPY_AND_ASSIGN(TestRequestTrackerApplication);
 };
 

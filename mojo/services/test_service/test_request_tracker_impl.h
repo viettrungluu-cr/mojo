@@ -33,8 +33,7 @@ class TestRequestTrackerImpl : public InterfaceImpl<TestRequestTracker> {
   // TestRequestTracker.
   void RecordStats(uint64_t client_id, ServiceStatsPtr stats) override;
 
-  // InterfaceImpl override.
-  void OnConnectionEstablished() override;
+  void OnConnectionEstablished();
 
  private:
   void UploaderNameCallback(uint64_t id, const mojo::String& name);

@@ -351,10 +351,9 @@ class TestViewManagerClientConnection
 
   ViewManagerProxy* proxy() { return &proxy_; }
 
-  // InterfaceImpl:
-  void OnConnectionEstablished() override {
-    proxy()->set_router(internal_state()->router());
-    proxy()->set_view_manager(client());
+  void OnConnectionEstablished() {
+    proxy_.set_router(internal_router());
+    proxy_.set_view_manager(client());
   }
 
   // ViewManagerClient:
@@ -443,7 +442,9 @@ class EmbedApplicationLoader : public ApplicationLoader,
   // InterfaceFactory<ViewManagerClient> implementation:
   void Create(ApplicationConnection* connection,
               InterfaceRequest<ViewManagerClient> request) override {
-    BindToRequest(new TestViewManagerClientConnection(), &request);
+    auto client_connection = new TestViewManagerClientConnection;
+    BindToRequest(client_connection, &request);
+    client_connection->OnConnectionEstablished();
   }
 
  private:
@@ -474,9 +475,6 @@ class TestWindowManagerImpl : public InterfaceImpl<WindowManager> {
   TestViewManagerClientConnection* view_manager_client() {
     return view_manager_client_;
   }
-
-  // InterfaceImpl:
-  virtual void OnConnectionEstablished() override {}
 
   // WindowManager:
   void Embed(const String& url,

@@ -14,6 +14,7 @@
 #include "mojo/application_manager/application_loader.h"
 #include "mojo/common/common_type_converters.h"
 #include "mojo/public/cpp/application/connect.h"
+#include "mojo/public/cpp/bindings/binding.h"
 #include "mojo/public/cpp/bindings/error_handler.h"
 #include "mojo/public/interfaces/application/application.mojom.h"
 #include "mojo/public/interfaces/application/shell.mojom.h"
@@ -98,12 +99,23 @@ class ApplicationManager::LoadCallbacksImpl
   ServiceProviderPtr service_provider_;
 };
 
-class ApplicationManager::ShellImpl : public InterfaceImpl<Shell> {
+class ApplicationManager::ShellImpl : public Shell, public ErrorHandler {
  public:
-  ShellImpl(ApplicationManager* manager,
+  ShellImpl(ScopedMessagePipeHandle handle,
+            ApplicationManager* manager,
             const GURL& requested_url,
             const GURL& url)
-      : manager_(manager), requested_url_(requested_url), url_(url) {}
+      : ShellImpl(manager, requested_url, url) {
+    binding_.Bind(handle.Pass());
+  }
+
+  ShellImpl(ShellPtr* ptr,
+            ApplicationManager* manager,
+            const GURL& requested_url,
+            const GURL& url)
+      : ShellImpl(manager, requested_url, url) {
+    binding_.Bind(ptr);
+  }
 
   ~ShellImpl() override {}
 
@@ -113,7 +125,22 @@ class ApplicationManager::ShellImpl : public InterfaceImpl<Shell> {
                                service_provider.Pass());
   }
 
-  // ServiceProvider implementation:
+  Application* client() { return binding_.client(); }
+  const GURL& url() const { return url_; }
+  const GURL& requested_url() const { return requested_url_; }
+
+ private:
+  ShellImpl(ApplicationManager* manager,
+            const GURL& requested_url,
+            const GURL& url)
+      : manager_(manager),
+        requested_url_(requested_url),
+        url_(url),
+        binding_(this) {
+    binding_.set_error_handler(this);
+  }
+
+  // Shell implementation:
   void ConnectToApplication(
       const String& app_url,
       InterfaceRequest<ServiceProvider> in_service_provider) override {
@@ -123,15 +150,13 @@ class ApplicationManager::ShellImpl : public InterfaceImpl<Shell> {
         app_url.To<GURL>(), url_, out_service_provider.Pass());
   }
 
-  const GURL& url() const { return url_; }
-  const GURL& requested_url() const { return requested_url_; }
-
- private:
+  // ErrorHandler implementation:
   void OnConnectionError() override { manager_->OnShellImplError(this); }
 
   ApplicationManager* const manager_;
   const GURL requested_url_;
   const GURL url_;
+  Binding<Shell> binding_;
 
   DISALLOW_COPY_AND_ASSIGN(ShellImpl);
 };
@@ -261,8 +286,7 @@ void ApplicationManager::ConnectToClient(ShellImpl* shell_impl,
 void ApplicationManager::RegisterExternalApplication(
     const GURL& url,
     ScopedMessagePipeHandle shell_handle) {
-  url_to_shell_impl_[url] =
-      WeakBindToPipe(new ShellImpl(this, url, url), shell_handle.Pass());
+  url_to_shell_impl_[url] = new ShellImpl(shell_handle.Pass(), this, url, url);
 }
 
 void ApplicationManager::RegisterLoadedApplication(
@@ -280,8 +304,8 @@ void ApplicationManager::RegisterLoadedApplication(
     shell_impl = iter->second;
   } else {
     MessagePipe pipe;
-    shell_impl = WeakBindToPipe(
-        new ShellImpl(this, requested_url, resolved_url), pipe.handle1.Pass());
+    shell_impl =
+        new ShellImpl(pipe.handle1.Pass(), this, requested_url, resolved_url);
     url_to_shell_impl_[resolved_url] = shell_impl;
     *shell_handle = pipe.handle0.Pass();
     shell_impl->client()->Initialize(GetArgsForURL(requested_url));
@@ -309,8 +333,8 @@ void ApplicationManager::LoadWithContentHandler(
   }
 
   ShellPtr shell_proxy;
-  ShellImpl* shell_impl = WeakBindToProxy(
-      new ShellImpl(this, requested_url, resolved_url), &shell_proxy);
+  ShellImpl* shell_impl =
+      new ShellImpl(&shell_proxy, this, requested_url, resolved_url);
   content_shell_impls_.insert(shell_impl);
   shell_impl->client()->Initialize(GetArgsForURL(requested_url));
 

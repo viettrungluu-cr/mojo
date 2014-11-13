@@ -11,8 +11,10 @@
 namespace mojo {
 namespace test {
 
-TestTimeServiceImpl::TestTimeServiceImpl(ApplicationConnection* application)
-    : application_(application) {
+TestTimeServiceImpl::TestTimeServiceImpl(
+    ApplicationConnection* application,
+    InterfaceRequest<TestTimeService> request)
+    : application_(application), binding_(this, request.Pass()) {
 }
 
 TestTimeServiceImpl::~TestTimeServiceImpl() {
