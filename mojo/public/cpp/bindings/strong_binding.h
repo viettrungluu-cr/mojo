@@ -59,7 +59,9 @@ class StrongBinding : public ErrorHandler {
 
   ~StrongBinding() override {}
 
-  bool WaitForIncomingMethodCall() { binding_.WaitForIncomingMethodCall(); }
+  bool WaitForIncomingMethodCall() {
+    return binding_.WaitForIncomingMethodCall();
+  }
 
   void set_error_handler(ErrorHandler* error_handler) {
     error_handler_ = error_handler;
