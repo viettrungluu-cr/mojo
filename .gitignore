@@ -58,5 +58,3 @@ v8.log
 /tools/gyp/
 /v8/
 /dart/
-/webkit/Debug/
-/webkit/Release/
