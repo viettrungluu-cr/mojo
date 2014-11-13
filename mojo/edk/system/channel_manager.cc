@@ -6,6 +6,7 @@
 
 #include "base/bind.h"
 #include "base/location.h"
+#include "base/message_loop/message_loop_proxy.h"
 
 namespace mojo {
 namespace system {
@@ -13,9 +14,14 @@ namespace system {
 namespace {
 
 void ShutdownChannelHelper(const ChannelInfo& channel_info) {
-  channel_info.channel->WillShutdownSoon();
-  channel_info.channel_thread_task_runner->PostTask(
-      FROM_HERE, base::Bind(&Channel::Shutdown, channel_info.channel));
+  if (base::MessageLoopProxy::current() ==
+      channel_info.channel_thread_task_runner) {
+    channel_info.channel->Shutdown();
+  } else {
+    channel_info.channel->WillShutdownSoon();
+    channel_info.channel_thread_task_runner->PostTask(
+        FROM_HERE, base::Bind(&Channel::Shutdown, channel_info.channel));
+  }
 }
 
 }  // namespace
@@ -45,17 +51,22 @@ ChannelId ChannelManager::AddChannel(
   return channel_id;
 }
 
-void ChannelManager::ShutdownChannel(ChannelId channel_id) {
-  ChannelInfo channel_info;
-  {
-    base::AutoLock locker(lock_);
+void ChannelManager::WillShutdownChannel(ChannelId channel_id) {
+  GetChannelInfo(channel_id).channel->WillShutdownSoon();
+}
 
-    auto it = channel_infos_.find(channel_id);
-    DCHECK(it != channel_infos_.end());
-    channel_info.Swap(&it->second);
-    channel_infos_.erase(it);
-  }
-  ShutdownChannelHelper(channel_info);
+void ChannelManager::ShutdownChannel(ChannelId channel_id) {
+  ShutdownChannelHelper(GetChannelInfo(channel_id));
+}
+
+ChannelInfo ChannelManager::GetChannelInfo(ChannelId channel_id) {
+  ChannelInfo rv;
+  base::AutoLock locker(lock_);
+  auto it = channel_infos_.find(channel_id);
+  DCHECK(it != channel_infos_.end());
+  rv.Swap(&it->second);
+  channel_infos_.erase(it);
+  return rv;
 }
 
 }  // namespace system

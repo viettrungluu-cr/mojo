@@ -50,11 +50,7 @@ class ScopedTestChannel {
 
   // Destructor: Shuts down the channel. (As noted above, for this to happen,
   // the I/O thread must be alive and pumping messages.)
-  ~ScopedTestChannel() {
-    system::test::PostTaskAndWait(
-        io_thread_task_runner_, FROM_HERE,
-        base::Bind(&ScopedTestChannel::DestroyChannel, base::Unretained(this)));
-  }
+  ~ScopedTestChannel() { DestroyChannel(channel_info_); }
 
   // Waits for channel creation to be completed.
   void WaitForChannelCreationCompletion() { did_create_channel_event_.Wait(); }
@@ -71,12 +67,6 @@ class ScopedTestChannel {
     CHECK(!channel_info_);
     channel_info_ = channel_info;
     did_create_channel_event_.Signal();
-  }
-
-  void DestroyChannel() {
-    CHECK(channel_info_);
-    DestroyChannelOnIOThread(channel_info_);
-    channel_info_ = nullptr;
   }
 
   scoped_refptr<base::TaskRunner> io_thread_task_runner_;

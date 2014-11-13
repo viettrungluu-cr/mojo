@@ -43,23 +43,32 @@ class MOJO_SYSTEM_IMPL_EXPORT ChannelManager {
 
   // Adds |channel| to the set of |Channel|s managed by this |ChannelManager|;
   // |channel_thread_task_runner| should be the task runner for |channel|'s
-  // creation (a.k.a. I/O) thread.
-  //
-  // |channel| should either already be initialized or at least already have a
-  // task posted to |channel_thread_task_runner| to initialize it. It should not
-  // be managed by any |ChannelManager| yet.
-  //
-  // Returns the ID for the added channel.
+  // creation (a.k.a. I/O) thread. |channel| should either already be
+  // initialized. It should not be managed by any |ChannelManager| yet. Returns
+  // the ID for the added channel.
   ChannelId AddChannel(
       scoped_refptr<Channel> channel,
       scoped_refptr<base::TaskRunner> channel_thread_task_runner);
 
+  // Informs the channel manager (and thus channel) that it will be shutdown
+  // soon (by calling |ShutdownChannel()|). Calling this is optional (and may in
+  // fact be called multiple times) but it will suppress certain warnings (e.g.,
+  // for the channel being broken) and enable others (if messages are written to
+  // the channel).
+  void WillShutdownChannel(ChannelId channel_id);
+
   // Shuts down the channel specified by the given ID. It is up to the caller to
   // guarantee that this is only called once per channel (that was added using
-  // |AddChannel()|).
+  // |AddChannel()|). If called from the chanel's creation thread (i.e.,
+  // |base::MessageLoopProxy::current()| is the channel thread's |TaskRunner|),
+  // this will complete synchronously.
   void ShutdownChannel(ChannelId channel_id);
 
  private:
+  // Gets the |ChannelInfo| for the channel specified by the given ID. (This
+  // should *not* be called under lock.)
+  ChannelInfo GetChannelInfo(ChannelId channel_id);
+
   // Note: |Channel| methods should not be called under |lock_|.
   base::Lock lock_;  // Protects the members below.
 

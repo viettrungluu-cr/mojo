@@ -10,6 +10,7 @@
 #include "mojo/edk/embedder/embedder.h"
 #include "mojo/edk/embedder/embedder_internal.h"
 #include "mojo/edk/embedder/simple_platform_support.h"
+#include "mojo/edk/system/channel_manager.h"
 #include "mojo/edk/system/core.h"
 #include "mojo/edk/system/handle_table.h"
 
@@ -45,12 +46,14 @@ void InitWithSimplePlatformSupport() {
 }
 
 bool Shutdown() {
-  system::Core* core = internal::g_core;
-  CHECK(core);
-  internal::g_core = nullptr;
+  CHECK(internal::g_channel_manager);
+  delete internal::g_channel_manager;
+  internal::g_channel_manager = nullptr;
 
-  bool rv = system::internal::ShutdownCheckNoLeaks(core);
-  delete core;
+  CHECK(internal::g_core);
+  bool rv = system::internal::ShutdownCheckNoLeaks(internal::g_core);
+  delete internal::g_core;
+  internal::g_core = nullptr;
   return rv;
 }
 
