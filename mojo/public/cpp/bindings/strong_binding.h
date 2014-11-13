@@ -51,6 +51,14 @@ class StrongBinding : public ErrorHandler {
 
   StrongBinding(
       Interface* impl,
+      InterfacePtr<Interface>* ptr,
+      const MojoAsyncWaiter* waiter = Environment::GetDefaultAsyncWaiter())
+      : StrongBinding(impl) {
+    binding_.Bind(ptr, waiter);
+  }
+
+  StrongBinding(
+      Interface* impl,
       InterfaceRequest<Interface> request,
       const MojoAsyncWaiter* waiter = Environment::GetDefaultAsyncWaiter())
       : StrongBinding(impl) {
