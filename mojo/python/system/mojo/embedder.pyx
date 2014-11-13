@@ -5,6 +5,7 @@
 # distutils: language = c++
 
 from libc.stdint cimport uintptr_t
+from libcpp cimport bool
 
 from mojo import system
 
@@ -34,8 +35,14 @@ cdef extern from "mojo/public/platform/native/system_thunks.h" nogil:
     pass
   cdef MojoSystemThunks MojoMakeSystemThunks()
 
+cdef extern from "mojo/edk/embedder/test_embedder.h" nogil:
+  cdef bool ShutdownCEmbedderForTest "mojo::embedder::test::Shutdown"()
+
 def Init():
   InitCEmbedder(scoped_ptr[PlatformSupport](
       new SimplePlatformSupport()))
   cdef MojoSystemThunks thunks = MojoMakeSystemThunks()
   system.SetSystemThunks(<uintptr_t>(&thunks))
+
+def ShutdownForTest():
+  return ShutdownCEmbedderForTest()
