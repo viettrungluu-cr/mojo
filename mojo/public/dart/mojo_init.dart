@@ -4,13 +4,16 @@
 
 library mojo_init;
 
+import 'dart:async';
+
 import 'core.dart' as core;
 import 'dart-ext:src/mojo_dart_init';
 
 void _init() native "MojoLibrary_Init";
 void _mojoSystemThunksMake(Function fn) native "MojoSystemThunks_Make";
 
-void mojoInit() {
+Future<Isolate> mojoInit() {
   _init();
   _mojoSystemThunksMake(core.mojoSystemThunksSet);
+  return core.MojoHandleWatcher.Start();
 }

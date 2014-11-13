@@ -20,10 +20,10 @@ invalidHandleTest() {
   result = invalidHandle.wait(MojoHandleSignals.READWRITE, 1000000);
   Expect.isTrue(result.isInvalidArgument);
 
-  result = RawMojoHandle.waitMany([invalidHandle.h],
-                                  [MojoHandleSignals.READWRITE],
-                                  RawMojoHandle.DEADLINE_INDEFINITE);
-  Expect.isTrue(result.isInvalidArgument);
+  int res = RawMojoHandle.waitMany([invalidHandle.h],
+                                   [MojoHandleSignals.READWRITE],
+                                   RawMojoHandle.DEADLINE_INDEFINITE);
+  Expect.equals(res, MojoResult.kInvalidArgument);
 
   // Message pipe.
   MojoMessagePipe pipe = new MojoMessagePipe();
@@ -108,10 +108,10 @@ basicMessagePipeTest() {
   Expect.isTrue(result.isOk);
 
   // end0 should now be readable.
-  result = RawMojoHandle.waitMany([end0.handle.h],
-                                  [MojoHandleSignals.READABLE],
-                                  RawMojoHandle.DEADLINE_INDEFINITE);
-  Expect.isTrue(result.isOk);
+  int res = RawMojoHandle.waitMany([end0.handle.h],
+                                   [MojoHandleSignals.READABLE],
+                                   RawMojoHandle.DEADLINE_INDEFINITE);
+  Expect.equals(res, MojoResult.kOk);
 
   // Read from end0.
   MojoMessagePipeReadResult readResult = end0.read(data);
@@ -181,10 +181,10 @@ basicDataPipeTest() {
   Expect.equals(written, helloData.lengthInBytes);
 
   // Now that we have written, the consumer should be readable.
-  result = RawMojoHandle.waitMany([consumer.handle.h],
-                            [MojoHandleSignals.READABLE],
-                            RawMojoHandle.DEADLINE_INDEFINITE);
-  Expect.isTrue(result.isOk);
+  int res = RawMojoHandle.waitMany([consumer.handle.h],
+                                   [MojoHandleSignals.READABLE],
+                                   RawMojoHandle.DEADLINE_INDEFINITE);
+  Expect.equals(res, MojoResult.kOk);
 
   // Do a two-phase write to the producer.
   ByteData twoPhaseWrite = producer.beginWrite(
@@ -297,8 +297,8 @@ basicSharedBufferTest() {
 }
 
 
-main() {
-  mojoInit();
+main() async {
+  await mojoInit();
   invalidHandleTest();
   basicMessagePipeTest();
   basicDataPipeTest();

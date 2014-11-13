@@ -57,6 +57,7 @@ copy("bindings") {
     "src/codec.dart",
     "src/data_pipe.dart",
     "src/handle.dart",
+    "src/handle_watcher.dart",
     "src/message_pipe.dart",
     "src/types.dart",
   ]

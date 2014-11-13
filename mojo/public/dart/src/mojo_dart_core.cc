@@ -581,6 +581,85 @@ static void MojoMessagePipe_Read(Dart_NativeArguments arguments) {
 }
 
 
+struct ControlData {
+  int64_t handle;
+  Dart_Port port;
+  int64_t data;
+};
+
+
+static void MojoHandleWatcher_SendControlData(Dart_NativeArguments arguments) {
+  int64_t control_handle = 0;
+  int64_t client_handle = 0;
+  CHECK_INTEGER_ARGUMENT(arguments, 0, &control_handle, InvalidArgument);
+  CHECK_INTEGER_ARGUMENT(arguments, 1, &client_handle, InvalidArgument);
+
+  Dart_Handle send_port_handle = Dart_GetNativeArgument(arguments, 2);
+  Dart_Port send_port_id = 0;
+  if (!Dart_IsNull(send_port_handle)) {
+    Dart_Handle result = Dart_SendPortGetId(send_port_handle, &send_port_id);
+    if (Dart_IsError(result)) {
+      SetInvalidArgumentReturn(arguments);
+      return;
+    }
+  }
+
+  int64_t data = 0;
+  CHECK_INTEGER_ARGUMENT(arguments, 3, &data, InvalidArgument);
+
+  ControlData cd;
+  cd.handle = client_handle;
+  cd.port = send_port_id;
+  cd.data = data;
+  const void* bytes = reinterpret_cast<const void*>(&cd);
+  MojoResult res = MojoWriteMessage(
+      control_handle, bytes,  sizeof(cd), NULL, 0, 0);
+
+  Dart_SetIntegerReturnValue(arguments, static_cast<int64_t>(res));
+}
+
+
+static void MojoHandleWatcher_RecvControlData(Dart_NativeArguments arguments) {
+  int64_t control_handle = 0;
+  CHECK_INTEGER_ARGUMENT(arguments, 0, &control_handle, Null);
+
+  ControlData cd;
+  void* bytes = reinterpret_cast<void*>(&cd);
+  uint32_t num_bytes = sizeof(cd);
+  uint32_t num_handles = 0;
+  MojoResult res = MojoReadMessage(
+      control_handle, bytes, &num_bytes, NULL, &num_handles, 0);
+  if (res != MOJO_RESULT_OK) {
+    SetNullReturn(arguments);
+    return;
+  }
+
+  Dart_Handle list = Dart_NewList(3);
+  Dart_ListSetAt(list, 0, Dart_NewInteger(cd.handle));
+  Dart_ListSetAt(list, 1, Dart_NewSendPort(cd.port));
+  Dart_ListSetAt(list, 2, Dart_NewInteger(cd.data));
+  Dart_SetReturnValue(arguments, list);
+}
+
+
+static int64_t mojo_control_handle = MOJO_HANDLE_INVALID;
+static void MojoHandleWatcher_SetControlHandle(Dart_NativeArguments arguments) {
+  int64_t control_handle;
+  CHECK_INTEGER_ARGUMENT(arguments, 0, &control_handle, InvalidArgument);
+
+  if (mojo_control_handle == MOJO_HANDLE_INVALID) {
+    mojo_control_handle = control_handle;
+  }
+
+  Dart_SetIntegerReturnValue(arguments, static_cast<int64_t>(MOJO_RESULT_OK));
+}
+
+
+static void MojoHandleWatcher_GetControlHandle(Dart_NativeArguments arguments) {
+  Dart_SetIntegerReturnValue(arguments, mojo_control_handle);
+}
+
+
 #define SCOPE_FUNCTIONS(V)                                                     \
   V(MojoSharedBuffer_Create)                                                   \
   V(MojoSharedBuffer_Duplicate)                                                \
@@ -595,13 +674,17 @@ static void MojoMessagePipe_Read(Dart_NativeArguments arguments) {
   V(MojoMessagePipe_Create)                                                    \
   V(MojoMessagePipe_Write)                                                     \
   V(MojoMessagePipe_Read)                                                      \
+  V(MojoHandle_WaitMany)                                                       \
+  V(MojoHandleWatcher_SendControlData)                                         \
+  V(MojoHandleWatcher_RecvControlData)                                         \
 
 #define NOSCOPE_FUNCTIONS(V)                                                   \
   V(MojoSystemThunks_Set)                                                      \
   V(MojoHandle_Close)                                                          \
   V(MojoHandle_Wait)                                                           \
-  V(MojoHandle_WaitMany)                                                       \
   V(MojoDataPipe_EndWriteData)                                                 \
+  V(MojoHandleWatcher_SetControlHandle)                                        \
+  V(MojoHandleWatcher_GetControlHandle)                                        \
 
 #define FUNCTION_STRING_MAP(name) {#name, name},
 

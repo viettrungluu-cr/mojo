@@ -10,11 +10,11 @@ class _MojoMessagePipeNatives {
       native "MojoMessagePipe_Create";
 
   static int MojoWriteMessage(
-      int handle, ByteData data, int num_bytes, List<int> handles, int flags)
+      int handle, ByteData data, int numBytes, List<int> handles, int flags)
       native "MojoMessagePipe_Write";
 
   static List MojoReadMessage(
-      int handle, ByteData data, int num_bytes, List<int> handles, int flags)
+      int handle, ByteData data, int numBytes, List<int> handles, int flags)
       native "MojoMessagePipe_Read";
 }
 
@@ -41,7 +41,7 @@ class MojoMessagePipeEndpoint {
   MojoMessagePipeEndpoint(this.handle);
 
   MojoResult write(ByteData data,
-                   [int num_bytes = -1,
+                   [int numBytes = -1,
                     List<RawMojoHandle> handles = null,
                     int flags = 0]) {
     if (handle == null) {
@@ -49,20 +49,20 @@ class MojoMessagePipeEndpoint {
       return status;
     }
 
-    // If num_bytes has the default value, use the full length of the data.
-    int data_num_bytes = (num_bytes == -1) ? data.lengthInBytes : num_bytes;
-    if (data_num_bytes > data.lengthInBytes) {
+    // If numBytes has the default value, use the full length of the data.
+    int dataNumBytes = (numBytes == -1) ? data.lengthInBytes : numBytes;
+    if (dataNumBytes > data.lengthInBytes) {
       status = MojoResult.INVALID_ARGUMENT;
       return status;
     }
 
     // handles may be null, otherwise convert to ints.
-    List<int> mojo_handles =
+    List<int> mojoHandles =
         (handles != null) ? handles.map((h) => h.h).toList() : null;
 
     // Do the call.
     int result = _MojoMessagePipeNatives.MojoWriteMessage(
-        handle.h, data, data_num_bytes, mojo_handles, flags);
+        handle.h, data, dataNumBytes, mojoHandles, flags);
 
     status = new MojoResult(result);
     return status;
@@ -70,7 +70,7 @@ class MojoMessagePipeEndpoint {
 
 
   MojoMessagePipeReadResult read(ByteData data,
-                                 [int num_bytes = -1,
+                                 [int numBytes = -1,
                                   List<RawMojoHandle> handles = null,
                                   int flags = 0]) {
     if (handle == null) {
@@ -78,29 +78,29 @@ class MojoMessagePipeEndpoint {
       return null;
     }
 
-    // If num_bytes has the default value, use the full length of the data.
-    int data_num_bytes;
+    // If numBytes has the default value, use the full length of the data.
+    int dataNumBytes;
     if (data == null) {
-      data_num_bytes = 0;
+      dataNumBytes = 0;
     } else {
-      data_num_bytes = (num_bytes == -1) ? data.lengthInBytes : num_bytes;
-    }
-    if (data_num_bytes > data.lengthInBytes) {
-      status = MojoResult.INVALID_ARGUMENT;
-      return status;
+      dataNumBytes = (numBytes == -1) ? data.lengthInBytes : numBytes;
+      if (dataNumBytes > data.lengthInBytes) {
+        status = MojoResult.INVALID_ARGUMENT;
+        return status;
+      }
     }
 
     // handles may be null, otherwise make an int list for the handles.
-    List<int> mojo_handles;
+    List<int> mojoHandles;
     if (handles == null) {
-      mojo_handles = null;
+      mojoHandles = null;
     } else {
-      mojo_handles = new List<int>(handles.length);
+      mojoHandles = new List<int>(handles.length);
     }
 
     // Do the call.
     List result = _MojoMessagePipeNatives.MojoReadMessage(
-        handle.h, data, data_num_bytes, mojo_handles, flags);
+        handle.h, data, dataNumBytes, mojoHandles, flags);
 
     if (result == null) {
       status = MojoResult.INVALID_ARGUMENT;
@@ -113,7 +113,7 @@ class MojoMessagePipeEndpoint {
     // Copy out the handles that were read.
     if (handles != null) {
       for (var i = 0; i < readResult.handlesRead; i++) {
-        handles[i].h = mojo_handles[i];
+        handles[i].h = mojoHandles[i];
       }
     }
 

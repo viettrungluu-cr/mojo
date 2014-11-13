@@ -66,7 +66,7 @@ void testRunnerIsolate(List args) {
   int running_tests = 0;
   rp.listen((test) {  // Listen for new tests to run.
     // Tests are run in "checked mode".
-    List testargs = ['--checked', '-p', package_root, test];
+    List testargs = ['--checked', '--enable-async', '-p', package_root, test];
     Process.start(Platform.executable, testargs).then((process) {
       String stderr = "";
 
