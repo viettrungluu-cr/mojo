@@ -25,7 +25,7 @@ SurfacesImpl::SurfacesImpl(cc::SurfaceManager* manager,
 }
 
 SurfacesImpl::~SurfacesImpl() {
-  client_->SetDisplay(NULL);
+  client_->OnDisplayBeingDestroyed(display_.get());
   factory_.DestroyAll();
 }
 

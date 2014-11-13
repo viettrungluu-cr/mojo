@@ -28,7 +28,8 @@ class SurfacesImpl : public InterfaceImpl<Surface>,
   class Client {
    public:
     virtual void FrameSubmitted() = 0;
-    virtual void SetDisplay(cc::Display*) = 0;
+    virtual void SetDisplay(cc::Display* display) = 0;
+    virtual void OnDisplayBeingDestroyed(cc::Display* display) = 0;
   };
 
   SurfacesImpl(cc::SurfaceManager* manager,

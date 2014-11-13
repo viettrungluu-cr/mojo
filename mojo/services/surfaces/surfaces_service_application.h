@@ -33,6 +33,7 @@ class SurfacesServiceApplication : public ApplicationDelegate,
   // SurfacesImpl::Client implementation.
   void FrameSubmitted() override;
   void SetDisplay(cc::Display*) override;
+  void OnDisplayBeingDestroyed(cc::Display* display) override;
 
  private:
   cc::SurfaceManager manager_;

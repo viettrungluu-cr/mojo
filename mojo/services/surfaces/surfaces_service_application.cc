@@ -46,6 +46,11 @@ void SurfacesServiceApplication::SetDisplay(cc::Display* display) {
   display_ = display;
 }
 
+void SurfacesServiceApplication::OnDisplayBeingDestroyed(cc::Display* display) {
+  if (display_ == display)
+    SetDisplay(nullptr);
+}
+
 }  // namespace mojo
 
 MojoResult MojoMain(MojoHandle shell_handle) {
