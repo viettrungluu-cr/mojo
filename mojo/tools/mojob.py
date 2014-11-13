@@ -72,12 +72,14 @@ def gn(args):
 
 
 def get_gn_arg_value(out_dir, arg):
-  key_value_regex = re.compile(r'^%s = (.+)$' % arg)
-  with open(os.path.join(out_dir, "args.gn"), "r") as args_file:
-    for line in args_file.readlines():
-      m = key_value_regex.search(line)
-      if m:
-        return m.group(1).strip('"')
+  args_file_path = os.path.join(out_dir, "args.gn")
+  if os.path.isfile(args_file_path):
+    key_value_regex = re.compile(r'^%s = (.+)$' % arg)
+    with open(args_file_path, "r") as args_file:
+      for line in args_file.readlines():
+        m = key_value_regex.search(line)
+        if m:
+          return m.group(1).strip('"')
   return ''
 
 
