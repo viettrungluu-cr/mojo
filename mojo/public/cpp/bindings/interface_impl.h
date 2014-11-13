@@ -59,8 +59,13 @@ class InterfaceImpl : public Interface, public ErrorHandler {
 
     // ErrorHandler implementation:
     void OnConnectionError() override {
+      // If the the instance is not bound to the pipe, the instance might choose
+      // to delete the binding in the OnConnectionError handler, which would in
+      // turn delete |this|.  Save the error behavior before invoking the error
+      // handler so we can correctly decide what to do.
+      bool delete_on_error = delete_on_error_;
       impl_->OnConnectionError();
-      if (delete_on_error_)
+      if (delete_on_error)
         delete impl_;
     }
 

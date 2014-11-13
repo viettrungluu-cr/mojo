@@ -63,7 +63,7 @@ class Binding : public ErrorHandler {
     Bind(request.PassMessagePipe(), waiter);
   }
 
-  virtual ~Binding() {
+  ~Binding() override {
     delete proxy_;
     if (internal_router_) {
       internal_router_->set_error_handler(nullptr);
