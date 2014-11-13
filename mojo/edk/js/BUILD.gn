@@ -26,15 +26,24 @@ source_set("js") {
     "//gin",
     "//v8",
   ]
+
+  deps = [
+    "//mojo/public/cpp/environment",
+    "//mojo/public/cpp/system",
+  ]
 }
 
 source_set("js_unittests") {
   testonly = true
-  deps = [
-    "//mojo/edk/test:test_support",
-  ]
-
   sources = [
     "handle_unittest.cc",
   ]
+
+  deps = [
+    "//mojo/edk/js",
+    "//mojo/edk/test:test_support",
+    "//mojo/public/cpp/system",
+    "//testing/gtest",
+  ]
+
 }

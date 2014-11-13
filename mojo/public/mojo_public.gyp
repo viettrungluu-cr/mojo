@@ -124,15 +124,15 @@
       ],
     },
     {
-      # GN version: //mojo/public/js/bindings
+      # GN version: //mojo/public/js
       'target_name': 'mojo_js_bindings',
       'type': 'static_library',
       'include_dirs': [
         '../..'
       ],
       'sources': [
-        'js/bindings/constants.cc',
-        'js/bindings/constants.h',
+        'js/constants.cc',
+        'js/constants.h',
       ],
     },
     {
