@@ -5,22 +5,19 @@
 import("//mojo/public/tools/bindings/mojom.gni")
 
 source_set("spy") {
-  deps = [
-    ":spy_bindings",
-    "//base",
-    "//net:http_server",
-    "//url",
-    "//mojo/application_manager",
-  ]
-
   sources = [
     "common.h",
     "spy.cc",
     "spy.h",
     "spy_server_impl.h",
     "spy_server_impl.cc",
-    "websocket_server.cc",
-    "websocket_server.h",
+  ]
+
+  deps = [
+    ":spy_bindings",
+    "//base",
+    "//url",
+    "//mojo/application_manager",
   ]
 }
 

@@ -30,7 +30,6 @@ component("application_manager") {
   ]
   deps = [
     "//base/third_party/dynamic_annotations",
-    "//net",
     "//url",
     "//mojo/edk/system",
     "//mojo/environment:chromium",

@@ -16,17 +16,13 @@ config("gles2_use_mojo") {
 component("gles2") {
   output_name = "mojo_gles2_impl"
 
-  deps = [
-    "//base",
-    "//base/third_party/dynamic_annotations",
-    "//gpu/command_buffer/client",
-    "//gpu/command_buffer/client:gles2_implementation",
-    "//gpu/command_buffer/client:gles2_interface",
-    "//gpu/command_buffer/common",
-    "//mojo/environment:chromium",
-    "//mojo/public/c/system:for_component",
-    "//mojo/services/gles2:lib",
-    "//mojo/services/public/interfaces/gpu",
+  sources = [
+    "command_buffer_client_impl.cc",
+    "command_buffer_client_impl.h",
+    "gles2_impl_export.h",
+    "gles2_impl.cc",
+    "gles2_context.cc",
+    "gles2_context.h",
   ]
 
   defines = [
@@ -42,12 +38,16 @@ component("gles2") {
   public_configs = [ ":gles2_use_mojo" ]
   all_dependent_configs = [ ":mojo_use_gles2" ]
 
-  sources = [
-    "command_buffer_client_impl.cc",
-    "command_buffer_client_impl.h",
-    "gles2_impl_export.h",
-    "gles2_impl.cc",
-    "gles2_context.cc",
-    "gles2_context.h",
+  deps = [
+    "//base",
+    "//base/third_party/dynamic_annotations",
+    "//gpu/command_buffer/client",
+    "//gpu/command_buffer/client:gles2_implementation",
+    "//gpu/command_buffer/client:gles2_interface",
+    "//gpu/command_buffer/common",
+    "//mojo/environment:chromium",
+    "//mojo/public/c/system:for_component",
+    "//mojo/services/gles2:lib",
+    "//mojo/services/public/interfaces/gpu",
   ]
 }
