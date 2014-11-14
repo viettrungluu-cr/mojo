@@ -5,9 +5,6 @@
 #include "mojo/edk/system/message_pipe_dispatcher.h"
 
 #include "base/logging.h"
-#include "mojo/edk/system/channel.h"
-#include "mojo/edk/system/channel_endpoint.h"
-#include "mojo/edk/system/channel_endpoint_id.h"
 #include "mojo/edk/system/configuration.h"
 #include "mojo/edk/system/local_message_pipe_endpoint.h"
 #include "mojo/edk/system/memory.h"
@@ -18,19 +15,7 @@
 namespace mojo {
 namespace system {
 
-namespace {
-
 const unsigned kInvalidPort = static_cast<unsigned>(-1);
-
-struct SerializedMessagePipeDispatcher {
-  // This is the endpoint ID on the receiving side, and should be a "remote ID".
-  // (The receiving side should have already have an endpoint attached and run
-  // via the |Channel|s. This endpoint will have both IDs assigned, so this ID
-  // is only needed to associated that endpoint with a particular dispatcher.)
-  ChannelEndpointId receiver_endpoint_id;
-};
-
-}  // namespace
 
 // MessagePipeDispatcher -------------------------------------------------------
 
@@ -103,23 +88,11 @@ scoped_refptr<MessagePipeDispatcher> MessagePipeDispatcher::Deserialize(
     Channel* channel,
     const void* source,
     size_t size) {
-  if (size != sizeof(SerializedMessagePipeDispatcher)) {
-    LOG(ERROR) << "Invalid serialized message pipe dispatcher";
-    return nullptr;
-  }
-
-  const SerializedMessagePipeDispatcher* s =
-      static_cast<const SerializedMessagePipeDispatcher*>(source);
   scoped_refptr<MessagePipe> message_pipe =
-      channel->PassIncomingMessagePipe(s->receiver_endpoint_id);
-  if (!message_pipe.get()) {
-    LOG(ERROR) << "Failed to deserialize message pipe dispatcher (ID = "
-               << s->receiver_endpoint_id << ")";
+      MessagePipe::Deserialize(channel, source, size);
+  if (!message_pipe.get())
     return nullptr;
-  }
 
-  DVLOG(2) << "Deserializing message pipe dispatcher (new local ID = "
-           << s->receiver_endpoint_id << ")";
   scoped_refptr<MessagePipeDispatcher> dispatcher(
       new MessagePipeDispatcher(MessagePipeDispatcher::kDefaultCreateOptions));
   dispatcher->Init(message_pipe, 0);
@@ -221,36 +194,26 @@ void MessagePipeDispatcher::RemoveWaiterImplNoLock(
 }
 
 void MessagePipeDispatcher::StartSerializeImplNoLock(
-    Channel* /*channel*/,
+    Channel* channel,
     size_t* max_size,
     size_t* max_platform_handles) {
   DCHECK(HasOneRef());  // Only one ref => no need to take the lock.
-  *max_size = sizeof(SerializedMessagePipeDispatcher);
-  *max_platform_handles = 0;
+  return message_pipe_->StartSerialize(port_, channel, max_size,
+                                       max_platform_handles);
 }
 
 bool MessagePipeDispatcher::EndSerializeAndCloseImplNoLock(
     Channel* channel,
     void* destination,
     size_t* actual_size,
-    embedder::PlatformHandleVector* /*platform_handles*/) {
+    embedder::PlatformHandleVector* platform_handles) {
   DCHECK(HasOneRef());  // Only one ref => no need to take the lock.
 
-  SerializedMessagePipeDispatcher* s =
-      static_cast<SerializedMessagePipeDispatcher*>(destination);
-
-  // Convert the local endpoint to a proxy endpoint (moving the message queue)
-  // and attach it to the channel.
-  s->receiver_endpoint_id = channel->AttachAndRunEndpoint(
-      message_pipe_->ConvertLocalToProxy(port_), false);
-  DVLOG(2) << "Serializing message pipe dispatcher (remote ID = "
-           << s->receiver_endpoint_id << ")";
-
+  bool rv = message_pipe_->EndSerialize(port_, channel, destination,
+                                        actual_size, platform_handles);
   message_pipe_ = nullptr;
   port_ = kInvalidPort;
-
-  *actual_size = sizeof(SerializedMessagePipeDispatcher);
-  return true;
+  return rv;
 }
 
 // MessagePipeDispatcherTransport ----------------------------------------------

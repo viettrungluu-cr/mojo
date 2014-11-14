@@ -5,7 +5,9 @@
 #include "mojo/edk/system/message_pipe.h"
 
 #include "base/logging.h"
+#include "mojo/edk/system/channel.h"
 #include "mojo/edk/system/channel_endpoint.h"
+#include "mojo/edk/system/channel_endpoint_id.h"
 #include "mojo/edk/system/local_message_pipe_endpoint.h"
 #include "mojo/edk/system/message_in_transit.h"
 #include "mojo/edk/system/message_pipe_dispatcher.h"
@@ -14,6 +16,19 @@
 
 namespace mojo {
 namespace system {
+
+namespace {
+
+// TODO(vtl): Move this into |Channel| (and possible further).
+struct SerializedMessagePipe {
+  // This is the endpoint ID on the receiving side, and should be a "remote ID".
+  // (The receiving side should already have had an endpoint attached and been
+  // run via the |Channel|s. This endpoint will have both IDs assigned, so this
+  // ID is only needed to associate that endpoint with a particular dispatcher.)
+  ChannelEndpointId receiver_endpoint_id;
+};
+
+}  // namespace
 
 // static
 MessagePipe* MessagePipe::CreateLocalLocal() {
@@ -51,6 +66,30 @@ MessagePipe* MessagePipe::CreateProxyLocal(
 unsigned MessagePipe::GetPeerPort(unsigned port) {
   DCHECK(port == 0 || port == 1);
   return port ^ 1;
+}
+
+// static
+scoped_refptr<MessagePipe> MessagePipe::Deserialize(Channel* channel,
+                                                    const void* source,
+                                                    size_t size) {
+  if (size != sizeof(SerializedMessagePipe)) {
+    LOG(ERROR) << "Invalid serialized message pipe";
+    return nullptr;
+  }
+
+  const SerializedMessagePipe* s =
+      static_cast<const SerializedMessagePipe*>(source);
+  scoped_refptr<MessagePipe> message_pipe =
+      channel->PassIncomingMessagePipe(s->receiver_endpoint_id);
+  if (!message_pipe.get()) {
+    LOG(ERROR) << "Failed to deserialize message pipe (ID = "
+               << s->receiver_endpoint_id << ")";
+    return nullptr;
+  }
+
+  DVLOG(2) << "Deserializing message pipe dispatcher (new local ID = "
+           << s->receiver_endpoint_id << ")";
+  return message_pipe;
 }
 
 MessagePipeEndpoint::Type MessagePipe::GetType(unsigned port) {
@@ -150,6 +189,32 @@ void MessagePipe::RemoveWaiter(unsigned port,
   DCHECK(endpoints_[port]);
 
   endpoints_[port]->RemoveWaiter(waiter, signals_state);
+}
+
+void MessagePipe::StartSerialize(unsigned /*port*/,
+                                 Channel* /*channel*/,
+                                 size_t* max_size,
+                                 size_t* max_platform_handles) {
+  *max_size = sizeof(SerializedMessagePipe);
+  *max_platform_handles = 0;
+}
+
+bool MessagePipe::EndSerialize(
+    unsigned port,
+    Channel* channel,
+    void* destination,
+    size_t* actual_size,
+    embedder::PlatformHandleVector* /*platform_handles*/) {
+  SerializedMessagePipe* s = static_cast<SerializedMessagePipe*>(destination);
+
+  // Convert the local endpoint to a proxy endpoint (moving the message queue)
+  // and attach it to the channel.
+  s->receiver_endpoint_id =
+      channel->AttachAndRunEndpoint(ConvertLocalToProxy(port), false);
+  DVLOG(2) << "Serializing message pipe (remote ID = "
+           << s->receiver_endpoint_id << ")";
+  *actual_size = sizeof(SerializedMessagePipe);
+  return true;
 }
 
 scoped_refptr<ChannelEndpoint> MessagePipe::ConvertLocalToProxy(unsigned port) {
