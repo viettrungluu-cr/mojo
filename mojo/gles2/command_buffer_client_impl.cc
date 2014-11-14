@@ -62,16 +62,22 @@ class CommandBufferClientImpl::SyncClientImpl
     return command_buffer_state_.Pass();
   }
 
+  gpu::Capabilities GetCapabilities() {
+    return capabilities_.To<gpu::Capabilities>();
+  }
+
  private:
   // CommandBufferSyncClient methods:
-  void DidInitialize(bool success) override {
+  void DidInitialize(bool success, GpuCapabilitiesPtr capabilities) override {
     initialized_successfully_ = success;
+    capabilities_ = capabilities.Pass();
   }
   void DidMakeProgress(CommandBufferStatePtr state) override {
     command_buffer_state_ = state.Pass();
   }
 
   bool initialized_successfully_;
+  GpuCapabilitiesPtr capabilities_;
   CommandBufferStatePtr command_buffer_state_;
 };
 
@@ -115,6 +121,7 @@ bool CommandBufferClientImpl::Initialize() {
     VLOG(1) << "Channel encountered error while creating command buffer";
     return false;
   }
+  capabilities_ = sync_client_impl_->GetCapabilities();
   return true;
 }
 
@@ -186,8 +193,7 @@ void CommandBufferClientImpl::DestroyTransferBuffer(int32 id) {
 }
 
 gpu::Capabilities CommandBufferClientImpl::GetCapabilities() {
-  // TODO(piman)
-  return gpu::Capabilities();
+  return capabilities_;
 }
 
 int32_t CommandBufferClientImpl::CreateImage(ClientBuffer buffer,

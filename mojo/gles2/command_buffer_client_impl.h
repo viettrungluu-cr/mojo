@@ -91,6 +91,7 @@ class CommandBufferClientImpl : public CommandBufferClient,
   CommandBufferPtr command_buffer_;
   scoped_ptr<SyncClientImpl> sync_client_impl_;
 
+  gpu::Capabilities capabilities_;
   State last_state_;
   mojo::ScopedSharedBufferHandle shared_state_handle_;
   gpu::CommandBufferSharedState* shared_state_;

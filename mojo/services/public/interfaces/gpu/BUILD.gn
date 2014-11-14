@@ -9,6 +9,7 @@ mojom("gpu") {
   sources = [
    "command_buffer.mojom",
    "gpu.mojom",
+   "gpu_capabilities.mojom",
   ]
 
   deps = [

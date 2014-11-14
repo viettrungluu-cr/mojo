@@ -75,7 +75,11 @@ void CommandBufferImpl::Initialize(
     CommandBufferSyncClientPtr sync_client,
     mojo::ScopedSharedBufferHandle shared_state) {
   sync_client_ = sync_client.Pass();
-  sync_client_->DidInitialize(DoInitialize(shared_state.Pass()));
+  bool success = DoInitialize(shared_state.Pass());
+  GpuCapabilitiesPtr capabilities =
+      success ? GpuCapabilities::From(decoder_->GetCapabilities())
+              : GpuCapabilities::New();
+  sync_client_->DidInitialize(success, capabilities.Pass());
 }
 
 bool CommandBufferImpl::DoInitialize(

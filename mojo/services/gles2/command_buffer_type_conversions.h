@@ -5,6 +5,7 @@
 #ifndef MOJO_SERVICES_GLES2_COMMAND_BUFFER_TYPE_CONVERSIONS_H_
 #define MOJO_SERVICES_GLES2_COMMAND_BUFFER_TYPE_CONVERSIONS_H_
 
+#include "gpu/command_buffer/common/capabilities.h"
 #include "gpu/command_buffer/common/command_buffer.h"
 #include "mojo/public/cpp/bindings/type_converter.h"
 #include "mojo/services/public/interfaces/gpu/command_buffer.mojom.h"
@@ -21,6 +22,44 @@ struct TypeConverter<CommandBufferStatePtr, gpu::CommandBuffer::State> {
 template <>
 struct TypeConverter<gpu::CommandBuffer::State, CommandBufferStatePtr> {
   static gpu::CommandBuffer::State Convert(const CommandBufferStatePtr& input);
+};
+
+template <>
+struct TypeConverter<GpuShaderPrecisionPtr,
+                     gpu::Capabilities::ShaderPrecision> {
+  static GpuShaderPrecisionPtr Convert(
+      const gpu::Capabilities::ShaderPrecision& input);
+};
+
+template <>
+struct TypeConverter<gpu::Capabilities::ShaderPrecision,
+                     GpuShaderPrecisionPtr> {
+  static gpu::Capabilities::ShaderPrecision Convert(
+      const GpuShaderPrecisionPtr& input);
+};
+
+template <>
+struct TypeConverter<GpuPerStagePrecisionsPtr,
+                     gpu::Capabilities::PerStagePrecisions> {
+  static GpuPerStagePrecisionsPtr Convert(
+      const gpu::Capabilities::PerStagePrecisions& input);
+};
+
+template <>
+struct TypeConverter<gpu::Capabilities::PerStagePrecisions,
+                     GpuPerStagePrecisionsPtr> {
+  static gpu::Capabilities::PerStagePrecisions Convert(
+      const GpuPerStagePrecisionsPtr& input);
+};
+
+template <>
+struct TypeConverter<GpuCapabilitiesPtr, gpu::Capabilities> {
+  static GpuCapabilitiesPtr Convert(const gpu::Capabilities& input);
+};
+
+template <>
+struct TypeConverter<gpu::Capabilities, GpuCapabilitiesPtr> {
+  static gpu::Capabilities Convert(const GpuCapabilitiesPtr& input);
 };
 
 }  // namespace mojo
