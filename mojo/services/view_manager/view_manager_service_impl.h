@@ -28,10 +28,12 @@ class AccessPolicy;
 class ConnectionManager;
 class ServerView;
 
-// Manages a connection from the client.
-class ViewManagerServiceImpl
-    : public InterfaceImpl<ViewManagerService>,
-      public AccessPolicyDelegate {
+// An instance of ViewManagerServiceImpl is created for every ViewManagerService
+// request. ViewManagerServiceImpl tracks all the state and views created by a
+// client. ViewManagerServiceImpl coordinates with ConnectionManager to update
+// the client (and internal state) as necessary.
+class ViewManagerServiceImpl : public ViewManagerService,
+                               public AccessPolicyDelegate {
  public:
   using ViewIdSet = base::hash_set<Id>;
 
@@ -42,13 +44,16 @@ class ViewManagerServiceImpl
                          const ViewId& root_id);
   ~ViewManagerServiceImpl() override;
 
-  // Called after bound. |service_provider| is the ServiceProvider to pass to
-  // the client via OnEmbed().
-  void Init(InterfaceRequest<ServiceProvider> service_provider);
+  // |service_provider| is the ServiceProvider to pass to the client via
+  // OnEmbed().
+  void Init(ViewManagerClient* client,
+            InterfaceRequest<ServiceProvider> service_provider);
 
   ConnectionSpecificId id() const { return id_; }
   ConnectionSpecificId creator_id() const { return creator_id_; }
   const std::string& url() const { return url_; }
+
+  ViewManagerClient* client() { return client_; }
 
   // Returns the View with the specified id.
   ServerView* GetView(const ViewId& id) {
@@ -91,11 +96,6 @@ class ViewManagerServiceImpl
                                        bool originated_change);
   void ProcessViewPropertiesChanged(const ServerView* view,
                                     bool originated_change);
-
-  // TODO(sky): move this to private section (currently can't because of
-  // bindings).
-  // InterfaceImp overrides:
-  void OnConnectionError() override;
 
  private:
   typedef std::map<ConnectionSpecificId, ServerView*> ViewMap;
@@ -201,6 +201,8 @@ class ViewManagerServiceImpl
 
   // The URL of the app that embedded the app this connection was created for.
   const std::string creator_url_;
+
+  ViewManagerClient* client_;
 
   scoped_ptr<AccessPolicy> access_policy_;
 

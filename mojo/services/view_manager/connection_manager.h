@@ -9,6 +9,7 @@
 #include <set>
 
 #include "base/basictypes.h"
+#include "base/memory/scoped_ptr.h"
 #include "mojo/public/cpp/application/interface_factory.h"
 #include "mojo/public/cpp/bindings/array.h"
 #include "mojo/public/cpp/bindings/error_handler.h"
@@ -25,18 +26,17 @@ class ApplicationConnection;
 
 namespace service {
 
+class ClientConnection;
 class ConnectionManagerDelegate;
 class ViewManagerServiceImpl;
 class WindowManagerInternalClientImpl;
 
 // ConnectionManager manages the set of connections to the ViewManager (all the
 // ViewManagerServiceImpls) as well as providing the root of the hierarchy.
-class ConnectionManager
-    : public ServerViewDelegate,
-      public WindowManagerInternalClient,
-      public InterfaceFactory<ViewManagerService>,
-      public InterfaceFactory<WindowManagerInternalClient>,
-      public ErrorHandler {
+class ConnectionManager : public ServerViewDelegate,
+                          public WindowManagerInternalClient,
+                          public InterfaceFactory<ViewManagerService>,
+                          public InterfaceFactory<WindowManagerInternalClient> {
  public:
   // Create when a ViewManagerServiceImpl is about to make a change. Ensures
   // clients are notified correctly.
@@ -79,7 +79,7 @@ class ConnectionManager
   ConnectionSpecificId GetAndAdvanceNextConnectionId();
 
   // Invoked when a ViewManagerServiceImpl's connection encounters an error.
-  void OnConnectionError(ViewManagerServiceImpl* connection);
+  void OnConnectionError(ClientConnection* connection);
 
   // See description of ViewManagerService::Embed() for details. This assumes
   // |transport_view_id| is valid.
@@ -136,7 +136,7 @@ class ConnectionManager
   void ProcessViewDeleted(const ViewId& view);
 
  private:
-  typedef std::map<ConnectionSpecificId, ViewManagerServiceImpl*> ConnectionMap;
+  typedef std::map<ConnectionSpecificId, ClientConnection*> ConnectionMap;
 
   // Invoked when a connection is about to make a change.  Subsequently followed
   // by FinishChange() once the change is done.
@@ -155,7 +155,7 @@ class ConnectionManager
   }
 
   // Adds |connection| to internal maps.
-  void AddConnection(ViewManagerServiceImpl* connection);
+  void AddConnection(ClientConnection* connection);
 
   // Overridden from ServerViewDelegate:
   void OnViewDestroyed(const ServerView* view) override;
@@ -190,17 +190,14 @@ class ConnectionManager
   void Create(ApplicationConnection* connection,
               InterfaceRequest<WindowManagerInternalClient> request) override;
 
-  // ErrorHandler:
-  void OnConnectionError() override;
-
   ApplicationConnection* app_connection_;
 
   ConnectionManagerDelegate* delegate_;
 
-  // The ViewManager implementation provided to the initial connection (the
-  // WindowManager).
-  // NOTE: |window_manager_vm_service_| is also in |connection_map_|.
-  ViewManagerServiceImpl* window_manager_vm_service_;
+  // The ClientConnection containing the ViewManagerService implementation
+  // provided to the initial connection (the WindowManager).
+  // NOTE: |window_manager_client_connection_| is also in |connection_map_|.
+  ClientConnection* window_manager_client_connection_;
 
   // ID to use for next ViewManagerServiceImpl.
   ConnectionSpecificId next_connection_id_;

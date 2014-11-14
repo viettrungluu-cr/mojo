@@ -21,6 +21,8 @@ source_set("view_manager_lib") {
   sources = [
     "access_policy.h",
     "access_policy_delegate.h",
+    "client_connection.cc",
+    "client_connection.h",
     "connection_manager.cc",
     "connection_manager.h",
     "connection_manager_delegate.h",

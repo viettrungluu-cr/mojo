@@ -27,7 +27,8 @@ ViewManagerServiceImpl::ViewManagerServiceImpl(
       id_(connection_manager_->GetAndAdvanceNextConnectionId()),
       url_(url),
       creator_id_(creator_id),
-      creator_url_(creator_url) {
+      creator_url_(creator_url),
+      client_(nullptr) {
   CHECK(GetView(root_id));
   root_.reset(new ViewId(root_id));
   if (root_id == RootViewId())
@@ -41,7 +42,10 @@ ViewManagerServiceImpl::~ViewManagerServiceImpl() {
 }
 
 void ViewManagerServiceImpl::Init(
+    ViewManagerClient* client,
     InterfaceRequest<ServiceProvider> service_provider) {
+  DCHECK(!client_);
+  client_ = client;
   std::vector<const ServerView*> to_send;
   if (root_.get())
     GetUnknownViewsFrom(GetView(*root_), &to_send);
@@ -49,11 +53,8 @@ void ViewManagerServiceImpl::Init(
   MessagePipe pipe;
   connection_manager_->wm_internal()->CreateWindowManagerForViewManagerClient(
       id_, pipe.handle1.Pass());
-  client()->OnEmbed(id_,
-                    creator_url_,
-                    ViewToViewData(to_send.front()),
-                    service_provider.Pass(),
-                    pipe.handle0.Pass());
+  client->OnEmbed(id_, creator_url_, ViewToViewData(to_send.front()),
+                  service_provider.Pass(), pipe.handle0.Pass());
 }
 
 const ServerView* ViewManagerServiceImpl::GetView(const ViewId& id) const {
@@ -214,10 +215,6 @@ void ViewManagerServiceImpl::ProcessWillChangeViewVisibility(
   }
 
   NotifyDrawnStateChanged(view, view_target_drawn_state);
-}
-
-void ViewManagerServiceImpl::OnConnectionError() {
-  connection_manager_->OnConnectionError(this);
 }
 
 bool ViewManagerServiceImpl::IsViewKnown(const ServerView* view) const {
