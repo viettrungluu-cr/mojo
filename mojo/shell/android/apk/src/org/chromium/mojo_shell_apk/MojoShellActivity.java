@@ -33,7 +33,7 @@ public class MojoShellActivity extends Activity {
             return;
         }
 
-        MojoMain.ensureInitialized(getApplicationContext());
+        MojoMain.ensureInitialized(getApplicationContext(), getParametersFromIntent(getIntent()));
 
         String appUrl = getUrlFromIntent(getIntent());
         if (appUrl == null) {
@@ -58,6 +58,10 @@ public class MojoShellActivity extends Activity {
 
     private static String getUrlFromIntent(Intent intent) {
         return intent != null ? intent.getDataString() : null;
+    }
+
+    private static String[] getParametersFromIntent(Intent intent) {
+        return intent != null ? intent.getStringArrayExtra("parameters") : null;
     }
 
     private void startWithURL(String url) {

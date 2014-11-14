@@ -82,22 +82,6 @@ void Usage() {
       << "application/javascript,mojo:js_content_handler\n";
 }
 
-bool ConfigureURLMappings(const std::string& mappings,
-                          mojo::shell::MojoURLResolver* resolver) {
-  base::StringPairs pairs;
-  if (!base::SplitStringIntoKeyValuePairs(mappings, '=', ',', &pairs))
-    return false;
-  using StringPair = std::pair<std::string, std::string>;
-  for (const StringPair& pair : pairs) {
-    const GURL from(pair.first);
-    const GURL to(pair.second);
-    if (!from.is_valid() || !to.is_valid())
-      return false;
-    resolver->AddCustomMapping(from, to);
-  }
-  return true;
-}
-
 bool IsArgsFor(const std::string& arg, std::string* value) {
   const std::string kArgsForSwitches[] = {
     "-" + std::string(switches::kArgsFor),
@@ -148,17 +132,7 @@ int main(int argc, char** argv) {
     mojo::shell::Context shell_context;
     {
       base::MessageLoop message_loop;
-      shell_context.Init();
-
-      if (command_line.HasSwitch(switches::kOrigin)) {
-        shell_context.mojo_url_resolver()->SetBaseURL(
-            GURL(command_line.GetSwitchValueASCII(switches::kOrigin)));
-      }
-
-      if (command_line.HasSwitch(switches::kURLMappings) &&
-          !ConfigureURLMappings(
-              command_line.GetSwitchValueASCII(switches::kURLMappings),
-              shell_context.mojo_url_resolver())) {
+      if (!shell_context.Init()) {
         Usage();
         return 0;
       }

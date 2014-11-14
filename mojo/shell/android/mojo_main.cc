@@ -4,6 +4,7 @@
 
 #include "mojo/shell/android/mojo_main.h"
 
+#include "base/android/command_line_android.h"
 #include "base/android/java_handler_thread.h"
 #include "base/android/jni_string.h"
 #include "base/at_exit.h"
@@ -47,12 +48,15 @@ void RunShell(std::vector<GURL> app_urls) {
 
 }  // namespace
 
-static void Init(JNIEnv* env, jclass clazz, jobject context) {
+static void Init(JNIEnv* env,
+                 jclass clazz,
+                 jobject context,
+                 jobjectArray jparameters) {
   base::android::ScopedJavaLocalRef<jobject> scoped_context(env, context);
 
   base::android::InitApplicationContext(env, scoped_context);
 
-  base::CommandLine::Init(0, 0);
+  base::android::InitNativeCommandLineFromJavaArray(env, jparameters);
   mojo::shell::InitializeLogging();
 
   // We want ~MessageLoop to happen prior to ~Context. Initializing

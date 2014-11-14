@@ -31,7 +31,7 @@ class Context : ApplicationManager::Delegate {
   Context();
   ~Context() override;
 
-  void Init();
+  bool Init();
 
   void Run(const GURL& url);
   ScopedMessagePipeHandle ConnectToServiceByName(

@@ -104,6 +104,22 @@ class EmptyServiceProvider : public InterfaceImpl<ServiceProvider> {
                         ScopedMessagePipeHandle client_handle) override {}
 };
 
+bool ConfigureURLMappings(const std::string& mappings,
+                          mojo::shell::MojoURLResolver* resolver) {
+  base::StringPairs pairs;
+  if (!base::SplitStringIntoKeyValuePairs(mappings, '=', ',', &pairs))
+    return false;
+  using StringPair = std::pair<std::string, std::string>;
+  for (const StringPair& pair : pairs) {
+    const GURL from(pair.first);
+    const GURL to(pair.second);
+    if (!from.is_valid() || !to.is_valid())
+      return false;
+    resolver->AddCustomMapping(from, to);
+  }
+  return true;
+}
+
 }  // namespace
 
 #if defined(OS_ANDROID)
@@ -167,7 +183,7 @@ Context::~Context() {
   DCHECK(!base::MessageLoop::current());
 }
 
-void Context::Init() {
+bool Context::Init() {
   setup.Get();
   task_runners_.reset(
       new TaskRunners(base::MessageLoop::current()->message_loop_proxy()));
@@ -191,6 +207,17 @@ void Context::Init() {
         base::Bind(&ApplicationManager::RegisterExternalApplication,
                    base::Unretained(&application_manager_)));
   }
+  if (command_line->HasSwitch(switches::kOrigin)) {
+    mojo_url_resolver()->SetBaseURL(
+        GURL(command_line->GetSwitchValueASCII(switches::kOrigin)));
+  }
+  if (command_line->HasSwitch(switches::kURLMappings) &&
+      !ConfigureURLMappings(
+          command_line->GetSwitchValueASCII(switches::kURLMappings),
+          mojo_url_resolver())) {
+    return false;
+  }
+
   scoped_ptr<DynamicServiceRunnerFactory> runner_factory;
   if (command_line->HasSwitch(switches::kEnableMultiprocess))
     runner_factory.reset(new OutOfProcessDynamicServiceRunnerFactory());
@@ -239,6 +266,8 @@ void Context::Init() {
 
   if (listener_)
     listener_->WaitForListening();
+
+  return true;
 }
 
 void Context::OnApplicationError(const GURL& url) {

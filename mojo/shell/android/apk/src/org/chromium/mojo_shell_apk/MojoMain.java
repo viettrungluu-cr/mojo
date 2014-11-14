@@ -8,6 +8,10 @@ import android.content.Context;
 
 import org.chromium.base.JNINamespace;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 /**
  * A placeholder class to call native functions.
  **/
@@ -21,10 +25,16 @@ public class MojoMain {
     /**
      * Initializes the native system.
      **/
-    public static void ensureInitialized(Context applicationContext) {
+    public static void ensureInitialized(Context applicationContext, String[] parameters) {
         if (sInitialized)
             return;
-        nativeInit(applicationContext);
+        List<String> parametersList = new ArrayList<String>();
+        // Program name.
+        parametersList.add("mojo_shell");
+        if (parameters != null) {
+            parametersList.addAll(Arrays.asList(parameters));
+        }
+        nativeInit(applicationContext, parametersList.toArray(new String[parametersList.size()]));
         sInitialized = true;
     }
 
@@ -38,6 +48,6 @@ public class MojoMain {
     /**
      * Initializes the native system. This API should be called only once per process.
      **/
-    private static native void nativeInit(Context context);
+    private static native void nativeInit(Context context, String[] parameters);
     private static native void nativeStart(String appUrl);
 };
