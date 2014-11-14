@@ -56,17 +56,22 @@ void ChannelManager::WillShutdownChannel(ChannelId channel_id) {
 }
 
 void ChannelManager::ShutdownChannel(ChannelId channel_id) {
-  ShutdownChannelHelper(GetChannelInfo(channel_id));
+  ChannelInfo channel_info;
+  {
+    base::AutoLock locker(lock_);
+    auto it = channel_infos_.find(channel_id);
+    DCHECK(it != channel_infos_.end());
+    channel_info.Swap(&it->second);
+    channel_infos_.erase(it);
+  }
+  ShutdownChannelHelper(channel_info);
 }
 
 ChannelInfo ChannelManager::GetChannelInfo(ChannelId channel_id) {
-  ChannelInfo rv;
   base::AutoLock locker(lock_);
   auto it = channel_infos_.find(channel_id);
   DCHECK(it != channel_infos_.end());
-  rv.Swap(&it->second);
-  channel_infos_.erase(it);
-  return rv;
+  return it->second;
 }
 
 }  // namespace system
