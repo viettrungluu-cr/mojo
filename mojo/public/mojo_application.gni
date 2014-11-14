@@ -15,7 +15,7 @@ template("mojo_native_application") {
 
   if (is_linux || is_android) {
     library_name = "lib${library_target_name}.so"
-  } else if (is_windows) {
+  } else if (is_win) {
     library_name = "${library_target_name}.dll"
   } else if (is_mac) {
     library_name = "${library_target_name}.so"
