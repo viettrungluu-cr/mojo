@@ -215,7 +215,7 @@ scoped_refptr<MessagePipe> Channel::PassIncomingMessagePipe(
 
   auto it = incoming_message_pipes_.find(local_id);
   if (it == incoming_message_pipes_.end())
-    return scoped_refptr<MessagePipe>();
+    return nullptr;
 
   scoped_refptr<MessagePipe> rv;
   rv.swap(it->second);

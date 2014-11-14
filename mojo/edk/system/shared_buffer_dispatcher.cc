@@ -95,7 +95,7 @@ scoped_refptr<SharedBufferDispatcher> SharedBufferDispatcher::Deserialize(
 
   if (size != sizeof(SerializedSharedBufferDispatcher)) {
     LOG(ERROR) << "Invalid serialized shared buffer dispatcher (bad size)";
-    return scoped_refptr<SharedBufferDispatcher>();
+    return nullptr;
   }
 
   const SerializedSharedBufferDispatcher* serialization =
@@ -106,13 +106,13 @@ scoped_refptr<SharedBufferDispatcher> SharedBufferDispatcher::Deserialize(
   if (!num_bytes) {
     LOG(ERROR)
         << "Invalid serialized shared buffer dispatcher (invalid num_bytes)";
-    return scoped_refptr<SharedBufferDispatcher>();
+    return nullptr;
   }
 
   if (!platform_handles || platform_handle_index >= platform_handles->size()) {
     LOG(ERROR)
         << "Invalid serialized shared buffer dispatcher (missing handles)";
-    return scoped_refptr<SharedBufferDispatcher>();
+    return nullptr;
   }
 
   // Starts off invalid, which is what we want.
@@ -129,7 +129,7 @@ scoped_refptr<SharedBufferDispatcher> SharedBufferDispatcher::Deserialize(
   if (!shared_buffer.get()) {
     LOG(ERROR)
         << "Invalid serialized shared buffer dispatcher (invalid num_bytes?)";
-    return scoped_refptr<SharedBufferDispatcher>();
+    return nullptr;
   }
 
   return scoped_refptr<SharedBufferDispatcher>(

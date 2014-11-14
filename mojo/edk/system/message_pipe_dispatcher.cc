@@ -105,7 +105,7 @@ scoped_refptr<MessagePipeDispatcher> MessagePipeDispatcher::Deserialize(
     size_t size) {
   if (size != sizeof(SerializedMessagePipeDispatcher)) {
     LOG(ERROR) << "Invalid serialized message pipe dispatcher";
-    return scoped_refptr<MessagePipeDispatcher>();
+    return nullptr;
   }
 
   const SerializedMessagePipeDispatcher* s =
@@ -115,7 +115,7 @@ scoped_refptr<MessagePipeDispatcher> MessagePipeDispatcher::Deserialize(
   if (!message_pipe.get()) {
     LOG(ERROR) << "Failed to deserialize message pipe dispatcher (ID = "
                << s->receiver_endpoint_id << ")";
-    return scoped_refptr<MessagePipeDispatcher>();
+    return nullptr;
   }
 
   DVLOG(2) << "Deserializing message pipe dispatcher (new local ID = "

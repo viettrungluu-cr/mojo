@@ -273,7 +273,7 @@ MojoResult MessagePipe::AttachTransportsNoLock(
           (*transports)[i].CreateEquivalentDispatcherAndClose());
     } else {
       LOG(WARNING) << "Enqueueing null dispatcher";
-      dispatchers->push_back(scoped_refptr<Dispatcher>());
+      dispatchers->push_back(nullptr);
     }
   }
   message->SetDispatchers(dispatchers.Pass());

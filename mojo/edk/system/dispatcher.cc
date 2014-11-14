@@ -72,7 +72,7 @@ scoped_refptr<Dispatcher> Dispatcher::TransportDataAccess::Deserialize(
   switch (static_cast<int32_t>(type)) {
     case kTypeUnknown:
       DVLOG(2) << "Deserializing invalid handle";
-      return scoped_refptr<Dispatcher>();
+      return nullptr;
     case kTypeMessagePipe:
       return scoped_refptr<Dispatcher>(
           MessagePipeDispatcher::Deserialize(channel, source, size));
@@ -81,7 +81,7 @@ scoped_refptr<Dispatcher> Dispatcher::TransportDataAccess::Deserialize(
       // TODO(vtl): Implement.
       LOG(WARNING) << "Deserialization of dispatcher type " << type
                    << " not supported";
-      return scoped_refptr<Dispatcher>();
+      return nullptr;
     case kTypeSharedBuffer:
       return scoped_refptr<Dispatcher>(SharedBufferDispatcher::Deserialize(
           channel, source, size, platform_handles));
@@ -90,7 +90,7 @@ scoped_refptr<Dispatcher> Dispatcher::TransportDataAccess::Deserialize(
           channel, source, size, platform_handles));
   }
   LOG(WARNING) << "Unknown dispatcher type " << type;
-  return scoped_refptr<Dispatcher>();
+  return nullptr;
 }
 
 MojoResult Dispatcher::Close() {
