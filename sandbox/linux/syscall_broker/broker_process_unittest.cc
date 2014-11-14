@@ -6,6 +6,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <poll.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -24,6 +25,7 @@
 #include "base/memory/scoped_ptr.h"
 #include "base/posix/eintr_wrapper.h"
 #include "base/posix/unix_domain_socket_linux.h"
+#include "sandbox/linux/syscall_broker/broker_client.h"
 #include "sandbox/linux/tests/scoped_temporary_file.h"
 #include "sandbox/linux/tests/test_utils.h"
 #include "sandbox/linux/tests/unit_tests.h"
@@ -31,10 +33,15 @@
 
 namespace sandbox {
 
+namespace syscall_broker {
+
 class BrokerProcessTestHelper {
  public:
-  static int get_ipc_socketpair(const BrokerProcess* broker) {
-    return broker->ipc_socketpair_;
+  static void CloseChannel(BrokerProcess* broker) { broker->CloseChannel(); }
+  // Get the client's IPC descriptor to send IPC requests directly.
+  // TODO(jln): refator tests to get rid of this.
+  static int GetIPCDescriptor(const BrokerProcess* broker) {
+    return broker->broker_client_->GetIPCDescriptor();
   }
 };
 
@@ -453,7 +460,7 @@ SANDBOX_TEST_ALLOW_NOISE(BrokerProcess, RecvMsgDescriptorLeak) {
   BrokerProcess open_broker(EPERM, read_whitelist, std::vector<std::string>());
   SANDBOX_ASSERT(open_broker.Init(base::Bind(&NoOpCallback)));
 
-  const int ipc_fd = BrokerProcessTestHelper::get_ipc_socketpair(&open_broker);
+  const int ipc_fd = BrokerProcessTestHelper::GetIPCDescriptor(&open_broker);
   SANDBOX_ASSERT(ipc_fd >= 0);
 
   static const char kBogus[] = "not a pickle";
@@ -471,5 +478,61 @@ SANDBOX_TEST_ALLOW_NOISE(BrokerProcess, RecvMsgDescriptorLeak) {
   SANDBOX_ASSERT(fd >= 0);
   SANDBOX_ASSERT(0 == IGNORE_EINTR(close(fd)));
 }
+
+bool CloseFD(int fd) {
+  PCHECK(0 == IGNORE_EINTR(close(fd)));
+  return true;
+}
+
+// Return true if the other end of the |reader| pipe was closed,
+// false if |timeout_in_seconds| was reached or another event
+// or error occured.
+bool WaitForClosedPipeWriter(int reader, int timeout_in_ms) {
+  struct pollfd poll_fd = {reader, POLLIN | POLLRDHUP, 0};
+  const int num_events = HANDLE_EINTR(poll(&poll_fd, 1, timeout_in_ms));
+  if (1 == num_events && poll_fd.revents | POLLHUP)
+    return true;
+  return false;
+}
+
+// Closing the broker client's IPC channel should terminate the broker
+// process.
+TEST(BrokerProcess, BrokerDiesOnClosedChannel) {
+  std::vector<std::string> read_whitelist;
+  read_whitelist.push_back("/proc/cpuinfo");
+
+  // Get the writing end of a pipe into the broker (child) process so
+  // that we can reliably detect when it dies.
+  int lifeline_fds[2];
+  PCHECK(0 == pipe(lifeline_fds));
+
+  BrokerProcess open_broker(EPERM, read_whitelist, std::vector<std::string>(),
+                            true /* fast_check_in_client */,
+                            false /* quiet_failures_for_tests */);
+  ASSERT_TRUE(open_broker.Init(base::Bind(&CloseFD, lifeline_fds[0])));
+  // Make sure the writing end only exists in the broker process.
+  CloseFD(lifeline_fds[1]);
+  base::ScopedFD reader(lifeline_fds[0]);
+
+  const pid_t broker_pid = open_broker.broker_pid();
+
+  // This should cause the broker process to exit.
+  BrokerProcessTestHelper::CloseChannel(&open_broker);
+
+  const int kTimeoutInMilliseconds = 5000;
+  const bool broker_lifeline_closed =
+      WaitForClosedPipeWriter(reader.get(), kTimeoutInMilliseconds);
+  // If the broker exited, its lifeline fd should be closed.
+  ASSERT_TRUE(broker_lifeline_closed);
+  // Now check that the broker has exited, but do not reap it.
+  siginfo_t process_info;
+  ASSERT_EQ(0, HANDLE_EINTR(waitid(P_PID, broker_pid, &process_info,
+                                   WEXITED | WNOWAIT)));
+  EXPECT_EQ(broker_pid, process_info.si_pid);
+  EXPECT_EQ(CLD_EXITED, process_info.si_code);
+  EXPECT_EQ(1, process_info.si_status);
+}
+
+}  // namespace syscall_broker
 
 }  // namespace sandbox

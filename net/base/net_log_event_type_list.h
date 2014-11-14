@@ -26,21 +26,12 @@ EVENT_TYPE(CANCELLED)
 //   }
 EVENT_TYPE(FAILED)
 
-// Marks the creation/destruction of a request (net::URLRequest or
-// SocketStream).
+// Marks the creation/destruction of a request (net::URLRequest).
 EVENT_TYPE(REQUEST_ALIVE)
 
 // ------------------------------------------------------------------------
 // HostResolverImpl
 // ------------------------------------------------------------------------
-
-// The start/end of waiting on a host resolve (DNS) request.
-// The BEGIN phase contains the following parameters:
-//
-//   {
-//     "source_dependency": <Source id of the request being waited on>,
-//   }
-EVENT_TYPE(HOST_RESOLVER_IMPL)
 
 // The start/end of a host resolve (DNS) request.  Note that these events are
 // logged for all DNS requests, though not all requests result in the creation
@@ -50,12 +41,11 @@ EVENT_TYPE(HOST_RESOLVER_IMPL)
 //
 //   {
 //     "host": <Hostname associated with the request>,
-//     "address_family": <The address family to restrict results to>
+//     "address_family": <The address family to restrict results to>,
 //     "allow_cached_response": <Whether it is ok to return a result from
-//                               the host cache>
+//                               the host cache>,
 //     "is_speculative": <Whether this request was started by the DNS
 //                        prefetcher>
-//     "source_dependency": <Source id, if any, of what created the request>,
 //   }
 //
 // If an error occurred, the END phase will contain these parameters:
@@ -1692,49 +1682,6 @@ EVENT_TYPE(QUIC_HTTP_STREAM_READ_RESPONSE_HEADERS)
 
 // Measures the time to read HTTP response headers from the server.
 EVENT_TYPE(HTTP_STREAM_PARSER_READ_HEADERS)
-
-// ------------------------------------------------------------------------
-// SocketStream
-// ------------------------------------------------------------------------
-
-// Measures the time between SocketStream::Connect() and
-// SocketStream::DidEstablishConnection()
-//
-// For the BEGIN phase, the following parameters are attached:
-//   {
-//      "url": <String of URL being loaded>,
-//   }
-//
-// For the END phase, if there was an error, the following parameters are
-// attached:
-//   {
-//      "net_error": <Net error code of the failure>,
-//   }
-EVENT_TYPE(SOCKET_STREAM_CONNECT)
-
-// A message sent on the SocketStream.
-EVENT_TYPE(SOCKET_STREAM_SENT)
-
-// A message received on the SocketStream.
-EVENT_TYPE(SOCKET_STREAM_RECEIVED)
-
-// ------------------------------------------------------------------------
-// WebSocketJob
-// ------------------------------------------------------------------------
-
-// This event is sent for a WebSocket handshake request.
-// The following parameters are attached:
-//   {
-//     "headers": <handshake request message>,
-//   }
-EVENT_TYPE(WEB_SOCKET_SEND_REQUEST_HEADERS)
-
-// This event is sent on receipt of the WebSocket handshake response headers.
-// The following parameters are attached:
-//   {
-//     "headers": <handshake response message>,
-//   }
-EVENT_TYPE(WEB_SOCKET_READ_RESPONSE_HEADERS)
 
 // ------------------------------------------------------------------------
 // SOCKS5ClientSocket

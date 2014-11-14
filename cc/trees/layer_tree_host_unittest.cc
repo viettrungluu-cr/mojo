@@ -67,6 +67,151 @@ namespace {
 
 class LayerTreeHostTest : public LayerTreeTest {};
 
+// Test if the LTHI receives ReadyToActivate notifications from the TileManager
+// when no raster tasks get scheduled.
+class LayerTreeHostTestReadyToActivateEmpty : public LayerTreeHostTest {
+ public:
+  LayerTreeHostTestReadyToActivateEmpty()
+      : did_notify_ready_to_activate_(false),
+        all_tiles_required_for_activation_are_ready_to_draw_(false),
+        required_for_activation_count_(0) {}
+
+  void BeginTest() override { PostSetNeedsCommitToMainThread(); }
+
+  void CommitCompleteOnThread(LayerTreeHostImpl* impl) override {
+    const std::vector<PictureLayerImpl*>& layers = impl->GetPictureLayers();
+    required_for_activation_count_ = 0;
+    for (const auto& layer : layers) {
+      FakePictureLayerImpl* fake_layer =
+          static_cast<FakePictureLayerImpl*>(layer);
+      required_for_activation_count_ +=
+          fake_layer->CountTilesRequiredForActivation();
+    }
+  }
+
+  void NotifyReadyToActivateOnThread(LayerTreeHostImpl* impl) override {
+    did_notify_ready_to_activate_ = true;
+    const std::vector<PictureLayerImpl*>& layers = impl->GetPictureLayers();
+    all_tiles_required_for_activation_are_ready_to_draw_ = true;
+    for (const auto& layer : layers) {
+      if (!layer->AllTilesRequiredForActivationAreReadyToDraw())
+        all_tiles_required_for_activation_are_ready_to_draw_ = false;
+    }
+    EndTest();
+  }
+
+  void AfterTest() override {
+    EXPECT_TRUE(did_notify_ready_to_activate_);
+    EXPECT_TRUE(all_tiles_required_for_activation_are_ready_to_draw_);
+    EXPECT_EQ(size_t(0), required_for_activation_count_);
+  }
+
+ protected:
+  bool did_notify_ready_to_activate_;
+  bool all_tiles_required_for_activation_are_ready_to_draw_;
+  size_t required_for_activation_count_;
+};
+
+SINGLE_AND_MULTI_THREAD_IMPL_TEST_F(LayerTreeHostTestReadyToActivateEmpty);
+
+// Test if the LTHI receives ReadyToActivate notifications from the TileManager
+// when some raster tasks flagged as REQUIRED_FOR_ACTIVATION got scheduled.
+class LayerTreeHostTestReadyToActivateNonEmpty
+    : public LayerTreeHostTestReadyToActivateEmpty {
+ public:
+  void SetupTree() override {
+    client_.set_fill_with_nonsolid_color(true);
+    scoped_refptr<FakePictureLayer> root_layer =
+        FakePictureLayer::Create(&client_);
+    root_layer->SetBounds(gfx::Size(1024, 1024));
+    root_layer->SetIsDrawable(true);
+
+    layer_tree_host()->SetRootLayer(root_layer);
+    LayerTreeHostTest::SetupTree();
+  }
+
+  void AfterTest() override {
+    EXPECT_TRUE(did_notify_ready_to_activate_);
+    EXPECT_TRUE(all_tiles_required_for_activation_are_ready_to_draw_);
+    EXPECT_LE(size_t(1), required_for_activation_count_);
+  }
+
+ private:
+  FakeContentLayerClient client_;
+};
+
+SINGLE_AND_MULTI_THREAD_IMPL_TEST_F(LayerTreeHostTestReadyToActivateNonEmpty);
+
+// Test if the LTHI receives ReadyToDraw notifications from the TileManager when
+// no raster tasks get scheduled.
+class LayerTreeHostTestReadyToDrawEmpty : public LayerTreeHostTest {
+ public:
+  LayerTreeHostTestReadyToDrawEmpty()
+      : did_notify_ready_to_draw_(false),
+        all_tiles_required_for_draw_are_ready_to_draw_(false),
+        required_for_draw_count_(0) {}
+
+  void BeginTest() override { PostSetNeedsCommitToMainThread(); }
+
+  void NotifyReadyToDrawOnThread(LayerTreeHostImpl* impl) override {
+    did_notify_ready_to_draw_ = true;
+    const std::vector<PictureLayerImpl*>& layers = impl->GetPictureLayers();
+    all_tiles_required_for_draw_are_ready_to_draw_ = true;
+    for (const auto& layer : layers) {
+      if (!layer->AllTilesRequiredForDrawAreReadyToDraw())
+        all_tiles_required_for_draw_are_ready_to_draw_ = false;
+      FakePictureLayerImpl* fake_layer =
+          static_cast<FakePictureLayerImpl*>(layer);
+      required_for_draw_count_ += fake_layer->CountTilesRequiredForDraw();
+    }
+
+    EndTest();
+  }
+
+  void AfterTest() override {
+    EXPECT_TRUE(did_notify_ready_to_draw_);
+    EXPECT_TRUE(all_tiles_required_for_draw_are_ready_to_draw_);
+    EXPECT_EQ(size_t(0), required_for_draw_count_);
+  }
+
+ protected:
+  bool did_notify_ready_to_draw_;
+  bool all_tiles_required_for_draw_are_ready_to_draw_;
+  size_t required_for_draw_count_;
+};
+
+SINGLE_AND_MULTI_THREAD_IMPL_TEST_F(LayerTreeHostTestReadyToDrawEmpty);
+
+// Test if the LTHI receives ReadyToDraw notifications from the TileManager when
+// some raster tasks flagged as REQUIRED_FOR_DRAW got scheduled.
+class LayerTreeHostTestReadyToDrawNonEmpty
+    : public LayerTreeHostTestReadyToDrawEmpty {
+ public:
+  void SetupTree() override {
+    client_.set_fill_with_nonsolid_color(true);
+    scoped_refptr<FakePictureLayer> root_layer =
+        FakePictureLayer::Create(&client_);
+    root_layer->SetBounds(gfx::Size(1024, 1024));
+    root_layer->SetIsDrawable(true);
+
+    layer_tree_host()->SetRootLayer(root_layer);
+    LayerTreeHostTest::SetupTree();
+  }
+
+  void AfterTest() override {
+    EXPECT_TRUE(did_notify_ready_to_draw_);
+    EXPECT_TRUE(all_tiles_required_for_draw_are_ready_to_draw_);
+    EXPECT_LE(size_t(1), required_for_draw_count_);
+  }
+
+ private:
+  FakeContentLayerClient client_;
+};
+
+// Note: With this test setup, we only get tiles flagged as REQUIRED_FOR_DRAW in
+// single threaded mode.
+SINGLE_THREAD_IMPL_TEST_F(LayerTreeHostTestReadyToDrawNonEmpty);
+
 // Two setNeedsCommits in a row should lead to at least 1 commit and at least 1
 // draw with frame 0.
 class LayerTreeHostTestSetNeedsCommit1 : public LayerTreeHostTest {
@@ -1969,7 +2114,8 @@ TEST(LayerTreeHostTest, PartialUpdatesWithGLRenderer) {
                                           shared_bitmap_manager.get(),
                                           NULL,
                                           settings,
-                                          base::MessageLoopProxy::current());
+                                          base::MessageLoopProxy::current(),
+                                          nullptr);
   client.SetLayerTreeHost(host.get());
   host->Composite(base::TimeTicks::Now());
 
@@ -1991,7 +2137,8 @@ TEST(LayerTreeHostTest, PartialUpdatesWithSoftwareRenderer) {
                                           shared_bitmap_manager.get(),
                                           NULL,
                                           settings,
-                                          base::MessageLoopProxy::current());
+                                          base::MessageLoopProxy::current(),
+                                          nullptr);
   client.SetLayerTreeHost(host.get());
   host->Composite(base::TimeTicks::Now());
 
@@ -2013,7 +2160,8 @@ TEST(LayerTreeHostTest, PartialUpdatesWithDelegatingRendererAndGLContent) {
                                           shared_bitmap_manager.get(),
                                           NULL,
                                           settings,
-                                          base::MessageLoopProxy::current());
+                                          base::MessageLoopProxy::current(),
+                                          nullptr);
   client.SetLayerTreeHost(host.get());
   host->Composite(base::TimeTicks::Now());
 
@@ -2036,7 +2184,8 @@ TEST(LayerTreeHostTest,
                                           shared_bitmap_manager.get(),
                                           NULL,
                                           settings,
-                                          base::MessageLoopProxy::current());
+                                          base::MessageLoopProxy::current(),
+                                          nullptr);
   client.SetLayerTreeHost(host.get());
   host->Composite(base::TimeTicks::Now());
 
@@ -2225,7 +2374,7 @@ SINGLE_AND_MULTI_THREAD_TEST_F(LayerTreeHostTestLCDNotification);
 class LayerTreeHostTestBeginFrameNotification : public LayerTreeHostTest {
  public:
   void InitializeSettings(LayerTreeSettings* settings) override {
-    settings->begin_frame_scheduling_enabled = true;
+    settings->use_external_begin_frame_source = true;
   }
 
   void BeginTest() override {
@@ -2253,7 +2402,7 @@ class LayerTreeHostTestBeginFrameNotificationShutdownWhileEnabled
     : public LayerTreeHostTest {
  public:
   void InitializeSettings(LayerTreeSettings* settings) override {
-    settings->begin_frame_scheduling_enabled = true;
+    settings->use_external_begin_frame_source = true;
     settings->using_synchronous_renderer_compositor = true;
   }
 
@@ -2280,7 +2429,7 @@ class LayerTreeHostTestAbortedCommitDoesntStall : public LayerTreeHostTest {
       : commit_count_(0), commit_abort_count_(0), commit_complete_count_(0) {}
 
   void InitializeSettings(LayerTreeSettings* settings) override {
-    settings->begin_frame_scheduling_enabled = true;
+    settings->use_external_begin_frame_source = true;
   }
 
   void BeginTest() override { PostSetNeedsCommitToMainThread(); }
@@ -4739,12 +4888,12 @@ class LayerTreeHostTestGpuRasterizationDefault : public LayerTreeHostTest {
   void BeginTest() override {
     Layer* root = layer_tree_host()->root_layer();
     PictureLayer* layer = static_cast<PictureLayer*>(root->child_at(0));
-    PicturePile* pile = layer->GetPicturePileForTesting();
+    RecordingSource* recording_source = layer->GetRecordingSourceForTesting();
 
     // Verify default values.
     EXPECT_TRUE(root->IsSuitableForGpuRasterization());
     EXPECT_TRUE(layer->IsSuitableForGpuRasterization());
-    EXPECT_TRUE(pile->is_suitable_for_gpu_rasterization());
+    EXPECT_TRUE(recording_source->IsSuitableForGpuRasterization());
     EXPECT_FALSE(layer_tree_host()->has_gpu_rasterization_trigger());
     EXPECT_FALSE(layer_tree_host()->UseGpuRasterization());
 
@@ -4795,12 +4944,12 @@ class LayerTreeHostTestGpuRasterizationEnabled : public LayerTreeHostTest {
   void BeginTest() override {
     Layer* root = layer_tree_host()->root_layer();
     PictureLayer* layer = static_cast<PictureLayer*>(root->child_at(0));
-    PicturePile* pile = layer->GetPicturePileForTesting();
+    RecordingSource* recording_source = layer->GetRecordingSourceForTesting();
 
     // Verify default values.
     EXPECT_TRUE(root->IsSuitableForGpuRasterization());
     EXPECT_TRUE(layer->IsSuitableForGpuRasterization());
-    EXPECT_TRUE(pile->is_suitable_for_gpu_rasterization());
+    EXPECT_TRUE(recording_source->IsSuitableForGpuRasterization());
     EXPECT_FALSE(layer_tree_host()->has_gpu_rasterization_trigger());
     EXPECT_FALSE(layer_tree_host()->UseGpuRasterization());
 
@@ -4810,8 +4959,8 @@ class LayerTreeHostTestGpuRasterizationEnabled : public LayerTreeHostTest {
     EXPECT_TRUE(layer_tree_host()->UseGpuRasterization());
 
     // Content-based veto is relevant as well.
-    pile->SetUnsuitableForGpuRasterizationForTesting();
-    EXPECT_FALSE(pile->is_suitable_for_gpu_rasterization());
+    recording_source->SetUnsuitableForGpuRasterizationForTesting();
+    EXPECT_FALSE(recording_source->IsSuitableForGpuRasterization());
     EXPECT_FALSE(layer->IsSuitableForGpuRasterization());
     // Veto will take effect when layers are updated.
     // The results will be verified after commit is completed below.
@@ -4860,12 +5009,12 @@ class LayerTreeHostTestGpuRasterizationForced : public LayerTreeHostTest {
   void BeginTest() override {
     Layer* root = layer_tree_host()->root_layer();
     PictureLayer* layer = static_cast<PictureLayer*>(root->child_at(0));
-    PicturePile* pile = layer->GetPicturePileForTesting();
+    RecordingSource* recording_source = layer->GetRecordingSourceForTesting();
 
     // Verify default values.
     EXPECT_TRUE(root->IsSuitableForGpuRasterization());
     EXPECT_TRUE(layer->IsSuitableForGpuRasterization());
-    EXPECT_TRUE(pile->is_suitable_for_gpu_rasterization());
+    EXPECT_TRUE(recording_source->IsSuitableForGpuRasterization());
     EXPECT_FALSE(layer_tree_host()->has_gpu_rasterization_trigger());
 
     // With gpu rasterization forced, gpu rasterization trigger is irrelevant.
@@ -4875,8 +5024,8 @@ class LayerTreeHostTestGpuRasterizationForced : public LayerTreeHostTest {
     EXPECT_TRUE(layer_tree_host()->UseGpuRasterization());
 
     // Content-based veto is irrelevant as well.
-    pile->SetUnsuitableForGpuRasterizationForTesting();
-    EXPECT_FALSE(pile->is_suitable_for_gpu_rasterization());
+    recording_source->SetUnsuitableForGpuRasterizationForTesting();
+    EXPECT_FALSE(recording_source->IsSuitableForGpuRasterization());
     EXPECT_FALSE(layer->IsSuitableForGpuRasterization());
     // Veto will take effect when layers are updated.
     // The results will be verified after commit is completed below.

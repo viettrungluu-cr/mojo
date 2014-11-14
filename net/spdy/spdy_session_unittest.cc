@@ -182,7 +182,7 @@ INSTANTIATE_TEST_CASE_P(
     NextProto,
     SpdySessionTest,
     testing::Values(kProtoDeprecatedSPDY2,
-                    kProtoSPDY3, kProtoSPDY31, kProtoSPDY4));
+                    kProtoSPDY3, kProtoSPDY31, kProtoSPDY4_14, kProtoSPDY4_15));
 
 // Try to create a SPDY session that will fail during
 // initialization. Nothing should blow up.
@@ -1556,7 +1556,8 @@ TEST_P(SpdySessionTest, SendInitialDataOnNewSession) {
           kSessionFlowControlStreamId,
           kDefaultInitialRecvWindowSize - kSpdySessionInitialWindowSize));
   std::vector<MockWrite> writes;
-  if (GetParam() == kProtoSPDY4) {
+  if ((GetParam() >= kProtoSPDY4MinimumVersion) &&
+     (GetParam() <= kProtoSPDY4MaximumVersion)) {
     writes.push_back(
         MockWrite(ASYNC,
                   kHttp2ConnectionHeaderPrefix,
@@ -5019,6 +5020,10 @@ TEST(MapRstStreamStatusToProtocolError, MapsValues) {
            MapRstStreamStatusToProtocolError(RST_STREAM_FRAME_SIZE_ERROR));
   CHECK_EQ(STATUS_CODE_ENHANCE_YOUR_CALM,
            MapRstStreamStatusToProtocolError(RST_STREAM_ENHANCE_YOUR_CALM));
+  CHECK_EQ(STATUS_CODE_INADEQUATE_SECURITY,
+           MapRstStreamStatusToProtocolError(RST_STREAM_INADEQUATE_SECURITY));
+  CHECK_EQ(STATUS_CODE_HTTP_1_1_REQUIRED,
+           MapRstStreamStatusToProtocolError(RST_STREAM_HTTP_1_1_REQUIRED));
 }
 
 TEST(MapNetErrorToGoAwayStatus, MapsValue) {

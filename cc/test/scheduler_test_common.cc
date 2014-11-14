@@ -84,7 +84,7 @@ TestSchedulerFrameSourcesConstructor::ConstructPrimaryFrameSource(
     scheduler->primary_frame_source_internal_ =
         TestBackToBackBeginFrameSource::Create(now_src_, test_task_runner_);
     return scheduler->primary_frame_source_internal_.get();
-  } else if (scheduler->settings_.begin_frame_scheduling_enabled) {
+  } else if (scheduler->settings_.use_external_begin_frame_source) {
     return SchedulerFrameSourcesConstructor::ConstructPrimaryFrameSource(
         scheduler);
   } else {
@@ -128,12 +128,14 @@ TestScheduler::TestScheduler(
     int layer_tree_host_id,
     const scoped_refptr<OrderedSimpleTaskRunner>& test_task_runner,
     base::PowerMonitor* power_monitor,
-    TestSchedulerFrameSourcesConstructor* frame_sources_constructor)
+    TestSchedulerFrameSourcesConstructor* frame_sources_constructor,
+    scoped_ptr<BeginFrameSource> external_begin_frame_source)
     : Scheduler(client,
                 scheduler_settings,
                 layer_tree_host_id,
                 test_task_runner,
                 power_monitor,
+                external_begin_frame_source.Pass(),
                 frame_sources_constructor),
       now_src_(now_src) {
 }

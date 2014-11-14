@@ -137,24 +137,6 @@ class GLES2_IMPL_EXPORT GLES2Implementation
     GLStaticState();
     ~GLStaticState();
 
-    struct GLES2_IMPL_EXPORT IntState {
-      IntState();
-      GLint max_combined_texture_image_units;
-      GLint max_cube_map_texture_size;
-      GLint max_fragment_uniform_vectors;
-      GLint max_renderbuffer_size;
-      GLint max_texture_image_units;
-      GLint max_texture_size;
-      GLint max_varying_vectors;
-      GLint max_vertex_attribs;
-      GLint max_vertex_texture_image_units;
-      GLint max_vertex_uniform_vectors;
-      GLint num_compressed_texture_formats;
-      GLint num_shader_binary_formats;
-      GLint bind_generates_resource_chromium;
-    };
-    IntState int_state;
-
     typedef std::pair<GLenum, GLenum> ShaderPrecisionKey;
     typedef std::map<ShaderPrecisionKey,
                      cmds::GetShaderPrecisionFormat::Result>
@@ -398,58 +380,6 @@ class GLES2_IMPL_EXPORT GLES2Implementation
   int32 GetResultShmId();
   uint32 GetResultShmOffset();
 
-  bool QueryAndCacheStaticState();
-
-  // Helpers used to batch synchronous GetIntergerv calls with other
-  // synchronous calls.
-  struct GetMultipleIntegervState {
-    GetMultipleIntegervState(const GLenum* pnames, GLuint pnames_count,
-                             GLint* results, GLsizeiptr results_size)
-       : pnames(pnames),
-         pnames_count(pnames_count),
-         results(results),
-         results_size(results_size)
-    { }
-    // inputs
-    const GLenum* pnames;
-    GLuint pnames_count;
-    // outputs
-    GLint* results;
-    GLsizeiptr results_size;
-    // transfer buffer
-    int num_results;
-    int transfer_buffer_size_needed;
-    void* buffer;
-    void* results_buffer;
-  };
-  bool GetMultipleIntegervSetup(
-      GetMultipleIntegervState* state);
-  void GetMultipleIntegervRequest(
-      GetMultipleIntegervState* state);
-  void GetMultipleIntegervOnCompleted(
-      GetMultipleIntegervState* state);
-
-  // Helpers used to batch synchronous GetShaderPrecision calls with other
-  // synchronous calls.
-  struct GetAllShaderPrecisionFormatsState {
-    GetAllShaderPrecisionFormatsState(
-        const GLenum (*precision_params)[2],
-        int precision_params_count)
-        : precision_params(precision_params),
-          precision_params_count(precision_params_count)
-    { }
-    const GLenum (*precision_params)[2];
-    int precision_params_count;
-    int transfer_buffer_size_needed;
-    void* results_buffer;
-  };
-  void GetAllShaderPrecisionFormatsSetup(
-      GetAllShaderPrecisionFormatsState* state);
-  void GetAllShaderPrecisionFormatsRequest(
-      GetAllShaderPrecisionFormatsState* state);
-  void GetAllShaderPrecisionFormatsOnCompleted(
-      GetAllShaderPrecisionFormatsState* state);
-
   // Lazily determines if GL_ANGLE_pack_reverse_row_order is available
   bool IsAnglePackReverseRowOrderAvailable();
   bool IsChromiumFramebufferMultisampleAvailable();
@@ -495,17 +425,19 @@ class GLES2_IMPL_EXPORT GLES2Implementation
 
   // Returns true if id is reserved.
   bool IsBufferReservedId(GLuint id);
-  bool IsFramebufferReservedId(GLuint id) { return false;  }
+  bool IsFramebufferReservedId(GLuint id) { return false; }
   bool IsRenderbufferReservedId(GLuint id) { return false; }
   bool IsTextureReservedId(GLuint id) { return false; }
   bool IsVertexArrayReservedId(GLuint id) { return false; }
   bool IsProgramReservedId(GLuint id) { return false; }
+  bool IsValuebufferReservedId(GLuint id) { return false; }
 
   bool BindBufferHelper(GLenum target, GLuint texture);
   bool BindFramebufferHelper(GLenum target, GLuint texture);
   bool BindRenderbufferHelper(GLenum target, GLuint texture);
   bool BindTextureHelper(GLenum target, GLuint texture);
   bool BindVertexArrayOESHelper(GLuint array);
+  bool BindValuebufferCHROMIUMHelper(GLenum target, GLuint valuebuffer);
   bool UseProgramHelper(GLuint program);
 
   void GenBuffersHelper(GLsizei n, const GLuint* buffers);
@@ -514,6 +446,7 @@ class GLES2_IMPL_EXPORT GLES2Implementation
   void GenTexturesHelper(GLsizei n, const GLuint* textures);
   void GenVertexArraysOESHelper(GLsizei n, const GLuint* arrays);
   void GenQueriesEXTHelper(GLsizei n, const GLuint* queries);
+  void GenValuebuffersCHROMIUMHelper(GLsizei n, const GLuint* valuebuffers);
 
   void DeleteBuffersHelper(GLsizei n, const GLuint* buffers);
   void DeleteFramebuffersHelper(GLsizei n, const GLuint* framebuffers);
@@ -523,6 +456,7 @@ class GLES2_IMPL_EXPORT GLES2Implementation
   bool DeleteShaderHelper(GLuint shader);
   void DeleteQueriesEXTHelper(GLsizei n, const GLuint* queries);
   void DeleteVertexArraysOESHelper(GLsizei n, const GLuint* arrays);
+  void DeleteValuebuffersCHROMIUMHelper(GLsizei n, const GLuint* valuebuffers);
 
   void DeleteBuffersStub(GLsizei n, const GLuint* buffers);
   void DeleteFramebuffersStub(GLsizei n, const GLuint* framebuffers);
@@ -531,6 +465,7 @@ class GLES2_IMPL_EXPORT GLES2Implementation
   void DeleteProgramStub(GLsizei n, const GLuint* programs);
   void DeleteShaderStub(GLsizei n, const GLuint* shaders);
   void DeleteVertexArraysOESStub(GLsizei n, const GLuint* arrays);
+  void DeleteValuebuffersCHROMIUMStub(GLsizei n, const GLuint* valuebuffers);
 
   void BufferDataHelper(
       GLenum target, GLsizeiptr size, const void* data, GLenum usage);
@@ -699,6 +634,7 @@ class GLES2_IMPL_EXPORT GLES2Implementation
   GLuint bound_framebuffer_;
   GLuint bound_read_framebuffer_;
   GLuint bound_renderbuffer_;
+  GLuint bound_valuebuffer_;
 
   // The program in use by glUseProgram
   GLuint current_program_;

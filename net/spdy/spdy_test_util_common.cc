@@ -57,7 +57,8 @@ NextProtoVector SpdyNextProtos() {
   next_protos.push_back(kProtoDeprecatedSPDY2);
   next_protos.push_back(kProtoSPDY3);
   next_protos.push_back(kProtoSPDY31);
-  next_protos.push_back(kProtoSPDY4);
+  next_protos.push_back(kProtoSPDY4_14);
+  next_protos.push_back(kProtoSPDY4_15);
   next_protos.push_back(kProtoQUIC1SPDY3);
   return next_protos;
 }
@@ -229,8 +230,14 @@ class PriorityGetter : public BufferedSpdyFramerVisitorInterface {
                   bool fin,
                   const SpdyHeaderBlock& headers) override {}
   void OnHeaders(SpdyStreamId stream_id,
+                 bool has_priority,
+                 SpdyPriority priority,
                  bool fin,
-                 const SpdyHeaderBlock& headers) override {}
+                 const SpdyHeaderBlock& headers) override {
+    if (has_priority) {
+      priority_ = priority;
+    }
+  }
   void OnDataFrameHeader(SpdyStreamId stream_id,
                          size_t length,
                          bool fin) override {}
@@ -367,7 +374,6 @@ SpdySessionDependencies::SpdySessionDependencies(NextProto protocol)
       force_spdy_over_ssl(false),
       force_spdy_always(false),
       use_alternate_protocols(false),
-      enable_websocket_over_spdy(false),
       net_log(NULL) {
   DCHECK(next_proto_is_spdy(protocol)) << "Invalid protocol: " << protocol;
 
@@ -401,7 +407,6 @@ SpdySessionDependencies::SpdySessionDependencies(
       force_spdy_over_ssl(false),
       force_spdy_always(false),
       use_alternate_protocols(false),
-      enable_websocket_over_spdy(false),
       net_log(NULL) {
   DCHECK(next_proto_is_spdy(protocol)) << "Invalid protocol: " << protocol;
 }
@@ -461,7 +466,6 @@ net::HttpNetworkSession::Params SpdySessionDependencies::CreateSessionParams(
   params.force_spdy_over_ssl = session_deps->force_spdy_over_ssl;
   params.force_spdy_always = session_deps->force_spdy_always;
   params.use_alternate_protocols = session_deps->use_alternate_protocols;
-  params.enable_websocket_over_spdy = session_deps->enable_websocket_over_spdy;
   params.net_log = session_deps->net_log;
   return params;
 }
@@ -786,6 +790,7 @@ SpdyFrame* SpdyTestUtil::ConstructSpdyFrame(
       break;
     case HEADERS:
       frame = framer.CreateHeaders(header_info.id, header_info.control_flags,
+                                   header_info.priority,
                                    headers.get());
       break;
     default:
@@ -1103,7 +1108,7 @@ SpdyFrame* SpdyTestUtil::ConstructSpdySyn(int stream_id,
                                           RequestPriority priority,
                                           bool compressed,
                                           bool fin) const {
-  if (protocol_ < kProtoSPDY4) {
+  if (protocol_ < kProtoSPDY4MinimumVersion) {
     SpdySynStreamIR syn_stream(stream_id);
     syn_stream.set_name_value_block(block);
     syn_stream.set_priority(
@@ -1123,7 +1128,7 @@ SpdyFrame* SpdyTestUtil::ConstructSpdySyn(int stream_id,
 
 SpdyFrame* SpdyTestUtil::ConstructSpdyReply(int stream_id,
                                             const SpdyHeaderBlock& headers) {
-  if (protocol_ < kProtoSPDY4) {
+  if (protocol_ < kProtoSPDY4MinimumVersion) {
     SpdySynReplyIR syn_reply(stream_id);
     syn_reply.set_name_value_block(headers);
     return CreateFramer(false)->SerializeFrame(syn_reply);
@@ -1264,7 +1269,7 @@ const char* SpdyTestUtil::GetStatusKey() const {
 const char* SpdyTestUtil::GetHostKey() const {
   if (protocol_ < kProtoSPDY3)
     return "host";
-  if (protocol_ < kProtoSPDY4)
+  if (protocol_ < kProtoSPDY4MinimumVersion)
     return ":host";
   else
     return ":authority";

@@ -153,7 +153,6 @@ static_library("libxml") {
   if (is_win) {
     cflags_c = [
       "/wd4101",  # Unreferenced local variable.
-      "/wd4267",  # TODO(jschuh): crbug.com/167187 size_t to int truncations.
     ]
   } else if (is_mac || is_android) {
     # http://www.xmlsoft.org/threads.html says that this is required when using

@@ -2506,19 +2506,6 @@
    fun:nssTrustDomain_UpdateCachedTokenCerts
 }
 {
-   bug_331063
-   Memcheck:Uninitialized
-   ...
-   fun:_ZN5blink11RenderImage12imageChangedEPvPKNS_7IntRectE
-   fun:_ZN5blink12RenderObject12imageChangedEPNS_13ImageResourceEPKNS_7IntRectE
-   fun:_ZN5blink13ImageResource12didAddClientEPNS_14ResourceClientE
-   fun:_ZN5blink8Resource9addClientEPNS_14ResourceClientE
-   fun:_ZN5blink19RenderImageResource16setImageResourceEPNS_13ImageResourceE
-   fun:_ZN5blink30PasswordGeneratorButtonElement11updateImageEv
-   fun:_ZN5blink30PasswordGeneratorButtonElement6attachERKNS_4Node13AttachContextE
-   fun:_ZN5blink13ContainerNode14attachChildrenERKNS_4Node13AttachContextE
-}
-{
    bug_331925
    Memcheck:Leak
    ...
@@ -2845,19 +2832,6 @@
    fun:_ZN7content27ServiceWorkerContextWrapper12InitInternalERKN4base8FilePathEPNS1_19SequencedTaskRunnerEPNS1_16MessageLoopProxyEPN5quota17QuotaManagerProxyE
 }
 {
-   bug_379359
-   Memcheck:Leak
-   fun:_Znw*
-   fun:_ZN7content27ServiceWorkerContextWrapperC1EPNS_14BrowserContextE
-   fun:_ZN7content20StoragePartitionImpl6CreateEPNS_14BrowserContextEbRKN4base8FilePathE
-   fun:_ZN7content23StoragePartitionImplMap3GetERKSsS2_b
-   fun:_ZN7content12_GLOBAL__N_129GetStoragePartitionFromConfigEPNS_14BrowserContext*
-   fun:_ZN7content14BrowserContext19GetStoragePartitionEPS0_PNS_12SiteInstanceE
-   fun:_ZN7content14BrowserContext26GetDefaultStoragePartitionEPS0_
-   fun:_ZN7content21ShellBrowserMainParts21PreMainMessageLoopRunEv
-   fun:_ZN7content15BrowserMainLoop21PreMainMessageLoopRunEv
-}
-{
    bug_379943
    Memcheck:Leak
    fun:_Znw*
@@ -2867,6 +2841,7 @@
    fun:_ZN7content12_GLOBAL__N_129GetStoragePartitionFromConfigEPNS_14BrowserContext*
    fun:_ZN7content14BrowserContext19GetStoragePartitionEPS0_PNS_12SiteInstanceE
    fun:_ZN7content14BrowserContext26GetDefaultStoragePartitionEPS0_
+   ...
    fun:_ZN7content21ShellBrowserMainParts21PreMainMessageLoopRunEv
    fun:_ZN7content15BrowserMainLoop21PreMainMessageLoopRunEv
 }
@@ -3434,4 +3409,29 @@
    fun:_ZN7content19TestRenderFrameHost26SendNavigateWithParametersEiRK4GURLN2ui14PageTransitionES3_iPKN4base8FilePathERKSt6vectorIS1_SaIS1_EE
    fun:_ZN7content19TestRenderFrameHost41SendNavigateWithTransitionAndResponseCodeEiRK4GURLN2ui14PageTransitionEi
    fun:_ZN7content19TestRenderFrameHost26SendNavigateWithTransitionEiRK4GURLN2ui14PageTransitionE
+}
+{
+   bug_431209a
+   Memcheck:Leak
+   fun:_Znw*
+   fun:_ZN8remoting13ClipboardAuraC1E13scoped_refptrIN4base22SingleThreadTaskRunnerEE
+   fun:_ZN8remoting17ClipboardAuraTest5SetUpEv
+}
+{
+   bug_431209b
+   Memcheck:Leak
+   fun:_Znw*
+   fun:_ZN2ui9Clipboard6CreateEv
+   fun:_ZN2ui9Clipboard19GetForCurrentThreadEv
+   fun:_ZN2ui21ScopedClipboardWriterD1Ev
+   fun:_ZN8remoting13ClipboardAura4Core20InjectClipboardEventERKNS_8protocol14ClipboardEventE
+}
+{
+   bug_431213
+   Memcheck:Leak
+   fun:_Znw*
+   fun:_ZN3gin22CreateFunctionTemplateIFSsPN4mojo2js13HandleWrapperEEEEN2v85LocalINS6_16FunctionTemplateEEEPNS6_7IsolateEN4base8CallbackIT_EEi
+   fun:_ZN3gin12_GLOBAL__N_114CallbackTraitsIMN4mojo2js13HandleWrapperEFSsvEvE14CreateTemplateEPN2v87IsolateES6_
+   fun:_ZN3gin21ObjectTemplateBuilder9SetMethodIMN4mojo2js13HandleWrapperEFSsvEEERS0_RKN4base16BasicStringPieceISsEERKT_
+   fun:_ZN4mojo2js13HandleWrapper24GetObjectTemplateBuilderEPN2v87IsolateE
 }

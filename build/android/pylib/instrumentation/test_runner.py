@@ -369,16 +369,11 @@ class TestRunner(base_test_runner.BaseTestRunner):
     Returns:
       The raw output of am instrument as a list of lines.
     """
-    # Build the 'am instrument' command
-    instrumentation_path = (
-        '%s/%s' % (self.test_pkg.GetPackageName(), self.options.test_runner))
-
-    cmd = ['am', 'instrument', '-r']
-    for k, v in self._GetInstrumentationArgs().iteritems():
-      cmd.extend(['-e', k, v])
-    cmd.extend(['-e', 'class', test])
-    cmd.extend(['-w', instrumentation_path])
-    return self.device.RunShellCommand(cmd, timeout=timeout, retries=0)
+    extras = self._GetInstrumentationArgs()
+    extras['class'] = test
+    return self.device.StartInstrumentation(
+        '%s/%s' % (self.test_pkg.GetPackageName(), self.options.test_runner),
+        raw=True, extras=extras, timeout=timeout, retries=0)
 
   @staticmethod
   def _ParseAmInstrumentRawOutput(raw_output):
@@ -506,7 +501,7 @@ class TestRunner(base_test_runner.BaseTestRunner):
                self.tool.GetTimeoutScale())
     if (self.device.GetProp('ro.build.version.sdk')
         < constants.ANDROID_SDK_VERSION_CODES.JELLY_BEAN):
-      timeout *= 4
+      timeout *= 10
 
     start_ms = 0
     duration_ms = 0

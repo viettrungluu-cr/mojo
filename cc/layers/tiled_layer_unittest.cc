@@ -82,7 +82,8 @@ class SynchronousOutputSurfaceLayerTreeHost : public LayerTreeHost {
       : LayerTreeHost(client, manager, NULL, settings),
         output_surface_created_(false) {
     LayerTreeHost::InitializeThreaded(base::MessageLoopProxy::current(),
-                                      impl_task_runner);
+                                      impl_task_runner,
+                                      nullptr);
   }
 
   bool output_surface_created_;
@@ -1663,8 +1664,7 @@ class UpdateTrackingTiledLayer : public FakeTiledLayer {
       : FakeTiledLayer(manager) {
     scoped_ptr<TrackingLayerPainter> painter(TrackingLayerPainter::Create());
     tracking_layer_painter_ = painter.get();
-    layer_updater_ = BitmapContentLayerUpdater::Create(
-        painter.Pass(), &stats_instrumentation_, 0);
+    layer_updater_ = BitmapContentLayerUpdater::Create(painter.Pass(), 0);
   }
 
   TrackingLayerPainter* tracking_layer_painter() const {
@@ -1677,7 +1677,6 @@ class UpdateTrackingTiledLayer : public FakeTiledLayer {
 
   TrackingLayerPainter* tracking_layer_painter_;
   scoped_refptr<BitmapContentLayerUpdater> layer_updater_;
-  FakeRenderingStatsInstrumentation stats_instrumentation_;
 };
 
 TEST_F(TiledLayerTest, NonIntegerContentsScaleIsNotDistortedDuringPaint) {

@@ -9,6 +9,7 @@
 #include "base/command_line.h"
 #include "base/debug/trace_event.h"
 #include "base/json/json_writer.h"
+#include "base/lazy_instance.h"
 #include "base/logging.h"
 #include "base/memory/scoped_ptr.h"
 #include "cc/base/scoped_ptr_algorithm.h"
@@ -578,7 +579,7 @@ void Layer::SetShowSurface(
 
   scoped_refptr<cc::SurfaceLayer> new_layer =
       cc::SurfaceLayer::Create(satisfy_callback, require_callback);
-  new_layer->SetSurfaceId(id);
+  new_layer->SetSurfaceId(id, 1.f, frame_size_in_dip);
   SwitchToLayer(new_layer);
   surface_layer_ = new_layer;
 

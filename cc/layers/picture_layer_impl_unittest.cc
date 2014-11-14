@@ -134,7 +134,7 @@ class PictureLayerImplTest : public testing::Test {
       pending_layer_->tilings()->tiling_at(i)->CreateAllTilesForTesting();
   }
 
-  void SetupPendingTree(scoped_refptr<PicturePileImpl> pile) {
+  void SetupPendingTree(scoped_refptr<RasterSource> raster_source) {
     host_impl_.CreatePendingTree();
     host_impl_.pending_tree()->SetPageScaleFactorAndLimits(1.f, 0.25f, 100.f);
     LayerTreeImpl* pending_tree = host_impl_.pending_tree();
@@ -147,14 +147,14 @@ class PictureLayerImplTest : public testing::Test {
     if (old_pending_root) {
       pending_layer.reset(
           static_cast<FakePictureLayerImpl*>(old_pending_root.release()));
-      pending_layer->SetPile(pile);
+      pending_layer->SetRasterSource(raster_source);
     } else {
-      pending_layer =
-          FakePictureLayerImpl::CreateWithPile(pending_tree, id_, pile);
+      pending_layer = FakePictureLayerImpl::CreateWithRasterSource(
+          pending_tree, id_, raster_source);
       pending_layer->SetDrawsContent(true);
     }
     // The bounds() just mirror the pile size.
-    pending_layer->SetBounds(pending_layer->pile()->tiling_size());
+    pending_layer->SetBounds(pending_layer->raster_source()->GetSize());
     pending_tree->SetRootLayer(pending_layer.Pass());
 
     pending_layer_ = static_cast<FakePictureLayerImpl*>(
@@ -268,8 +268,8 @@ class PictureLayerImplTest : public testing::Test {
     std::vector<SkRect>::const_iterator rect_iter = rects.begin();
     for (tile_iter = tiles.begin(); tile_iter < tiles.end(); tile_iter++) {
       MockCanvas mock_canvas(1000, 1000);
-      active_pile->RasterDirect(&mock_canvas, (*tile_iter)->content_rect(),
-                                1.0f);
+      active_pile->PlaybackToSharedCanvas(&mock_canvas,
+                                          (*tile_iter)->content_rect(), 1.0f);
 
       // This test verifies that when drawing the contents of a specific tile
       // at content scale 1.0, the playback canvas never receives content from
@@ -658,10 +658,10 @@ TEST_F(PictureLayerImplTest, AddTilesFromNewRecording) {
          ++iter) {
       EXPECT_FALSE(iter.full_tile_geometry_rect().IsEmpty());
       // Ensure there is a recording for this tile.
-      bool in_pending = pending_pile->CanRaster(tiling->contents_scale(),
-                                                iter.full_tile_geometry_rect());
-      bool in_active = active_pile->CanRaster(tiling->contents_scale(),
-                                              iter.full_tile_geometry_rect());
+      bool in_pending = pending_pile->CoversRect(iter.full_tile_geometry_rect(),
+                                                 tiling->contents_scale());
+      bool in_active = active_pile->CoversRect(iter.full_tile_geometry_rect(),
+                                               tiling->contents_scale());
 
       if (in_pending && !in_active)
         EXPECT_EQ(pending_pile.get(), iter->raster_source());
@@ -1132,8 +1132,15 @@ TEST_F(PictureLayerImplTest, DontAddLowResDuringAnimation) {
 }
 
 TEST_F(PictureLayerImplTest, DontAddLowResForSmallLayers) {
-  gfx::Size tile_size(host_impl_.settings().default_tile_size);
-  SetupDefaultTrees(tile_size);
+  gfx::Size layer_bounds(host_impl_.settings().default_tile_size);
+  gfx::Size tile_size(100, 100);
+
+  scoped_refptr<FakePicturePileImpl> pending_pile =
+      FakePicturePileImpl::CreateFilledPile(tile_size, layer_bounds);
+  scoped_refptr<FakePicturePileImpl> active_pile =
+      FakePicturePileImpl::CreateFilledPile(tile_size, layer_bounds);
+
+  SetupTrees(pending_pile, active_pile);
 
   float low_res_factor = host_impl_.settings().low_res_contents_scale_factor;
   float device_scale = 1.f;
@@ -1181,8 +1188,8 @@ TEST_F(PictureLayerImplTest, DontAddLowResForSmallLayers) {
   ResetTilingsAndRasterScales();
 
   // Mask layers dont create low res since they always fit on one tile.
-  pending_layer_->pile()->set_is_mask(true);
-  active_layer_->pile()->set_is_mask(true);
+  pending_pile->SetIsMask(true);
+  active_pile->SetIsMask(true);
   SetContentsScaleOnBothLayers(contents_scale,
                                device_scale,
                                page_scale,
@@ -1197,7 +1204,7 @@ TEST_F(PictureLayerImplTest, HugeMasksDontGetTiles) {
 
   scoped_refptr<FakePicturePileImpl> valid_pile =
       FakePicturePileImpl::CreateFilledPile(tile_size, gfx::Size(1000, 1000));
-  valid_pile->set_is_mask(true);
+  valid_pile->SetIsMask(true);
   SetupPendingTree(valid_pile);
 
   SetupDrawPropertiesAndUpdateTiles(pending_layer_, 1.f, 1.f, 1.f, 1.f, false);
@@ -1224,7 +1231,7 @@ TEST_F(PictureLayerImplTest, HugeMasksDontGetTiles) {
   scoped_refptr<FakePicturePileImpl> huge_pile =
       FakePicturePileImpl::CreateFilledPile(
           tile_size, gfx::Size(max_texture_size + 1, 10));
-  huge_pile->set_is_mask(true);
+  huge_pile->SetIsMask(true);
   SetupPendingTree(huge_pile);
 
   SetupDrawPropertiesAndUpdateTiles(pending_layer_, 1.f, 1.f, 1.f, 1.f, false);
@@ -1249,7 +1256,7 @@ TEST_F(PictureLayerImplTest, ScaledMaskLayer) {
 
   scoped_refptr<FakePicturePileImpl> valid_pile =
       FakePicturePileImpl::CreateFilledPile(tile_size, gfx::Size(1000, 1000));
-  valid_pile->set_is_mask(true);
+  valid_pile->SetIsMask(true);
   SetupPendingTree(valid_pile);
 
   float ideal_contents_scale = 1.3f;
@@ -1499,7 +1506,7 @@ TEST_F(PictureLayerImplTest, TileScalesWithSolidColorPile) {
   EXPECT_EQ(0.f, active_layer_->ideal_contents_scale());
 
   // Push non-solid-color pending pile makes active layer can have tilings.
-  active_layer_->UpdatePile(pending_pile);
+  active_layer_->UpdateRasterSource(pending_pile);
   ASSERT_TRUE(active_layer_->CanHaveTilings());
 
   // Update properties with non-solid color pile should allow tilings.
@@ -2044,7 +2051,8 @@ TEST_F(PictureLayerImplTest, ActivateUninitializedLayer) {
   LayerTreeImpl* pending_tree = host_impl_.pending_tree();
 
   scoped_ptr<FakePictureLayerImpl> pending_layer =
-      FakePictureLayerImpl::CreateWithPile(pending_tree, id_, pending_pile);
+      FakePictureLayerImpl::CreateWithRasterSource(pending_tree, id_,
+                                                   pending_pile);
   pending_layer->SetDrawsContent(true);
   pending_tree->SetRootLayer(pending_layer.Pass());
 
@@ -3708,9 +3716,10 @@ TEST_F(PictureLayerImplTest, UpdateTilesForMasksWithNoVisibleContent) {
 
   scoped_refptr<FakePicturePileImpl> pending_pile =
       FakePicturePileImpl::CreateFilledPile(tile_size, bounds);
-  pending_pile->set_is_mask(true);
-  scoped_ptr<FakePictureLayerImpl> mask = FakePictureLayerImpl::CreateWithPile(
-      host_impl_.pending_tree(), 3, pending_pile);
+  pending_pile->SetIsMask(true);
+  scoped_ptr<FakePictureLayerImpl> mask =
+      FakePictureLayerImpl::CreateWithRasterSource(host_impl_.pending_tree(), 3,
+                                                   pending_pile);
 
   mask->SetBounds(bounds);
   mask->SetContentBounds(bounds);
@@ -4485,31 +4494,23 @@ void PictureLayerImplTest::TestQuadsForSolidColor(bool test_for_solid) {
   FakeLayerTreeHostClient host_client(FakeLayerTreeHostClient::DIRECT_3D);
   scoped_ptr<FakeLayerTreeHost> host = FakeLayerTreeHost::Create(&host_client);
   host->SetRootLayer(layer);
-  PicturePile* pile = layer->GetPicturePileForTesting();
+  RecordingSource* recording_source = layer->GetRecordingSourceForTesting();
 
   host_impl_.SetViewportSize(layer_bounds);
 
   int frame_number = 0;
-  FakeRenderingStatsInstrumentation stats_instrumentation;
 
   client.set_fill_with_nonsolid_color(!test_for_solid);
 
   Region invalidation(layer_rect);
-  pile->UpdateAndExpandInvalidation(&client,
-                                    &invalidation,
-                                    SK_ColorWHITE,
-                                    false,
-                                    false,
-                                    layer_bounds,
-                                    layer_rect,
-                                    frame_number++,
-                                    Picture::RECORD_NORMALLY,
-                                    &stats_instrumentation);
+  recording_source->UpdateAndExpandInvalidation(
+      &client, &invalidation, SK_ColorWHITE, false, false, layer_bounds,
+      layer_rect, frame_number++, Picture::RECORD_NORMALLY);
 
-  scoped_refptr<PicturePileImpl> pending_pile =
-      PicturePileImpl::CreateFromOther(pile);
+  scoped_refptr<RasterSource> pending_raster_source =
+      recording_source->CreateRasterSource();
 
-  SetupPendingTree(pending_pile);
+  SetupPendingTree(pending_raster_source);
   ActivateTree();
 
   active_layer_->set_fixed_tile_size(tile_size);
@@ -4560,31 +4561,23 @@ TEST_F(PictureLayerImplTest, NonSolidToSolidNoTilings) {
   FakeLayerTreeHostClient host_client(FakeLayerTreeHostClient::DIRECT_3D);
   scoped_ptr<FakeLayerTreeHost> host = FakeLayerTreeHost::Create(&host_client);
   host->SetRootLayer(layer);
-  PicturePile* pile = layer->GetPicturePileForTesting();
+  RecordingSource* recording_source = layer->GetRecordingSourceForTesting();
 
   host_impl_.SetViewportSize(layer_bounds);
 
   int frame_number = 0;
-  FakeRenderingStatsInstrumentation stats_instrumentation;
 
   client.set_fill_with_nonsolid_color(true);
 
   Region invalidation1(layer_rect);
-  pile->UpdateAndExpandInvalidation(&client,
-                                    &invalidation1,
-                                    SK_ColorWHITE,
-                                    false,
-                                    false,
-                                    layer_bounds,
-                                    layer_rect,
-                                    frame_number++,
-                                    Picture::RECORD_NORMALLY,
-                                    &stats_instrumentation);
+  recording_source->UpdateAndExpandInvalidation(
+      &client, &invalidation1, SK_ColorWHITE, false, false, layer_bounds,
+      layer_rect, frame_number++, Picture::RECORD_NORMALLY);
 
-  scoped_refptr<PicturePileImpl> pending_pile1 =
-      PicturePileImpl::CreateFromOther(pile);
+  scoped_refptr<RasterSource> raster_source1 =
+      recording_source->CreateRasterSource();
 
-  SetupPendingTree(pending_pile1);
+  SetupPendingTree(raster_source1);
   ActivateTree();
   host_impl_.active_tree()->UpdateDrawProperties();
 
@@ -4595,21 +4588,14 @@ TEST_F(PictureLayerImplTest, NonSolidToSolidNoTilings) {
   client.set_fill_with_nonsolid_color(false);
 
   Region invalidation2(layer_rect);
-  pile->UpdateAndExpandInvalidation(&client,
-                                    &invalidation2,
-                                    SK_ColorWHITE,
-                                    false,
-                                    false,
-                                    layer_bounds,
-                                    layer_rect,
-                                    frame_number++,
-                                    Picture::RECORD_NORMALLY,
-                                    &stats_instrumentation);
+  recording_source->UpdateAndExpandInvalidation(
+      &client, &invalidation2, SK_ColorWHITE, false, false, layer_bounds,
+      layer_rect, frame_number++, Picture::RECORD_NORMALLY);
 
-  scoped_refptr<PicturePileImpl> pending_pile2 =
-      PicturePileImpl::CreateFromOther(pile);
+  scoped_refptr<RasterSource> raster_source2 =
+      recording_source->CreateRasterSource();
 
-  SetupPendingTree(pending_pile2);
+  SetupPendingTree(raster_source2);
   ActivateTree();
 
   // We've switched to a solid color, so we should end up with no tilings.

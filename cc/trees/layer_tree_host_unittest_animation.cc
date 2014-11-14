@@ -348,8 +348,9 @@ class LayerTreeHostAnimationTestNoBackgroundTickingWithoutActiveTree
   LayerTreeHostAnimationTestNoBackgroundTickingWithoutActiveTree()
       : active_tree_was_animated_(false) {}
 
-  base::TimeDelta LowFrequencyAnimationInterval() const override {
-    return base::TimeDelta::FromMilliseconds(4);
+  base::TimeDelta BackgroundAnimationInterval(LayerTreeHostImpl* host_impl) {
+    return base::TimeDelta::FromSecondsD(
+        1.0 / host_impl->settings().background_animation_rate);
   }
 
   void BeginTest() override {
@@ -409,10 +410,9 @@ class LayerTreeHostAnimationTestNoBackgroundTickingWithoutActiveTree
           FROM_HERE,
           base::Bind(
               &LayerTreeHostAnimationTestNoBackgroundTickingWithoutActiveTree::
-                   UnblockActivations,
-              base::Unretained(this),
-              host_impl),
-          4 * LowFrequencyAnimationInterval());
+                  UnblockActivations,
+              base::Unretained(this), host_impl),
+          4 * BackgroundAnimationInterval(host_impl));
     }
   }
 
@@ -447,10 +447,9 @@ class LayerTreeHostAnimationTestNoBackgroundTickingWithoutActiveTree
           FROM_HERE,
           base::Bind(
               &LayerTreeHostAnimationTestNoBackgroundTickingWithoutActiveTree::
-                   InitiateNextCommit,
-              base::Unretained(this),
-              host_impl),
-          4 * LowFrequencyAnimationInterval());
+                  InitiateNextCommit,
+              base::Unretained(this), host_impl),
+          4 * BackgroundAnimationInterval(host_impl));
     }
   }
 
@@ -505,10 +504,10 @@ class LayerTreeHostAnimationTestAddAnimationWithTimingFunction
     const FloatAnimationCurve* curve =
         animation->curve()->ToFloatAnimationCurve();
     float start_opacity = curve->GetValue(0.0);
-    float end_opacity = curve->GetValue(curve->Duration());
+    float end_opacity = curve->GetValue(curve->Duration().InSecondsF());
     float linearly_interpolated_opacity =
         0.25f * end_opacity + 0.75f * start_opacity;
-    double time = curve->Duration() * 0.25;
+    double time = curve->Duration().InSecondsF() * 0.25;
     // If the linear timing function associated with this animation was not
     // picked up, then the linearly interpolated opacity would be different
     // because of the default ease timing function.

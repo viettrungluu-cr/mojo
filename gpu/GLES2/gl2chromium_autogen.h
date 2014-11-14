@@ -195,7 +195,6 @@
 #define glRequestExtensionCHROMIUM GLES2_GET_FUN(RequestExtensionCHROMIUM)
 #define glRateLimitOffscreenContextCHROMIUM \
   GLES2_GET_FUN(RateLimitOffscreenContextCHROMIUM)
-#define glGetMultipleIntegervCHROMIUM GLES2_GET_FUN(GetMultipleIntegervCHROMIUM)
 #define glGetProgramInfoCHROMIUM GLES2_GET_FUN(GetProgramInfoCHROMIUM)
 #define glCreateStreamTextureCHROMIUM GLES2_GET_FUN(CreateStreamTextureCHROMIUM)
 #define glCreateImageCHROMIUM GLES2_GET_FUN(CreateImageCHROMIUM)
@@ -218,6 +217,14 @@
 #define glCreateAndConsumeTextureCHROMIUM \
   GLES2_GET_FUN(CreateAndConsumeTextureCHROMIUM)
 #define glBindUniformLocationCHROMIUM GLES2_GET_FUN(BindUniformLocationCHROMIUM)
+#define glGenValuebuffersCHROMIUM GLES2_GET_FUN(GenValuebuffersCHROMIUM)
+#define glDeleteValuebuffersCHROMIUM GLES2_GET_FUN(DeleteValuebuffersCHROMIUM)
+#define glIsValuebufferCHROMIUM GLES2_GET_FUN(IsValuebufferCHROMIUM)
+#define glBindValuebufferCHROMIUM GLES2_GET_FUN(BindValuebufferCHROMIUM)
+#define glSubscribeValueCHROMIUM GLES2_GET_FUN(SubscribeValueCHROMIUM)
+#define glPopulateSubscribedValuesCHROMIUM \
+  GLES2_GET_FUN(PopulateSubscribedValuesCHROMIUM)
+#define glUniformValuebufferCHROMIUM GLES2_GET_FUN(UniformValuebufferCHROMIUM)
 #define glBindTexImage2DCHROMIUM GLES2_GET_FUN(BindTexImage2DCHROMIUM)
 #define glReleaseTexImage2DCHROMIUM GLES2_GET_FUN(ReleaseTexImage2DCHROMIUM)
 #define glTraceBeginCHROMIUM GLES2_GET_FUN(TraceBeginCHROMIUM)

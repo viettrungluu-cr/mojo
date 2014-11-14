@@ -694,11 +694,6 @@ void GLES2InterfaceStub::RequestExtensionCHROMIUM(const char* /* extension */) {
 }
 void GLES2InterfaceStub::RateLimitOffscreenContextCHROMIUM() {
 }
-void GLES2InterfaceStub::GetMultipleIntegervCHROMIUM(const GLenum* /* pnames */,
-                                                     GLuint /* count */,
-                                                     GLint* /* results */,
-                                                     GLsizeiptr /* size */) {
-}
 void GLES2InterfaceStub::GetProgramInfoCHROMIUM(GLuint /* program */,
                                                 GLsizei /* bufsize */,
                                                 GLsizei* /* size */,
@@ -780,6 +775,28 @@ GLuint GLES2InterfaceStub::CreateAndConsumeTextureCHROMIUM(
 void GLES2InterfaceStub::BindUniformLocationCHROMIUM(GLuint /* program */,
                                                      GLint /* location */,
                                                      const char* /* name */) {
+}
+void GLES2InterfaceStub::GenValuebuffersCHROMIUM(GLsizei /* n */,
+                                                 GLuint* /* buffers */) {
+}
+void GLES2InterfaceStub::DeleteValuebuffersCHROMIUM(
+    GLsizei /* n */,
+    const GLuint* /* valuebuffers */) {
+}
+GLboolean GLES2InterfaceStub::IsValuebufferCHROMIUM(GLuint /* valuebuffer */) {
+  return 0;
+}
+void GLES2InterfaceStub::BindValuebufferCHROMIUM(GLenum /* target */,
+                                                 GLuint /* valuebuffer */) {
+}
+void GLES2InterfaceStub::SubscribeValueCHROMIUM(GLenum /* target */,
+                                                GLenum /* subscription */) {
+}
+void GLES2InterfaceStub::PopulateSubscribedValuesCHROMIUM(GLenum /* target */) {
+}
+void GLES2InterfaceStub::UniformValuebufferCHROMIUM(GLint /* location */,
+                                                    GLenum /* target */,
+                                                    GLenum /* subscription */) {
 }
 void GLES2InterfaceStub::BindTexImage2DCHROMIUM(GLenum /* target */,
                                                 GLint /* imageId */) {

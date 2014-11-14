@@ -126,6 +126,7 @@ class CC_EXPORT PictureLayerImpl
       const PictureLayerTiling* tiling) const override;
   PictureLayerTiling* GetRecycledTwinTiling(
       const PictureLayerTiling* tiling) override;
+  TilePriority::PriorityBin GetMaxTilePriorityBin() const override;
   size_t GetMaxTilesForInterestArea() const override;
   float GetSkewportTargetTimeInSeconds() const override;
   int GetSkewportExtrapolationLimitInContentPixels() const override;
@@ -149,9 +150,11 @@ class CC_EXPORT PictureLayerImpl
   // Virtual for testing.
   virtual bool HasValidTilePriorities() const;
   bool AllTilesRequiredForActivationAreReadyToDraw() const;
+  bool AllTilesRequiredForDrawAreReadyToDraw() const;
 
  protected:
   friend class LayerRasterTileIterator;
+  using TileRequirementCheck = bool (PictureLayerTiling::*)(const Tile*) const;
 
   PictureLayerImpl(LayerTreeImpl* tree_impl, int id);
   PictureLayerTiling* AddTiling(float contents_scale);
@@ -169,7 +172,7 @@ class CC_EXPORT PictureLayerImpl
   void ResetRasterScale();
   gfx::Rect GetViewportForTilePriorityInContentSpace() const;
   PictureLayerImpl* GetRecycledTwinLayer() const;
-  void UpdatePile(scoped_refptr<PicturePileImpl> pile);
+  void UpdateRasterSource(scoped_refptr<RasterSource> raster_source);
 
   void DoPostCommitInitializationIfNeeded() {
     if (needs_post_commit_initialization_)
@@ -180,6 +183,11 @@ class CC_EXPORT PictureLayerImpl
   bool CanHaveTilings() const;
   bool CanHaveTilingWithScale(float contents_scale) const;
   void SanityCheckTilingState() const;
+  // Checks if all tiles required for a certain action (e.g. activation) are
+  // ready to draw.  is_tile_required_callback gets called on all candidate
+  // tiles and returns true if the tile is required for the action.
+  bool AllTilesRequiredAreReadyToDraw(
+      TileRequirementCheck is_tile_required_callback) const;
 
   bool ShouldAdjustRasterScaleDuringScaleAnimations() const;
 
@@ -193,7 +201,7 @@ class CC_EXPORT PictureLayerImpl
   PictureLayerImpl* twin_layer_;
 
   scoped_ptr<PictureLayerTilingSet> tilings_;
-  scoped_refptr<PicturePileImpl> pile_;
+  scoped_refptr<RasterSource> raster_source_;
   Region invalidation_;
 
   float ideal_page_scale_;

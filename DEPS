@@ -22,27 +22,27 @@ vars = {
   'libcxx_revision': '48198f9110397fff47fe7c37cbfa296be7d44d3d',
   'libcxxabi_revision': '4ad1009ab3a59fa7a6896d74d5e4de5885697f95',
   'sfntly_revision': '1bdaae8fc788a5ac8936d68bf24f37d977a13dac',
-  'skia_revision': '7a10fb6bead0f63623307a7ff71b1dd323534a7f',
+  'skia_revision': 'bc97c9378bf8b89cc17280a2a04a5c3a9405e6ab',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling Skia
   # and V8 without interference from each other.
-  'v8_revision': '11b7b24c91c903ee08b2b6b94f0bbb17b966dd92', # from svn revision 25090
+  'v8_revision': '43ced1bd1528ea8b4d9299d2c8f7c6a81921457b',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling ANGLE
   # and whatever else without interference from each other.
-  "angle_revision": "657cd684a615da648df6a851a916f11bb6f9a70e",
+  "angle_revision": "560eef1627abdef65f71021b906e57dc609f47fa",
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling build tools
   # and whatever else without interference from each other.
-  'buildtools_revision': '51ca1f25a2ecea34069cb3ff35394dc53b6fd657',
+  'buildtools_revision': 'c27f95bd1d9baaef70c879dea375090dd1496147',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling PDFium
   # and whatever else without interference from each other.
-  'pdfium_revision': '173f919d0ec99a1a973c9d3a82b474f761d5bce1',
+  'pdfium_revision': '4dc95e74e1acc75f4eab08bc771874cd2a9c3a9b',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling BoringSSL
   # and whatever else without interference from each other.
-  'boringssl_revision': '03a739d8d2cdc2560531a7446ead0f705409670a',
+  'boringssl_revision': '2f3ba910a2bdb9e7d19e712a827cdc80c8d8c777',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling lss
   # and whatever else without interference from each other.
@@ -50,7 +50,7 @@ vars = {
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling nss
   # and whatever else without interference from each other.
-  'nss_revision': '87b96db4268293187d7cf741907a6d5d1d8080e0',
+  'nss_revision': '258342ecf9c65105189092ef6339dc4e7779a7ae',
 }
 
 # Only these hosts are allowed for dependencies in this DEPS file.
@@ -87,7 +87,7 @@ deps = {
    Var('chromium_git') + '/chromium/llvm-project/libcxxabi.git' + '@' +  Var('libcxxabi_revision'),
 
   'src/tools/grit':
-    Var('chromium_git') + '/external/grit-i18n.git' + '@' + '740badd5e3e44434a9a47b5d16749daac1e8ea80', # from svn revision 176
+    Var('chromium_git') + '/external/grit-i18n.git' + '@' + 'a24a0e647bb718b3540db89864cf586b12331e82', # from svn revision 182
 
   'src/v8':
     Var('chromium_git') + '/v8/v8.git' + '@' +  Var('v8_revision'),
@@ -126,7 +126,7 @@ deps = {
    'https://boringssl.googlesource.com/boringssl.git' + '@' +  Var('boringssl_revision'),
 
   'src/tools/gyp':
-    Var('chromium_git') + '/external/gyp.git' + '@' + '487c0b6ae8b44932e45347211bca0e8387718436', # from svn revision 1998
+    Var('chromium_git') + '/external/gyp.git' + '@' + 'b13d8f243da15ded051e87e663c4f2c2fcc5804c', # from svn revision 1994
 }
 
 

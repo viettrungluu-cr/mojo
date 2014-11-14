@@ -167,18 +167,16 @@ void PictureLayerTiling::CreateMissingTilesInLiveTilesRect() {
   VerifyLiveTilesRect();
 }
 
-void PictureLayerTiling::UpdateTilesToCurrentPile(
+void PictureLayerTiling::UpdateTilesToCurrentRasterSource(
     const Region& layer_invalidation,
     const gfx::Size& new_layer_bounds) {
   DCHECK(!new_layer_bounds.IsEmpty());
 
-  gfx::Size tile_size = tiling_data_.max_texture_size();
+  gfx::Size content_bounds =
+      gfx::ToCeiledSize(gfx::ScaleSize(new_layer_bounds, contents_scale_));
+  gfx::Size tile_size = client_->CalculateTileSize(content_bounds);
 
   if (new_layer_bounds != layer_bounds_) {
-    gfx::Size content_bounds =
-        gfx::ToCeiledSize(gfx::ScaleSize(new_layer_bounds, contents_scale_));
-
-    tile_size = client_->CalculateTileSize(content_bounds);
     if (tile_size.IsEmpty()) {
       layer_bounds_ = gfx::Size();
       content_bounds = gfx::Size();
@@ -699,15 +697,13 @@ bool PictureLayerTiling::IsTileOccluded(const Tile* tile) const {
   return current_occlusion_in_layer_space_.IsOccluded(tile_query_rect);
 }
 
-bool PictureLayerTiling::IsTileRequiredForActivation(const Tile* tile) const {
+bool PictureLayerTiling::IsTileRequiredForActivationIfVisible(
+    const Tile* tile) const {
   DCHECK_EQ(PENDING_TREE, client_->GetTree());
 
-  // Note that although this function will determine whether tile is required
-  // for activation assuming that it is in visible (ie in the viewport). That is
-  // to say, even if the tile is outside of the viewport, it will be treated as
-  // if it was inside (there are no explicit checks for this). Hence, this
-  // function is only called for visible tiles to ensure we don't block
-  // activation on tiles outside of the viewport.
+  // This function assumes that the tile is visible (i.e. in the viewport).  The
+  // caller needs to make sure that this condition is met to ensure we don't
+  // block activation on tiles outside of the viewport.
 
   // If we are not allowed to mark tiles as required for activation, then don't
   // do it.
@@ -744,6 +740,21 @@ bool PictureLayerTiling::IsTileRequiredForActivation(const Tile* tile) const {
   return true;
 }
 
+bool PictureLayerTiling::IsTileRequiredForDrawIfVisible(
+    const Tile* tile) const {
+  DCHECK_EQ(ACTIVE_TREE, client_->GetTree());
+
+  // This function assumes that the tile is visible (i.e. in the viewport).
+
+  if (resolution_ != HIGH_RESOLUTION)
+    return false;
+
+  if (IsTileOccluded(tile))
+    return false;
+
+  return true;
+}
+
 void PictureLayerTiling::UpdateTileAndTwinPriority(Tile* tile) const {
   UpdateTilePriority(tile);
 
@@ -756,6 +767,8 @@ void PictureLayerTiling::UpdateTileAndTwinPriority(Tile* tile) const {
     tile->set_is_occluded(twin_tree, false);
     if (twin_tree == PENDING_TREE)
       tile->set_required_for_activation(false);
+    else
+      tile->set_required_for_draw(false);
     return;
   }
 
@@ -766,22 +779,31 @@ void PictureLayerTiling::UpdateTilePriority(Tile* tile) const {
   // TODO(vmpstr): This code should return the priority instead of setting it on
   // the tile. This should be a part of the change to move tile priority from
   // tiles into iterators.
+  TilePriority::PriorityBin max_tile_priority_bin =
+      client_->GetMaxTilePriorityBin();
   WhichTree tree = client_->GetTree();
 
   DCHECK_EQ(TileAt(tile->tiling_i_index(), tile->tiling_j_index()), tile);
   gfx::Rect tile_bounds =
       tiling_data_.TileBounds(tile->tiling_i_index(), tile->tiling_j_index());
 
-  if (current_visible_rect_.Intersects(tile_bounds)) {
+  if (max_tile_priority_bin <= TilePriority::NOW &&
+      current_visible_rect_.Intersects(tile_bounds)) {
     tile->SetPriority(tree, TilePriority(resolution_, TilePriority::NOW, 0));
-    if (tree == PENDING_TREE)
-      tile->set_required_for_activation(IsTileRequiredForActivation(tile));
+    if (tree == PENDING_TREE) {
+      tile->set_required_for_activation(
+          IsTileRequiredForActivationIfVisible(tile));
+    } else {
+      tile->set_required_for_draw(IsTileRequiredForDrawIfVisible(tile));
+    }
     tile->set_is_occluded(tree, IsTileOccluded(tile));
     return;
   }
 
   if (tree == PENDING_TREE)
     tile->set_required_for_activation(false);
+  else
+    tile->set_required_for_draw(false);
   tile->set_is_occluded(tree, false);
 
   DCHECK_GT(content_to_screen_scale_, 0.f);
@@ -789,8 +811,9 @@ void PictureLayerTiling::UpdateTilePriority(Tile* tile) const {
       current_visible_rect_.ManhattanInternalDistance(tile_bounds) *
       content_to_screen_scale_;
 
-  if (current_soon_border_rect_.Intersects(tile_bounds) ||
-      current_skewport_rect_.Intersects(tile_bounds)) {
+  if (max_tile_priority_bin <= TilePriority::SOON &&
+      (current_soon_border_rect_.Intersects(tile_bounds) ||
+       current_skewport_rect_.Intersects(tile_bounds))) {
     tile->SetPriority(
         tree,
         TilePriority(resolution_, TilePriority::SOON, distance_to_visible));

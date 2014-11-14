@@ -19,6 +19,7 @@
 
 namespace cc {
 
+class BeginFrameSource;
 class ContextProvider;
 class LayerTreeHost;
 class LayerTreeHostSingleThreadClient;
@@ -30,7 +31,8 @@ class CC_EXPORT SingleThreadProxy : public Proxy,
   static scoped_ptr<Proxy> Create(
       LayerTreeHost* layer_tree_host,
       LayerTreeHostSingleThreadClient* client,
-      scoped_refptr<base::SingleThreadTaskRunner> main_task_runner);
+      scoped_refptr<base::SingleThreadTaskRunner> main_task_runner,
+      scoped_ptr<BeginFrameSource> external_begin_frame_source);
   ~SingleThreadProxy() override;
 
   // Proxy implementation
@@ -59,7 +61,6 @@ class CC_EXPORT SingleThreadProxy : public Proxy,
   bool MainFrameWillHappenForTesting() override;
 
   // SchedulerClient implementation
-  BeginFrameSource* ExternalBeginFrameSource() override;
   void WillBeginImplFrame(const BeginFrameArgs& args) override;
   void ScheduledActionSendBeginMainFrame() override;
   DrawResult ScheduledActionDrawAndSwapIfPossible() override;
@@ -87,6 +88,7 @@ class CC_EXPORT SingleThreadProxy : public Proxy,
   void DidSwapBuffersCompleteOnImplThread() override;
   void OnCanDrawStateChanged(bool can_draw) override;
   void NotifyReadyToActivate() override;
+  void NotifyReadyToDraw() override;
   void SetNeedsRedrawOnImplThread() override;
   void SetNeedsRedrawRectOnImplThread(const gfx::Rect& dirty_rect) override;
   void SetNeedsAnimateOnImplThread() override;
@@ -114,10 +116,12 @@ class CC_EXPORT SingleThreadProxy : public Proxy,
   SingleThreadProxy(
       LayerTreeHost* layer_tree_host,
       LayerTreeHostSingleThreadClient* client,
-      scoped_refptr<base::SingleThreadTaskRunner> main_task_runner);
+      scoped_refptr<base::SingleThreadTaskRunner> main_task_runner,
+      scoped_ptr<BeginFrameSource> external_begin_frame_source);
 
   void BeginMainFrame();
   void BeginMainFrameAbortedOnImplThread();
+  void DoAnimate();
   void DoBeginMainFrame(const BeginFrameArgs& begin_frame_args);
   void DoCommit();
   DrawResult DoComposite(base::TimeTicks frame_begin_time,
@@ -127,7 +131,6 @@ class CC_EXPORT SingleThreadProxy : public Proxy,
   void CommitComplete();
 
   bool ShouldComposite() const;
-  void UpdateBackgroundAnimateTicking();
   void ScheduleRequestNewOutputSurface();
 
   // Accessed on main thread only.
@@ -159,6 +162,8 @@ class CC_EXPORT SingleThreadProxy : public Proxy,
 
   // This is the callback for the scheduled RequestNewOutputSurface.
   base::CancelableClosure output_surface_creation_callback_;
+
+  scoped_ptr<BeginFrameSource> external_begin_frame_source_;
 
   base::WeakPtrFactory<SingleThreadProxy> weak_factory_;
 

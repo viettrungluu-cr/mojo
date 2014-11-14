@@ -29,7 +29,7 @@ class TracedValue;
 namespace cc {
 
 class PictureLayerTiling;
-class PicturePileImpl;
+class RasterSource;
 
 class CC_EXPORT PictureLayerTilingClient {
  public:
@@ -48,6 +48,7 @@ class CC_EXPORT PictureLayerTilingClient {
       const PictureLayerTiling* tiling) const = 0;
   virtual PictureLayerTiling* GetRecycledTwinTiling(
       const PictureLayerTiling* tiling) = 0;
+  virtual TilePriority::PriorityBin GetMaxTilePriorityBin() const = 0;
   virtual size_t GetMaxTilesForInterestArea() const = 0;
   virtual float GetSkewportTargetTimeInSeconds() const = 0;
   virtual int GetSkewportExtrapolationLimitInContentPixels() const = 0;
@@ -144,8 +145,8 @@ class CC_EXPORT PictureLayerTiling {
       const gfx::Size& layer_bounds,
       PictureLayerTilingClient* client);
   gfx::Size layer_bounds() const { return layer_bounds_; }
-  void UpdateTilesToCurrentPile(const Region& layer_invalidation,
-                                const gfx::Size& new_layer_bounds);
+  void UpdateTilesToCurrentRasterSource(const Region& layer_invalidation,
+                                        const gfx::Size& new_layer_bounds);
   void CreateMissingTilesInLiveTilesRect();
   void RemoveTilesInRegion(const Region& layer_region);
 
@@ -205,7 +206,8 @@ class CC_EXPORT PictureLayerTiling {
   }
 
   bool IsTileOccluded(const Tile* tile) const;
-  bool IsTileRequiredForActivation(const Tile* tile) const;
+  bool IsTileRequiredForActivationIfVisible(const Tile* tile) const;
+  bool IsTileRequiredForDrawIfVisible(const Tile* tile) const;
 
   // Iterate over all tiles to fill content_rect.  Even if tiles are invalid
   // (i.e. no valid resource) this tiling should still iterate over them.

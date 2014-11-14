@@ -590,6 +590,8 @@ void QuicClientSession::OnCryptoHandshakeEvent(CryptoHandshakeEvent event) {
       ++it;
       observer->OnCryptoHandshakeConfirmed();
     }
+    if (server_info_)
+      server_info_->OnExternalCacheHit();
   }
   QuicSession::OnCryptoHandshakeEvent(event);
 }
@@ -682,7 +684,7 @@ void QuicClientSession::OnProofValid(
     const QuicCryptoClientConfig::CachedState& cached) {
   DCHECK(cached.proof_valid());
 
-  if (!server_info_ || !server_info_->IsReadyToPersist()) {
+  if (!server_info_) {
     return;
   }
 

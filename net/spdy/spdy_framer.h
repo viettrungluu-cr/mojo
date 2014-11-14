@@ -37,8 +37,6 @@ class SpdyNetworkTransactionTest;
 class SpdyProxyClientSocketTest;
 class SpdySessionTest;
 class SpdyStreamTest;
-class SpdyWebSocketStreamTest;
-class WebSocketJobTest;
 
 class SpdyFramer;
 class SpdyFrameBuilder;
@@ -237,7 +235,11 @@ class NET_EXPORT_PRIVATE SpdyFramerVisitorInterface {
   // Called when a HEADERS frame is received.
   // Note that header block data is not included. See
   // OnControlFrameHeaderData().
-  virtual void OnHeaders(SpdyStreamId stream_id, bool fin, bool end) = 0;
+  virtual void OnHeaders(SpdyStreamId stream_id,
+                         bool has_priority,
+                         SpdyPriority priority,
+                         bool fin,
+                         bool end) = 0;
 
   // Called when a WINDOW_UPDATE frame has been parsed.
   virtual void OnWindowUpdate(SpdyStreamId stream_id,
@@ -612,16 +614,14 @@ class NET_EXPORT_PRIVATE SpdyFramer {
                            TooLargeHeadersFrameUsesContinuation);
   FRIEND_TEST_ALL_PREFIXES(SpdyFramerTest,
                            TooLargePushPromiseFrameUsesContinuation);
-  friend class net::HttpNetworkLayer;  // This is temporary for the server.
-  friend class net::HttpNetworkTransactionTest;
-  friend class net::HttpProxyClientSocketPoolTest;
-  friend class net::SpdyHttpStreamTest;
-  friend class net::SpdyNetworkTransactionTest;
-  friend class net::SpdyProxyClientSocketTest;
-  friend class net::SpdySessionTest;
-  friend class net::SpdyStreamTest;
-  friend class net::SpdyWebSocketStreamTest;
-  friend class net::WebSocketJobTest;
+  friend class HttpNetworkLayer;  // This is temporary for the server.
+  friend class HttpNetworkTransactionTest;
+  friend class HttpProxyClientSocketPoolTest;
+  friend class SpdyHttpStreamTest;
+  friend class SpdyNetworkTransactionTest;
+  friend class SpdyProxyClientSocketTest;
+  friend class SpdySessionTest;
+  friend class SpdyStreamTest;
   friend class test::TestSpdyVisitor;
 
  private:

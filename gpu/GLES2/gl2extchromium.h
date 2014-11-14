@@ -623,13 +623,9 @@ typedef void (GL_APIENTRYP PFNGLRESIZECHROMIUMPROC) (
 #ifndef GL_CHROMIUM_get_multiple
 #define GL_CHROMIUM_get_multiple 1
 #ifdef GL_GLEXT_PROTOTYPES
-GL_APICALL void GL_APIENTRY glGetMultipleIntegervCHROMIUM(
-    const GLenum* pnames, GLuint count, GLint* results, GLsizeiptr size);
 GL_APICALL void GL_APIENTRY glGetProgramInfoCHROMIUM(
     GLuint program, GLsizei bufsize, GLsizei* size, void* info);
 #endif
-typedef void (GL_APIENTRYP PFNGLGETMULTIPLEINTEGERVCHROMIUMPROC) (
-   const GLenum* pnames, GLuint count, GLint* results, GLsizeiptr size);
 typedef void (GL_APIENTRYP PFNGLGETPROGRAMINFOCHROMIUMPROC) (
    GLuint program, GLsizei bufsize, GLsizei* size, void* info);
 #endif  /* GL_CHROMIUM_get_multiple */
@@ -686,6 +682,35 @@ typedef void (GL_APIENTRYP PFNGLWAITSYNCPOINTCHROMIUMPROC) (GLuint sync_point);
 #ifndef GL_OVERLAY_TRANSFORM_ROTATE_270_CHROMIUM
 #define GL_OVERLAY_TRANSFORM_ROTATE_270_CHROMIUM 0x924A
 #endif
+
+/* GL_CHROMIUM_subscribe_uniform */
+#ifndef GL_CHROMIUM_subscribe_uniform
+#define GL_CHROMIUM_subscribe_uniform 1
+
+#ifndef GL_SUBSCRIBED_VALUES_BUFFER_CHROMIUM
+#define GL_SUBSCRIBED_VALUES_BUFFER_CHROMIUM 0x924B
+#endif
+
+#ifndef GL_MOUSE_POSITION_CHROMIUM
+#define GL_MOUSE_POSITION_CHROMIUM 0x924C
+#endif
+
+#ifdef GL_GLEXT_PROTOTYPES
+GL_APICALL void GL_APIENTRY
+glGenValuebuffersCHROMIUM(GLsizei n, GLuint* buffers);
+GL_APICALL void GL_APIENTRY
+glDeleteValuebuffersCHROMIUM(GLsizei n, const GLuint* valuebuffers);
+GL_APICALL GLboolean GL_APIENTRY glIsValuebufferCHROMIUM(GLuint valuebuffer);
+GL_APICALL void GL_APIENTRY
+glBindValuebufferCHROMIUM(GLenum target, GLuint valuebuffer);
+GL_APICALL void GL_APIENTRY
+glSubscribeValueCHROMIUM(GLenum target, GLenum subscription);
+GL_APICALL void GL_APIENTRY glPopulateSubscribedValuesCHROMIUM(GLenum target);
+GL_APICALL void GL_APIENTRY glUniformValuebufferCHROMIUM(GLint location,
+                                                         GLenum target,
+                                                         GLenum subscription);
+#endif
+#endif /* GL_CHROMIUM_subscribe_uniform */
 
 #ifdef GL_GLEXT_PROTOTYPES
 GL_APICALL void GL_APIENTRY

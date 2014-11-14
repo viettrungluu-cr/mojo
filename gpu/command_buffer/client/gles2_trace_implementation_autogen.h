@@ -383,10 +383,6 @@ void ResizeCHROMIUM(GLuint width, GLuint height, GLfloat scale_factor) override;
 const GLchar* GetRequestableExtensionsCHROMIUM() override;
 void RequestExtensionCHROMIUM(const char* extension) override;
 void RateLimitOffscreenContextCHROMIUM() override;
-void GetMultipleIntegervCHROMIUM(const GLenum* pnames,
-                                 GLuint count,
-                                 GLint* results,
-                                 GLsizeiptr size) override;
 void GetProgramInfoCHROMIUM(GLuint program,
                             GLsizei bufsize,
                             GLsizei* size,
@@ -441,6 +437,15 @@ GLuint CreateAndConsumeTextureCHROMIUM(GLenum target,
 void BindUniformLocationCHROMIUM(GLuint program,
                                  GLint location,
                                  const char* name) override;
+void GenValuebuffersCHROMIUM(GLsizei n, GLuint* buffers) override;
+void DeleteValuebuffersCHROMIUM(GLsizei n, const GLuint* valuebuffers) override;
+GLboolean IsValuebufferCHROMIUM(GLuint valuebuffer) override;
+void BindValuebufferCHROMIUM(GLenum target, GLuint valuebuffer) override;
+void SubscribeValueCHROMIUM(GLenum target, GLenum subscription) override;
+void PopulateSubscribedValuesCHROMIUM(GLenum target) override;
+void UniformValuebufferCHROMIUM(GLint location,
+                                GLenum target,
+                                GLenum subscription) override;
 void BindTexImage2DCHROMIUM(GLenum target, GLint imageId) override;
 void ReleaseTexImage2DCHROMIUM(GLenum target, GLint imageId) override;
 void TraceBeginCHROMIUM(const char* name) override;

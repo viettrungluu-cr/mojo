@@ -751,13 +751,6 @@ void GLES2RequestExtensionCHROMIUM(const char* extension) {
 void GLES2RateLimitOffscreenContextCHROMIUM() {
   gles2::GetGLContext()->RateLimitOffscreenContextCHROMIUM();
 }
-void GLES2GetMultipleIntegervCHROMIUM(const GLenum* pnames,
-                                      GLuint count,
-                                      GLint* results,
-                                      GLsizeiptr size) {
-  gles2::GetGLContext()->GetMultipleIntegervCHROMIUM(pnames, count, results,
-                                                     size);
-}
 void GLES2GetProgramInfoCHROMIUM(GLuint program,
                                  GLsizei bufsize,
                                  GLsizei* size,
@@ -852,6 +845,30 @@ void GLES2BindUniformLocationCHROMIUM(GLuint program,
                                       GLint location,
                                       const char* name) {
   gles2::GetGLContext()->BindUniformLocationCHROMIUM(program, location, name);
+}
+void GLES2GenValuebuffersCHROMIUM(GLsizei n, GLuint* buffers) {
+  gles2::GetGLContext()->GenValuebuffersCHROMIUM(n, buffers);
+}
+void GLES2DeleteValuebuffersCHROMIUM(GLsizei n, const GLuint* valuebuffers) {
+  gles2::GetGLContext()->DeleteValuebuffersCHROMIUM(n, valuebuffers);
+}
+GLboolean GLES2IsValuebufferCHROMIUM(GLuint valuebuffer) {
+  return gles2::GetGLContext()->IsValuebufferCHROMIUM(valuebuffer);
+}
+void GLES2BindValuebufferCHROMIUM(GLenum target, GLuint valuebuffer) {
+  gles2::GetGLContext()->BindValuebufferCHROMIUM(target, valuebuffer);
+}
+void GLES2SubscribeValueCHROMIUM(GLenum target, GLenum subscription) {
+  gles2::GetGLContext()->SubscribeValueCHROMIUM(target, subscription);
+}
+void GLES2PopulateSubscribedValuesCHROMIUM(GLenum target) {
+  gles2::GetGLContext()->PopulateSubscribedValuesCHROMIUM(target);
+}
+void GLES2UniformValuebufferCHROMIUM(GLint location,
+                                     GLenum target,
+                                     GLenum subscription) {
+  gles2::GetGLContext()->UniformValuebufferCHROMIUM(location, target,
+                                                    subscription);
 }
 void GLES2BindTexImage2DCHROMIUM(GLenum target, GLint imageId) {
   gles2::GetGLContext()->BindTexImage2DCHROMIUM(target, imageId);
@@ -1654,10 +1671,6 @@ extern const NameToFunc g_gles2_function_table[] = {
          glRateLimitOffscreenContextCHROMIUM),
     },
     {
-     "glGetMultipleIntegervCHROMIUM",
-     reinterpret_cast<GLES2FunctionPointer>(glGetMultipleIntegervCHROMIUM),
-    },
-    {
      "glGetProgramInfoCHROMIUM",
      reinterpret_cast<GLES2FunctionPointer>(glGetProgramInfoCHROMIUM),
     },
@@ -1729,6 +1742,34 @@ extern const NameToFunc g_gles2_function_table[] = {
     {
      "glBindUniformLocationCHROMIUM",
      reinterpret_cast<GLES2FunctionPointer>(glBindUniformLocationCHROMIUM),
+    },
+    {
+     "glGenValuebuffersCHROMIUM",
+     reinterpret_cast<GLES2FunctionPointer>(glGenValuebuffersCHROMIUM),
+    },
+    {
+     "glDeleteValuebuffersCHROMIUM",
+     reinterpret_cast<GLES2FunctionPointer>(glDeleteValuebuffersCHROMIUM),
+    },
+    {
+     "glIsValuebufferCHROMIUM",
+     reinterpret_cast<GLES2FunctionPointer>(glIsValuebufferCHROMIUM),
+    },
+    {
+     "glBindValuebufferCHROMIUM",
+     reinterpret_cast<GLES2FunctionPointer>(glBindValuebufferCHROMIUM),
+    },
+    {
+     "glSubscribeValueCHROMIUM",
+     reinterpret_cast<GLES2FunctionPointer>(glSubscribeValueCHROMIUM),
+    },
+    {
+     "glPopulateSubscribedValuesCHROMIUM",
+     reinterpret_cast<GLES2FunctionPointer>(glPopulateSubscribedValuesCHROMIUM),
+    },
+    {
+     "glUniformValuebufferCHROMIUM",
+     reinterpret_cast<GLES2FunctionPointer>(glUniformValuebufferCHROMIUM),
     },
     {
      "glBindTexImage2DCHROMIUM",

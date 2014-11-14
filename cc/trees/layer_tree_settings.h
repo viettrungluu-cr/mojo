@@ -21,9 +21,11 @@ class CC_EXPORT LayerTreeSettings {
   bool impl_side_painting;
   bool allow_antialiasing;
   bool force_antialiasing;
+  bool force_blending_with_shaders;
   bool throttle_frame_production;
   bool single_thread_proxy_scheduler;
-  bool begin_frame_scheduling_enabled;
+  bool use_external_begin_frame_source;
+  bool forward_begin_frames_to_children;
   bool main_frame_before_activation_enabled;
   bool using_synchronous_renderer_compositor;
   bool disable_hi_res_timer_tasks_on_battery;
@@ -58,6 +60,7 @@ class CC_EXPORT LayerTreeSettings {
   float top_controls_show_threshold;
   float top_controls_hide_threshold;
   double refresh_rate;
+  double background_animation_rate;
   size_t max_partial_texture_updates;
   gfx::Size default_tile_size;
   gfx::Size max_untiled_layer_size;

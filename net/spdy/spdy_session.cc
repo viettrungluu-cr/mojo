@@ -398,6 +398,10 @@ SpdyProtocolErrorDetails MapRstStreamStatusToProtocolError(
       return STATUS_CODE_CONNECT_ERROR;
     case RST_STREAM_ENHANCE_YOUR_CALM:
       return STATUS_CODE_ENHANCE_YOUR_CALM;
+    case RST_STREAM_INADEQUATE_SECURITY:
+      return STATUS_CODE_INADEQUATE_SECURITY;
+    case RST_STREAM_HTTP_1_1_REQUIRED:
+      return STATUS_CODE_HTTP_1_1_REQUIRED;
     default:
       NOTREACHED();
       return static_cast<SpdyProtocolErrorDetails>(-1);
@@ -721,7 +725,8 @@ void SpdySession::InitializeWithSocket(
   DCHECK_GE(protocol_, kProtoSPDYMinimumVersion);
   DCHECK_LE(protocol_, kProtoSPDYMaximumVersion);
 
-  if (protocol_ == kProtoSPDY4)
+  if ((protocol_ >= kProtoSPDY4MinimumVersion) &&
+      (protocol_ <= kProtoSPDY4MaximumVersion))
     send_connection_header_prefix_ = true;
 
   if (protocol_ >= kProtoSPDY31) {
@@ -741,7 +746,7 @@ void SpdySession::InitializeWithSocket(
   buffered_spdy_framer_->set_debug_visitor(this);
   UMA_HISTOGRAM_ENUMERATION(
       "Net.SpdyVersion2",
-      protocol_ - kProtoSPDYMinimumVersion,
+      protocol_ - kProtoSPDYHistogramOffset,
       kProtoSPDYMaximumVersion - kProtoSPDYMinimumVersion + 1);
 
   net_log_.AddEvent(NetLog::TYPE_SPDY_SESSION_INITIALIZED,
@@ -2205,11 +2210,7 @@ void SpdySession::OnSynStream(SpdyStreamId stream_id,
                               const SpdyHeaderBlock& headers) {
   CHECK(in_io_loop_);
 
-  if (GetProtocolVersion() >= SPDY4) {
-    DCHECK_EQ(0u, associated_stream_id);
-    OnHeaders(stream_id, fin, headers);
-    return;
-  }
+  DCHECK_LE(GetProtocolVersion(), SPDY3);
 
   base::Time response_time = base::Time::Now();
   base::TimeTicks recv_first_byte_time = time_func_();
@@ -2332,6 +2333,8 @@ void SpdySession::OnSynReply(SpdyStreamId stream_id,
 }
 
 void SpdySession::OnHeaders(SpdyStreamId stream_id,
+                            bool has_priority,
+                            SpdyPriority priority,
                             bool fin,
                             const SpdyHeaderBlock& headers) {
   CHECK(in_io_loop_);
@@ -2459,8 +2462,8 @@ void SpdySession::OnPing(SpdyPingId unique_id, bool is_ack) {
       base::Bind(&NetLogSpdyPingCallback, unique_id, is_ack, "received"));
 
   // Send response to a PING from server.
-  if ((protocol_ >= kProtoSPDY4 && !is_ack) ||
-      (protocol_ < kProtoSPDY4 && unique_id % 2 == 0)) {
+  if ((protocol_ >= kProtoSPDY4MinimumVersion && !is_ack) ||
+      (protocol_ < kProtoSPDY4MinimumVersion && unique_id % 2 == 0)) {
     WritePingFrame(unique_id, true);
     return;
   }
@@ -2746,7 +2749,8 @@ void SpdySession::SendInitialData() {
   DCHECK(enable_sending_initial_data_);
 
   if (send_connection_header_prefix_) {
-    DCHECK_EQ(protocol_, kProtoSPDY4);
+    DCHECK_GE(protocol_, kProtoSPDY4MinimumVersion);
+    DCHECK_LE(protocol_, kProtoSPDY4MaximumVersion);
     scoped_ptr<SpdyFrame> connection_header_prefix_frame(
         new SpdyFrame(const_cast<char*>(kHttp2ConnectionHeaderPrefix),
                       kHttp2ConnectionHeaderPrefixSize,

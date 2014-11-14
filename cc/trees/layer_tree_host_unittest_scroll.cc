@@ -8,6 +8,7 @@
 #include "cc/layers/layer.h"
 #include "cc/layers/layer_impl.h"
 #include "cc/layers/picture_layer.h"
+#include "cc/scheduler/begin_frame_source.h"
 #include "cc/test/fake_content_layer_client.h"
 #include "cc/test/fake_layer_tree_host_client.h"
 #include "cc/test/fake_picture_layer.h"
@@ -1091,13 +1092,6 @@ class ThreadCheckingInputHandlerClient : public InputHandlerClient {
     *received_stop_flinging_ = true;
   }
 
-  void DidOverscroll(const gfx::PointF& causal_event_viewport_point,
-                     const gfx::Vector2dF& accumulated_overscroll,
-                     const gfx::Vector2dF& latest_overscroll_delta) override {
-    if (!task_runner_->BelongsToCurrentThread())
-      ADD_FAILURE() << "DidOverscroll called on wrong thread";
-  }
-
  private:
   base::SingleThreadTaskRunner* task_runner_;
   bool* received_stop_flinging_;
@@ -1129,7 +1123,8 @@ TEST(LayerTreeHostFlingTest, DidStopFlingingThread) {
                                     NULL,
                                     settings,
                                     base::MessageLoopProxy::current(),
-                                    impl_thread.message_loop_proxy());
+                                    impl_thread.message_loop_proxy(),
+                                    nullptr);
 
   impl_thread.message_loop_proxy()
       ->PostTask(FROM_HERE,

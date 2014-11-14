@@ -29,6 +29,7 @@
 #include "cc/debug/rendering_stats_instrumentation.h"
 #include "cc/debug/traced_value.h"
 #include "cc/input/page_scale_animation.h"
+#include "cc/input/scroll_elasticity_helper.h"
 #include "cc/input/top_controls_manager.h"
 #include "cc/layers/append_quads_data.h"
 #include "cc/layers/heads_up_display_layer_impl.h"
@@ -173,77 +174,6 @@ size_t GetMaxStagingResourceCount() {
 
 }  // namespace
 
-class LayerTreeHostImplTimeSourceAdapter : public TimeSourceClient {
- public:
-  static scoped_ptr<LayerTreeHostImplTimeSourceAdapter> Create(
-      LayerTreeHostImpl* layer_tree_host_impl,
-      scoped_refptr<DelayBasedTimeSource> time_source) {
-    return make_scoped_ptr(
-        new LayerTreeHostImplTimeSourceAdapter(layer_tree_host_impl,
-                                               time_source));
-  }
-  ~LayerTreeHostImplTimeSourceAdapter() override {
-    time_source_->SetClient(NULL);
-    time_source_->SetActive(false);
-  }
-
-  void OnTimerTick() override {
-    // In single threaded mode we attempt to simulate changing the current
-    // thread by maintaining a fake thread id. When we switch from one
-    // thread to another, we construct DebugScopedSetXXXThread objects that
-    // update the thread id. This lets DCHECKS that ensure we're on the
-    // right thread to work correctly in single threaded mode. The problem
-    // here is that the timer tasks are run via the message loop, and when
-    // they run, we've had no chance to construct a DebugScopedSetXXXThread
-    // object. The result is that we report that we're running on the main
-    // thread. In multi-threaded mode, this timer is run on the compositor
-    // thread, so to keep this consistent in single-threaded mode, we'll
-    // construct a DebugScopedSetImplThread object. There is no need to do
-    // this in multi-threaded mode since the real thread id's will be
-    // correct. In fact, setting fake thread id's interferes with the real
-    // thread id's and causes breakage.
-    scoped_ptr<DebugScopedSetImplThread> set_impl_thread;
-    if (!layer_tree_host_impl_->proxy()->HasImplThread()) {
-      set_impl_thread.reset(
-          new DebugScopedSetImplThread(layer_tree_host_impl_->proxy()));
-    }
-
-    layer_tree_host_impl_->Animate(
-        layer_tree_host_impl_->CurrentBeginFrameArgs().frame_time);
-    layer_tree_host_impl_->UpdateBackgroundAnimateTicking(true);
-    bool start_ready_animations = true;
-    layer_tree_host_impl_->UpdateAnimationState(start_ready_animations);
-
-    if (layer_tree_host_impl_->pending_tree()) {
-      layer_tree_host_impl_->pending_tree()->UpdateDrawProperties();
-      layer_tree_host_impl_->ManageTiles();
-    }
-
-    layer_tree_host_impl_->ResetCurrentBeginFrameArgsForNextFrame();
-  }
-
-  void SetActive(bool active) {
-    if (active != time_source_->Active())
-      time_source_->SetActive(active);
-  }
-
-  bool Active() const { return time_source_->Active(); }
-
- private:
-  LayerTreeHostImplTimeSourceAdapter(
-      LayerTreeHostImpl* layer_tree_host_impl,
-      scoped_refptr<DelayBasedTimeSource> time_source)
-      : layer_tree_host_impl_(layer_tree_host_impl),
-        time_source_(time_source) {
-    time_source_->SetClient(this);
-  }
-
-  LayerTreeHostImpl* layer_tree_host_impl_;
-  scoped_refptr<DelayBasedTimeSource> time_source_;
-
-  DISALLOW_COPY_AND_ASSIGN(LayerTreeHostImplTimeSourceAdapter);
-};
-
 LayerTreeHostImpl::FrameData::FrameData()
     : contains_incomplete_tile(false), has_no_damage(false) {}
 
@@ -274,8 +204,7 @@ LayerTreeHostImpl::LayerTreeHostImpl(
     SharedBitmapManager* shared_bitmap_manager,
     gpu::GpuMemoryBufferManager* gpu_memory_buffer_manager,
     int id)
-    : BeginFrameSourceMixIn(),
-      client_(client),
+    : client_(client),
       proxy_(proxy),
       use_gpu_rasterization_(false),
       input_handler_client_(NULL),
@@ -352,6 +281,8 @@ LayerTreeHostImpl::~LayerTreeHostImpl() {
     input_handler_client_->WillShutdown();
     input_handler_client_ = NULL;
   }
+  if (scroll_elasticity_helper_)
+    scroll_elasticity_helper_.reset();
 
   // The layer trees must be destroyed before the layer tree host. We've
   // made a contract with our animation controllers that the registrar
@@ -519,6 +450,12 @@ LayerTreeHostImpl::CreateLatencyInfoSwapPromiseMonitor(
     ui::LatencyInfo* latency) {
   return make_scoped_ptr(
       new LatencyInfoSwapPromiseMonitor(latency, NULL, this));
+}
+
+ScrollElasticityHelper* LayerTreeHostImpl::CreateScrollElasticityHelper() {
+  DCHECK(!scroll_elasticity_helper_);
+  scroll_elasticity_helper_.reset(new ScrollElasticityHelper(this));
+  return scroll_elasticity_helper_.get();
 }
 
 void LayerTreeHostImpl::QueueSwapPromiseForMainThreadScrollUpdate(
@@ -974,28 +911,6 @@ void LayerTreeHostImpl::MainThreadHasStoppedFlinging() {
     input_handler_client_->MainThreadHasStoppedFlinging();
 }
 
-void LayerTreeHostImpl::UpdateBackgroundAnimateTicking(
-    bool should_background_tick) {
-  DCHECK(proxy_->IsImplThread());
-  if (should_background_tick)
-    DCHECK(active_tree_->root_layer());
-
-  bool enabled = should_background_tick && needs_animate_layers();
-
-  // Lazily create the time_source adapter so that we can vary the interval for
-  // testing.
-  if (!time_source_client_adapter_) {
-    time_source_client_adapter_ = LayerTreeHostImplTimeSourceAdapter::Create(
-        this,
-        DelayBasedTimeSource::Create(
-            LowFrequencyAnimationInterval(),
-            proxy_->HasImplThread() ? proxy_->ImplThreadTaskRunner()
-                                    : proxy_->MainThreadTaskRunner()));
-  }
-
-  time_source_client_adapter_->SetActive(enabled);
-}
-
 void LayerTreeHostImpl::DidAnimateScrollOffset() {
   client_->SetNeedsCommitOnImplThread();
   client_->RenewTreePriority();
@@ -1271,7 +1186,8 @@ void LayerTreeHostImpl::DidInitializeVisibleTile() {
 }
 
 void LayerTreeHostImpl::GetPictureLayerImplPairs(
-    std::vector<PictureLayerImpl::Pair>* layer_pairs) const {
+    std::vector<PictureLayerImpl::Pair>* layer_pairs,
+    bool need_valid_tile_priorities) const {
   DCHECK(layer_pairs->empty());
   for (std::vector<PictureLayerImpl*>::const_iterator it =
            picture_layers_.begin();
@@ -1279,24 +1195,25 @@ void LayerTreeHostImpl::GetPictureLayerImplPairs(
        ++it) {
     PictureLayerImpl* layer = *it;
 
-    // TODO(vmpstr): Iterators and should handle this instead. crbug.com/381704
-    if (!layer->HasValidTilePriorities())
+    if (!layer->IsOnActiveOrPendingTree() ||
+        (need_valid_tile_priorities && !layer->HasValidTilePriorities()))
       continue;
 
     PictureLayerImpl* twin_layer = layer->GetPendingOrActiveTwinLayer();
 
     // Ignore the twin layer when tile priorities are invalid.
-    // TODO(vmpstr): Iterators should handle this instead. crbug.com/381704
-    if (twin_layer && !twin_layer->HasValidTilePriorities())
+    if (need_valid_tile_priorities && twin_layer &&
+        !twin_layer->HasValidTilePriorities())
       twin_layer = NULL;
 
     // If the current tree is ACTIVE_TREE, then always generate a layer_pair.
     // If current tree is PENDING_TREE, then only generate a layer_pair if
     // there is no twin layer.
     if (layer->GetTree() == ACTIVE_TREE) {
-      DCHECK(!twin_layer || twin_layer->GetTree() == PENDING_TREE);
+      DCHECK_IMPLIES(twin_layer, twin_layer->GetTree() == PENDING_TREE);
       layer_pairs->push_back(PictureLayerImpl::Pair(layer, twin_layer));
     } else if (!twin_layer) {
+      DCHECK(layer->GetTree() == PENDING_TREE);
       layer_pairs->push_back(PictureLayerImpl::Pair(NULL, layer));
     }
   }
@@ -1306,7 +1223,7 @@ void LayerTreeHostImpl::BuildRasterQueue(RasterTilePriorityQueue* queue,
                                          TreePriority tree_priority) {
   TRACE_EVENT0("cc", "LayerTreeHostImpl::BuildRasterQueue");
   picture_layer_pairs_.clear();
-  GetPictureLayerImplPairs(&picture_layer_pairs_);
+  GetPictureLayerImplPairs(&picture_layer_pairs_, true);
   queue->Build(picture_layer_pairs_, tree_priority);
 }
 
@@ -1314,7 +1231,7 @@ void LayerTreeHostImpl::BuildEvictionQueue(EvictionTilePriorityQueue* queue,
                                            TreePriority tree_priority) {
   TRACE_EVENT0("cc", "LayerTreeHostImpl::BuildEvictionQueue");
   picture_layer_pairs_.clear();
-  GetPictureLayerImplPairs(&picture_layer_pairs_);
+  GetPictureLayerImplPairs(&picture_layer_pairs_, false);
   queue->Build(picture_layer_pairs_, tree_priority);
 }
 
@@ -1325,6 +1242,10 @@ const std::vector<PictureLayerImpl*>& LayerTreeHostImpl::GetPictureLayers()
 
 void LayerTreeHostImpl::NotifyReadyToActivate() {
   client_->NotifyReadyToActivate();
+}
+
+void LayerTreeHostImpl::NotifyReadyToDraw() {
+  client_->NotifyReadyToDraw();
 }
 
 void LayerTreeHostImpl::NotifyTileStateChanged(const Tile* tile) {
@@ -1437,10 +1358,6 @@ void LayerTreeHostImpl::SetNeedsRedrawRect(const gfx::Rect& damage_rect) {
   client_->SetNeedsRedrawRectOnImplThread(damage_rect);
 }
 
-void LayerTreeHostImpl::BeginFrame(const BeginFrameArgs& args) {
-  CallOnBeginFrame(args);
-}
-
 void LayerTreeHostImpl::DidSwapBuffers() {
   client_->DidSwapBuffersOnImplThread();
 }
@@ -1543,7 +1460,8 @@ void LayerTreeHostImpl::DrawLayers(FrameData* frame,
   if (!settings_.impl_side_painting && debug_state_.continuous_painting) {
     const RenderingStats& stats =
         rendering_stats_instrumentation_->GetRenderingStats();
-    paint_time_counter_->SavePaintTime(stats.main_stats.paint_time);
+    paint_time_counter_->SavePaintTime(
+        stats.begin_main_frame_to_commit_duration.GetLastTimeDelta());
   }
 
   bool is_new_trace;
@@ -1676,13 +1594,6 @@ bool LayerTreeHostImpl::SwapBuffers(const LayerTreeHostImpl::FrameData& frame) {
   }
   renderer_->SwapBuffers(metadata);
   return true;
-}
-
-void LayerTreeHostImpl::OnNeedsBeginFramesChange(bool enable) {
-  if (output_surface_)
-    output_surface_->SetNeedsBeginFrame(enable);
-  else
-    DCHECK(!enable);
 }
 
 void LayerTreeHostImpl::WillBeginImplFrame(const BeginFrameArgs& args) {
@@ -1883,12 +1794,9 @@ void LayerTreeHostImpl::ActivateSyncTree() {
     // TODO(hendrikw): This requires a different metric when we commit directly
     // to the active tree.  See crbug.com/429311.
     paint_time_counter_->SavePaintTime(
-        stats.impl_stats.commit_to_activate_duration.GetLastTimeDelta() +
-        stats.impl_stats.draw_duration.GetLastTimeDelta());
+        stats.commit_to_activate_duration.GetLastTimeDelta() +
+        stats.draw_duration.GetLastTimeDelta());
   }
-
-  if (time_source_client_adapter_ && time_source_client_adapter_->Active())
-    DCHECK(active_tree_->root_layer());
 
   scoped_ptr<PageScaleAnimation> page_scale_animation =
       active_tree_->TakePageScaleAnimation();
@@ -2195,7 +2103,7 @@ bool LayerTreeHostImpl::InitializeRenderer(
 
   // TODO(brianderson): Don't use a hard-coded parent draw time.
   base::TimeDelta parent_draw_time =
-      (!settings_.begin_frame_scheduling_enabled &&
+      (!settings_.use_external_begin_frame_source &&
        output_surface_->capabilities().adjust_deadline_for_parent)
           ? BeginFrameArgs::DefaultEstimatedParentDrawTime()
           : base::TimeDelta();
@@ -2472,9 +2380,10 @@ InputHandler::ScrollStatus LayerTreeHostImpl::ScrollAnimated(
     new_target.SetToMax(gfx::ScrollOffset());
     new_target.SetToMin(layer_impl->MaxScrollOffset());
 
-    curve->UpdateTarget(animation->TrimTimeToCurrentIteration(
-                            CurrentBeginFrameArgs().frame_time),
-                        new_target);
+    curve->UpdateTarget(
+        animation->TrimTimeToCurrentIteration(
+                       CurrentBeginFrameArgs().frame_time).InSecondsF(),
+        new_target);
 
     return ScrollStarted;
   }
@@ -2628,21 +2537,19 @@ bool LayerTreeHostImpl::ShouldTopControlsConsumeScroll(
       CurrentlyScrollingLayer() != OuterViewportScrollLayer())
     return false;
 
-  if (InnerViewportScrollLayer()->MaxScrollOffset().y() > 0)
-    return true;
-
-  if (OuterViewportScrollLayer() &&
-      OuterViewportScrollLayer()->MaxScrollOffset().y() > 0)
+  if (active_tree()->TotalScrollOffset().y() <
+      active_tree()->TotalMaxScrollOffset().y())
     return true;
 
   return false;
 }
 
-bool LayerTreeHostImpl::ScrollBy(const gfx::Point& viewport_point,
-                                 const gfx::Vector2dF& scroll_delta) {
+InputHandlerScrollResult LayerTreeHostImpl::ScrollBy(
+    const gfx::Point& viewport_point,
+    const gfx::Vector2dF& scroll_delta) {
   TRACE_EVENT0("cc", "LayerTreeHostImpl::ScrollBy");
   if (!CurrentlyScrollingLayer())
-    return false;
+    return InputHandlerScrollResult();
 
   gfx::Vector2dF pending_delta = scroll_delta;
   gfx::Vector2dF unused_root_delta;
@@ -2763,15 +2670,14 @@ bool LayerTreeHostImpl::ScrollBy(const gfx::Point& viewport_point,
     accumulated_root_overscroll_.set_x(0);
   if (did_scroll_y)
     accumulated_root_overscroll_.set_y(0);
-
   accumulated_root_overscroll_ += unused_root_delta;
-  bool did_overscroll = !unused_root_delta.IsZero();
-  if (did_overscroll && input_handler_client_) {
-    input_handler_client_->DidOverscroll(
-        viewport_point, accumulated_root_overscroll_, unused_root_delta);
-  }
 
-  return did_scroll_content || did_scroll_top_controls;
+  InputHandlerScrollResult scroll_result;
+  scroll_result.did_scroll = did_scroll_content || did_scroll_top_controls;
+  scroll_result.did_overscroll_root = !unused_root_delta.IsZero();
+  scroll_result.accumulated_root_overscroll = accumulated_root_overscroll_;
+  scroll_result.unused_scroll_delta = unused_root_delta;
+  return scroll_result;
 }
 
 // This implements scrolling by page as described here:
@@ -3197,10 +3103,8 @@ void LayerTreeHostImpl::ActivateAnimations() {
        iter != copy.end();
        ++iter)
     (*iter).second->ActivateAnimations();
-}
 
-base::TimeDelta LayerTreeHostImpl::LowFrequencyAnimationInterval() const {
-  return base::TimeDelta::FromSeconds(1);
+  SetNeedsAnimate();
 }
 
 std::string LayerTreeHostImpl::LayerTreeAsJson() const {
@@ -3287,10 +3191,6 @@ BeginFrameArgs LayerTreeHostImpl::CurrentBeginFrameArgs() const {
                                 BeginFrameArgs::DefaultInterval());
 }
 
-void LayerTreeHostImpl::AsValueInto(base::debug::TracedValue* value) const {
-  return AsValueWithFrameInto(NULL, value);
-}
-
 scoped_refptr<base::debug::ConvertableToTraceFormat>
 LayerTreeHostImpl::AsValue() const {
   return AsValueWithFrame(NULL);
@@ -3302,6 +3202,10 @@ LayerTreeHostImpl::AsValueWithFrame(FrameData* frame) const {
       new base::debug::TracedValue();
   AsValueWithFrameInto(frame, state.get());
   return state;
+}
+
+void LayerTreeHostImpl::AsValueInto(base::debug::TracedValue* value) const {
+  return AsValueWithFrameInto(NULL, value);
 }
 
 void LayerTreeHostImpl::AsValueWithFrameInto(

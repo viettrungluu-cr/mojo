@@ -18,6 +18,7 @@
 #include "cc/base/switches.h"
 #include "cc/input/input_handler.h"
 #include "cc/layers/layer.h"
+#include "cc/scheduler/begin_frame_source.h"
 #include "cc/output/begin_frame_args.h"
 #include "cc/output/context_provider.h"
 #include "cc/surfaces/surface_id_allocator.h"
@@ -168,7 +169,8 @@ Compositor::Compositor(gfx::AcceleratedWidget widget,
         context_factory_->GetGpuMemoryBufferManager(),
         settings,
         task_runner_,
-        compositor_thread_loop_);
+        compositor_thread_loop_,
+        nullptr);
   } else {
     host_ = cc::LayerTreeHost::CreateSingleThreaded(
         this,
@@ -176,7 +178,8 @@ Compositor::Compositor(gfx::AcceleratedWidget widget,
         context_factory_->GetSharedBitmapManager(),
         context_factory_->GetGpuMemoryBufferManager(),
         settings,
-        task_runner_);
+        task_runner_,
+        nullptr);
   }
   UMA_HISTOGRAM_TIMES("GPU.CreateBrowserCompositor",
                       base::TimeTicks::Now() - before_create);

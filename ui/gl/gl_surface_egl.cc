@@ -45,16 +45,17 @@ extern "C" {
 #if !defined(EGL_PLATFORM_ANGLE_TYPE_ANGLE)
 #define EGL_PLATFORM_ANGLE_TYPE_ANGLE 0x3202
 #endif
-#if !defined(EGL_PLATFORM_ANGLE_TYPE_D3D11_WARP_ANGLE)
-#define EGL_PLATFORM_ANGLE_TYPE_D3D11_WARP_ANGLE 0x3206
+#if !defined(EGL_PLATFORM_ANGLE_TYPE_D3D11_ANGLE)
+#define EGL_PLATFORM_ANGLE_TYPE_D3D11_ANGLE 0x3207
+#endif
+#if !defined(EGL_PLATFORM_ANGLE_USE_WARP_ANGLE)
+#define EGL_PLATFORM_ANGLE_USE_WARP_ANGLE 0x3208
 #endif
 #endif  // defined(OS_WIN)
 
 using ui::GetLastEGLErrorString;
 
 namespace gfx {
-
-unsigned int NativeViewGLSurfaceEGL::current_swap_generation_ = 0;
 
 namespace {
 
@@ -252,8 +253,8 @@ GLSurfaceEGL::~GLSurfaceEGL() {}
 
 #if defined(OS_WIN)
 static const EGLint kDisplayAttribsWarp[] {
-  EGL_PLATFORM_ANGLE_TYPE_ANGLE,
-  EGL_PLATFORM_ANGLE_TYPE_D3D11_WARP_ANGLE,
+  EGL_PLATFORM_ANGLE_TYPE_ANGLE, EGL_PLATFORM_ANGLE_TYPE_D3D11_ANGLE,
+  EGL_PLATFORM_ANGLE_USE_WARP_ANGLE, EGL_TRUE,
   EGL_NONE
 };
 
@@ -288,9 +289,7 @@ NativeViewGLSurfaceEGL::NativeViewGLSurfaceEGL(EGLNativeWindowType window)
       surface_(NULL),
       supports_post_sub_buffer_(false),
       config_(NULL),
-      size_(1, 1),
-      swap_interval_(1),
-      swap_generation_(0) {
+      size_(1, 1) {
 #if defined(OS_ANDROID)
   if (window)
     ANativeWindow_acquire(window);
@@ -454,36 +453,11 @@ bool NativeViewGLSurfaceEGL::SwapBuffers() {
       "width", GetSize().width(),
       "height", GetSize().height());
 
-#if defined(OS_WIN)
-  bool force_no_vsync = false;
-  if (swap_interval_ != 0) {
-    // This code is a simple way of enforcing that only one surface actually
-    // vsyncs per frame. This provides single window cases a stable refresh
-    // while allowing multi-window cases to not slow down due to multiple syncs
-    // on a single thread. A better way to fix this problem would be to have
-    // each surface present on its own thread.
-    if (current_swap_generation_ == swap_generation_) {
-      current_swap_generation_++;
-    } else {
-      force_no_vsync = true;
-      eglSwapInterval(GetDisplay(), 0);
-    }
-
-    swap_generation_ = current_swap_generation_;
-  }
-#endif
-
   if (!eglSwapBuffers(GetDisplay(), surface_)) {
     DVLOG(1) << "eglSwapBuffers failed with error "
              << GetLastEGLErrorString();
     return false;
   }
-
-#if defined(OS_WIN)
-  if (force_no_vsync) {
-    eglSwapInterval(GetDisplay(), swap_interval_);
-  }
-#endif
 
   return true;
 }
@@ -557,10 +531,6 @@ bool NativeViewGLSurfaceEGL::PostSubBuffer(
 
 VSyncProvider* NativeViewGLSurfaceEGL::GetVSyncProvider() {
   return vsync_provider_.get();
-}
-
-void NativeViewGLSurfaceEGL::SetSwapInterval(int interval) {
-  swap_interval_ = interval;
 }
 
 NativeViewGLSurfaceEGL::~NativeViewGLSurfaceEGL() {
