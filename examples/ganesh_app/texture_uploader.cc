@@ -18,24 +18,23 @@
 #include "mojo/services/public/cpp/surfaces/surfaces_utils.h"
 #include "mojo/services/public/cpp/surfaces/surfaces_utils.h"
 
-namespace mojo {
 namespace examples {
 
 TextureUploader::Client::~Client() {
 }
 
 TextureUploader::TextureUploader(Client* client,
-                                 Shell* shell,
+                                 mojo::Shell* shell,
                                  MojoGLES2Context gles2_context)
     : client_(client),
       gles2_context_(gles2_context),
       next_resource_id_(0),
       id_namespace_(0),
       weak_factory_(this) {
-  ServiceProviderPtr surfaces_service_provider;
+  mojo::ServiceProviderPtr surfaces_service_provider;
   shell->ConnectToApplication("mojo:surfaces_service",
-                              GetProxy(&surfaces_service_provider));
-  ConnectToService(surfaces_service_provider.get(), &surfaces_service_);
+                              mojo::GetProxy(&surfaces_service_provider));
+  mojo::ConnectToService(surfaces_service_provider.get(), &surfaces_service_);
 
   surfaces_service_->CreateSurfaceConnection(
       base::Bind(&TextureUploader::OnSurfaceConnectionCreated,
@@ -47,7 +46,7 @@ TextureUploader::~TextureUploader() {
     surface_->DestroySurface(surface_id_.Clone());
 }
 
-void TextureUploader::Upload(uint32_t texture_id, Size size) {
+void TextureUploader::Upload(uint32_t texture_id, mojo::Size size) {
   if (!surface_) {
     pending_upload_.reset(new PendingUpload(texture_id, size));
     return;
@@ -55,15 +54,15 @@ void TextureUploader::Upload(uint32_t texture_id, Size size) {
 
   EnsureSurfaceForSize(size);
 
-  FramePtr frame = Frame::New();
+  mojo::FramePtr frame = mojo::Frame::New();
   frame->resources.resize(0u);
 
-  Rect bounds;
+  mojo::Rect bounds;
   bounds.width = size.width;
   bounds.height = size.height;
-  PassPtr pass = CreateDefaultPass(1, bounds);
+  mojo::PassPtr pass = mojo::CreateDefaultPass(1, bounds);
   pass->quads.resize(0u);
-  pass->shared_quad_states.push_back(CreateDefaultSQS(size));
+  pass->shared_quad_states.push_back(mojo::CreateDefaultSQS(size));
 
   MojoGLES2MakeCurrent(gles2_context_);
   glBindTexture(GL_TEXTURE_2D, texture_id);
@@ -72,14 +71,14 @@ void TextureUploader::Upload(uint32_t texture_id, Size size) {
   glProduceTextureCHROMIUM(GL_TEXTURE_2D, mailbox);
   GLuint sync_point = glInsertSyncPointCHROMIUM();
 
-  TransferableResourcePtr resource = TransferableResource::New();
+  mojo::TransferableResourcePtr resource = mojo::TransferableResource::New();
   resource->id = next_resource_id_++;
   resource_to_texture_id_map_[resource->id] = texture_id;
   resource->format = mojo::RESOURCE_FORMAT_RGBA_8888;
   resource->filter = GL_LINEAR;
   resource->size = size.Clone();
-  MailboxHolderPtr mailbox_holder = MailboxHolder::New();
-  mailbox_holder->mailbox = Mailbox::New();
+  mojo::MailboxHolderPtr mailbox_holder = mojo::MailboxHolder::New();
+  mailbox_holder->mailbox = mojo::Mailbox::New();
   for (int i = 0; i < GL_MAILBOX_SIZE_CHROMIUM; ++i)
     mailbox_holder->mailbox->name.push_back(mailbox[i]);
   mailbox_holder->texture_target = GL_TEXTURE_2D;
@@ -88,10 +87,10 @@ void TextureUploader::Upload(uint32_t texture_id, Size size) {
   resource->is_repeated = false;
   resource->is_software = false;
 
-  QuadPtr quad = Quad::New();
-  quad->material = MATERIAL_TEXTURE_CONTENT;
+  mojo::QuadPtr quad = mojo::Quad::New();
+  quad->material = mojo::MATERIAL_TEXTURE_CONTENT;
 
-  RectPtr rect = Rect::New();
+  mojo::RectPtr rect = mojo::Rect::New();
   rect->width = size.width;
   rect->height = size.height;
   quad->rect = rect.Clone();
@@ -100,14 +99,14 @@ void TextureUploader::Upload(uint32_t texture_id, Size size) {
   quad->needs_blending = true;
   quad->shared_quad_state_index = 0u;
 
-  TextureQuadStatePtr texture_state = TextureQuadState::New();
+  mojo::TextureQuadStatePtr texture_state = mojo::TextureQuadState::New();
   texture_state->resource_id = resource->id;
   texture_state->premultiplied_alpha = true;
-  texture_state->uv_top_left = PointF::New();
-  texture_state->uv_bottom_right = PointF::New();
+  texture_state->uv_top_left = mojo::PointF::New();
+  texture_state->uv_bottom_right = mojo::PointF::New();
   texture_state->uv_bottom_right->x = 1.f;
   texture_state->uv_bottom_right->y = 1.f;
-  texture_state->background_color = Color::New();
+  texture_state->background_color = mojo::Color::New();
   texture_state->background_color->rgba = 0;
   for (int i = 0; i < 4; ++i)
     texture_state->vertex_opacity.push_back(1.f);
@@ -121,14 +120,14 @@ void TextureUploader::Upload(uint32_t texture_id, Size size) {
   surface_->SubmitFrame(surface_id_.Clone(), frame.Pass());
 }
 
-void TextureUploader::EnsureSurfaceForSize(const Size& size) {
+void TextureUploader::EnsureSurfaceForSize(const mojo::Size& size) {
   if (surface_id_ && size == surface_size_)
     return;
 
   if (surface_id_) {
     surface_->DestroySurface(surface_id_.Clone());
   } else {
-    surface_id_ = SurfaceId::New();
+    surface_id_ = mojo::SurfaceId::New();
     surface_id_->id = static_cast<uint64_t>(id_namespace_) << 32;
   }
 
@@ -138,12 +137,13 @@ void TextureUploader::EnsureSurfaceForSize(const Size& size) {
   surface_size_ = size;
 }
 
-void TextureUploader::ReturnResources(Array<ReturnedResourcePtr> resources) {
+void TextureUploader::ReturnResources(
+    mojo::Array<mojo::ReturnedResourcePtr> resources) {
   if (!resources.size())
     return;
   MojoGLES2MakeCurrent(gles2_context_);
   for (size_t i = 0u; i < resources.size(); ++i) {
-    ReturnedResourcePtr resource = resources[i].Pass();
+    mojo::ReturnedResourcePtr resource = resources[i].Pass();
     DCHECK_EQ(1, resource->count);
     glWaitSyncPointCHROMIUM(resource->sync_point);
     uint32_t texture_id = resource_to_texture_id_map_[resource->id];
@@ -153,7 +153,7 @@ void TextureUploader::ReturnResources(Array<ReturnedResourcePtr> resources) {
   }
 }
 
-void TextureUploader::OnSurfaceConnectionCreated(SurfacePtr surface,
+void TextureUploader::OnSurfaceConnectionCreated(mojo::SurfacePtr surface,
                                                  uint32_t id_namespace) {
   surface_ = surface.Pass();
   surface_.set_client(this);
@@ -166,4 +166,3 @@ void TextureUploader::OnSurfaceConnectionCreated(SurfacePtr surface,
 }
 
 }  // namespace examples
-}  // namespace mojo

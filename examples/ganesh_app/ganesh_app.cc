@@ -13,47 +13,47 @@
 #include "mojo/services/public/cpp/view_manager/view_manager_client_factory.h"
 #include "mojo/services/public/cpp/view_manager/view_manager_delegate.h"
 
-namespace mojo {
 namespace examples {
 
-class GaneshApp : public ApplicationDelegate, public ViewManagerDelegate {
+class GaneshApp : public mojo::ApplicationDelegate,
+                  public mojo::ViewManagerDelegate {
  public:
   GaneshApp() {}
   virtual ~GaneshApp() {}
 
-  void Initialize(ApplicationImpl* app) override {
+  void Initialize(mojo::ApplicationImpl* app) override {
     shell_ = app->shell();
     view_manager_client_factory_.reset(
-        new ViewManagerClientFactory(app->shell(), this));
+        new mojo::ViewManagerClientFactory(app->shell(), this));
   }
 
-  bool ConfigureIncomingConnection(ApplicationConnection* connection) override {
+  bool ConfigureIncomingConnection(
+      mojo::ApplicationConnection* connection) override {
     connection->AddService(view_manager_client_factory_.get());
     return true;
   }
 
-  void OnEmbed(ViewManager* view_manager,
-               View* root,
-               ServiceProviderImpl* exported_services,
-               scoped_ptr<ServiceProvider> imported_services) override {
+  void OnEmbed(mojo::ViewManager* view_manager,
+               mojo::View* root,
+               mojo::ServiceProviderImpl* exported_services,
+               scoped_ptr<mojo::ServiceProvider> imported_services) override {
     new GaneshView(shell_, root);
   }
 
-  void OnViewManagerDisconnected(ViewManager* view_manager) override {
+  void OnViewManagerDisconnected(mojo::ViewManager* view_manager) override {
     base::MessageLoop::current()->Quit();
   }
 
  private:
-  Shell* shell_;
-  scoped_ptr<ViewManagerClientFactory> view_manager_client_factory_;
+  mojo::Shell* shell_;
+  scoped_ptr<mojo::ViewManagerClientFactory> view_manager_client_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(GaneshApp);
 };
 
 }  // namespace examples
-}  // namespace mojo
 
 MojoResult MojoMain(MojoHandle shell_handle) {
-  mojo::ApplicationRunnerChromium runner(new mojo::examples::GaneshApp);
+  mojo::ApplicationRunnerChromium runner(new examples::GaneshApp);
   return runner.Run(shell_handle);
 }

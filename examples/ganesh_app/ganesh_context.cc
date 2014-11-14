@@ -10,7 +10,6 @@
 #include "gpu/skia_bindings/gl_bindings_skia_cmd_buffer.h"
 #include "third_party/skia/include/gpu/gl/GrGLInterface.h"
 
-namespace mojo {
 namespace examples {
 namespace {
 
@@ -44,4 +43,3 @@ GaneshContext::~GaneshContext() {
 }
 
 }  // namespace examples
-}  // namespace mojo

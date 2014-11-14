@@ -11,12 +11,11 @@
 #include "third_party/skia/include/core/SkSurface.h"
 #include "third_party/skia/include/gpu/GrContext.h"
 
-namespace mojo {
 namespace examples {
 
 class GaneshTexture {
  public:
-  GaneshTexture(GrContext* gr_context, const Size& size);
+  GaneshTexture(GrContext* gr_context, const mojo::Size& size);
   ~GaneshTexture();
 
   uint32_t texture_id() const { return texture_id_; }
@@ -28,6 +27,5 @@ class GaneshTexture {
 };
 
 }  // namespace examples
-}  // namespace mojo
 
 #endif  // EXAMPLES_GANESH_APP_GANESH_TEXTURE_H_

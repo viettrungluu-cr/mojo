@@ -11,24 +11,24 @@
 
 namespace mojo {
 class Shell;
+}
 
 namespace examples {
 
 class MojoGLContext {
  public:
-  explicit MojoGLContext(Shell* shell);
+  explicit MojoGLContext(mojo::Shell* shell);
   ~MojoGLContext();
 
   MojoGLES2Context context() const { return context_; }
 
  private:
-  GpuPtr gpu_service_;
+  mojo::GpuPtr gpu_service_;
   MojoGLES2Context context_;
 
   DISALLOW_COPY_AND_ASSIGN(MojoGLContext);
 };
 
 }  // namespace examples
-}  // namespace mojo
 
 #endif  // EXAMPLES_GANESH_APP_MOJO_GL_CONTEXT_H_

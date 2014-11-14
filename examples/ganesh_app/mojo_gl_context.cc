@@ -8,7 +8,6 @@
 #include "mojo/public/cpp/application/connect.h"
 #include "mojo/public/interfaces/application/shell.mojom.h"
 
-namespace mojo {
 namespace examples {
 namespace {
 
@@ -17,16 +16,16 @@ void OnContextLost(void* unused) {
 }
 }
 
-MojoGLContext::MojoGLContext(Shell* shell) {
-  ServiceProviderPtr native_viewport;
+MojoGLContext::MojoGLContext(mojo::Shell* shell) {
+  mojo::ServiceProviderPtr native_viewport;
   shell->ConnectToApplication("mojo:native_viewport_service",
-                              GetProxy(&native_viewport));
-  ConnectToService(native_viewport.get(), &gpu_service_);
-  CommandBufferPtr command_buffer;
-  gpu_service_->CreateOffscreenGLES2Context(GetProxy(&command_buffer));
+                              mojo::GetProxy(&native_viewport));
+  mojo::ConnectToService(native_viewport.get(), &gpu_service_);
+  mojo::CommandBufferPtr command_buffer;
+  gpu_service_->CreateOffscreenGLES2Context(mojo::GetProxy(&command_buffer));
   context_ = MojoGLES2CreateContext(
       command_buffer.PassMessagePipe().release().value(), &OnContextLost, 0,
-      Environment::GetDefaultAsyncWaiter());
+      mojo::Environment::GetDefaultAsyncWaiter());
   MojoGLES2MakeCurrent(context_);
 }
 
@@ -35,4 +34,3 @@ MojoGLContext::~MojoGLContext() {
 }
 
 }  // namespace examples
-}  // namespace mojo

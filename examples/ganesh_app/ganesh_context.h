@@ -10,7 +10,6 @@
 #include "skia/ext/refptr.h"
 #include "third_party/skia/include/gpu/GrContext.h"
 
-namespace mojo {
 namespace examples {
 
 class GaneshContext {
@@ -28,6 +27,5 @@ class GaneshContext {
 };
 
 }  // namespace examples
-}  // namespace mojo
 
 #endif  // EXAMPLES_GANESH_APP_GANESH_CONTEXT_H_

@@ -7,10 +7,9 @@
 #include "base/logging.h"
 #include "mojo/public/c/gles2/gles2.h"
 
-namespace mojo {
 namespace examples {
 
-GaneshTexture::GaneshTexture(GrContext* gr_context, const Size& size)
+GaneshTexture::GaneshTexture(GrContext* gr_context, const mojo::Size& size)
     : texture_id_(0u) {
   glGenTextures(1, &texture_id_);
   glBindTexture(GL_TEXTURE_2D, texture_id_);
@@ -37,4 +36,3 @@ GaneshTexture::~GaneshTexture() {
 }
 
 }  // namespace examples
-}  // namespace mojo

@@ -7,19 +7,18 @@
 #include "examples/ganesh_app/ganesh_texture.h"
 #include "third_party/skia/include/core/SkCanvas.h"
 
-namespace mojo {
 namespace examples {
 namespace {
 
-Size ToSize(const Rect& rect) {
-  Size size;
+mojo::Size ToSize(const mojo::Rect& rect) {
+  mojo::Size size;
   size.width = rect.width;
   size.height = rect.height;
   return size;
 }
 }
 
-GaneshView::GaneshView(Shell* shell, View* view)
+GaneshView::GaneshView(mojo::Shell* shell, mojo::View* view)
     : view_(view),
       gl_context_(shell),
       gr_context_(gl_context_.context()),
@@ -30,21 +29,21 @@ GaneshView::GaneshView(Shell* shell, View* view)
 GaneshView::~GaneshView() {
 }
 
-void GaneshView::OnSurfaceIdAvailable(SurfaceIdPtr surface_id) {
+void GaneshView::OnSurfaceIdAvailable(mojo::SurfaceIdPtr surface_id) {
   view_->SetSurfaceId(surface_id.Pass());
 }
 
-void GaneshView::OnViewDestroyed(View* view) {
+void GaneshView::OnViewDestroyed(mojo::View* view) {
   delete this;
 }
 
-void GaneshView::OnViewBoundsChanged(View* view,
-                                     const Rect& old_bounds,
-                                     const Rect& new_bounds) {
+void GaneshView::OnViewBoundsChanged(mojo::View* view,
+                                     const mojo::Rect& old_bounds,
+                                     const mojo::Rect& new_bounds) {
   Draw(ToSize(new_bounds));
 }
 
-void GaneshView::Draw(const Size& size) {
+void GaneshView::Draw(const mojo::Size& size) {
   GaneshTexture texture(gr_context_.context(), size);
   SkCanvas* canvas = texture.canvas();
 
@@ -58,4 +57,3 @@ void GaneshView::Draw(const Size& size) {
 }
 
 }  // namespace examples
-}  // namespace mojo

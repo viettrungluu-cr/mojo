@@ -13,25 +13,26 @@
 
 namespace mojo {
 class Shell;
+}
 
 namespace examples {
 
-class GaneshView : public TextureUploader::Client, public ViewObserver {
+class GaneshView : public TextureUploader::Client, public mojo::ViewObserver {
  public:
-  GaneshView(Shell* shell, View* view);
+  GaneshView(mojo::Shell* shell, mojo::View* view);
   ~GaneshView();
 
  private:
-  void OnViewDestroyed(View* view) override;
-  void OnViewBoundsChanged(View* view,
-                           const Rect& old_bounds,
-                           const Rect& new_bounds) override;
+  void OnViewDestroyed(mojo::View* view) override;
+  void OnViewBoundsChanged(mojo::View* view,
+                           const mojo::Rect& old_bounds,
+                           const mojo::Rect& new_bounds) override;
 
-  void OnSurfaceIdAvailable(SurfaceIdPtr surface_id) override;
+  void OnSurfaceIdAvailable(mojo::SurfaceIdPtr surface_id) override;
 
-  void Draw(const Size& size);
+  void Draw(const mojo::Size& size);
 
-  View* view_;
+  mojo::View* view_;
   MojoGLContext gl_context_;
   GaneshContext gr_context_;
   TextureUploader texture_uploader_;
@@ -40,6 +41,5 @@ class GaneshView : public TextureUploader::Client, public ViewObserver {
 };
 
 }  // namespace examples
-}  // namespace mojo
 
 #endif  // EXAMPLES_GANESH_APP_GANESH_VIEW_H_
