@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//mojo/public/mojo_application.gni")
 import("//mojo/public/tools/bindings/mojom.gni")
 
 group("surfaces_app") {
@@ -12,7 +13,7 @@ group("surfaces_app") {
   ]
 }
 
-shared_library("parent_app") {
+mojo_native_application("parent_app") {
   output_name = "surfaces_app"
 
   deps = [
@@ -45,7 +46,7 @@ shared_library("parent_app") {
 }
 
 
-shared_library("child_app") {
+mojo_native_application("child_app") {
   output_name = "surfaces_child_app"
 
   deps = [
@@ -76,7 +77,7 @@ shared_library("child_app") {
   ]
 }
 
-shared_library("child_gl_app") {
+mojo_native_application("child_gl_app") {
   output_name = "surfaces_child_gl_app"
 
   deps = [

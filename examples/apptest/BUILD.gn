@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//mojo/public/mojo_application.gni")
 import("//mojo/public/tools/bindings/mojom.gni")
 
 group("apptest") {
@@ -13,7 +14,7 @@ group("apptest") {
   ]
 }
 
-shared_library("service") {
+mojo_native_application("service") {
   output_name = "example_service"
 
   sources = [
@@ -31,7 +32,7 @@ shared_library("service") {
   ]
 }
 
-shared_library("apptests") {
+mojo_native_application("apptests") {
   output_name = "example_apptests"
 
   testonly = true

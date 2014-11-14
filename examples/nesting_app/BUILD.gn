@@ -2,7 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-shared_library("nesting_app") {
+import("//mojo/public/mojo_application.gni")
+
+mojo_native_application("nesting_app") {
   sources = [
     "nesting_app.cc"
   ]

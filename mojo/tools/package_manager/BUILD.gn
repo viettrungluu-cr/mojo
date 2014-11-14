@@ -2,7 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-shared_library("package_manager") {
+import("//mojo/public/mojo_application.gni")
+
+mojo_native_application("package_manager") {
   output_name = "mojo_package_manager"
 
   sources = [

@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//mojo/public/mojo_application.gni")
 import("//mojo/public/tools/bindings/mojom.gni")
 
 group("echo") {
@@ -11,7 +12,7 @@ group("echo") {
   ]
 }
 
-shared_library("client") {
+mojo_native_application("client") {
   output_name = "echo_client"
 
   deps = [
@@ -25,7 +26,7 @@ shared_library("client") {
   sources = [ "echo_client.cc" ]
 }
 
-shared_library("service") {
+mojo_native_application("service") {
   output_name = "echo_service"
 
   deps = [

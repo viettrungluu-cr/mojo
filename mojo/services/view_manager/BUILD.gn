@@ -3,8 +3,9 @@
 # found in the LICENSE file.
 
 import("//build/config/ui.gni")
+import("//mojo/public/mojo_application.gni")
 
-shared_library("view_manager") {
+mojo_native_application("view_manager") {
   sources = [
     "main.cc",
     "view_manager_app.cc",
@@ -97,7 +98,7 @@ test("view_manager_unittests") {
   }
 }
 
-shared_library("view_manager_server_apptests") {
+mojo_native_application("view_manager_server_apptests") {
   testonly = true
 
   sources = [

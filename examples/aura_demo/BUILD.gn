@@ -3,10 +3,11 @@
 # found in the LICENSE file.
 
 import("//build/config/ui.gni")
+import("//mojo/public/mojo_application.gni")
 
 assert(use_aura)
 
-shared_library("aura_demo") {
+mojo_native_application("aura_demo") {
   sources = [
     "aura_demo.cc"
   ]
@@ -31,7 +32,7 @@ shared_library("aura_demo") {
   datadeps = [ ":init" ]
 }
 
-shared_library("init") {
+mojo_native_application("init") {
   output_name = "aura_demo_init"
 
   sources = [

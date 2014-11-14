@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import("//build/config/ui.gni")
+import("//mojo/public/mojo_application.gni")
 import("//mojo/public/tools/bindings/mojom.gni")
 
 assert(use_aura)
@@ -15,7 +16,7 @@ group("wm_flow") {
   ]
 }
 
-shared_library("wm") {
+mojo_native_application("wm") {
   output_name = "wm_flow_wm"
 
   sources = [
@@ -39,7 +40,7 @@ shared_library("wm") {
   ]
 }
 
-shared_library("app") {
+mojo_native_application("app") {
   output_name = "wm_flow_app"
 
   sources = [
@@ -60,7 +61,7 @@ shared_library("app") {
   ]
 }
 
-shared_library("embedded") {
+mojo_native_application("embedded") {
   output_name = "wm_flow_embedded"
 
   sources = [

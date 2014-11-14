@@ -15,19 +15,6 @@ namespace mojo {
 namespace shell {
 namespace {
 
-std::string MakeSharedLibraryName(const std::string& host_name) {
-#if defined(OS_WIN)
-  return host_name + ".dll";
-#elif defined(OS_LINUX) || defined(OS_ANDROID)
-  return "lib" + host_name + ".so";
-#elif defined(OS_MACOSX)
-  return host_name + ".so";
-#else
-  NOTREACHED() << "dynamic loading of services not supported";
-  return std::string();
-#endif
-}
-
 GURL AddTrailingSlashIfNeeded(const GURL& url) {
   if (!url.has_path() || *url.path().rbegin() == '/')
     return url;
@@ -76,7 +63,7 @@ GURL MojoURLResolver::Resolve(const GURL& mojo_url) const {
   if (mapped_url.scheme() != "mojo")
     return mapped_url;
 
-  std::string lib = MakeSharedLibraryName(mapped_url.host());
+  std::string lib = mapped_url.host() + ".mojo";
 
   if (!base_url_.is_valid() ||
       local_file_set_.find(mapped_url) != local_file_set_.end()) {

@@ -2,7 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-shared_library("sample_app") {
+import("//mojo/public/mojo_application.gni")
+
+mojo_native_application("sample_app") {
   sources = [
     "gles2_client_impl.cc",
     "gles2_client_impl.h",

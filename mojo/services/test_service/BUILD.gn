@@ -2,9 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//mojo/public/mojo_application.gni")
 import("//mojo/public/tools/bindings/mojom.gni")
 
-# GYP version: mojo/mojo_services.gypi:mojo_test_service_bindings
 mojom("bindings") {
   sources = [
     "test_request_tracker.mojom",
@@ -12,8 +12,7 @@ mojom("bindings") {
   ]
 }
 
-# GYP version: mojo/mojo_services.gypi:mojo_test_app
-shared_library("test_app") {
+mojo_native_application("test_app") {
   sources = [
     "test_request_tracker_client_impl.cc",
     "test_request_tracker_client_impl.h",
@@ -36,8 +35,7 @@ shared_library("test_app") {
   ]
 }
 
-# GYP version: //mojo/mojo_services.gypi:mojo_test_request_tracker_app
-shared_library("test_request_tracker_app") {
+mojo_native_application("test_request_tracker_app") {
   sources = [
     "test_request_tracker_client_impl.cc",
     "test_request_tracker_client_impl.h",

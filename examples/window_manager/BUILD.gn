@@ -3,11 +3,12 @@
 # found in the LICENSE file.
 
 import("//build/config/ui.gni")
+import("//mojo/public/mojo_application.gni")
 import("//mojo/public/tools/bindings/mojom.gni")
 
 assert(use_aura)
 
-shared_library("window_manager") {
+mojo_native_application("window_manager") {
   output_name = "example_window_manager"
 
   sources = [

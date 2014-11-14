@@ -2,7 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-shared_library("pdf_viewer") {
+import("//mojo/public/mojo_application.gni")
+
+mojo_native_application("pdf_viewer") {
   sources = [
     "pdf_viewer.cc"
   ]

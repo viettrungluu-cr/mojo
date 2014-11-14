@@ -3,11 +3,12 @@
 # found in the LICENSE file.
 
 import("//build/config/ui.gni")
+import("//mojo/public/mojo_application.gni")
 import("//mojo/public/tools/bindings/mojom.gni")
 
 if (use_aura) {
 
-shared_library("media_viewer") {
+mojo_native_application("media_viewer") {
   sources = [
     "media_viewer.cc"
   ]

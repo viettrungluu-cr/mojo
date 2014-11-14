@@ -2,8 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-# GYP version: mojo/mojo_services.gypi:mojo_clipboard
-shared_library("clipboard") {
+import("//mojo/public/mojo_application.gni")
+
+mojo_native_application("clipboard") {
   sources = [
     "clipboard_standalone_impl.cc",
     "clipboard_standalone_impl.h",
@@ -22,7 +23,6 @@ shared_library("clipboard") {
   ]
 }
 
-# GYP version: mojo/mojo_services.gypi:mojo_clipboard_unittests
 test("clipboard_unittests") {
   sources = [
     "clipboard_standalone_unittest.cc",

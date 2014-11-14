@@ -4,7 +4,6 @@
 
 import("//mojo/public/tools/bindings/mojom.gni")
 
-# GYP version: mojo/mojo_services.gypi:mojo_gles2_service
 source_set("gles2") {
   sources = [
     "command_buffer_impl.cc",
@@ -21,7 +20,6 @@ source_set("gles2") {
   ]
 }
 
-# GYP version: mojo/mojo_services.gypi:mojo_gles2_lib
 source_set("lib") {
   sources = [
     "command_buffer_type_conversions.cc",
