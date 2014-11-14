@@ -209,6 +209,7 @@
         'mojo_cpp_bindings',
       ],
       'export_dependent_settings': [
+        'mojo_application_bindings_mojom',
         'mojo_cpp_bindings',
       ],
     },
