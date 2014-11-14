@@ -31,20 +31,35 @@ namespace service {
 class ConnectionManager;
 class ServerView;
 
-// DisplayManager binds the root node to an actual display.
-class DisplayManager
-    : public NativeViewportClient,
-      public SurfaceClient {
+// DisplayManager is used to connect the root ServerView to a display.
+class DisplayManager {
  public:
-  DisplayManager(ApplicationConnection* app_connection,
-                 ConnectionManager* connection_manager,
-                 const Callback<void()>& native_viewport_closed_callback);
-  ~DisplayManager() override;
+  virtual ~DisplayManager() {}
 
-  // Schedules a paint for the specified region of the specified view.
-  void SchedulePaint(const ServerView* view, const gfx::Rect& bounds);
+  virtual void Init(ConnectionManager* connection_manager) = 0;
 
-  void SetViewportSize(const gfx::Size& size);
+  // Schedules a paint for the specified region in the coordinates of |view|.
+  virtual void SchedulePaint(const ServerView* view,
+                             const gfx::Rect& bounds) = 0;
+
+  virtual void SetViewportSize(const gfx::Size& size) = 0;
+};
+
+// DisplayManager implementation that connects to the services necessary to
+// actually display.
+class DefaultDisplayManager : public DisplayManager,
+                              public NativeViewportClient,
+                              public SurfaceClient {
+ public:
+  DefaultDisplayManager(
+      ApplicationConnection* app_connection,
+      const Callback<void()>& native_viewport_closed_callback);
+  ~DefaultDisplayManager() override;
+
+  // DisplayManager:
+  void Init(ConnectionManager* connection_manager) override;
+  void SchedulePaint(const ServerView* view, const gfx::Rect& bounds) override;
+  void SetViewportSize(const gfx::Size& size) override;
 
  private:
   void OnCreatedNativeViewport(uint64_t native_viewport_id);
@@ -58,6 +73,7 @@ class DisplayManager
   // SurfaceClient implementation.
   void ReturnResources(Array<ReturnedResourcePtr> resources) override;
 
+  ApplicationConnection* app_connection_;
   ConnectionManager* connection_manager_;
 
   gfx::Size size_;
@@ -70,9 +86,9 @@ class DisplayManager
   cc::SurfaceId surface_id_;
   NativeViewportPtr native_viewport_;
   Callback<void()> native_viewport_closed_callback_;
-  base::WeakPtrFactory<DisplayManager> weak_factory_;
+  base::WeakPtrFactory<DefaultDisplayManager> weak_factory_;
 
-  DISALLOW_COPY_AND_ASSIGN(DisplayManager);
+  DISALLOW_COPY_AND_ASSIGN(DefaultDisplayManager);
 };
 
 }  // namespace service

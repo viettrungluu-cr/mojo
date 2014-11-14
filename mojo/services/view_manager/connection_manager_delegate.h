@@ -10,7 +10,6 @@ namespace service {
 
 class ConnectionManagerDelegate {
  public:
-  virtual void OnNativeViewportDestroyed() = 0;
   virtual void OnLostConnectionToWindowManager() = 0;
 
  protected:

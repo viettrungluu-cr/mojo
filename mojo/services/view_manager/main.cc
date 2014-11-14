@@ -9,6 +9,7 @@
 #include "mojo/public/cpp/application/application_impl.h"
 #include "mojo/services/view_manager/connection_manager.h"
 #include "mojo/services/view_manager/connection_manager_delegate.h"
+#include "mojo/services/view_manager/display_manager.h"
 
 namespace mojo {
 namespace service {
@@ -21,7 +22,13 @@ class ViewManagerApp : public ApplicationDelegate,
 
   bool ConfigureIncomingConnection(ApplicationConnection* connection) override {
     if (!connection_manager_.get()) {
-      connection_manager_.reset(new ConnectionManager(connection, this));
+      scoped_ptr<DefaultDisplayManager> display_manager(
+          new DefaultDisplayManager(
+              connection,
+              base::Bind(&ViewManagerApp::OnLostConnectionToWindowManager,
+                         base::Unretained(this))));
+      connection_manager_.reset(
+          new ConnectionManager(connection, this, display_manager.Pass()));
       return true;
     }
     VLOG(1) << "ViewManager allows only one connection.";
@@ -30,7 +37,6 @@ class ViewManagerApp : public ApplicationDelegate,
 
  private:
   // ConnectionManagerDelegate:
-  void OnNativeViewportDestroyed() override { ApplicationImpl::Terminate(); }
   void OnLostConnectionToWindowManager() override {
     ApplicationImpl::Terminate();
   }

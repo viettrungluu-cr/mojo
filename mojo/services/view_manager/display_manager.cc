@@ -68,37 +68,43 @@ void DrawViewTree(Pass* pass, const ServerView* view, gfx::Vector2d offset) {
 
 }  // namespace
 
-DisplayManager::DisplayManager(
+DefaultDisplayManager::DefaultDisplayManager(
     ApplicationConnection* app_connection,
-    ConnectionManager* connection_manager,
     const Callback<void()>& native_viewport_closed_callback)
-    : connection_manager_(connection_manager),
+    : app_connection_(app_connection),
+      connection_manager_(nullptr),
       size_(800, 600),
       draw_timer_(false, false),
       native_viewport_closed_callback_(native_viewport_closed_callback),
       weak_factory_(this) {
-  app_connection->ConnectToService("mojo:native_viewport_service",
-                                   &native_viewport_);
+}
+
+void DefaultDisplayManager::Init(ConnectionManager* connection_manager) {
+  connection_manager_ = connection_manager;
+  app_connection_->ConnectToService("mojo:native_viewport_service",
+                                    &native_viewport_);
   native_viewport_.set_client(this);
   native_viewport_->Create(
       Size::From(size_),
-      base::Bind(&DisplayManager::OnCreatedNativeViewport,
+      base::Bind(&DefaultDisplayManager::OnCreatedNativeViewport,
                  weak_factory_.GetWeakPtr()));
   native_viewport_->Show();
-  app_connection->ConnectToService("mojo:surfaces_service", &surfaces_service_);
-  surfaces_service_->CreateSurfaceConnection(base::Bind(
-      &DisplayManager::OnSurfaceConnectionCreated, weak_factory_.GetWeakPtr()));
+  app_connection_->ConnectToService("mojo:surfaces_service",
+                                    &surfaces_service_);
+  surfaces_service_->CreateSurfaceConnection(
+      base::Bind(&DefaultDisplayManager::OnSurfaceConnectionCreated,
+                 weak_factory_.GetWeakPtr()));
 
   NativeViewportEventDispatcherPtr event_dispatcher;
-  app_connection->ConnectToService(&event_dispatcher);
+  app_connection_->ConnectToService(&event_dispatcher);
   native_viewport_->SetEventDispatcher(event_dispatcher.Pass());
 }
 
-DisplayManager::~DisplayManager() {
+DefaultDisplayManager::~DefaultDisplayManager() {
 }
 
-void DisplayManager::SchedulePaint(const ServerView* view,
-                                   const gfx::Rect& bounds) {
+void DefaultDisplayManager::SchedulePaint(const ServerView* view,
+                                          const gfx::Rect& bounds) {
   if (!view->visible())
     return;
   gfx::Rect root_relative_rect = ConvertRectToRoot(view, bounds);
@@ -107,28 +113,28 @@ void DisplayManager::SchedulePaint(const ServerView* view,
   dirty_rect_.Union(root_relative_rect);
   if (!draw_timer_.IsRunning()) {
     draw_timer_.Start(
-        FROM_HERE,
-        base::TimeDelta(),
-        base::Bind(&DisplayManager::Draw, base::Unretained(this)));
+        FROM_HERE, base::TimeDelta(),
+        base::Bind(&DefaultDisplayManager::Draw, base::Unretained(this)));
   }
 }
 
-void DisplayManager::SetViewportSize(const gfx::Size& size) {
+void DefaultDisplayManager::SetViewportSize(const gfx::Size& size) {
   native_viewport_->SetSize(Size::From(size));
 }
 
-void DisplayManager::OnCreatedNativeViewport(uint64_t native_viewport_id) {
+void DefaultDisplayManager::OnCreatedNativeViewport(
+    uint64_t native_viewport_id) {
 }
 
-void DisplayManager::OnSurfaceConnectionCreated(SurfacePtr surface,
-                                                uint32_t id_namespace) {
+void DefaultDisplayManager::OnSurfaceConnectionCreated(SurfacePtr surface,
+                                                       uint32_t id_namespace) {
   surface_ = surface.Pass();
   surface_.set_client(this);
   surface_id_allocator_.reset(new cc::SurfaceIdAllocator(id_namespace));
   Draw();
 }
 
-void DisplayManager::Draw() {
+void DefaultDisplayManager::Draw() {
   if (!surface_)
     return;
   if (surface_id_.is_null()) {
@@ -154,13 +160,13 @@ void DisplayManager::Draw() {
   dirty_rect_ = gfx::Rect();
 }
 
-void DisplayManager::OnDestroyed() {
+void DefaultDisplayManager::OnDestroyed() {
   // This is called when the native_viewport is torn down before
-  // ~DisplayManager may be called.
+  // ~DefaultDisplayManager may be called.
   native_viewport_closed_callback_.Run();
 }
 
-void DisplayManager::OnSizeChanged(SizePtr size) {
+void DefaultDisplayManager::OnSizeChanged(SizePtr size) {
   size_ = size.To<gfx::Size>();
   connection_manager_->root()->SetBounds(gfx::Rect(size_));
   if (surface_id_.is_null())
@@ -170,7 +176,8 @@ void DisplayManager::OnSizeChanged(SizePtr size) {
   SchedulePaint(connection_manager_->root(), gfx::Rect(size_));
 }
 
-void DisplayManager::ReturnResources(Array<ReturnedResourcePtr> resources) {
+void DefaultDisplayManager::ReturnResources(
+    Array<ReturnedResourcePtr> resources) {
   DCHECK_EQ(0u, resources.size());
 }
 

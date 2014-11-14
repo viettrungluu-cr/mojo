@@ -12,6 +12,7 @@
 #include "mojo/public/interfaces/application/service_provider.mojom.h"
 #include "mojo/services/view_manager/client_connection.h"
 #include "mojo/services/view_manager/connection_manager_delegate.h"
+#include "mojo/services/view_manager/display_manager.h"
 #include "mojo/services/view_manager/view_manager_service_impl.h"
 
 namespace mojo {
@@ -57,16 +58,13 @@ ConnectionManager::ScopedChange::~ScopedChange() {
 }
 
 ConnectionManager::ConnectionManager(ApplicationConnection* app_connection,
-                                     ConnectionManagerDelegate* delegate)
+                                     ConnectionManagerDelegate* delegate,
+                                     scoped_ptr<DisplayManager> display_manager)
     : app_connection_(app_connection),
       delegate_(delegate),
       window_manager_client_connection_(nullptr),
       next_connection_id_(1),
-      display_manager_(
-          app_connection,
-          this,
-          base::Bind(&ConnectionManagerDelegate::OnNativeViewportDestroyed,
-                     base::Unretained(delegate))),
+      display_manager_(display_manager.Pass()),
       root_(new ServerView(this, RootViewId())),
       current_change_(NULL),
       in_destructor_(false) {
@@ -78,6 +76,7 @@ ConnectionManager::ConnectionManager(ApplicationConnection* app_connection,
       static_cast<InterfaceFactory<WindowManagerInternalClient>*>(this));
   app_connection->ConnectToService(&wm_internal_);
   root_->SetBounds(gfx::Rect(800, 600));
+  display_manager_->Init(this);
 }
 
 ConnectionManager::~ConnectionManager() {
@@ -260,12 +259,12 @@ void ConnectionManager::OnViewHierarchyChanged(const ServerView* view,
 
   // TODO(beng): optimize.
   if (old_parent) {
-    display_manager_.SchedulePaint(old_parent,
-                                   gfx::Rect(old_parent->bounds().size()));
+    display_manager_->SchedulePaint(old_parent,
+                                    gfx::Rect(old_parent->bounds().size()));
   }
   if (new_parent) {
-    display_manager_.SchedulePaint(new_parent,
-                                   gfx::Rect(new_parent->bounds().size()));
+    display_manager_->SchedulePaint(new_parent,
+                                    gfx::Rect(new_parent->bounds().size()));
   }
 }
 
@@ -280,20 +279,20 @@ void ConnectionManager::OnViewBoundsChanged(const ServerView* view,
     return;
 
   // TODO(sky): optimize this.
-  display_manager_.SchedulePaint(view->parent(), old_bounds);
-  display_manager_.SchedulePaint(view->parent(), new_bounds);
+  display_manager_->SchedulePaint(view->parent(), old_bounds);
+  display_manager_->SchedulePaint(view->parent(), new_bounds);
 }
 
 void ConnectionManager::OnViewSurfaceIdChanged(const ServerView* view) {
   if (!in_destructor_)
-    display_manager_.SchedulePaint(view, gfx::Rect(view->bounds().size()));
+    display_manager_->SchedulePaint(view, gfx::Rect(view->bounds().size()));
 }
 
 void ConnectionManager::OnViewReordered(const ServerView* view,
                                         const ServerView* relative,
                                         OrderDirection direction) {
   if (!in_destructor_)
-    display_manager_.SchedulePaint(view, gfx::Rect(view->bounds().size()));
+    display_manager_->SchedulePaint(view, gfx::Rect(view->bounds().size()));
 }
 
 void ConnectionManager::OnWillChangeViewVisibility(const ServerView* view) {
@@ -318,7 +317,7 @@ void ConnectionManager::OnViewPropertyChanged(
 
 void ConnectionManager::SetViewportSize(SizePtr size) {
   gfx::Size new_size = size.To<gfx::Size>();
-  display_manager_.SetViewportSize(new_size);
+  display_manager_->SetViewportSize(new_size);
 }
 
 void ConnectionManager::DispatchInputEventToView(Id transport_view_id,

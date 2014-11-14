@@ -15,7 +15,6 @@
 #include "mojo/public/cpp/bindings/error_handler.h"
 #include "mojo/services/public/interfaces/view_manager/view_manager.mojom.h"
 #include "mojo/services/public/interfaces/window_manager/window_manager_internal.mojom.h"
-#include "mojo/services/view_manager/display_manager.h"
 #include "mojo/services/view_manager/ids.h"
 #include "mojo/services/view_manager/server_view.h"
 #include "mojo/services/view_manager/server_view_delegate.h"
@@ -28,6 +27,7 @@ namespace service {
 
 class ClientConnection;
 class ConnectionManagerDelegate;
+class DisplayManager;
 class ViewManagerServiceImpl;
 class WindowManagerInternalClientImpl;
 
@@ -72,7 +72,8 @@ class ConnectionManager : public ServerViewDelegate,
   };
 
   ConnectionManager(ApplicationConnection* app_connection,
-                    ConnectionManagerDelegate* delegate);
+                    ConnectionManagerDelegate* delegate,
+                    scoped_ptr<DisplayManager> display_manager);
   ~ConnectionManager() override;
 
   // Returns the id for the next ViewManagerServiceImpl.
@@ -205,7 +206,7 @@ class ConnectionManager : public ServerViewDelegate,
   // Set of ViewManagerServiceImpls.
   ConnectionMap connection_map_;
 
-  DisplayManager display_manager_;
+  scoped_ptr<DisplayManager> display_manager_;
 
   scoped_ptr<ServerView> root_;
 
