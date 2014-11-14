@@ -7,6 +7,8 @@ import("//build/config/ui.gni")
 shared_library("view_manager") {
   sources = [
     "main.cc",
+    "view_manager_app.cc",
+    "view_manager_app.h",
   ]
 
   deps = [

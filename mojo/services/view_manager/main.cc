@@ -4,50 +4,7 @@
 
 #include "mojo/application/application_runner_chromium.h"
 #include "mojo/public/c/system/main.h"
-#include "mojo/public/cpp/application/application_connection.h"
-#include "mojo/public/cpp/application/application_delegate.h"
-#include "mojo/public/cpp/application/application_impl.h"
-#include "mojo/services/view_manager/connection_manager.h"
-#include "mojo/services/view_manager/connection_manager_delegate.h"
-#include "mojo/services/view_manager/display_manager.h"
-
-namespace mojo {
-namespace service {
-
-class ViewManagerApp : public ApplicationDelegate,
-                       public ConnectionManagerDelegate {
- public:
-  ViewManagerApp() {}
-  ~ViewManagerApp() override {}
-
-  bool ConfigureIncomingConnection(ApplicationConnection* connection) override {
-    if (!connection_manager_.get()) {
-      scoped_ptr<DefaultDisplayManager> display_manager(
-          new DefaultDisplayManager(
-              connection,
-              base::Bind(&ViewManagerApp::OnLostConnectionToWindowManager,
-                         base::Unretained(this))));
-      connection_manager_.reset(
-          new ConnectionManager(connection, this, display_manager.Pass()));
-      return true;
-    }
-    VLOG(1) << "ViewManager allows only one connection.";
-    return false;
-  }
-
- private:
-  // ConnectionManagerDelegate:
-  void OnLostConnectionToWindowManager() override {
-    ApplicationImpl::Terminate();
-  }
-
-  scoped_ptr<ConnectionManager> connection_manager_;
-
-  DISALLOW_COPY_AND_ASSIGN(ViewManagerApp);
-};
-
-}  // namespace service
-}  // namespace mojo
+#include "mojo/services/view_manager/view_manager_app.h"
 
 MojoResult MojoMain(MojoHandle shell_handle) {
   mojo::ApplicationRunnerChromium runner(new mojo::service::ViewManagerApp);
