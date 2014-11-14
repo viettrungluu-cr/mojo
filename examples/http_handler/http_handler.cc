@@ -40,7 +40,7 @@ class HttpHandler : public ApplicationDelegate,
   void OnHandleRequest(
       HttpRequestPtr request,
       const Callback<void(HttpResponsePtr)>& callback) override {
-    callback.Run(CreateHttpResponse(200, "Hello World"));
+    callback.Run(CreateHttpResponse(200, "Hello World\n"));
   }
 
   void AddHandlerCallback(bool result) {

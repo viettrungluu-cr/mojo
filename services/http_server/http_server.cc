@@ -155,8 +155,8 @@ class Connection {
     if (response_offset_ != response_.size()) {
       // We have more data left in response_. Write more asynchronously.
       sender_waiter_.reset(new AsyncWaiter(
-            sender_.get(), MOJO_HANDLE_SIGNAL_WRITABLE,
-            base::Bind(&Connection::OnSenderReady, base::Unretained(this))));
+          sender_.get(), MOJO_HANDLE_SIGNAL_WRITABLE,
+          base::Bind(&Connection::OnSenderReady, base::Unretained(this))));
       return;
     }
 
@@ -236,11 +236,11 @@ class Connection {
 };
 
 void FooHandler(HttpRequestPtr request, Connection* connection) {
-  connection->SendResponse(CreateHttpResponse(200, "Foo"));
+  connection->SendResponse(CreateHttpResponse(200, "Foo\n"));
 }
 
 void BarHandler(HttpRequestPtr request, Connection* connection) {
-  connection->SendResponse(CreateHttpResponse(200, "Bar"));
+  connection->SendResponse(CreateHttpResponse(200, "Bar\n"));
 }
 
 class HttpServerApp;
@@ -387,10 +387,10 @@ class HttpServerApp : public ApplicationDelegate,
     net_address->family = NET_ADDRESS_FAMILY_IPV4;
     net_address->ipv4 = NetAddressIPv4::New();
     net_address->ipv4->addr.resize(4);
-    net_address->ipv4->addr[0] = 127;
+    net_address->ipv4->addr[0] = 0;
     net_address->ipv4->addr[1] = 0;
     net_address->ipv4->addr[2] = 0;
-    net_address->ipv4->addr[3] = 1;
+    net_address->ipv4->addr[3] = 0;
     net_address->ipv4->port = 80;
 
     // Note that we can start using the proxies right away even thought the
@@ -415,7 +415,7 @@ class HttpServerApp : public ApplicationDelegate,
     }
 
     connection->SendResponse(
-        CreateHttpResponse(404, "No registered handler").Pass());
+        CreateHttpResponse(404, "No registered handler\n"));
   }
 
   struct Handler {
