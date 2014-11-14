@@ -69,27 +69,31 @@ unsigned MessagePipe::GetPeerPort(unsigned port) {
 }
 
 // static
-scoped_refptr<MessagePipe> MessagePipe::Deserialize(Channel* channel,
-                                                    const void* source,
-                                                    size_t size) {
+bool MessagePipe::Deserialize(Channel* channel,
+                              const void* source,
+                              size_t size,
+                              scoped_refptr<MessagePipe>* message_pipe,
+                              unsigned* port) {
+  DCHECK(!message_pipe->get());  // Not technically wrong, but unlikely.
+
   if (size != sizeof(SerializedMessagePipe)) {
     LOG(ERROR) << "Invalid serialized message pipe";
-    return nullptr;
+    return false;
   }
 
   const SerializedMessagePipe* s =
       static_cast<const SerializedMessagePipe*>(source);
-  scoped_refptr<MessagePipe> message_pipe =
-      channel->PassIncomingMessagePipe(s->receiver_endpoint_id);
-  if (!message_pipe.get()) {
+  *message_pipe = channel->PassIncomingMessagePipe(s->receiver_endpoint_id);
+  if (!message_pipe->get()) {
     LOG(ERROR) << "Failed to deserialize message pipe (ID = "
                << s->receiver_endpoint_id << ")";
-    return nullptr;
+    return false;
   }
 
   DVLOG(2) << "Deserializing message pipe dispatcher (new local ID = "
            << s->receiver_endpoint_id << ")";
-  return message_pipe;
+  *port = 0;
+  return true;
 }
 
 MessagePipeEndpoint::Type MessagePipe::GetType(unsigned port) {

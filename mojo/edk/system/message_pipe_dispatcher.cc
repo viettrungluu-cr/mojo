@@ -88,14 +88,16 @@ scoped_refptr<MessagePipeDispatcher> MessagePipeDispatcher::Deserialize(
     Channel* channel,
     const void* source,
     size_t size) {
-  scoped_refptr<MessagePipe> message_pipe =
-      MessagePipe::Deserialize(channel, source, size);
-  if (!message_pipe.get())
+  unsigned port = kInvalidPort;
+  scoped_refptr<MessagePipe> message_pipe;
+  if (!MessagePipe::Deserialize(channel, source, size, &message_pipe, &port))
     return nullptr;
+  DCHECK(message_pipe.get());
+  DCHECK(port == 0 || port == 1);
 
   scoped_refptr<MessagePipeDispatcher> dispatcher(
       new MessagePipeDispatcher(MessagePipeDispatcher::kDefaultCreateOptions));
-  dispatcher->Init(message_pipe, 0);
+  dispatcher->Init(message_pipe, port);
   return dispatcher;
 }
 

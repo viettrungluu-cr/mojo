@@ -58,12 +58,14 @@ class MOJO_SYSTEM_IMPL_EXPORT MessagePipe
   // Gets the other port number (i.e., 0 -> 1, 1 -> 0).
   static unsigned GetPeerPort(unsigned port);
 
-  // Used by |MessagePipeDispatcher::Deserialize()|. Returns a |MessagePipe| for
-  // the deserialized message pipe, with the local endpoint being at port 0.
-  // Returns null on error.
-  static scoped_refptr<MessagePipe> Deserialize(Channel* channel,
-                                                const void* source,
-                                                size_t size);
+  // Used by |MessagePipeDispatcher::Deserialize()|. Returns true on success (in
+  // which case, |*message_pipe|/|*port| are set appropriately) and false on
+  // failure (in which case |*message_pipe| may or may not be set to null).
+  static bool Deserialize(Channel* channel,
+                          const void* source,
+                          size_t size,
+                          scoped_refptr<MessagePipe>* message_pipe,
+                          unsigned* port);
 
   // Gets the type of the endpoint (used for assertions, etc.).
   MessagePipeEndpoint::Type GetType(unsigned port);
