@@ -11,5 +11,4 @@ MojoResult MojoMain(MojoHandle shell_handle) {
   // testing script will instruct the shell to load this application and
   // measure the execution time, which reflects the startup performance.
   exit(0);
-  return MOJO_RESULT_OK;
 }
