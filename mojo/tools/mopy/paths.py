@@ -13,7 +13,8 @@ class Paths(object):
       os.pardir, os.pardir, os.pardir, os.pardir))
     self.mojo_dir = os.path.join(self.src_root, "mojo")
     if build_directory:
-      self.mojo_shell_path = os.path.join(self.src_root, build_directory,
-          "mojo_shell")
+      self.build_dir = os.path.join(self.src_root, build_directory)
+      self.mojo_shell_path = os.path.join(self.build_dir, "mojo_shell")
     else:
+      self.build_dir = None
       self.mojo_shell_path = None
