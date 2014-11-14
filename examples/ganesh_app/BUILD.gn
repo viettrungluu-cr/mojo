@@ -1,0 +1,40 @@
+# Copyright 2014 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+shared_library("ganesh_app") {
+  sources = [
+    "ganesh_app.cc",
+    "painter.cc",
+    "painter.h",
+  ]
+
+  deps = [
+    "//base",
+    "//cc",
+    "//cc/surfaces",
+    "//examples/surfaces_app:bindings",
+    "//examples/surfaces_app:util",
+    "//gpu/command_buffer/client:gles2_interface",
+    "//gpu/command_buffer/common",
+    "//gpu/skia_bindings",
+    "//mojo/application",
+    "//mojo/common",
+    "//mojo/converters/geometry",
+    "//mojo/converters/surfaces",
+    "//mojo/environment:chromium",
+    "//mojo/public/c/system:for_shared_library",
+    "//mojo/public/cpp/bindings",
+    "//mojo/public/cpp/environment",
+    "//mojo/public/cpp/system",
+    "//mojo/public/cpp/utility",
+    "//mojo/public/gles2:for_shared_library",
+    "//mojo/services/public/interfaces/geometry",
+    "//mojo/services/public/interfaces/gpu",
+    "//mojo/services/public/interfaces/surfaces",
+    "//mojo/services/public/interfaces/surfaces:surface_id",
+    "//skia",
+    "//ui/gfx",
+    "//ui/gfx/geometry",
+  ]
+}

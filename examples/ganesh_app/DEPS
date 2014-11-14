@@ -1,0 +1,12 @@
+include_rules = [
+  "+cc",
+  "-cc/blink",
+  "+gpu/GLES2",
+  "+gpu/command_buffer/client",
+  "+gpu/command_buffer/common",
+  "+gpu/skia_bindings",
+  "+skia/ext",
+  "+third_party/khronos/GLES2",
+  "+third_party/skia/include",
+  "+ui/gfx",
+]
