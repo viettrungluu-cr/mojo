@@ -5,16 +5,20 @@
 shared_library("ganesh_app") {
   sources = [
     "ganesh_app.cc",
-    "painter.cc",
-    "painter.h",
+    "ganesh_context.cc",
+    "ganesh_context.h",
+    "ganesh_texture.cc",
+    "ganesh_texture.h",
+    "ganesh_view.cc",
+    "ganesh_view.h",
+    "mojo_gl_context.cc",
+    "mojo_gl_context.h",
+    "texture_uploader.cc",
+    "texture_uploader.h",
   ]
 
   deps = [
     "//base",
-    "//cc",
-    "//cc/surfaces",
-    "//examples/surfaces_app:bindings",
-    "//examples/surfaces_app:util",
     "//gpu/command_buffer/client:gles2_interface",
     "//gpu/command_buffer/common",
     "//gpu/skia_bindings",
@@ -29,6 +33,8 @@ shared_library("ganesh_app") {
     "//mojo/public/cpp/system",
     "//mojo/public/cpp/utility",
     "//mojo/public/gles2:for_shared_library",
+    "//mojo/services/public/cpp/surfaces",
+    "//mojo/services/public/cpp/view_manager",
     "//mojo/services/public/interfaces/geometry",
     "//mojo/services/public/interfaces/gpu",
     "//mojo/services/public/interfaces/surfaces",
