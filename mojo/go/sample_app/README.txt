@@ -15,9 +15,10 @@ $ NDK_CC=$NDK_ROOT/bin/arm-linux-androideabi-gcc
 
 $ unset GOBIN GOPATH GOROOT
 $ hg clone https://code.google.com/p/go
+$ export GOROOT=`pwd`/go
 $ cd go/src
 $ CC_FOR_TARGET=$NDK_CC GOOS=android GOARCH=arm GOARM=7 ./make.bash
-$ ls ../bin/go
+$ ls $GOROOT/bin/go
 
 3) Now, we switch to the Mojo workspace and build the sample application.
 

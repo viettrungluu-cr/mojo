@@ -4,9 +4,10 @@ Setup instructions to run system_test
 
 $ unset GOBIN GOPATH GOROOT
 $ hg clone https://code.google.com/p/go
+$ export GOROOT=`pwd`/go
 $ cd go/src
 $ ./all.bash
-$ ls ../bin
+$ ls $GOROOT/bin/go
 
 3) Now, we switch to the Mojo workspace and build system_test
 
