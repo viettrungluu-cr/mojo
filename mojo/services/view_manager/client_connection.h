@@ -42,12 +42,9 @@ class ClientConnection {
 class DefaultClientConnection : public ClientConnection, public ErrorHandler {
  public:
   DefaultClientConnection(scoped_ptr<ViewManagerServiceImpl> service_impl,
-                          ConnectionManager* connection_manager);
+                          ConnectionManager* connection_manager,
+                          ScopedMessagePipeHandle handle);
   ~DefaultClientConnection() override;
-
-  Binding<ViewManagerService>* binding() { return &binding_; }
-
-  void set_client_from_binding() { set_client(binding_.client()); }
 
  private:
   // ErrorHandler:

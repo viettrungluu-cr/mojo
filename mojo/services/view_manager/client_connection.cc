@@ -19,11 +19,13 @@ ClientConnection::~ClientConnection() {
 
 DefaultClientConnection::DefaultClientConnection(
     scoped_ptr<ViewManagerServiceImpl> service_impl,
-    ConnectionManager* connection_manager)
+    ConnectionManager* connection_manager,
+    ScopedMessagePipeHandle handle)
     : ClientConnection(service_impl.Pass()),
       connection_manager_(connection_manager),
-      binding_(service()) {
+      binding_(service(), handle.Pass()) {
   binding_.set_error_handler(this);
+  set_client(binding_.client());
 }
 
 DefaultClientConnection::~DefaultClientConnection() {

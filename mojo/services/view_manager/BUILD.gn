@@ -64,14 +64,29 @@ source_set("view_manager_lib") {
   ]
 }
 
-test("view_manager_unittests") {
+source_set("test_support") {
+  testonly = true
+
   sources = [
     "test_change_tracker.cc",
     "test_change_tracker.h",
+  ]
+
+  deps = [
+    "//base",
+    "//mojo/common",
+    "//mojo/services/public/interfaces/geometry",
+    "//mojo/services/public/interfaces/view_manager",
+  ]
+}
+
+test("view_manager_unittests") {
+  sources = [
     "view_manager_unittest.cc",
   ]
 
   deps = [
+    ":test_support",
     ":view_manager_lib",
     "//base",
     "//base/test:test_support",
@@ -98,16 +113,45 @@ test("view_manager_unittests") {
   }
 }
 
-mojo_native_application("view_manager_server_apptests") {
-  testonly = true
-
+test("view_manager_service_unittests") {
   sources = [
-    "test_change_tracker.cc",
-    "test_change_tracker.h",
-    "view_manager_server_apptest.cc",
+    "view_manager_service_unittest.cc",
   ]
 
   deps = [
+    ":test_support",
+    ":view_manager_lib",
+    "//base",
+    "//base/test:test_support",
+    "//mojo/converters/geometry",
+    "//mojo/converters/input_events",
+    "//mojo/edk/test:run_all_unittests",
+    "//mojo/environment:chromium",
+    "//mojo/public/cpp/bindings",
+    "//mojo/public/interfaces/application",
+    "//mojo/services/public/cpp/native_viewport:args",
+    "//mojo/services/public/cpp/view_manager",
+    "//mojo/services/public/interfaces/geometry",
+    "//mojo/services/public/interfaces/view_manager",
+    "//mojo/services/public/interfaces/window_manager",
+    "//testing/gtest",
+    "//ui/gfx/geometry",
+  ]
+
+  if (!is_android) {  # TODO(GYP) Enable on Android when osmesa links.
+    deps += [ "//third_party/mesa:osmesa" ]
+  }
+}
+
+mojo_native_application("view_manager_service_apptests") {
+  testonly = true
+
+  sources = [
+    "view_manager_service_apptest.cc",
+  ]
+
+  deps = [
+    ":test_support",
     "//base",
     "//mojo/application",
     "//mojo/application:test_support",

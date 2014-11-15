@@ -8,7 +8,6 @@
 #include "base/stl_util.h"
 #include "mojo/converters/geometry/geometry_type_converters.h"
 #include "mojo/converters/input_events/input_events_type_converters.h"
-#include "mojo/public/cpp/application/application_connection.h"
 #include "mojo/public/interfaces/application/service_provider.mojom.h"
 #include "mojo/services/view_manager/client_connection.h"
 #include "mojo/services/view_manager/connection_manager_delegate.h"
@@ -17,31 +16,6 @@
 
 namespace mojo {
 namespace service {
-
-class WindowManagerInternalClientImpl
-    : public InterfaceImpl<WindowManagerInternalClient> {
- public:
-  explicit WindowManagerInternalClientImpl(
-      WindowManagerInternalClient* real_client)
-      : real_client_(real_client) {}
-  ~WindowManagerInternalClientImpl() override {}
-
-  // WindowManagerInternalClient:
-  void DispatchInputEventToView(Id transport_view_id, EventPtr event) override {
-    real_client_->DispatchInputEventToView(transport_view_id, event.Pass());
-  }
-
-  void SetViewportSize(SizePtr size) override {
-    real_client_->SetViewportSize(size.Pass());
-  }
-
-  // TODO(sky): ErrorHandling temporarily nuked. Will be fixed shortly.
-
- private:
-  WindowManagerInternalClient* real_client_;
-
-  DISALLOW_COPY_AND_ASSIGN(WindowManagerInternalClientImpl);
-};
 
 ConnectionManager::ScopedChange::ScopedChange(
     ViewManagerServiceImpl* connection,
@@ -57,24 +31,17 @@ ConnectionManager::ScopedChange::~ScopedChange() {
   connection_manager_->FinishChange();
 }
 
-ConnectionManager::ConnectionManager(ApplicationConnection* app_connection,
-                                     ConnectionManagerDelegate* delegate,
-                                     scoped_ptr<DisplayManager> display_manager)
-    : app_connection_(app_connection),
-      delegate_(delegate),
+ConnectionManager::ConnectionManager(ConnectionManagerDelegate* delegate,
+                                     scoped_ptr<DisplayManager> display_manager,
+                                     WindowManagerInternal* wm_internal)
+    : delegate_(delegate),
       window_manager_client_connection_(nullptr),
       next_connection_id_(1),
       display_manager_(display_manager.Pass()),
       root_(new ServerView(this, RootViewId())),
-      current_change_(NULL),
+      wm_internal_(wm_internal),
+      current_change_(nullptr),
       in_destructor_(false) {
-  // |app_connection| originates from the WindowManager. Let it connect
-  // directly to the ViewManager and WindowManagerInternalClient.
-  app_connection->AddService(
-      static_cast<InterfaceFactory<ViewManagerService>*>(this));
-  app_connection->AddService(
-      static_cast<InterfaceFactory<WindowManagerInternalClient>*>(this));
-  app_connection->ConnectToService(&wm_internal_);
   root_->SetBounds(gfx::Rect(800, 600));
   display_manager_->Init(this);
 }
@@ -123,19 +90,10 @@ void ConnectionManager::EmbedAtView(
   if (it != connection_map_.end())
     creator_url = it->second->service()->url();
 
-  MessagePipe pipe;
-
-  ServiceProvider* view_manager_service_provider =
-      app_connection_->ConnectToApplication(url)->GetServiceProvider();
-  view_manager_service_provider->ConnectToService(
-      ViewManagerServiceImpl::Client::Name_, pipe.handle1.Pass());
-  scoped_ptr<ViewManagerServiceImpl> service(
-      new ViewManagerServiceImpl(this, creator_id, creator_url, url,
-                                 ViewIdFromTransportId(transport_view_id)));
-  DefaultClientConnection* client_connection =
-      new DefaultClientConnection(service.Pass(), this);
-  client_connection->binding()->Bind(pipe.handle0.Pass());
-  client_connection->set_client_from_binding();
+  ClientConnection* client_connection =
+      delegate_->CreateClientConnectionForEmbedAtView(
+          this, creator_id, creator_url, url.To<std::string>(),
+          ViewIdFromTransportId(transport_view_id));
   AddConnection(client_connection);
   client_connection->service()->Init(client_connection->client(),
                                      service_provider.Pass());
@@ -172,6 +130,16 @@ const ViewManagerServiceImpl* ConnectionManager::GetConnectionWithRoot(
       return pair.second->service();
   }
   return nullptr;
+}
+
+void ConnectionManager::SetWindowManagerClientConnection(
+    scoped_ptr<ClientConnection> connection) {
+  CHECK(!window_manager_client_connection_);
+  window_manager_client_connection_ = connection.release();
+  AddConnection(window_manager_client_connection_);
+  window_manager_client_connection_->service()->Init(
+      window_manager_client_connection_->client(),
+      InterfaceRequest<ServiceProvider>());
 }
 
 void ConnectionManager::ProcessViewBoundsChanged(const ServerView* view,
@@ -331,39 +299,6 @@ void ConnectionManager::DispatchInputEventToView(Id transport_view_id,
     connection->client()->OnViewInputEvent(
         transport_view_id, event.Pass(), base::Bind(&base::DoNothing));
   }
-}
-
-void ConnectionManager::Create(ApplicationConnection* connection,
-                               InterfaceRequest<ViewManagerService> request) {
-  if (window_manager_client_connection_) {
-    VLOG(1) << "ViewManager interface requested more than once.";
-    return;
-  }
-
-  scoped_ptr<ViewManagerServiceImpl> service(new ViewManagerServiceImpl(
-      this, kInvalidConnectionId, std::string(),
-      std::string("mojo:window_manager"), RootViewId()));
-  DefaultClientConnection* client_connection =
-      new DefaultClientConnection(service.Pass(), this);
-  client_connection->binding()->Bind(request.Pass());
-  client_connection->set_client_from_binding();
-  window_manager_client_connection_ = client_connection;
-  AddConnection(window_manager_client_connection_);
-  window_manager_client_connection_->service()->Init(
-      window_manager_client_connection_->client(),
-      InterfaceRequest<ServiceProvider>());
-}
-
-void ConnectionManager::Create(
-    ApplicationConnection* connection,
-    InterfaceRequest<WindowManagerInternalClient> request) {
-  if (wm_internal_client_impl_.get()) {
-    VLOG(1) << "WindowManagerInternalClient requested more than once.";
-    return;
-  }
-
-  wm_internal_client_impl_.reset(new WindowManagerInternalClientImpl(this));
-  WeakBindToRequest(wm_internal_client_impl_.get(), &request);
 }
 
 }  // namespace service

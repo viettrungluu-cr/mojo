@@ -10,9 +10,7 @@
 
 #include "base/basictypes.h"
 #include "base/memory/scoped_ptr.h"
-#include "mojo/public/cpp/application/interface_factory.h"
 #include "mojo/public/cpp/bindings/array.h"
-#include "mojo/public/cpp/bindings/error_handler.h"
 #include "mojo/services/public/interfaces/view_manager/view_manager.mojom.h"
 #include "mojo/services/public/interfaces/window_manager/window_manager_internal.mojom.h"
 #include "mojo/services/view_manager/ids.h"
@@ -20,23 +18,17 @@
 #include "mojo/services/view_manager/server_view_delegate.h"
 
 namespace mojo {
-
-class ApplicationConnection;
-
 namespace service {
 
 class ClientConnection;
 class ConnectionManagerDelegate;
 class DisplayManager;
 class ViewManagerServiceImpl;
-class WindowManagerInternalClientImpl;
 
 // ConnectionManager manages the set of connections to the ViewManager (all the
 // ViewManagerServiceImpls) as well as providing the root of the hierarchy.
 class ConnectionManager : public ServerViewDelegate,
-                          public WindowManagerInternalClient,
-                          public InterfaceFactory<ViewManagerService>,
-                          public InterfaceFactory<WindowManagerInternalClient> {
+                          public WindowManagerInternalClient {
  public:
   // Create when a ViewManagerServiceImpl is about to make a change. Ensures
   // clients are notified correctly.
@@ -71,9 +63,9 @@ class ConnectionManager : public ServerViewDelegate,
     DISALLOW_COPY_AND_ASSIGN(ScopedChange);
   };
 
-  ConnectionManager(ApplicationConnection* app_connection,
-                    ConnectionManagerDelegate* delegate,
-                    scoped_ptr<DisplayManager> display_manager);
+  ConnectionManager(ConnectionManagerDelegate* delegate,
+                    scoped_ptr<DisplayManager> display_manager,
+                    WindowManagerInternal* wm_internal);
   ~ConnectionManager() override;
 
   // Returns the id for the next ViewManagerServiceImpl.
@@ -117,7 +109,13 @@ class ConnectionManager : public ServerViewDelegate,
   }
   const ViewManagerServiceImpl* GetConnectionWithRoot(const ViewId& id) const;
 
-  WindowManagerInternal* wm_internal() { return wm_internal_.get(); }
+  WindowManagerInternal* wm_internal() { return wm_internal_; }
+
+  void SetWindowManagerClientConnection(
+      scoped_ptr<ClientConnection> connection);
+  bool has_window_manager_client_connection() const {
+    return window_manager_client_connection_ != nullptr;
+  }
 
   // These functions trivially delegate to all ViewManagerServiceImpls, which in
   // term notify their clients.
@@ -183,16 +181,6 @@ class ConnectionManager : public ServerViewDelegate,
                                 EventPtr event) override;
   void SetViewportSize(SizePtr size) override;
 
-  // InterfaceFactory<ViewManagerService>:
-  void Create(ApplicationConnection* connection,
-              InterfaceRequest<ViewManagerService> request) override;
-
-  // InterfaceFactory<WindowManagerInternalClient>:
-  void Create(ApplicationConnection* connection,
-              InterfaceRequest<WindowManagerInternalClient> request) override;
-
-  ApplicationConnection* app_connection_;
-
   ConnectionManagerDelegate* delegate_;
 
   // The ClientConnection containing the ViewManagerService implementation
@@ -210,9 +198,7 @@ class ConnectionManager : public ServerViewDelegate,
 
   scoped_ptr<ServerView> root_;
 
-  WindowManagerInternalPtr wm_internal_;
-
-  scoped_ptr<WindowManagerInternalClientImpl> wm_internal_client_impl_;
+  WindowManagerInternal* wm_internal_;
 
   // If non-null we're processing a change. The ScopedChange is not owned by us
   // (it's created on the stack by ViewManagerServiceImpl).

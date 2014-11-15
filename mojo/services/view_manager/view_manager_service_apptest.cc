@@ -64,7 +64,7 @@ bool Embed(ViewManagerService* vm, Id root_id) {
   base::RunLoop run_loop;
   {
     ServiceProviderPtr sp;
-    vm->Embed("mojo:view_manager_server_apptests", root_id,
+    vm->Embed("mojo:view_manager_service_apptests", root_id,
               MakeRequest<ServiceProvider>(sp.PassMessagePipe()),
               base::Bind(&BoolResultCallback, &run_loop, &result));
   }
@@ -321,11 +321,11 @@ class ViewManagerClientFactory : public InterfaceFactory<ViewManagerClient> {
   DISALLOW_COPY_AND_ASSIGN(ViewManagerClientFactory);
 };
 
-class ViewManagerServerAppTest : public test::ApplicationTestBase,
-                                 public ApplicationDelegate {
+class ViewManagerServiceAppTest : public test::ApplicationTestBase,
+                                  public ApplicationDelegate {
  public:
-  ViewManagerServerAppTest() : ApplicationTestBase(Array<String>()) {}
-  ~ViewManagerServerAppTest() override {}
+  ViewManagerServiceAppTest() : ApplicationTestBase(Array<String>()) {}
+  ~ViewManagerServiceAppTest() override {}
 
  protected:
   // Returns the changes from the various connections.
@@ -380,7 +380,7 @@ class ViewManagerServerAppTest : public test::ApplicationTestBase,
 
     const std::string expected_creator =
         owner == vm1() ? "mojo:window_manager"
-                      : "mojo:view_manager_server_apptests";
+                       : "mojo:view_manager_service_apptests";
     EXPECT_EQ("OnEmbed creator=" + expected_creator,
               SingleChangeToDescription(*client->tracker()->changes()));
     return client.Pass();
@@ -421,11 +421,11 @@ class ViewManagerServerAppTest : public test::ApplicationTestBase,
   ViewManagerServicePtr vm1_;
   ViewManagerClientFactory client_factory_;
 
-  MOJO_DISALLOW_COPY_AND_ASSIGN(ViewManagerServerAppTest);
+  MOJO_DISALLOW_COPY_AND_ASSIGN(ViewManagerServiceAppTest);
 };
 
 // Verifies two clients/connections get different ids.
-TEST_F(ViewManagerServerAppTest, TwoClientsGetDifferentConnectionIds) {
+TEST_F(ViewManagerServiceAppTest, TwoClientsGetDifferentConnectionIds) {
   ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(true));
 
   // It isn't strictly necessary that the second connection gets 2, but these
@@ -436,7 +436,7 @@ TEST_F(ViewManagerServerAppTest, TwoClientsGetDifferentConnectionIds) {
 }
 
 // Verifies when Embed() is invoked any child views are removed.
-TEST_F(ViewManagerServerAppTest, ViewsRemovedWhenEmbedding) {
+TEST_F(ViewManagerServiceAppTest, ViewsRemovedWhenEmbedding) {
   // Two views 1 and 2. 2 is parented to 1.
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 1)));
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 2)));
@@ -493,7 +493,7 @@ TEST_F(ViewManagerServerAppTest, ViewsRemovedWhenEmbedding) {
 
 // Verifies once Embed() has been invoked the parent connection can't see any
 // children.
-TEST_F(ViewManagerServerAppTest, CantAccessChildrenOfEmbeddedView) {
+TEST_F(ViewManagerServiceAppTest, CantAccessChildrenOfEmbeddedView) {
   ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(true));
 
   ASSERT_TRUE(CreateView(vm2(), BuildViewId(2, 2)));
@@ -531,7 +531,7 @@ TEST_F(ViewManagerServerAppTest, CantAccessChildrenOfEmbeddedView) {
 }
 
 // Verifies once Embed() has been invoked the parent can't mutate the children.
-TEST_F(ViewManagerServerAppTest, CantModifyChildrenOfEmbeddedView) {
+TEST_F(ViewManagerServiceAppTest, CantModifyChildrenOfEmbeddedView) {
   ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(true));
 
   ASSERT_TRUE(CreateView(vm2(), BuildViewId(2, 2)));
@@ -552,7 +552,7 @@ TEST_F(ViewManagerServerAppTest, CantModifyChildrenOfEmbeddedView) {
 }
 
 // Verifies client gets a valid id.
-TEST_F(ViewManagerServerAppTest, CreateView) {
+TEST_F(ViewManagerServiceAppTest, CreateView) {
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 1)));
   EXPECT_TRUE(changes1()->empty());
 
@@ -568,7 +568,7 @@ TEST_F(ViewManagerServerAppTest, CreateView) {
 }
 
 // Verifies AddView fails when view is already in position.
-TEST_F(ViewManagerServerAppTest, AddViewWithNoChange) {
+TEST_F(ViewManagerServiceAppTest, AddViewWithNoChange) {
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 2)));
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 3)));
 
@@ -582,7 +582,7 @@ TEST_F(ViewManagerServerAppTest, AddViewWithNoChange) {
 }
 
 // Verifies AddView fails when view is already in position.
-TEST_F(ViewManagerServerAppTest, AddAncestorFails) {
+TEST_F(ViewManagerServiceAppTest, AddAncestorFails) {
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 2)));
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 3)));
 
@@ -596,7 +596,7 @@ TEST_F(ViewManagerServerAppTest, AddAncestorFails) {
 }
 
 // Verifies adding to root sends right notifications.
-TEST_F(ViewManagerServerAppTest, AddToRoot) {
+TEST_F(ViewManagerServiceAppTest, AddToRoot) {
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 21)));
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 3)));
 
@@ -617,7 +617,7 @@ TEST_F(ViewManagerServerAppTest, AddToRoot) {
 }
 
 // Verifies HierarchyChanged is correctly sent for various adds/removes.
-TEST_F(ViewManagerServerAppTest, ViewHierarchyChangedViews) {
+TEST_F(ViewManagerServiceAppTest, ViewHierarchyChangedViews) {
   // 1,2->1,11.
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 2)));
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 11)));
@@ -674,7 +674,7 @@ TEST_F(ViewManagerServerAppTest, ViewHierarchyChangedViews) {
   }
 }
 
-TEST_F(ViewManagerServerAppTest, ViewHierarchyChangedAddingKnownToUnknown) {
+TEST_F(ViewManagerServiceAppTest, ViewHierarchyChangedAddingKnownToUnknown) {
   // Create the following structure: root -> 1 -> 11 and 2->21 (2 has no
   // parent).
   ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(true));
@@ -713,7 +713,7 @@ TEST_F(ViewManagerServerAppTest, ViewHierarchyChangedAddingKnownToUnknown) {
   }
 }
 
-TEST_F(ViewManagerServerAppTest, ReorderView) {
+TEST_F(ViewManagerServiceAppTest, ReorderView) {
   ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(true));
 
   Id view1_id = BuildViewId(2, 1);
@@ -775,7 +775,7 @@ TEST_F(ViewManagerServerAppTest, ReorderView) {
 }
 
 // Verifies DeleteView works.
-TEST_F(ViewManagerServerAppTest, DeleteView) {
+TEST_F(ViewManagerServiceAppTest, DeleteView) {
   ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(true));
   ASSERT_TRUE(CreateView(vm2(), BuildViewId(2, 2)));
 
@@ -801,14 +801,14 @@ TEST_F(ViewManagerServerAppTest, DeleteView) {
 }
 
 // Verifies DeleteView isn't allowed from a separate connection.
-TEST_F(ViewManagerServerAppTest, DeleteViewFromAnotherConnectionDisallowed) {
+TEST_F(ViewManagerServiceAppTest, DeleteViewFromAnotherConnectionDisallowed) {
   ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(true));
   EXPECT_FALSE(DeleteView(vm2(), BuildViewId(1, 1)));
 }
 
 // Verifies if a view was deleted and then reused that other clients are
 // properly notified.
-TEST_F(ViewManagerServerAppTest, ReuseDeletedViewId) {
+TEST_F(ViewManagerServiceAppTest, ReuseDeletedViewId) {
   ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(true));
   ASSERT_TRUE(CreateView(vm2(), BuildViewId(2, 2)));
 
@@ -846,7 +846,7 @@ TEST_F(ViewManagerServerAppTest, ReuseDeletedViewId) {
 }
 
 // Assertions for GetViewTree.
-TEST_F(ViewManagerServerAppTest, GetViewTree) {
+TEST_F(ViewManagerServiceAppTest, GetViewTree) {
   ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(true));
 
   // Create 11 in first connection and make it a child of 1.
@@ -891,7 +891,7 @@ TEST_F(ViewManagerServerAppTest, GetViewTree) {
   }
 }
 
-TEST_F(ViewManagerServerAppTest, SetViewBounds) {
+TEST_F(ViewManagerServiceAppTest, SetViewBounds) {
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 1)));
   ASSERT_TRUE(AddView(vm1(), BuildViewId(0, 1), BuildViewId(1, 1)));
 
@@ -910,7 +910,7 @@ TEST_F(ViewManagerServerAppTest, SetViewBounds) {
 }
 
 // Verify AddView fails when trying to manipulate views in other roots.
-TEST_F(ViewManagerServerAppTest, CantMoveViewsFromOtherRoot) {
+TEST_F(ViewManagerServiceAppTest, CantMoveViewsFromOtherRoot) {
   // Create 1 and 2 in the first connection.
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 1)));
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 2)));
@@ -928,7 +928,7 @@ TEST_F(ViewManagerServerAppTest, CantMoveViewsFromOtherRoot) {
 
 // Verify RemoveViewFromParent fails for views that are descendants of the
 // roots.
-TEST_F(ViewManagerServerAppTest, CantRemoveViewsInOtherRoots) {
+TEST_F(ViewManagerServiceAppTest, CantRemoveViewsInOtherRoots) {
   // Create 1 and 2 in the first connection and parent both to the root.
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 1)));
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 2)));
@@ -964,7 +964,7 @@ TEST_F(ViewManagerServerAppTest, CantRemoveViewsInOtherRoots) {
 }
 
 // Verify GetViewTree fails for views that are not descendants of the roots.
-TEST_F(ViewManagerServerAppTest, CantGetViewTreeOfOtherRoots) {
+TEST_F(ViewManagerServiceAppTest, CantGetViewTreeOfOtherRoots) {
   // Create 1 and 2 in the first connection and parent both to the root.
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 1)));
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 2)));
@@ -990,7 +990,7 @@ TEST_F(ViewManagerServerAppTest, CantGetViewTreeOfOtherRoots) {
   EXPECT_EQ("view=1,1 parent=null", views[0].ToString());
 }
 
-TEST_F(ViewManagerServerAppTest, OnViewInputEvent) {
+TEST_F(ViewManagerServiceAppTest, OnViewInputEvent) {
   ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(true));
   changes2()->clear();
 
@@ -1005,7 +1005,7 @@ TEST_F(ViewManagerServerAppTest, OnViewInputEvent) {
   }
 }
 
-TEST_F(ViewManagerServerAppTest, EmbedWithSameViewId) {
+TEST_F(ViewManagerServiceAppTest, EmbedWithSameViewId) {
   ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(true));
   changes2()->clear();
 
@@ -1025,7 +1025,7 @@ TEST_F(ViewManagerServerAppTest, EmbedWithSameViewId) {
   }
 }
 
-TEST_F(ViewManagerServerAppTest, EmbedWithSameViewId2) {
+TEST_F(ViewManagerServiceAppTest, EmbedWithSameViewId2) {
   ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(true));
   changes2()->clear();
 
@@ -1088,7 +1088,7 @@ TEST_F(ViewManagerServerAppTest, EmbedWithSameViewId2) {
 }
 
 // Assertions for SetViewVisibility.
-TEST_F(ViewManagerServerAppTest, SetViewVisibility) {
+TEST_F(ViewManagerServiceAppTest, SetViewVisibility) {
   // Create 1 and 2 in the first connection and parent both to the root.
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 1)));
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 2)));
@@ -1140,7 +1140,7 @@ TEST_F(ViewManagerServerAppTest, SetViewVisibility) {
 }
 
 // Assertions for SetViewVisibility sending notifications.
-TEST_F(ViewManagerServerAppTest, SetViewVisibilityNotifications) {
+TEST_F(ViewManagerServiceAppTest, SetViewVisibilityNotifications) {
   // Create 1,1 and 1,2. 1,2 is made a child of 1,1 and 1,1 a child of the root.
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 1)));
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 2)));
@@ -1220,7 +1220,7 @@ TEST_F(ViewManagerServerAppTest, SetViewVisibilityNotifications) {
   }
 }
 
-TEST_F(ViewManagerServerAppTest, SetViewProperty) {
+TEST_F(ViewManagerServiceAppTest, SetViewProperty) {
   // Create 1 and 2 in the first connection and parent both to the root.
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 1)));
 
@@ -1273,7 +1273,7 @@ TEST_F(ViewManagerServerAppTest, SetViewProperty) {
   }
 }
 
-TEST_F(ViewManagerServerAppTest, OnEmbeddedAppDisconnected) {
+TEST_F(ViewManagerServiceAppTest, OnEmbeddedAppDisconnected) {
   // Create connection 2 and 3.
   ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(true));
   ASSERT_TRUE(CreateView(vm2(), BuildViewId(2, 2)));
@@ -1291,7 +1291,7 @@ TEST_F(ViewManagerServerAppTest, OnEmbeddedAppDisconnected) {
 
 // Verifies when the parent of an Embed() is destroyed the embedded app gets
 // a ViewDeleted (and doesn't trigger a DCHECK).
-TEST_F(ViewManagerServerAppTest, OnParentOfEmbedDisconnects) {
+TEST_F(ViewManagerServiceAppTest, OnParentOfEmbedDisconnects) {
   // Create connection 2 and 3.
   ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(true));
   ASSERT_TRUE(AddView(vm1(), BuildViewId(0, 1), BuildViewId(1, 1)));
@@ -1311,7 +1311,7 @@ TEST_F(ViewManagerServerAppTest, OnParentOfEmbedDisconnects) {
 
 // Verifies ViewManagerServiceImpl doesn't incorrectly erase from its internal
 // map when a view from another connection with the same view_id is removed.
-TEST_F(ViewManagerServerAppTest, DontCleanMapOnDestroy) {
+TEST_F(ViewManagerServiceAppTest, DontCleanMapOnDestroy) {
   ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(true));
   ASSERT_TRUE(CreateView(vm2(), BuildViewId(2, 1)));
   changes1()->clear();

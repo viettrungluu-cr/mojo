@@ -68,6 +68,10 @@ class ViewManagerServiceImpl : public ViewManagerService,
   // Invoked when a connection is about to be destroyed.
   void OnWillDestroyViewManagerServiceImpl(ViewManagerServiceImpl* connection);
 
+  // Synchronous implementation of ViewManagerService::CreateView(), see the
+  // mojom for details.
+  ErrorCode CreateView(const ViewId& view_id);
+
   // The following methods are invoked after the corresponding change has been
   // processed. They do the appropriate bookkeeping and update the client as
   // necessary.

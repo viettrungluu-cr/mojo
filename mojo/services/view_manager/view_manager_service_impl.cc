@@ -65,6 +65,16 @@ const ServerView* ViewManagerServiceImpl::GetView(const ViewId& id) const {
   return connection_manager_->GetView(id);
 }
 
+ErrorCode ViewManagerServiceImpl::CreateView(const ViewId& view_id) {
+  if (view_id.connection_id != id_)
+    return ERROR_CODE_ILLEGAL_ARGUMENT;
+  if (view_map_.find(view_id.view_id) != view_map_.end())
+    return ERROR_CODE_VALUE_IN_USE;
+  view_map_[view_id.view_id] = new ServerView(connection_manager_, view_id);
+  known_views_.insert(ViewIdToTransportId(view_id));
+  return ERROR_CODE_NONE;
+}
+
 bool ViewManagerServiceImpl::IsRoot(const ViewId& id) const {
   return root_.get() && *root_ == id;
 }
@@ -387,17 +397,7 @@ void ViewManagerServiceImpl::DestroyViews() {
 void ViewManagerServiceImpl::CreateView(
     Id transport_view_id,
     const Callback<void(ErrorCode)>& callback) {
-  const ViewId view_id(ViewIdFromTransportId(transport_view_id));
-  ErrorCode error_code = ERROR_CODE_NONE;
-  if (view_id.connection_id != id_) {
-    error_code = ERROR_CODE_ILLEGAL_ARGUMENT;
-  } else if (view_map_.find(view_id.view_id) != view_map_.end()) {
-    error_code = ERROR_CODE_VALUE_IN_USE;
-  } else {
-    view_map_[view_id.view_id] = new ServerView(connection_manager_, view_id);
-    known_views_.insert(transport_view_id);
-  }
-  callback.Run(error_code);
+  callback.Run(CreateView(ViewIdFromTransportId(transport_view_id)));
 }
 
 void ViewManagerServiceImpl::DeleteView(
