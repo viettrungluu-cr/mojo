@@ -36,6 +36,8 @@ source_set("view_manager_lib") {
     "server_view.cc",
     "server_view.h",
     "server_view_delegate.h",
+    "view_coordinate_conversions.cc",
+    "view_coordinate_conversions.h",
     "view_manager_service_impl.cc",
     "view_manager_service_impl.h",
     "window_manager_access_policy.cc",
@@ -115,6 +117,7 @@ test("view_manager_unittests") {
 
 test("view_manager_service_unittests") {
   sources = [
+    "view_coordinate_conversions_unittest.cc",
     "view_manager_service_unittest.cc",
   ]
 
@@ -135,6 +138,7 @@ test("view_manager_service_unittests") {
     "//mojo/services/public/interfaces/view_manager",
     "//mojo/services/public/interfaces/window_manager",
     "//testing/gtest",
+    "//ui/gfx:test_support",
     "//ui/gfx/geometry",
   ]
 

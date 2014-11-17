@@ -13,27 +13,20 @@
 #include "mojo/services/public/interfaces/gpu/gpu.mojom.h"
 #include "mojo/services/public/interfaces/surfaces/quads.mojom.h"
 #include "mojo/services/view_manager/connection_manager.h"
+#include "mojo/services/view_manager/server_view.h"
+#include "mojo/services/view_manager/view_coordinate_conversions.h"
 
 namespace mojo {
 namespace service {
 namespace {
 
-gfx::Rect ConvertRectToRoot(const ServerView* view, const gfx::Rect& bounds) {
-  gfx::Point origin(bounds.origin());
-  while (view->parent()) {
-    origin += view->bounds().OffsetFromOrigin();
-    view = view->parent();
-    if (!view->visible())
-      return gfx::Rect();
-  }
-  return gfx::Rect(origin, bounds.size());
-}
-
-void DrawViewTree(Pass* pass, const ServerView* view, gfx::Vector2d offset) {
+void DrawViewTree(Pass* pass,
+                  const ServerView* view,
+                  const gfx::Vector2d& offset) {
   if (!view->visible())
     return;
 
-  gfx::Rect node_bounds = view->bounds() + offset;
+  const gfx::Rect node_bounds = view->bounds() + offset;
   std::vector<const ServerView*> children(view->GetChildren());
   for (std::vector<const ServerView*>::reverse_iterator it = children.rbegin();
        it != children.rend();
@@ -105,9 +98,10 @@ DefaultDisplayManager::~DefaultDisplayManager() {
 
 void DefaultDisplayManager::SchedulePaint(const ServerView* view,
                                           const gfx::Rect& bounds) {
-  if (!view->visible())
+  if (!view->IsDrawn(connection_manager_->root()))
     return;
-  gfx::Rect root_relative_rect = ConvertRectToRoot(view, bounds);
+  const gfx::Rect root_relative_rect =
+      ConvertRectBetweenViews(view, connection_manager_->root(), bounds);
   if (root_relative_rect.IsEmpty())
     return;
   dirty_rect_.Union(root_relative_rect);
