@@ -132,6 +132,23 @@ def run_skytests(args):
   command.append('--no-new-test-results')
   command.append('--no-show-results')
   command.append('--verbose')
+
+  if args.builder_name:
+    command.append('--builder-name')
+    command.append(args.builder_name)
+
+  if args.build_number:
+    command.append('--build-number')
+    command.append(args.build_number)
+
+  if args.master_name:
+    command.append('--master-name')
+    command.append(args.master_name)
+
+  if args.test_results_server:
+    command.append('--test-results-server')
+    command.append(args.test_results_server)
+
   return subprocess.call(command)
 
 
@@ -242,6 +259,17 @@ def main():
   test_parser = subparsers.add_parser('test', parents=[parent_parser],
                                       help='Run unit tests (does not build).')
   test_parser.set_defaults(func=test)
+
+  # Arguments required for uploading to the flakiness dashboard.
+  test_parser.add_argument('--master-name',
+      help='The name of the buildbot master.')
+  test_parser.add_argument('--builder-name',
+      help=('The name of the builder shown on the waterfall running '
+            'this script e.g. Mojo Linux.'))
+  test_parser.add_argument('--build-number',
+      help='The build number of the builder running this script.')
+  test_parser.add_argument('--test-results-server',
+      help='Upload results json files to this appengine server.')
 
   perftest_parser = subparsers.add_parser('perftest', parents=[parent_parser],
       help='Run perf tests (does not build).')
