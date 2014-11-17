@@ -186,6 +186,7 @@ skip_child_includes = [
   'skia',
   'testing',
   'third_party',
+  'sky',
 ]
 
 
