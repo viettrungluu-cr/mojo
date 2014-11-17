@@ -249,9 +249,9 @@ void TestChangeTracker::OnViewInputEvent(Id view_id, EventPtr event) {
   AddChange(change);
 }
 
-void TestChangeTracker::OnViewPropertyChanged(Id view_id,
-                                              String name,
-                                              Array<uint8_t> data) {
+void TestChangeTracker::OnViewSharedPropertyChanged(Id view_id,
+                                                    String name,
+                                                    Array<uint8_t> data) {
   Change change;
   change.type = CHANGE_TYPE_PROPERTY_CHANGED;
   change.view_id = view_id;

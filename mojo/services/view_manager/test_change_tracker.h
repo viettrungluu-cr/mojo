@@ -133,9 +133,9 @@ class TestChangeTracker {
   void OnViewVisibilityChanged(Id view_id, bool visible);
   void OnViewDrawnStateChanged(Id view_id, bool drawn);
   void OnViewInputEvent(Id view_id, EventPtr event);
-  void OnViewPropertyChanged(Id view_id,
-                             String name,
-                             Array<uint8_t> data);
+  void OnViewSharedPropertyChanged(Id view_id,
+                                   String name,
+                                   Array<uint8_t> data);
   void DelegateEmbed(const String& url);
 
  private:

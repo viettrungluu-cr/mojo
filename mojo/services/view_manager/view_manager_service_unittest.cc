@@ -73,10 +73,10 @@ class TestViewManagerClient : public ViewManagerClient {
   void OnViewDrawnStateChanged(uint32_t view, bool drawn) override {
     tracker_.OnViewDrawnStateChanged(view, drawn);
   }
-  void OnViewPropertyChanged(uint32_t view,
-                             const String& name,
-                             Array<uint8_t> new_data) override {
-    tracker_.OnViewPropertyChanged(view, name, new_data.Pass());
+  void OnViewSharedPropertyChanged(uint32_t view,
+                                   const String& name,
+                                   Array<uint8_t> new_data) override {
+    tracker_.OnViewSharedPropertyChanged(view, name, new_data.Pass());
   }
   void OnViewInputEvent(uint32_t view,
                         EventPtr event,

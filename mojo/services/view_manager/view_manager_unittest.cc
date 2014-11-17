@@ -397,10 +397,10 @@ class TestViewManagerClientConnection
                         const Callback<void()>& callback) override {
     tracker()->OnViewInputEvent(view_id, event.Pass());
   }
-  void OnViewPropertyChanged(uint32_t view,
-                             const String& name,
-                             Array<uint8_t> new_data) override {
-    tracker_.OnViewPropertyChanged(view, name, new_data.Pass());
+  void OnViewSharedPropertyChanged(uint32_t view,
+                                   const String& name,
+                                   Array<uint8_t> new_data) override {
+    tracker_.OnViewSharedPropertyChanged(view, name, new_data.Pass());
   }
 
  private:

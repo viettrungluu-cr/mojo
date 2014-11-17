@@ -133,10 +133,8 @@ void ViewManagerServiceImpl::ProcessViewPropertyChanged(
   if (new_data)
     data = Array<uint8_t>::From(*new_data);
 
-  client()->OnViewPropertyChanged(
-      ViewIdToTransportId(view->id()),
-      String(name),
-      data.Pass());
+  client()->OnViewSharedPropertyChanged(ViewIdToTransportId(view->id()),
+                                        String(name), data.Pass());
 }
 
 void ViewManagerServiceImpl::ProcessViewHierarchyChanged(

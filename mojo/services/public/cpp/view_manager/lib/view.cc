@@ -228,8 +228,8 @@ void View::SetVisible(bool value) {
   FOR_EACH_OBSERVER(ViewObserver, observers_, OnViewVisibilityChanged(this));
 }
 
-void View::SetProperty(const std::string& name,
-                       const std::vector<uint8_t>* value) {
+void View::SetSharedProperty(const std::string& name,
+                             const std::vector<uint8_t>* value) {
   std::vector<uint8_t> old_value;
   std::vector<uint8_t>* old_value_ptr = nullptr;
   auto it = properties_.find(name);
@@ -251,8 +251,9 @@ void View::SetProperty(const std::string& name,
     properties_.erase(it);
   }
 
-  FOR_EACH_OBSERVER(ViewObserver, observers_,
-                    OnViewPropertyChanged(this, name, old_value_ptr, value));
+  FOR_EACH_OBSERVER(
+      ViewObserver, observers_,
+      OnViewSharedPropertyChanged(this, name, old_value_ptr, value));
 }
 
 bool View::IsDrawn() const {
@@ -389,6 +390,14 @@ View::~View() {
   //             ViewManagerClientImpl.
   if (manager_)
     static_cast<ViewManagerClientImpl*>(manager_)->RemoveView(id_);
+
+  // Clear properties.
+  for (auto& pair : prop_map_) {
+    if (pair.second.deallocator)
+      (*pair.second.deallocator)(pair.second.value);
+  }
+  prop_map_.clear();
+
   FOR_EACH_OBSERVER(ViewObserver, observers_, OnViewDestroyed(this));
 }
 
@@ -401,6 +410,34 @@ View::View(ViewManager* manager)
       parent_(NULL),
       visible_(true),
       drawn_(false) {
+}
+
+int64 View::SetLocalPropertyInternal(const void* key,
+                                     const char* name,
+                                     PropertyDeallocator deallocator,
+                                     int64 value,
+                                     int64 default_value) {
+  int64 old = GetLocalPropertyInternal(key, default_value);
+  if (value == default_value) {
+    prop_map_.erase(key);
+  } else {
+    Value prop_value;
+    prop_value.name = name;
+    prop_value.value = value;
+    prop_value.deallocator = deallocator;
+    prop_map_[key] = prop_value;
+  }
+  FOR_EACH_OBSERVER(ViewObserver, observers_,
+                    OnViewLocalPropertyChanged(this, key, old));
+  return old;
+}
+
+int64 View::GetLocalPropertyInternal(const void* key,
+                                     int64 default_value) const {
+  std::map<const void*, Value>::const_iterator iter = prop_map_.find(key);
+  if (iter == prop_map_.end())
+    return default_value;
+  return iter->second.value;
 }
 
 void View::LocalDestroy() {

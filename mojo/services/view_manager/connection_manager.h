@@ -172,9 +172,10 @@ class ConnectionManager : public ServerViewDelegate,
                        const ServerView* relative,
                        OrderDirection direction) override;
   void OnWillChangeViewVisibility(const ServerView* view) override;
-  void OnViewPropertyChanged(const ServerView* view,
-                             const std::string& name,
-                             const std::vector<uint8_t>* new_data) override;
+  void OnViewSharedPropertyChanged(
+      const ServerView* view,
+      const std::string& name,
+      const std::vector<uint8_t>* new_data) override;
 
   // WindowManagerInternalClient:
   void DispatchInputEventToView(Id transport_view_id,

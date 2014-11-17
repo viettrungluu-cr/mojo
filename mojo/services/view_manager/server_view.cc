@@ -139,7 +139,7 @@ void ServerView::SetProperty(const std::string& name,
     properties_.erase(it);
   }
 
-  delegate_->OnViewPropertyChanged(this, name, value);
+  delegate_->OnViewSharedPropertyChanged(this, name, value);
 }
 
 bool ServerView::IsDrawn(const ServerView* root) const {

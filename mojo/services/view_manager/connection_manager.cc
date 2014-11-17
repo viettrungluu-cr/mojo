@@ -273,7 +273,7 @@ void ConnectionManager::OnWillChangeViewVisibility(const ServerView* view) {
   }
 }
 
-void ConnectionManager::OnViewPropertyChanged(
+void ConnectionManager::OnViewSharedPropertyChanged(
     const ServerView* view,
     const std::string& name,
     const std::vector<uint8_t>* new_data) {
