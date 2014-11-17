@@ -244,11 +244,6 @@ void Scheduler::DidSwapBuffers() {
   }
 }
 
-void Scheduler::SetSwapUsedIncompleteTile(bool used_incomplete_tile) {
-  state_machine_.SetSwapUsedIncompleteTile(used_incomplete_tile);
-  ProcessScheduledActions();
-}
-
 void Scheduler::DidSwapBuffersComplete() {
   state_machine_.DidSwapBuffersComplete();
   ProcessScheduledActions();
@@ -477,8 +472,9 @@ void Scheduler::BeginRetroFrame() {
                          "Scheduler::BeginRetroFrames all expired",
                          TRACE_EVENT_SCOPE_THREAD);
   } else {
-    BeginImplFrame(begin_retro_frame_args_.front());
+    BeginFrameArgs front = begin_retro_frame_args_.front();
     begin_retro_frame_args_.pop_front();
+    BeginImplFrame(front);
   }
 }
 
@@ -668,9 +664,6 @@ void Scheduler::ProcessScheduledActions() {
         break;
       case SchedulerStateMachine::ACTION_COMMIT:
         client_->ScheduledActionCommit();
-        break;
-      case SchedulerStateMachine::ACTION_UPDATE_VISIBLE_TILES:
-        client_->ScheduledActionUpdateVisibleTiles();
         break;
       case SchedulerStateMachine::ACTION_ACTIVATE_SYNC_TREE:
         client_->ScheduledActionActivateSyncTree();

@@ -42,13 +42,13 @@
             # NOTE: This list of targets is present because
             # mojo_base.gyp:mojo_base cannot be built on iOS, as
             # javascript-related targets cause v8 to be built.
-            '../mojo/edk/mojo_edk_tests.gyp:mojo_public_bindings_unittests',
-            '../mojo/edk/mojo_edk_tests.gyp:mojo_public_environment_unittests',
-            '../mojo/edk/mojo_edk_tests.gyp:mojo_public_system_perftests',
-            '../mojo/edk/mojo_edk_tests.gyp:mojo_public_system_unittests',
-            '../mojo/edk/mojo_edk_tests.gyp:mojo_public_utility_unittests',
+            '../mojo/edk/mojo_edk.gyp:mojo_public_bindings_unittests',
+            '../mojo/edk/mojo_edk.gyp:mojo_public_environment_unittests',
+            '../mojo/edk/mojo_edk.gyp:mojo_public_system_perftests',
+            '../mojo/edk/mojo_edk.gyp:mojo_public_system_unittests',
+            '../mojo/edk/mojo_edk.gyp:mojo_public_utility_unittests',
             '../mojo/edk/mojo_edk.gyp:mojo_system_impl',
-            '../mojo/edk/mojo_edk_tests.gyp:mojo_system_unittests',
+            '../mojo/edk/mojo_edk.gyp:mojo_system_unittests',
             '../mojo/mojo_base.gyp:mojo_common_lib',
             '../mojo/mojo_base.gyp:mojo_common_unittests',
             '../mojo/public/mojo_public.gyp:mojo_cpp_bindings',
@@ -689,6 +689,13 @@
             '../third_party/webrtc/tools/tools.gyp:frame_analyzer',
             '../third_party/webrtc/tools/tools.gyp:rgba_to_i420_converter',
           ],
+          'conditions': [
+            ['remoting==1', {
+              'dependencies': [
+                '../remoting/remoting.gyp:*',
+              ],
+            }],
+          ],
         },  # target_name: chromium_builder_webrtc
         {
           'target_name': 'chromium_builder_chromedriver',
@@ -868,6 +875,8 @@
             '../tools/android/android_tools.gyp:android_tools',
             '../tools/android/android_tools.gyp:memconsumer',
             # Unit test bundles packaged as an apk.
+            '../components/devtools_bridge.gyp:devtools_bridge_tests_apk',
+            '../components/devtools_bridge.gyp:devtools_bridge_tests2_apk',
             '../content/content_shell_and_tests.gyp:content_browsertests_apk',
           ],
         },  # target_name: android_builder_chromium_webrtc

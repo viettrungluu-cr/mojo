@@ -27,9 +27,8 @@ namespace net {
 
 namespace {
 
-// Time period for which a given connection_id should live in the time-wait
-// state.
-int64 FLAGS_quic_time_wait_list_seconds = 5;
+// Time period for which the connection_id should live in time wait state.
+const int kTimeWaitSeconds = 5;
 
 }  // namespace
 
@@ -40,7 +39,8 @@ class ConnectionIdCleanUpAlarm : public QuicAlarm::Delegate {
  public:
   explicit ConnectionIdCleanUpAlarm(
       QuicTimeWaitListManager* time_wait_list_manager)
-      : time_wait_list_manager_(time_wait_list_manager) {}
+      : time_wait_list_manager_(time_wait_list_manager) {
+  }
 
   QuicTime OnAlarm() override {
     time_wait_list_manager_->CleanUpOldConnectionIds();
@@ -67,7 +67,8 @@ class QuicTimeWaitListManager::QueuedPacket {
                QuicEncryptedPacket* packet)
       : server_address_(server_address),
         client_address_(client_address),
-        packet_(packet) {}
+        packet_(packet) {
+  }
 
   const IPEndPoint& server_address() const { return server_address_; }
   const IPEndPoint& client_address() const { return client_address_; }
@@ -87,8 +88,7 @@ QuicTimeWaitListManager::QuicTimeWaitListManager(
     QuicConnectionHelperInterface* helper,
     const QuicVersionVector& supported_versions)
     : helper_(helper),
-      kTimeWaitPeriod_(
-          QuicTime::Delta::FromSeconds(FLAGS_quic_time_wait_list_seconds)),
+      kTimeWaitPeriod_(QuicTime::Delta::FromSeconds(kTimeWaitSeconds)),
       connection_id_clean_up_alarm_(
           helper_->CreateAlarm(new ConnectionIdCleanUpAlarm(this))),
       writer_(writer),
@@ -276,7 +276,6 @@ void QuicTimeWaitListManager::CleanUpOldConnectionIds() {
       break;
     }
     // This connection_id has lived its age, retire it now.
-    DVLOG(1) << "Retiring " << it->first << " from the time-wait state.";
     delete it->second.close_packet;
     connection_id_map_.erase(it);
   }

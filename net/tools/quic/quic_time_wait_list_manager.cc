@@ -28,9 +28,8 @@ namespace tools {
 
 namespace {
 
-// Time period for which a given connection_id should live in the time-wait
-// state.
-int64 FLAGS_quic_time_wait_list_seconds = 5;
+// Time period for which the connection_id should live in time wait state.
+const int kTimeWaitSeconds = 5;
 
 }  // namespace
 
@@ -91,8 +90,7 @@ QuicTimeWaitListManager::QuicTimeWaitListManager(
     EpollServer* epoll_server,
     const QuicVersionVector& supported_versions)
     : epoll_server_(epoll_server),
-      kTimeWaitPeriod_(
-          QuicTime::Delta::FromSeconds(FLAGS_quic_time_wait_list_seconds)),
+      kTimeWaitPeriod_(QuicTime::Delta::FromSeconds(kTimeWaitSeconds)),
       connection_id_clean_up_alarm_(new ConnectionIdCleanUpAlarm(this)),
       clock_(epoll_server_),
       writer_(writer),
@@ -122,7 +120,9 @@ void QuicTimeWaitListManager::AddConnectionIdToTimeWait(
     delete it->second.close_packet;
     connection_id_map_.erase(it);
   }
-  ConnectionIdData data(num_packets, version, clock_.ApproximateNow(),
+  ConnectionIdData data(num_packets,
+                        version,
+                        clock_.ApproximateNow(),
                         close_packet);
   connection_id_map_.insert(make_pair(connection_id, data));
 }
@@ -168,12 +168,12 @@ void QuicTimeWaitListManager::ProcessPacket(
     return;
   }
   if (it->second.close_packet) {
-     QueuedPacket* queued_packet =
-         new QueuedPacket(server_address,
-                          client_address,
-                          it->second.close_packet->Clone());
-     // Takes ownership of the packet.
-     SendOrQueuePacket(queued_packet);
+    QueuedPacket* queued_packet =
+        new QueuedPacket(server_address,
+                         client_address,
+                         it->second.close_packet->Clone());
+    // Takes ownership of the packet.
+    SendOrQueuePacket(queued_packet);
   } else {
     SendPublicReset(server_address,
                     client_address,
@@ -282,7 +282,6 @@ void QuicTimeWaitListManager::CleanUpOldConnectionIds() {
       break;
     }
     // This connection_id has lived its age, retire it now.
-    DVLOG(1) << "Retiring " << it->first << " from the time-wait state.";
     delete it->second.close_packet;
     connection_id_map_.erase(it);
   }

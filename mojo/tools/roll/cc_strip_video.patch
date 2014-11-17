@@ -1,8 +1,8 @@
 diff --git a/cc/BUILD.gn b/cc/BUILD.gn
-index 9b417f0..f753895 100644
+index a296bb0..ab3aab4 100644
 --- a/cc/BUILD.gn
 +++ b/cc/BUILD.gn
-@@ -208,13 +208,6 @@ component("cc") {
+@@ -212,13 +212,6 @@ component("cc") {
      "layers/ui_resource_layer.h",
      "layers/ui_resource_layer_impl.cc",
      "layers/ui_resource_layer_impl.h",
@@ -16,7 +16,7 @@ index 9b417f0..f753895 100644
      "output/begin_frame_args.cc",
      "output/begin_frame_args.h",
      "output/bsp_tree.cc",
-@@ -427,8 +420,6 @@ component("cc") {
+@@ -429,8 +422,6 @@ component("cc") {
      "resources/ui_resource_client.h",
      "resources/ui_resource_request.cc",
      "resources/ui_resource_request.h",
@@ -25,7 +25,7 @@ index 9b417f0..f753895 100644
      "resources/zero_copy_raster_worker_pool.cc",
      "resources/zero_copy_raster_worker_pool.h",
      "scheduler/begin_frame_source.cc",
-@@ -490,7 +481,6 @@ component("cc") {
+@@ -492,7 +483,6 @@ component("cc") {
      "//gpu",
      "//gpu/command_buffer/client:gles2_interface",
      "//gpu/command_buffer/client:gpu_memory_buffer_manager",
@@ -33,7 +33,7 @@ index 9b417f0..f753895 100644
      "//ui/events:events_base",
      "//ui/gfx",
      "//ui/gfx/geometry",
-@@ -559,8 +549,6 @@ source_set("test_support") {
+@@ -563,8 +553,6 @@ source_set("test_support") {
      "test/fake_tile_manager_client.h",
      "test/fake_ui_resource_layer_tree_host_impl.cc",
      "test/fake_ui_resource_layer_tree_host_impl.h",
@@ -42,7 +42,7 @@ index 9b417f0..f753895 100644
      "test/geometry_test_utils.cc",
      "test/geometry_test_utils.h",
      "test/test_in_process_context_provider.cc",
-@@ -713,7 +701,6 @@ test("cc_unittests") {
+@@ -717,7 +705,6 @@ test("cc_unittests") {
      "layers/tiled_layer_unittest.cc",
      "layers/ui_resource_layer_impl_unittest.cc",
      "layers/ui_resource_layer_unittest.cc",
@@ -50,7 +50,7 @@ index 9b417f0..f753895 100644
      "output/begin_frame_args_unittest.cc",
      "output/delegating_renderer_unittest.cc",
      "output/filter_operations_unittest.cc",
-@@ -743,7 +730,6 @@ test("cc_unittests") {
+@@ -747,7 +734,6 @@ test("cc_unittests") {
      "resources/texture_uploader_unittest.cc",
      "resources/tile_manager_unittest.cc",
      "resources/tile_priority_unittest.cc",
@@ -58,7 +58,7 @@ index 9b417f0..f753895 100644
      "scheduler/begin_frame_source_unittest.cc",
      "scheduler/delay_based_time_source_unittest.cc",
      "scheduler/scheduler_state_machine_unittest.cc",
-@@ -772,7 +758,6 @@ test("cc_unittests") {
+@@ -776,7 +762,6 @@ test("cc_unittests") {
      "trees/layer_tree_host_unittest_picture.cc",
      "trees/layer_tree_host_unittest_proxy.cc",
      "trees/layer_tree_host_unittest_scroll.cc",
@@ -66,7 +66,7 @@ index 9b417f0..f753895 100644
      "trees/layer_tree_impl_unittest.cc",
      "trees/occlusion_tracker_unittest.cc",
      "trees/occlusion_unittest.cc",
-@@ -799,7 +784,6 @@ test("cc_unittests") {
+@@ -803,7 +788,6 @@ test("cc_unittests") {
      "//gpu:test_support",
      "//gpu/command_buffer/client:gles2_interface",
      "//gpu/command_buffer/common:gles2_utils",
@@ -74,7 +74,7 @@ index 9b417f0..f753895 100644
      "//testing/gmock",
      "//testing/gtest",
      "//ui/events:events_base",
-@@ -831,7 +815,6 @@ test("cc_perftests") {
+@@ -835,7 +819,6 @@ test("cc_perftests") {
      "//gpu",
      "//gpu:test_support",
      "//gpu/command_buffer/common:gles2_utils",
@@ -253,7 +253,7 @@ index 50333c1..0000000
 -
 -}  // namespace cc
 diff --git a/cc/output/gl_renderer.cc b/cc/output/gl_renderer.cc
-index a472475..4eb1324 100644
+index 75dcfe8..cb6189e 100644
 --- a/cc/output/gl_renderer.cc
 +++ b/cc/output/gl_renderer.cc
 @@ -13,7 +13,6 @@
@@ -265,7 +265,7 @@ index a472475..4eb1324 100644
  #include "cc/output/compositor_frame_metadata.h"
  #include "cc/output/context_provider.h"
 diff --git a/cc/output/renderer_pixeltest.cc b/cc/output/renderer_pixeltest.cc
-index c172869..a0ce823 100644
+index 0c2bc3d..d112ed1 100644
 --- a/cc/output/renderer_pixeltest.cc
 +++ b/cc/output/renderer_pixeltest.cc
 @@ -12,7 +12,6 @@
@@ -421,7 +421,7 @@ index c172869..a0ce823 100644
 -                     color_space);
 -  }
 -
--  virtual void SetUp() override {
+-  void SetUp() override {
 -    GLRendererPixelTest::SetUp();
 -    video_resource_updater_.reset(new VideoResourceUpdater(
 -        output_surface_->context_provider(), resource_provider_.get()));
@@ -636,7 +636,7 @@ index e1c5410..edda34a 100644
  
  namespace cc {
 diff --git a/cc/trees/layer_tree_host_impl_unittest.cc b/cc/trees/layer_tree_host_impl_unittest.cc
-index 9395639..5d2d939 100644
+index e128013..0b9d976 100644
 --- a/cc/trees/layer_tree_host_impl_unittest.cc
 +++ b/cc/trees/layer_tree_host_impl_unittest.cc
 @@ -27,7 +27,6 @@
@@ -671,7 +671,7 @@ index 9395639..5d2d939 100644
  
  namespace cc {
  namespace {
-@@ -95,7 +91,6 @@ class LayerTreeHostImplTest : public testing::Test,
+@@ -94,7 +90,6 @@ class LayerTreeHostImplTest : public testing::Test,
          reduce_memory_result_(true),
          current_limit_bytes_(0),
          current_priority_cutoff_value_(0) {
@@ -679,7 +679,7 @@ index 9395639..5d2d939 100644
    }
  
    LayerTreeSettings DefaultSettings() {
-@@ -5066,18 +5061,6 @@ TEST_F(LayerTreeHostImplTest, LayersFreeTextures) {
+@@ -5151,18 +5146,6 @@ TEST_F(LayerTreeHostImplTest, LayersFreeTextures) {
        LayerImpl::Create(host_impl_->active_tree(), 1);
    root_layer->SetBounds(gfx::Size(10, 10));
  
@@ -698,7 +698,7 @@ index 9395639..5d2d939 100644
    scoped_ptr<IOSurfaceLayerImpl> io_surface_layer =
        IOSurfaceLayerImpl::Create(host_impl_->active_tree(), 5);
    io_surface_layer->SetBounds(gfx::Size(10, 10));
-@@ -6139,16 +6122,6 @@ TEST_F(LayerTreeHostImplTest,
+@@ -6225,16 +6208,6 @@ TEST_F(LayerTreeHostImplTest,
    scoped_ptr<SolidColorLayerImpl> root_layer =
        SolidColorLayerImpl::Create(host_impl_->active_tree(), 1);
  
@@ -716,7 +716,7 @@ index 9395639..5d2d939 100644
    EXPECT_EQ(DRAW_SUCCESS, host_impl_->PrepareToDraw(&frame));
    host_impl_->DrawLayers(&frame, gfx::FrameTime::Now());
 diff --git a/cc/trees/layer_tree_host_unittest.cc b/cc/trees/layer_tree_host_unittest.cc
-index aedd0d9..0859d86 100644
+index 2abf6d3..b0ce5a5 100644
 --- a/cc/trees/layer_tree_host_unittest.cc
 +++ b/cc/trees/layer_tree_host_unittest.cc
 @@ -18,7 +18,6 @@
@@ -727,15 +727,15 @@ index aedd0d9..0859d86 100644
  #include "cc/output/begin_frame_args.h"
  #include "cc/output/compositor_frame_ack.h"
  #include "cc/output/copy_output_request.h"
-@@ -39,7 +38,6 @@
- #include "cc/test/fake_picture_layer_impl.h"
+@@ -41,7 +40,6 @@
+ #include "cc/test/fake_picture_pile.h"
  #include "cc/test/fake_proxy.h"
  #include "cc/test/fake_scoped_ui_resource.h"
 -#include "cc/test/fake_video_frame_provider.h"
  #include "cc/test/geometry_test_utils.h"
  #include "cc/test/layer_tree_test.h"
  #include "cc/test/test_shared_bitmap_manager.h"
-@@ -3972,28 +3970,6 @@ class LayerInvalidateCausesDraw : public LayerTreeHostTest {
+@@ -4149,28 +4147,6 @@ class LayerInvalidateCausesDraw : public LayerTreeHostTest {
    int num_draws_;
  };
  
@@ -765,7 +765,7 @@ index aedd0d9..0859d86 100644
  // to the compositor thread, even though no resources are updated in
  // response to that invalidation.
 diff --git a/cc/trees/layer_tree_host_unittest_context.cc b/cc/trees/layer_tree_host_unittest_context.cc
-index b12a8da..fb05300 100644
+index 134d928..dc34d3c 100644
 --- a/cc/trees/layer_tree_host_unittest_context.cc
 +++ b/cc/trees/layer_tree_host_unittest_context.cc
 @@ -15,8 +15,6 @@

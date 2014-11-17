@@ -52,9 +52,7 @@ class NET_EXPORT_PRIVATE QuicSession : public QuicConnectionVisitorInterface {
     HANDSHAKE_CONFIRMED,
   };
 
-  QuicSession(QuicConnection* connection,
-              const QuicConfig& config,
-              bool is_secure);
+  QuicSession(QuicConnection* connection, const QuicConfig& config);
   void InitializeSession();
 
   ~QuicSession() override;
@@ -212,8 +210,8 @@ class NET_EXPORT_PRIVATE QuicSession : public QuicConnectionVisitorInterface {
   bool IsStreamFlowControlBlocked();
 
   // Returns true if this is a secure QUIC session.
-  bool is_secure() const {
-    return is_secure_;
+  bool IsSecure() const {
+    return connection()->is_secure();
   }
 
   size_t get_max_open_streams() const { return max_open_streams_; }
