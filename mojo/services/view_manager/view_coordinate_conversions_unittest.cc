@@ -35,9 +35,10 @@ class MockServerViewDelegate : public ServerViewDelegate {
                        const ServerView* relative,
                        OrderDirection direction) override {}
   void OnWillChangeViewVisibility(const ServerView* view) override {}
-  void OnViewPropertyChanged(const ServerView* view,
-                             const std::string& name,
-                             const std::vector<uint8_t>* new_data) override {}
+  void OnViewSharedPropertyChanged(
+      const ServerView* view,
+      const std::string& name,
+      const std::vector<uint8_t>* new_data) override {}
 
   DISALLOW_COPY_AND_ASSIGN(MockServerViewDelegate);
 };
