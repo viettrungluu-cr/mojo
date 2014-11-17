@@ -147,4 +147,5 @@ main() async {
   simpleTest();
   await simpleAsyncAwaitTest();
   await pingPongTest();
+  mojoShutdown();
 }

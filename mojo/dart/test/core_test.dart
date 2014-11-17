@@ -303,4 +303,5 @@ main() async {
   basicMessagePipeTest();
   basicDataPipeTest();
   basicSharedBufferTest();
+  mojoShutdown();
 }

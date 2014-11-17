@@ -15,6 +15,7 @@ copy("testing") {
     "test/codec_test.dart",
     "test/core_test.dart",
     "test/handle_watcher_test.dart",
+    "test/handle_finalizer_test.dart",
     "testing/expect.dart",
   ]
   outputs = [

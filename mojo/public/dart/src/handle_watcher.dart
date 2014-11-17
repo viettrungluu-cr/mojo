@@ -159,7 +159,7 @@ class MojoHandleWatcher {
         _close(result[0]);
         break;
       case SHUTDOWN:
-        _shutdown = true;
+        _shutdownHandleWatcher();
         break;
       default:
         throw new Exception("Invalid Command: $command");
@@ -244,6 +244,13 @@ class MojoHandleWatcher {
     }
   }
 
+  void _shutdownHandleWatcher() {
+    _shutdown = true;
+    _tempHandle.h = _controlHandle;
+    _tempHandle.close();
+    _tempHandle.h = RawMojoHandle.INVALID;
+  }
+
   static MojoResult _sendControlData(RawMojoHandle mojoHandle,
                                      SendPort port,
                                      int data) {
@@ -251,8 +258,13 @@ class MojoHandleWatcher {
     if (controlHandle == RawMojoHandle.INVALID) {
       throw new Exception("Found invalid control handle");
     }
+
+    int rawHandle = RawMojoHandle.INVALID;
+    if (mojoHandle != null) {
+      rawHandle = mojoHandle.h;
+    }
     var result = _MojoHandleWatcherNatives.sendControlData(
-        controlHandle, mojoHandle.h, port, data);
+        controlHandle, rawHandle, port, data);
     return new MojoResult(result);
   }
 
@@ -275,7 +287,13 @@ class MojoHandleWatcher {
   }
 
   static void Stop() {
-    _sendControlData(RawMojoHandle.INVALID, null, _encodeCommand(SHUTDOWN));
+    // Send the shutdown command.
+    _sendControlData(null, null, _encodeCommand(SHUTDOWN));
+
+    // Close the control handle.
+    int controlHandle = _MojoHandleWatcherNatives.getControlHandle();
+    var handle = new RawMojoHandle(controlHandle);
+    handle.close();
   }
 
   static MojoResult close(RawMojoHandle mojoHandle) {

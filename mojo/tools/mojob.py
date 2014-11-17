@@ -182,6 +182,8 @@ def darttest(args):
   print 'Running Dart tests in %s ...' % out_dir
   command = []
   command.append('dart')
+  command.append('--checked')
+  command.append('--enable-async')
   command.append(os.path.join('mojo', 'tools', 'dart_test_runner.dart'))
   command.append(os.path.join(out_dir, 'gen'))
   return subprocess.call(command)

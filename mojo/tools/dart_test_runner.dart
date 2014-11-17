@@ -47,6 +47,22 @@ Future<List<String>> findTests(String path) {
 }
 
 
+Future<List<String>> extractVMOptions(String testPath) {
+  var whitespace = new RegExp(r'\s+');
+  var testFile = new File(testPath);
+  return testFile.readAsLines().then((lines) {
+    for (var line in lines) {
+      List<String> words = line.split(whitespace);
+      int vmOptionsIndex = words.indexOf("vmoptions:");
+      if ((words[0] == "//") && (vmOptionsIndex != -1)) {
+        return words.sublist(vmOptionsIndex + 1);
+      }
+    }
+    return [];
+  });
+}
+
+
 // An isolate that runs up to as many tests as there are cores in the system.
 void testRunnerIsolate(List args) {
   // The spawner passes this isolate a send port and Dart's package root.
@@ -64,9 +80,13 @@ void testRunnerIsolate(List args) {
   sp.send("request");
 
   int running_tests = 0;
-  rp.listen((test) {  // Listen for new tests to run.
+  rp.listen((test) async {  // Listen for new tests to run.
+    // Parse the test for special VM options.
+    List<String> vmoptions = await extractVMOptions(test);
     // Tests are run in "checked mode".
-    List testargs = ['--checked', '--enable-async', '-p', package_root, test];
+    List testargs = ['--checked', '--enable-async', '-p', package_root];
+    testargs.addAll(vmoptions);
+    testargs.add(test);
     Process.start(Platform.executable, testargs).then((process) {
       String stderr = "";
 

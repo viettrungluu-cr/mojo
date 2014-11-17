@@ -5,6 +5,7 @@
 part of core;
 
 class _MojoHandleNatives {
+  static int register(MojoHandle handle) native "MojoHandle_Register";
   static int close(int handle) native "MojoHandle_Close";
   static int wait(int handle, int signals, int deadline)
       native "MojoHandle_Wait";
@@ -62,6 +63,10 @@ class RawMojoHandle {
         handles, signals, handles.length, deadline);
   }
 
+  static MojoResult register(MojoHandle handle) {
+    return new MojoResult(_MojoHandleNatives.register(handle));
+  }
+
   static bool isValid(RawMojoHandle h) => (h.h != INVALID);
 
   String toString() => "$h";
@@ -92,15 +97,11 @@ class MojoHandle extends Stream<int> {
 
   MojoHandle(this._handle) : 
       _signals = MojoHandleSignals.READABLE,
-      _eventHandlerAdded = false,
-      _receivePort = new ReceivePort() {
-    _sendPort = _receivePort.sendPort;
-    _controller = new StreamController(sync: true,
-        onListen: _onSubscriptionStateChange,
-        onCancel: _onSubscriptionStateChange,
-        onPause: _onPauseStateChange,
-        onResume: _onPauseStateChange);
-    _controller.addStream(_receivePort);
+      _eventHandlerAdded = false {
+    MojoResult result = RawMojoHandle.register(this);
+    if (!result.isOk) {
+      throw new Exception("Failed to register the MojoHandle");
+    }
   }
 
   void close() {
@@ -110,7 +111,9 @@ class MojoHandle extends Stream<int> {
       // If we're not in the handle watcher, then close the handle manually.
       _handle.close();
     }
-    _receivePort.close();
+    if (_receivePort != null) {
+      _receivePort.close();
+    }
   }
 
   // We wrap the callback provided by clients in listen() with some code to
@@ -139,6 +142,14 @@ class MojoHandle extends Stream<int> {
   StreamSubscription<int> listen(
       void onData(int event),
       {Function onError, void onDone(), bool cancelOnError}) {
+    _receivePort = new ReceivePort();
+    _sendPort = _receivePort.sendPort;
+    _controller = new StreamController(sync: true,
+        onListen: _onSubscriptionStateChange,
+        onCancel: _onSubscriptionStateChange,
+        onPause: _onPauseStateChange,
+        onResume: _onPauseStateChange);
+    _controller.addStream(_receivePort);
 
     assert(!_eventHandlerAdded);
     var res = MojoHandleWatcher.add(_handle, _sendPort, _signals);
