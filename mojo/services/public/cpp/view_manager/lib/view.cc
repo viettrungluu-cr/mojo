@@ -209,6 +209,9 @@ void View::SetBounds(const Rect& bounds) {
   if (!OwnsView(manager_, this))
     return;
 
+  if (bounds_.Equals(bounds))
+    return;
+
   if (manager_)
     static_cast<ViewManagerClientImpl*>(manager_)->SetBounds(id_, bounds);
   LocalSetBounds(bounds_, bounds);
