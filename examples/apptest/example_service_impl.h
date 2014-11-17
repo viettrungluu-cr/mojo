@@ -6,21 +6,25 @@
 #define MOJO_EXAMPLES_TEST_EXAMPLE_SERVICE_IMPL_H_
 
 #include "examples/apptest/example_service.mojom.h"
+#include "mojo/public/cpp/bindings/strong_binding.h"
 #include "mojo/public/cpp/system/macros.h"
 
 namespace mojo {
 
 class ApplicationConnection;
 
-class ExampleServiceImpl : public InterfaceImpl<ExampleService> {
+class ExampleServiceImpl : public ExampleService {
  public:
-  ExampleServiceImpl();
-  virtual ~ExampleServiceImpl();
+  explicit ExampleServiceImpl(InterfaceRequest<ExampleService> request);
+  ~ExampleServiceImpl() override;
 
  private:
-  // InterfaceImpl<ExampleService> overrides.
-  virtual void Ping(uint16_t ping_value) override;
-  virtual void RunCallback(const Callback<void()>& callback) override;
+  // ExampleService overrides.
+  void Ping(uint16_t ping_value) override;
+  void RunCallback(const Callback<void()>& callback) override;
+
+  // ExampleServiceImpl is strongly bound to the pipe.
+  StrongBinding<ExampleService> binding_;
 
   MOJO_DISALLOW_COPY_AND_ASSIGN(ExampleServiceImpl);
 };

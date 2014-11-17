@@ -3,7 +3,6 @@
 // found in the LICENSE file.
 
 #include "examples/apptest/example_client_impl.h"
-#include "mojo/public/cpp/utility/run_loop.h"
 
 namespace mojo {
 

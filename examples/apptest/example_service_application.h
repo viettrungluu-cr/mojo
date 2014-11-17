@@ -7,24 +7,27 @@
 
 #include "examples/apptest/example_service_impl.h"
 #include "mojo/public/cpp/application/application_delegate.h"
-#include "mojo/public/cpp/application/interface_factory_impl.h"
+#include "mojo/public/cpp/application/interface_factory.h"
 #include "mojo/public/cpp/system/macros.h"
 
 namespace mojo {
 
 class ApplicationConnection;
 
-class ExampleServiceApplication : public ApplicationDelegate {
+class ExampleServiceApplication : public ApplicationDelegate,
+                                  public InterfaceFactory<ExampleService> {
  public:
   ExampleServiceApplication();
-  virtual ~ExampleServiceApplication();
+  ~ExampleServiceApplication() override;
 
  private:
   // ApplicationDelegate implementation.
-  virtual bool ConfigureIncomingConnection(
+  bool ConfigureIncomingConnection(
       ApplicationConnection* connection) override;
 
-  InterfaceFactoryImpl<ExampleServiceImpl> example_service_factory_;
+  // InterfaceFactory<ExampleService> implementation.
+  void Create(ApplicationConnection* connection,
+              InterfaceRequest<ExampleService> request) override;
 
   MOJO_DISALLOW_COPY_AND_ASSIGN(ExampleServiceApplication);
 };

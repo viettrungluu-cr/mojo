@@ -16,8 +16,15 @@ ExampleServiceApplication::~ExampleServiceApplication() {}
 
 bool ExampleServiceApplication::ConfigureIncomingConnection(
     ApplicationConnection* connection) {
-  connection->AddService(&example_service_factory_);
+  connection->AddService<ExampleService>(this);
   return true;
+}
+
+void ExampleServiceApplication::Create(
+    ApplicationConnection* connection,
+    InterfaceRequest<ExampleService> request) {
+  // Not leaked: ExampleServiceImpl is strongly bound to the pipe.
+  new ExampleServiceImpl(request.Pass());
 }
 
 }  // namespace mojo

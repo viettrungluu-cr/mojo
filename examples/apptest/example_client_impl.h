@@ -10,15 +10,15 @@
 
 namespace mojo {
 
-class ExampleClientImpl : public InterfaceImpl<ExampleClient> {
+class ExampleClientImpl : public ExampleClient {
  public:
   ExampleClientImpl();
-  virtual ~ExampleClientImpl();
+  ~ExampleClientImpl() override;
 
   int16_t last_pong_value() const { return last_pong_value_; }
 
-  // InterfaceImpl<ExampleClient> overrides.
-  virtual void Pong(uint16_t pong_value) override;
+  // ExampleClient overrides.
+  void Pong(uint16_t pong_value) override;
 
  private:
   int16_t last_pong_value_;

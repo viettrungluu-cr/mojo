@@ -4,16 +4,16 @@
 
 #include "examples/apptest/example_service_impl.h"
 
-#include "mojo/public/cpp/utility/run_loop.h"
-
 namespace mojo {
 
-ExampleServiceImpl::ExampleServiceImpl() {}
+ExampleServiceImpl::ExampleServiceImpl(InterfaceRequest<ExampleService> request)
+    : binding_(this, request.Pass()) {
+}
 
 ExampleServiceImpl::~ExampleServiceImpl() {}
 
 void ExampleServiceImpl::Ping(uint16_t ping_value) {
-  client()->Pong(ping_value);
+  binding_.client()->Pong(ping_value);
 }
 
 void ExampleServiceImpl::RunCallback(const Callback<void()>& callback) {
