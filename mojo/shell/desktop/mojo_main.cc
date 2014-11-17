@@ -105,9 +105,21 @@ int main(int argc, char** argv) {
 
   const base::CommandLine& command_line =
     *base::CommandLine::ForCurrentProcess();
-  if (!command_line.HasSwitch(switches::kEnableExternalApplications) &&
-      (command_line.HasSwitch(switches::kHelp) ||
-       command_line.GetArgs().empty())) {
+
+  const std::set<std::string> all_switches = switches::GetAllSwitches();
+  const base::CommandLine::SwitchMap switches = command_line.GetSwitches();
+  bool found_unknown_switch = false;
+  for (const auto& s : switches) {
+    if (all_switches.find(s.first) == all_switches.end()) {
+      std::cerr << "unknown switch: " << s.first << std::endl;
+      found_unknown_switch = true;
+    }
+  }
+
+  if (found_unknown_switch ||
+      (!command_line.HasSwitch(switches::kEnableExternalApplications) &&
+       (command_line.HasSwitch(switches::kHelp) ||
+        command_line.GetArgs().empty()))) {
     Usage();
     return 0;
   }

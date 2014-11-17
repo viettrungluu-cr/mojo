@@ -5,6 +5,9 @@
 #ifndef MOJO_SHELL_SWITCHES_H_
 #define MOJO_SHELL_SWITCHES_H_
 
+#include <set>
+#include <string>
+
 namespace switches {
 
 // All switches in alphabetical order. The switches should be documented
@@ -20,6 +23,8 @@ extern const char kEnableMultiprocess[];
 extern const char kOrigin[];
 extern const char kSpy[];
 extern const char kURLMappings[];
+
+extern const std::set<std::string> GetAllSwitches();
 
 }  // namespace switches
 

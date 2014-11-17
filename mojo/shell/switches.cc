@@ -4,6 +4,8 @@
 
 #include "mojo/shell/switches.h"
 
+#include "base/basictypes.h"
+
 namespace switches {
 
 // Specify configuration arguments for a Mojo application URL. For example:
@@ -48,5 +50,26 @@ const char kSpy[] = "spy";
 // the to/from url to map. For example, 'a=b,c=d' contains two mappings, the
 // first maps 'a' to 'b' and the second 'c' to 'd'.
 const char kURLMappings[] = "url-mappings";
+
+const char* kSwitchArray[] = {
+  kArgsFor,
+  kChildProcessType,
+  kContentHandlers,
+  kDisableCache,
+  kEnableExternalApplications,
+  kEnableMultiprocess,
+  kHelp,
+  kOrigin,
+  kSpy,
+  kURLMappings
+};
+
+const std::set<std::string> GetAllSwitches() {
+  std::set<std::string> switch_set;
+
+  for (size_t i = 0; i < arraysize(kSwitchArray); ++i)
+    switch_set.insert(kSwitchArray[i]);
+  return switch_set;
+}
 
 }  // namespace switches
