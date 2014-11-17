@@ -8,6 +8,14 @@
 
 namespace switches {
 
+namespace {
+// This controls logging verbosity. It's not strictly a switch for mojo_shell,
+// and isn't included in the public switches, but is included here so that it
+// doesn't trigger an error at startup.
+const char kV[] = "v";
+
+}  // namespace
+
 // Specify configuration arguments for a Mojo application URL. For example:
 // --args-for='mojo:wget http://www.google.com'
 const char kArgsFor[] = "args-for";
@@ -52,6 +60,7 @@ const char kSpy[] = "spy";
 const char kURLMappings[] = "url-mappings";
 
 const char* kSwitchArray[] = {
+  kV,
   kArgsFor,
   kChildProcessType,
   kContentHandlers,
