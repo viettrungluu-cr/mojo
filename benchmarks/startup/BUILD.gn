@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import("//mojo/public/mojo_application.gni")
+
 group("startup") {
   testonly = true
 
@@ -11,7 +13,7 @@ group("startup") {
   ]
 }
 
-shared_library("app") {
+mojo_native_application("app") {
   output_name = "mojo_benchmark_startup"
   testonly = true
 
