@@ -320,11 +320,6 @@ test("external_application_unittests") {
     deps -= [
       ":lib",
       ":external_application_registrar_connection",
-      "//url",
-      "//mojo/application_manager",
-      "//mojo/common",
-      "//mojo/edk/system",
-      "//mojo/environment:chromium",
       "//mojo/shell/domain_socket:tests",
     ]
   }

@@ -124,7 +124,7 @@ bool ChannelEndpoint::OnReadMessage(
 
 void ChannelEndpoint::DetachFromChannel() {
   scoped_refptr<MessagePipe> message_pipe;
-  unsigned port;
+  unsigned port = 0;
   {
     base::AutoLock locker(lock_);
 
