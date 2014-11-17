@@ -34,7 +34,10 @@ class GaneshContext : public GLContext::Observer {
   ~GaneshContext();
 
   // Note: You must be in a GaneshContext::Scope to use GrContext.
-  GrContext* gr() const { DCHECK(InScope()); return context_.get(); }
+  GrContext* gr() const {
+    DCHECK(InScope());
+    return context_.get();
+  }
 
  private:
   bool InScope() const;

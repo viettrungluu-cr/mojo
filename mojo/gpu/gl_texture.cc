@@ -9,9 +9,7 @@
 namespace mojo {
 
 GLTexture::GLTexture(base::WeakPtr<GLContext> context, mojo::Size size)
-    : context_(context),
-      size_(size),
-      texture_id_(0u) {
+    : context_(context), size_(size), texture_id_(0u) {
   DCHECK(context_);
   context_->MakeCurrent();
   glGenTextures(1, &texture_id_);

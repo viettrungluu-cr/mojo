@@ -48,8 +48,7 @@ void GaneshView::OnViewBoundsChanged(mojo::View* view,
 void GaneshView::Draw(const mojo::Size& size) {
   mojo::GaneshContext::Scope scope(&gr_context_);
   mojo::GaneshSurface surface(
-      &gr_context_,
-      make_scoped_ptr(new mojo::GLTexture(gl_context_, size)));
+      &gr_context_, make_scoped_ptr(new mojo::GLTexture(gl_context_, size)));
 
   SkCanvas* canvas = surface.canvas();
 
