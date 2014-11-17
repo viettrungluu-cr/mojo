@@ -8,7 +8,6 @@
 #include <limits>
 #include <utility>
 
-#include "base/synchronization/waitable_event.h"
 #include "cc/resources/picture_pile.h"
 #include "cc/test/fake_picture_pile.h"
 #include "cc/test/impl_side_painting_settings.h"
@@ -16,14 +15,10 @@
 
 namespace cc {
 
-FakePicturePileImpl::FakePicturePileImpl() : playback_allowed_event_(nullptr) {
-}
+FakePicturePileImpl::FakePicturePileImpl() {}
 
-FakePicturePileImpl::FakePicturePileImpl(
-    const PicturePile* other,
-    base::WaitableEvent* playback_allowed_event)
+FakePicturePileImpl::FakePicturePileImpl(const PicturePile* other)
     : PicturePileImpl(other),
-      playback_allowed_event_(playback_allowed_event),
       tile_grid_info_(other->GetTileGridInfoForTesting()) {
 }
 
@@ -39,7 +34,7 @@ scoped_refptr<FakePicturePileImpl> FakePicturePileImpl::CreateFilledPile(
   pile.SetRecordedViewport(gfx::Rect(layer_bounds));
   pile.SetHasAnyRecordings(true);
 
-  auto pile_impl = make_scoped_refptr(new FakePicturePileImpl(&pile, nullptr));
+  auto pile_impl = make_scoped_refptr(new FakePicturePileImpl(&pile));
   for (int x = 0; x < pile_impl->tiling().num_tiles_x(); ++x) {
     for (int y = 0; y < pile_impl->tiling().num_tiles_y(); ++y)
       pile_impl->AddRecordingAt(x, y);
@@ -56,7 +51,7 @@ scoped_refptr<FakePicturePileImpl> FakePicturePileImpl::CreateEmptyPile(
   pile.SetTileGridSize(ImplSidePaintingSettings().default_tile_grid_size);
   pile.SetRecordedViewport(gfx::Rect());
   pile.SetHasAnyRecordings(false);
-  return make_scoped_refptr(new FakePicturePileImpl(&pile, nullptr));
+  return make_scoped_refptr(new FakePicturePileImpl(&pile));
 }
 
 scoped_refptr<FakePicturePileImpl>
@@ -70,7 +65,7 @@ FakePicturePileImpl::CreateEmptyPileThatThinksItHasRecordings(
   // This simulates a false positive for this flag.
   pile.SetRecordedViewport(gfx::Rect());
   pile.SetHasAnyRecordings(true);
-  return make_scoped_refptr(new FakePicturePileImpl(&pile, nullptr));
+  return make_scoped_refptr(new FakePicturePileImpl(&pile));
 }
 
 scoped_refptr<FakePicturePileImpl>
@@ -84,24 +79,9 @@ FakePicturePileImpl::CreateInfiniteFilledPile() {
   pile.SetRecordedViewport(gfx::Rect(size));
   pile.SetHasAnyRecordings(true);
 
-  auto pile_impl = make_scoped_refptr(new FakePicturePileImpl(&pile, nullptr));
+  auto pile_impl = make_scoped_refptr(new FakePicturePileImpl(&pile));
   pile_impl->AddRecordingAt(0, 0);
   return pile_impl;
-}
-
-scoped_refptr<FakePicturePileImpl> FakePicturePileImpl::CreateFromPile(
-    const PicturePile* other,
-    base::WaitableEvent* playback_allowed_event) {
-  return make_scoped_refptr(
-      new FakePicturePileImpl(other, playback_allowed_event));
-}
-
-void FakePicturePileImpl::PlaybackToCanvas(SkCanvas* canvas,
-                                           const gfx::Rect& canvas_rect,
-                                           float contents_scale) const {
-  if (playback_allowed_event_)
-    playback_allowed_event_->Wait();
-  PicturePileImpl::PlaybackToCanvas(canvas, canvas_rect, contents_scale);
 }
 
 void FakePicturePileImpl::AddRecordingAt(int x, int y) {

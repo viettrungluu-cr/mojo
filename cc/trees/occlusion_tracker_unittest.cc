@@ -174,7 +174,7 @@ template <typename Types> class OcclusionTrackerTest : public testing::Test {
 
   virtual void RunMyTest() = 0;
 
-  void TearDown() override { DestroyLayers(); }
+  virtual void TearDown() { DestroyLayers(); }
 
   typename Types::HostType* GetHost();
 

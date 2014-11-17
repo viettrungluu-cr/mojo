@@ -22,23 +22,23 @@ vars = {
   'libcxx_revision': '48198f9110397fff47fe7c37cbfa296be7d44d3d',
   'libcxxabi_revision': '4ad1009ab3a59fa7a6896d74d5e4de5885697f95',
   'sfntly_revision': '1bdaae8fc788a5ac8936d68bf24f37d977a13dac',
-  'skia_revision': '0a81f1ee0edff6542a3a1579277780b67669c782',
+  'skia_revision': 'bc97c9378bf8b89cc17280a2a04a5c3a9405e6ab',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling Skia
   # and V8 without interference from each other.
-  'v8_revision': '9a15b3ade98f52c91e2b42b22bf0d29b97f001f7',
+  'v8_revision': '43ced1bd1528ea8b4d9299d2c8f7c6a81921457b',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling ANGLE
   # and whatever else without interference from each other.
-  "angle_revision": "e1425d95ba0ab095c5d64536bbeb3f78adcbf79f",
+  "angle_revision": "560eef1627abdef65f71021b906e57dc609f47fa",
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling build tools
   # and whatever else without interference from each other.
-  'buildtools_revision': '6ea835db27479b9a5742e48b5e4466af7c2534ff',
+  'buildtools_revision': 'c27f95bd1d9baaef70c879dea375090dd1496147',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling PDFium
   # and whatever else without interference from each other.
-  'pdfium_revision': '56ba90c35c31c77be3f3249fcf2ecf26f6efc62f',
+  'pdfium_revision': '173f919d0ec99a1a973c9d3a82b474f761d5bce1',
   # Three lines of non-changing comments so that
   # the commit queue can handle CLs rolling BoringSSL
   # and whatever else without interference from each other.
@@ -78,7 +78,7 @@ deps = {
    Var('chromium_git') + '/angle/angle.git' + '@' +  Var('angle_revision'),
 
   'src/third_party/icu':
-   Var('chromium_git') + '/chromium/deps/icu52.git' + '@' + '6242e2fbb36f486f2c0addd1c3cef67fc4ed33fb', # from svn revision 292476
+   Var('chromium_git') + '/chromium/deps/icu52.git' + '@' + 'd8b2a9d7b0039a4950ee008c5b1d998902c44c60', # from svn revision 292476
 
   'src/third_party/libc++/trunk':
    Var('chromium_git') + '/chromium/llvm-project/libcxx.git' + '@' +  Var('libcxx_revision'),

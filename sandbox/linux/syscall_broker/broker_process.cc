@@ -98,7 +98,6 @@ bool BrokerProcess::Init(
     _exit(1);
   }
   NOTREACHED();
-  return false;
 }
 
 void BrokerProcess::CloseChannel() {

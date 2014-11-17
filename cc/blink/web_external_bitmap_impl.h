@@ -28,9 +28,9 @@ class WebExternalBitmapImpl : public blink::WebExternalBitmap {
   virtual ~WebExternalBitmapImpl();
 
   // blink::WebExternalBitmap implementation.
-  blink::WebSize size() override;
-  void setSize(blink::WebSize size) override;
-  uint8* pixels() override;
+  virtual blink::WebSize size() override;
+  virtual void setSize(blink::WebSize size) override;
+  virtual uint8* pixels() override;
 
   base::SharedMemory* shared_memory() { return shared_memory_.get(); }
 

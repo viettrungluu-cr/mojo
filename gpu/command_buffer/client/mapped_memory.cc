@@ -26,7 +26,7 @@ MemoryChunk::~MemoryChunk() {}
 MappedMemoryManager::MappedMemoryManager(CommandBufferHelper* helper,
                                          const base::Closure& poll_callback,
                                          size_t unused_memory_reclaim_limit)
-    : chunk_size_multiple_(FencedAllocator::kAllocAlignment),
+    : chunk_size_multiple_(1),
       helper_(helper),
       poll_callback_(poll_callback),
       allocated_memory_(0),

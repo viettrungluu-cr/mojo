@@ -18,10 +18,21 @@ namespace net {
 namespace tools {
 namespace test {
 
-QuicPacketWriter* NiceMockPacketWriterFactory::Create(
-    QuicConnection* /*connection*/) const {
-  return new testing::NiceMock<MockPacketWriter>();
-}
+namespace {
+class NiceMockPacketWriterFactory
+    : public QuicConnection::PacketWriterFactory {
+ public:
+  NiceMockPacketWriterFactory() {}
+  ~NiceMockPacketWriterFactory() override {}
+
+  QuicPacketWriter* Create(QuicConnection* /*connection*/) const override {
+    return new testing::NiceMock<MockPacketWriter>();
+  }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(NiceMockPacketWriterFactory);
+};
+}  // namespace
 
 MockConnection::MockConnection(bool is_server)
     : QuicConnection(kTestConnectionId,
@@ -29,21 +40,7 @@ MockConnection::MockConnection(bool is_server)
                      new testing::NiceMock<MockHelper>(),
                      NiceMockPacketWriterFactory(),
                      /* owns_writer= */ true,
-                     is_server,
-                     /* is_secure= */ false,
-                     QuicSupportedVersions()),
-      helper_(helper()) {
-}
-
-MockConnection::MockConnection(bool is_server, bool is_secure)
-    : QuicConnection(kTestConnectionId,
-                     IPEndPoint(net::test::Loopback4(), kTestPort),
-                     new testing::NiceMock<MockHelper>(),
-                     NiceMockPacketWriterFactory(),
-                     /* owns_writer= */ true,
-                     is_server,
-                     is_secure,
-                     QuicSupportedVersions()),
+                     is_server, QuicSupportedVersions()),
       helper_(helper()) {
 }
 
@@ -53,9 +50,7 @@ MockConnection::MockConnection(IPEndPoint address,
                      new testing::NiceMock<MockHelper>(),
                      NiceMockPacketWriterFactory(),
                      /* owns_writer= */ true,
-                     is_server,
-                     /* is_secure= */ false,
-                     QuicSupportedVersions()),
+                     is_server, QuicSupportedVersions()),
       helper_(helper()) {
 }
 
@@ -66,9 +61,7 @@ MockConnection::MockConnection(QuicConnectionId connection_id,
                      new testing::NiceMock<MockHelper>(),
                      NiceMockPacketWriterFactory(),
                      /* owns_writer= */ true,
-                     is_server,
-                     /* is_secure= */ false,
-                     QuicSupportedVersions()),
+                     is_server, QuicSupportedVersions()),
       helper_(helper()) {
 }
 
@@ -79,9 +72,7 @@ MockConnection::MockConnection(bool is_server,
                      new testing::NiceMock<MockHelper>(),
                      NiceMockPacketWriterFactory(),
                      /* owns_writer= */ true,
-                     is_server,
-                     /* is_secure= */ false,
-                     supported_versions),
+                     is_server, QuicSupportedVersions()),
       helper_(helper()) {
 }
 
@@ -102,8 +93,9 @@ QuicAckFrame MakeAckFrameWithNackRanges(
   return ack;
 }
 
-TestSession::TestSession(QuicConnection* connection, const QuicConfig& config)
-    : QuicSession(connection, config),
+TestSession::TestSession(QuicConnection* connection,
+                         const QuicConfig& config)
+    : QuicSession(connection, config, /*is_secure=*/false),
       crypto_stream_(nullptr) {
   InitializeSession();
 }

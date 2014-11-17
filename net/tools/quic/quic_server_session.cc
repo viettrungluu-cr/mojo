@@ -5,7 +5,7 @@
 #include "net/tools/quic/quic_server_session.h"
 
 #include "base/logging.h"
-#include "net/quic/crypto/cached_network_parameters.h"
+#include "net/quic/crypto/source_address_token.h"
 #include "net/quic/quic_connection.h"
 #include "net/quic/quic_flags.h"
 #include "net/quic/reliable_quic_stream.h"
@@ -16,8 +16,9 @@ namespace tools {
 
 QuicServerSession::QuicServerSession(const QuicConfig& config,
                                      QuicConnection* connection,
-                                     QuicServerSessionVisitor* visitor)
-    : QuicSession(connection, config),
+                                     QuicServerSessionVisitor* visitor,
+                                     bool is_secure)
+    : QuicSession(connection, config, is_secure),
       visitor_(visitor),
       bandwidth_estimate_sent_to_client_(QuicBandwidth::Zero()),
       last_scup_time_(QuicTime::Zero()),

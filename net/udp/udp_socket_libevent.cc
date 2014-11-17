@@ -24,7 +24,6 @@
 #include "net/base/net_errors.h"
 #include "net/base/net_log.h"
 #include "net/base/net_util.h"
-#include "net/base/network_activity_monitor.h"
 #include "net/socket/socket_descriptor.h"
 #include "net/udp/udp_net_log_parameters.h"
 
@@ -415,7 +414,6 @@ void UDPSocketLibevent::LogRead(int result,
 
   base::StatsCounter read_bytes("udp.read_bytes");
   read_bytes.Add(result);
-  NetworkActivityMonitor::GetInstance()->IncrementBytesReceived(result);
 }
 
 int UDPSocketLibevent::CreateSocket(int addr_family) {
@@ -460,7 +458,6 @@ void UDPSocketLibevent::LogWrite(int result,
 
   base::StatsCounter write_bytes("udp.write_bytes");
   write_bytes.Add(result);
-  NetworkActivityMonitor::GetInstance()->IncrementBytesSent(result);
 }
 
 int UDPSocketLibevent::InternalRecvFrom(IOBuffer* buf, int buf_len,

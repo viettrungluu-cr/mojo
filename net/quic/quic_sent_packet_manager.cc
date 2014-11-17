@@ -34,8 +34,8 @@ static const int64 kMinRetransmissionTimeMs = 200;
 static const int64 kMaxRetransmissionTimeMs = 60000;
 static const size_t kMaxRetransmissions = 10;
 
-// Ensure the handshake timer isnt't faster than 10ms.
-// This limits the tenth retransmitted packet to 10s after the initial CHLO.
+// Only exponentially back off the handshake timer 5 times due to a timeout.
+static const size_t kMaxHandshakeRetransmissionBackoffs = 5;
 static const int64 kMinHandshakeTimeoutMs = 10;
 
 // Sends up to two tail loss probes before firing an RTO,
@@ -48,10 +48,6 @@ static const size_t kNumMinRttSamplesAfterQuiescence = 2;
 
 // Number of unpaced packets to send after quiescence.
 static const size_t kInitialUnpacedBurst = 10;
-
-// Fraction of the receive buffer that can be used for encrypted bytes.
-// Allows a 5% overhead for IP and UDP framing, as well as ack only packets.
-static const float kUsableRecieveBufferFraction = 0.95f;
 
 bool HasCryptoHandshake(const TransmissionInfo& transmission_info) {
   if (transmission_info.retransmittable_frames == nullptr) {
@@ -70,22 +66,17 @@ QuicSentPacketManager::QuicSentPacketManager(
     const QuicClock* clock,
     QuicConnectionStats* stats,
     CongestionControlType congestion_control_type,
-    LossDetectionType loss_type,
-    bool is_secure)
+    LossDetectionType loss_type)
     : unacked_packets_(),
       is_server_(is_server),
       clock_(clock),
       stats_(stats),
       debug_delegate_(nullptr),
       network_change_visitor_(nullptr),
-      initial_congestion_window_(is_secure ? kInitialCongestionWindowSecure
-                                           : kInitialCongestionWindowInsecure),
-      send_algorithm_(
-          SendAlgorithmInterface::Create(clock,
-                                         &rtt_stats_,
-                                         congestion_control_type,
-                                         stats,
-                                         initial_congestion_window_)),
+      send_algorithm_(SendAlgorithmInterface::Create(clock,
+                                                     &rtt_stats_,
+                                                     congestion_control_type,
+                                                     stats)),
       loss_algorithm_(LossDetectionInterface::Create(loss_type)),
       n_connection_simulation_(false),
       receive_buffer_bytes_(kDefaultSocketReceiveBuffer),
@@ -125,17 +116,15 @@ void QuicSentPacketManager::SetFromConfig(const QuicConfig& config) {
       rtt_stats_.set_recent_min_rtt_window(
           QuicTime::Delta::FromSeconds(FLAGS_quic_recent_min_rtt_window_s));
     }
-    send_algorithm_.reset(SendAlgorithmInterface::Create(
-        clock_, &rtt_stats_, kBBR, stats_, initial_congestion_window_));
+    send_algorithm_.reset(
+        SendAlgorithmInterface::Create(clock_, &rtt_stats_, kBBR, stats_));
   }
   if (config.HasReceivedConnectionOptions() &&
       ContainsQuicTag(config.ReceivedConnectionOptions(), kRENO)) {
-    send_algorithm_.reset(SendAlgorithmInterface::Create(
-        clock_, &rtt_stats_, kReno, stats_, initial_congestion_window_));
+    send_algorithm_.reset(
+        SendAlgorithmInterface::Create(clock_, &rtt_stats_, kReno, stats_));
   }
-  if (HasClientSentConnectionOption(config, kPACE) ||
-      (FLAGS_quic_allow_bbr &&
-       HasClientSentConnectionOption(config, kTBBR))) {
+  if (HasClientSentConnectionOption(config, kPACE)) {
     EnablePacing();
   }
   if (HasClientSentConnectionOption(config, k1CON)) {
@@ -156,7 +145,7 @@ void QuicSentPacketManager::SetFromConfig(const QuicConfig& config) {
         max(kMinSocketReceiveBuffer,
             static_cast<QuicByteCount>(config.ReceivedSocketReceiveBuffer()));
   }
-  send_algorithm_->SetFromConfig(config, is_server_, using_pacing_);
+  send_algorithm_->SetFromConfig(config, is_server_);
 
   if (network_change_visitor_ != nullptr) {
     network_change_visitor_->OnCongestionWindowChange();
@@ -606,7 +595,10 @@ void QuicSentPacketManager::OnRetransmissionTimeout() {
 
 void QuicSentPacketManager::RetransmitCryptoPackets() {
   DCHECK_EQ(HANDSHAKE_MODE, GetRetransmissionMode());
-  ++consecutive_crypto_retransmission_count_;
+  // TODO(ianswett): Typical TCP implementations only retransmit 5 times.
+  consecutive_crypto_retransmission_count_ =
+      min(kMaxHandshakeRetransmissionBackoffs,
+          consecutive_crypto_retransmission_count_ + 1);
   bool packet_retransmitted = false;
   QuicPacketSequenceNumber sequence_number = unacked_packets_.GetLeastUnacked();
   for (QuicUnackedPacketMap::const_iterator it = unacked_packets_.begin();
@@ -765,8 +757,7 @@ QuicTime::Delta QuicSentPacketManager::TimeUntilSend(
   if (pending_timer_transmission_count_ > 0) {
     return QuicTime::Delta::Zero();
   }
-  if (unacked_packets_.bytes_in_flight() >=
-      kUsableRecieveBufferFraction * receive_buffer_bytes_) {
+  if (unacked_packets_.bytes_in_flight() >= receive_buffer_bytes_) {
     return QuicTime::Delta::Infinite();
   }
   return send_algorithm_->TimeUntilSend(

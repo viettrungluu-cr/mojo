@@ -25,7 +25,6 @@
 #include "cc/output/output_surface.h"
 #include "cc/quads/draw_quad.h"
 #include "cc/quads/io_surface_draw_quad.h"
-#include "cc/quads/tile_draw_quad.h"
 #include "cc/resources/prioritized_resource.h"
 #include "cc/resources/prioritized_resource_manager.h"
 #include "cc/resources/resource_update_queue.h"
@@ -37,7 +36,6 @@
 #include "cc/test/fake_painted_scrollbar_layer.h"
 #include "cc/test/fake_picture_layer.h"
 #include "cc/test/fake_picture_layer_impl.h"
-#include "cc/test/fake_picture_pile.h"
 #include "cc/test/fake_proxy.h"
 #include "cc/test/fake_scoped_ui_resource.h"
 #include "cc/test/geometry_test_utils.h"
@@ -417,13 +415,12 @@ MULTI_THREAD_TEST_F(LayerTreeHostTestSetNeedsRedraw);
 class LayerTreeHostTestSetNeedsRedrawRect : public LayerTreeHostTest {
  public:
   LayerTreeHostTestSetNeedsRedrawRect()
-      : num_draws_(0), bounds_(50, 50), invalid_rect_(10, 10, 20, 20) {}
+      : num_draws_(0),
+        bounds_(50, 50),
+        invalid_rect_(10, 10, 20, 20),
+        root_layer_(ContentLayer::Create(&client_)) {}
 
   void BeginTest() override {
-    if (layer_tree_host()->settings().impl_side_painting)
-      root_layer_ = FakePictureLayer::Create(&client_);
-    else
-      root_layer_ = ContentLayer::Create(&client_);
     root_layer_->SetIsDrawable(true);
     root_layer_->SetBounds(bounds_);
     layer_tree_host()->SetRootLayer(root_layer_);
@@ -467,7 +464,7 @@ class LayerTreeHostTestSetNeedsRedrawRect : public LayerTreeHostTest {
   const gfx::Size bounds_;
   const gfx::Rect invalid_rect_;
   FakeContentLayerClient client_;
-  scoped_refptr<Layer> root_layer_;
+  scoped_refptr<ContentLayer> root_layer_;
 };
 
 SINGLE_AND_MULTI_THREAD_TEST_F(LayerTreeHostTestSetNeedsRedrawRect);
@@ -482,10 +479,7 @@ class LayerTreeHostTestNoExtraCommitFromInvalidate : public LayerTreeHostTest {
     root_layer_ = Layer::Create();
     root_layer_->SetBounds(gfx::Size(10, 20));
 
-    if (layer_tree_host()->settings().impl_side_painting)
-      scaled_layer_ = FakePictureLayer::Create(&client_);
-    else
-      scaled_layer_ = FakeContentLayer::Create(&client_);
+    scaled_layer_ = FakeContentLayer::Create(&client_);
     scaled_layer_->SetBounds(gfx::Size(1, 1));
     root_layer_->AddChild(scaled_layer_);
 
@@ -503,15 +497,10 @@ class LayerTreeHostTestNoExtraCommitFromInvalidate : public LayerTreeHostTest {
   void DidCommit() override {
     switch (layer_tree_host()->source_frame_number()) {
       case 1:
-        // SetBounds grows the layer and exposes new content.
-        if (layer_tree_host()->settings().impl_side_painting) {
-          scaled_layer_->SetBounds(gfx::Size(4, 4));
-        } else {
-          // Changing the device scale factor causes a commit. It also changes
-          // the content bounds of |scaled_layer_|, which should not generate
-          // a second commit as a result.
-          layer_tree_host()->SetDeviceScaleFactor(4.f);
-        }
+        // Changing the device scale factor causes a commit. It also changes
+        // the content bounds of |scaled_layer_|, which should not generate
+        // a second commit as a result.
+        layer_tree_host()->SetDeviceScaleFactor(4.f);
         break;
       default:
         // No extra commits.
@@ -527,7 +516,7 @@ class LayerTreeHostTestNoExtraCommitFromInvalidate : public LayerTreeHostTest {
  private:
   FakeContentLayerClient client_;
   scoped_refptr<Layer> root_layer_;
-  scoped_refptr<Layer> scaled_layer_;
+  scoped_refptr<FakeContentLayer> scaled_layer_;
 };
 
 SINGLE_AND_MULTI_THREAD_TEST_F(LayerTreeHostTestNoExtraCommitFromInvalidate);
@@ -594,13 +583,12 @@ SINGLE_AND_MULTI_THREAD_TEST_F(
 class LayerTreeHostTestSetNextCommitForcesRedraw : public LayerTreeHostTest {
  public:
   LayerTreeHostTestSetNextCommitForcesRedraw()
-      : num_draws_(0), bounds_(50, 50), invalid_rect_(10, 10, 20, 20) {}
+      : num_draws_(0),
+        bounds_(50, 50),
+        invalid_rect_(10, 10, 20, 20),
+        root_layer_(ContentLayer::Create(&client_)) {}
 
   void BeginTest() override {
-    if (layer_tree_host()->settings().impl_side_painting)
-      root_layer_ = FakePictureLayer::Create(&client_);
-    else
-      root_layer_ = ContentLayer::Create(&client_);
     root_layer_->SetIsDrawable(true);
     root_layer_->SetBounds(bounds_);
     layer_tree_host()->SetRootLayer(root_layer_);
@@ -677,7 +665,7 @@ class LayerTreeHostTestSetNextCommitForcesRedraw : public LayerTreeHostTest {
   const gfx::Size bounds_;
   const gfx::Rect invalid_rect_;
   FakeContentLayerClient client_;
-  scoped_refptr<Layer> root_layer_;
+  scoped_refptr<ContentLayer> root_layer_;
 };
 
 SINGLE_AND_MULTI_THREAD_BLOCKNOTIFY_TEST_F(
@@ -687,31 +675,22 @@ SINGLE_AND_MULTI_THREAD_BLOCKNOTIFY_TEST_F(
 // its damage is preserved until the next time it is drawn.
 class LayerTreeHostTestUndrawnLayersDamageLater : public LayerTreeHostTest {
  public:
-  LayerTreeHostTestUndrawnLayersDamageLater() {}
+  LayerTreeHostTestUndrawnLayersDamageLater()
+      : root_layer_(ContentLayer::Create(&client_)) {}
 
   void SetupTree() override {
-    if (layer_tree_host()->settings().impl_side_painting)
-      root_layer_ = FakePictureLayer::Create(&client_);
-    else
-      root_layer_ = ContentLayer::Create(&client_);
     root_layer_->SetIsDrawable(true);
     root_layer_->SetBounds(gfx::Size(50, 50));
     layer_tree_host()->SetRootLayer(root_layer_);
 
     // The initially transparent layer has a larger child layer, which is
     // not initially drawn because of the this (parent) layer.
-    if (layer_tree_host()->settings().impl_side_painting)
-      parent_layer_ = FakePictureLayer::Create(&client_);
-    else
-      parent_layer_ = FakeContentLayer::Create(&client_);
+    parent_layer_ = FakeContentLayer::Create(&client_);
     parent_layer_->SetBounds(gfx::Size(15, 15));
     parent_layer_->SetOpacity(0.0f);
     root_layer_->AddChild(parent_layer_);
 
-    if (layer_tree_host()->settings().impl_side_painting)
-      child_layer_ = FakePictureLayer::Create(&client_);
-    else
-      child_layer_ = FakeContentLayer::Create(&client_);
+    child_layer_ = FakeContentLayer::Create(&client_);
     child_layer_->SetBounds(gfx::Size(25, 25));
     parent_layer_->AddChild(child_layer_);
 
@@ -776,9 +755,9 @@ class LayerTreeHostTestUndrawnLayersDamageLater : public LayerTreeHostTest {
 
  private:
   FakeContentLayerClient client_;
-  scoped_refptr<Layer> root_layer_;
-  scoped_refptr<Layer> parent_layer_;
-  scoped_refptr<Layer> child_layer_;
+  scoped_refptr<ContentLayer> root_layer_;
+  scoped_refptr<FakeContentLayer> parent_layer_;
+  scoped_refptr<FakeContentLayer> child_layer_;
 };
 
 SINGLE_AND_MULTI_THREAD_TEST_F(LayerTreeHostTestUndrawnLayersDamageLater);
@@ -1151,27 +1130,16 @@ class ContentLayerWithUpdateTracking : public ContentLayer {
 // from being updated during commit.
 class LayerTreeHostTestOpacityChange : public LayerTreeHostTest {
  public:
-  LayerTreeHostTestOpacityChange() : test_opacity_change_delegate_() {}
+  LayerTreeHostTestOpacityChange()
+      : test_opacity_change_delegate_(),
+        update_check_layer_(ContentLayerWithUpdateTracking::Create(
+            &test_opacity_change_delegate_)) {
+    test_opacity_change_delegate_.SetTestLayer(update_check_layer_.get());
+  }
 
   void BeginTest() override {
-    if (layer_tree_host()->settings().impl_side_painting) {
-      update_check_picture_layer_ =
-          FakePictureLayer::Create(&test_opacity_change_delegate_);
-      test_opacity_change_delegate_.SetTestLayer(
-          update_check_picture_layer_.get());
-      is_impl_paint_ = true;
-    } else {
-      update_check_content_layer_ = ContentLayerWithUpdateTracking::Create(
-          &test_opacity_change_delegate_);
-      test_opacity_change_delegate_.SetTestLayer(
-          update_check_content_layer_.get());
-      is_impl_paint_ = false;
-    }
     layer_tree_host()->SetViewportSize(gfx::Size(10, 10));
-    if (layer_tree_host()->settings().impl_side_painting)
-      layer_tree_host()->root_layer()->AddChild(update_check_picture_layer_);
-    else
-      layer_tree_host()->root_layer()->AddChild(update_check_content_layer_);
+    layer_tree_host()->root_layer()->AddChild(update_check_layer_);
 
     PostSetNeedsCommitToMainThread();
   }
@@ -1180,36 +1148,47 @@ class LayerTreeHostTestOpacityChange : public LayerTreeHostTest {
 
   void AfterTest() override {
     // Update() should have been called once.
-    if (is_impl_paint_)
-      EXPECT_EQ(1u, update_check_picture_layer_->update_count());
-    else
-      EXPECT_EQ(1, update_check_content_layer_->PaintContentsCount());
+    EXPECT_EQ(1, update_check_layer_->PaintContentsCount());
   }
 
  private:
   TestOpacityChangeLayerDelegate test_opacity_change_delegate_;
-  scoped_refptr<ContentLayerWithUpdateTracking> update_check_content_layer_;
-  scoped_refptr<FakePictureLayer> update_check_picture_layer_;
-  bool is_impl_paint_;
+  scoped_refptr<ContentLayerWithUpdateTracking> update_check_layer_;
 };
 
 MULTI_THREAD_TEST_F(LayerTreeHostTestOpacityChange);
 
+class NoScaleContentLayer : public ContentLayer {
+ public:
+  static scoped_refptr<NoScaleContentLayer> Create(ContentLayerClient* client) {
+    return make_scoped_refptr(new NoScaleContentLayer(client));
+  }
+
+  void CalculateContentsScale(float ideal_contents_scale,
+                              float* contents_scale_x,
+                              float* contents_scale_y,
+                              gfx::Size* contentBounds) override {
+    // Skip over the ContentLayer's method to the base Layer class.
+    Layer::CalculateContentsScale(ideal_contents_scale,
+                                  contents_scale_x,
+                                  contents_scale_y,
+                                  contentBounds);
+  }
+
+ private:
+  explicit NoScaleContentLayer(ContentLayerClient* client)
+      : ContentLayer(client) {}
+  ~NoScaleContentLayer() override {}
+};
+
 class LayerTreeHostTestDeviceScaleFactorScalesViewportAndLayers
     : public LayerTreeHostTest {
  public:
-  LayerTreeHostTestDeviceScaleFactorScalesViewportAndLayers() {}
-
-  void InitializeSettings(LayerTreeSettings* settings) override {
-    // PictureLayer can only be used with impl side painting enabled.
-    settings->impl_side_painting = true;
-  }
+  LayerTreeHostTestDeviceScaleFactorScalesViewportAndLayers()
+      : root_layer_(NoScaleContentLayer::Create(&client_)),
+        child_layer_(ContentLayer::Create(&client_)) {}
 
   void BeginTest() override {
-    client_.set_fill_with_nonsolid_color(true);
-    root_layer_ = FakePictureLayer::Create(&client_);
-    child_layer_ = FakePictureLayer::Create(&client_);
-
     layer_tree_host()->SetViewportSize(gfx::Size(60, 60));
     layer_tree_host()->SetDeviceScaleFactor(1.5);
     EXPECT_EQ(gfx::Size(60, 60), layer_tree_host()->device_viewport_size());
@@ -1240,10 +1219,8 @@ class LayerTreeHostTestDeviceScaleFactorScalesViewportAndLayers
     // Device viewport is scaled.
     EXPECT_EQ(gfx::Size(60, 60), impl->DrawViewportSize());
 
-    FakePictureLayerImpl* root =
-        static_cast<FakePictureLayerImpl*>(impl->active_tree()->root_layer());
-    FakePictureLayerImpl* child = static_cast<FakePictureLayerImpl*>(
-        impl->active_tree()->root_layer()->children()[0]);
+    LayerImpl* root = impl->active_tree()->root_layer();
+    LayerImpl* child = impl->active_tree()->root_layer()->children()[0];
 
     // Positions remain in layout pixels.
     EXPECT_EQ(gfx::Point(0, 0), root->position());
@@ -1267,8 +1244,10 @@ class LayerTreeHostTestDeviceScaleFactorScalesViewportAndLayers
     EXPECT_RECT_EQ(gfx::Rect(0, 0, 60, 60),
                    root->render_surface()->content_rect());
 
-    // The max tiling scale of the child should be scaled.
-    EXPECT_FLOAT_EQ(1.5f, child->MaximumTilingContentsScale());
+    // The content bounds of the child should be scaled.
+    gfx::Size child_bounds_scaled =
+        gfx::ToCeiledSize(gfx::ScaleSize(child->bounds(), 1.5));
+    EXPECT_EQ(child_bounds_scaled, child->content_bounds());
 
     gfx::Transform scale_transform;
     scale_transform.Scale(impl->device_scale_factor(),
@@ -1282,13 +1261,13 @@ class LayerTreeHostTestDeviceScaleFactorScalesViewportAndLayers
     EXPECT_EQ(root_screen_space_transform, root->screen_space_transform());
 
     // The child is at position 2,2, which is transformed to 3,3 after the scale
-    gfx::Transform child_transform;
-    child_transform.Translate(3.f, 3.f);
-    child_transform.Scale(child->MaximumTilingContentsScale(),
-                          child->MaximumTilingContentsScale());
+    gfx::Transform child_screen_space_transform;
+    child_screen_space_transform.Translate(3.f, 3.f);
+    gfx::Transform child_draw_transform = child_screen_space_transform;
 
-    EXPECT_TRANSFORMATION_MATRIX_EQ(child_transform, child->draw_transform());
-    EXPECT_TRANSFORMATION_MATRIX_EQ(child_transform,
+    EXPECT_TRANSFORMATION_MATRIX_EQ(child_draw_transform,
+                                    child->draw_transform());
+    EXPECT_TRANSFORMATION_MATRIX_EQ(child_screen_space_transform,
                                     child->screen_space_transform());
 
     EndTest();
@@ -1298,13 +1277,12 @@ class LayerTreeHostTestDeviceScaleFactorScalesViewportAndLayers
 
  private:
   FakeContentLayerClient client_;
-  scoped_refptr<FakePictureLayer> root_layer_;
-  scoped_refptr<FakePictureLayer> child_layer_;
+  scoped_refptr<NoScaleContentLayer> root_layer_;
+  scoped_refptr<ContentLayer> child_layer_;
 };
 
 MULTI_THREAD_TEST_F(LayerTreeHostTestDeviceScaleFactorScalesViewportAndLayers);
 
-// TODO(sohanjg) : Remove it once impl-side painting ships everywhere.
 // Verify atomicity of commits and reuse of textures.
 class LayerTreeHostTestDirectRendererAtomicCommit : public LayerTreeHostTest {
  public:
@@ -1413,7 +1391,6 @@ class LayerTreeHostTestDirectRendererAtomicCommit : public LayerTreeHostTest {
 MULTI_THREAD_DIRECT_RENDERER_NOIMPL_TEST_F(
     LayerTreeHostTestDirectRendererAtomicCommit);
 
-// TODO(sohanjg) : Remove it once impl-side painting ships everywhere.
 class LayerTreeHostTestDelegatingRendererAtomicCommit
     : public LayerTreeHostTestDirectRendererAtomicCommit {
  public:
@@ -1481,7 +1458,6 @@ static void SetLayerPropertiesForTesting(Layer* layer,
   layer->SetContentsOpaque(opaque);
 }
 
-// TODO(sohanjg) : Remove it once impl-side painting ships everywhere.
 class LayerTreeHostTestAtomicCommitWithPartialUpdate
     : public LayerTreeHostTest {
  public:
@@ -1655,7 +1631,6 @@ class LayerTreeHostTestAtomicCommitWithPartialUpdate
 SINGLE_AND_MULTI_THREAD_DIRECT_RENDERER_TEST_F(
     LayerTreeHostTestAtomicCommitWithPartialUpdate);
 
-// TODO(sohanjg) : Make it work with impl-side painting.
 class LayerTreeHostTestSurfaceNotAllocatedForLayersOutsideMemoryLimit
     : public LayerTreeHostTest {
  protected:
@@ -1976,15 +1951,11 @@ class LayerTreeHostTestContinuousInvalidate : public LayerTreeHostTest {
     layer_tree_host()->SetViewportSize(gfx::Size(10, 10));
     layer_tree_host()->root_layer()->SetBounds(gfx::Size(10, 10));
 
-    if (layer_tree_host()->settings().impl_side_painting)
-      layer_ = FakePictureLayer::Create(&client_);
-    else
-      layer_ = FakeContentLayer::Create(&client_);
-
-    layer_->SetBounds(gfx::Size(10, 10));
-    layer_->SetPosition(gfx::PointF(0.f, 0.f));
-    layer_->SetIsDrawable(true);
-    layer_tree_host()->root_layer()->AddChild(layer_);
+    content_layer_ = ContentLayer::Create(&client_);
+    content_layer_->SetBounds(gfx::Size(10, 10));
+    content_layer_->SetPosition(gfx::PointF(0.f, 0.f));
+    content_layer_->SetIsDrawable(true);
+    layer_tree_host()->root_layer()->AddChild(content_layer_);
 
     PostSetNeedsCommitToMainThread();
   }
@@ -1992,7 +1963,7 @@ class LayerTreeHostTestContinuousInvalidate : public LayerTreeHostTest {
   void DidCommitAndDrawFrame() override {
     if (num_draw_layers_ == 2)
       return;
-    layer_->SetNeedsDisplay();
+    content_layer_->SetNeedsDisplay();
   }
 
   void CommitCompleteOnThread(LayerTreeHostImpl* impl) override {
@@ -2013,12 +1984,12 @@ class LayerTreeHostTestContinuousInvalidate : public LayerTreeHostTest {
 
  private:
   FakeContentLayerClient client_;
-  scoped_refptr<Layer> layer_;
+  scoped_refptr<Layer> content_layer_;
   int num_commit_complete_;
   int num_draw_layers_;
 };
 
-SINGLE_AND_MULTI_THREAD_TEST_F(LayerTreeHostTestContinuousInvalidate);
+MULTI_THREAD_NOIMPL_TEST_F(LayerTreeHostTestContinuousInvalidate);
 
 class LayerTreeHostTestDeferCommits : public LayerTreeHostTest {
  public:
@@ -2221,7 +2192,6 @@ TEST(LayerTreeHostTest,
   EXPECT_EQ(0u, host->MaxPartialTextureUpdates());
 }
 
-// TODO(sohanjg) : Remove it once impl-side painting ships everywhere.
 class LayerTreeHostTestShutdownWithOnlySomeResourcesEvicted
     : public LayerTreeHostTest {
  public:
@@ -2626,7 +2596,9 @@ class MockIOSurfaceWebGraphicsContext3D : public TestWebGraphicsContext3D {
     test_capabilities_.gpu.texture_rectangle = true;
   }
 
-  GLuint createTexture() override { return 1; }
+  virtual GLuint createTexture() override {
+    return 1;
+  }
   MOCK_METHOD1(activeTexture, void(GLenum texture));
   MOCK_METHOD2(bindTexture, void(GLenum target,
                                  GLuint texture_id));
@@ -4510,10 +4482,7 @@ class LayerTreeHostTestSetMemoryPolicyOnLostOutputSurface
   }
 
   void SetupTree() override {
-    if (layer_tree_host()->settings().impl_side_painting)
-      root_ = FakePictureLayer::Create(&client_);
-    else
-      root_ = FakeContentLayer::Create(&client_);
+    root_ = FakeContentLayer::Create(&client_);
     root_->SetBounds(gfx::Size(20, 20));
     layer_tree_host()->SetRootLayer(root_);
     LayerTreeHostTest::SetupTree();
@@ -4555,9 +4524,10 @@ class LayerTreeHostTestSetMemoryPolicyOnLostOutputSurface
   size_t first_output_surface_memory_limit_;
   size_t second_output_surface_memory_limit_;
   FakeContentLayerClient client_;
-  scoped_refptr<Layer> root_;
+  scoped_refptr<FakeContentLayer> root_;
 };
 
+// No output to copy for delegated renderers.
 SINGLE_AND_MULTI_THREAD_TEST_F(
     LayerTreeHostTestSetMemoryPolicyOnLostOutputSurface);
 
@@ -5030,8 +5000,7 @@ class LayerTreeHostTestGpuRasterizationForced : public LayerTreeHostTest {
   void SetupTree() override {
     LayerTreeHostTest::SetupTree();
 
-    scoped_refptr<FakePictureLayer> layer =
-        FakePictureLayer::Create(&layer_client_);
+    scoped_refptr<PictureLayer> layer = PictureLayer::Create(&layer_client_);
     layer->SetBounds(gfx::Size(10, 10));
     layer->SetIsDrawable(true);
     layer_tree_host()->root_layer()->AddChild(layer);
@@ -5361,358 +5330,4 @@ class LayerTreeHostAcceptsDeltasFromImplWithoutRootLayer
 };
 
 MULTI_THREAD_TEST_F(LayerTreeHostAcceptsDeltasFromImplWithoutRootLayer);
-
-class LayerTreeHostTestCrispUpAfterPinchEnds : public LayerTreeHostTest {
- protected:
-  LayerTreeHostTestCrispUpAfterPinchEnds()
-      : playback_allowed_event_(true, true) {}
-
-  void InitializeSettings(LayerTreeSettings* settings) override {
-    settings->impl_side_painting = true;
-  }
-
-  void SetupTree() override {
-    frame_ = 1;
-    posted_ = false;
-    client_.set_fill_with_nonsolid_color(true);
-
-    scoped_refptr<Layer> root = Layer::Create();
-    root->SetBounds(gfx::Size(500, 500));
-
-    scoped_refptr<Layer> pinch = Layer::Create();
-    pinch->SetBounds(gfx::Size(500, 500));
-    pinch->SetScrollClipLayerId(root->id());
-    pinch->SetIsContainerForFixedPositionLayers(true);
-    root->AddChild(pinch);
-
-    scoped_ptr<FakePicturePile> pile(new FakePicturePile);
-    pile->SetPlaybackAllowedEvent(&playback_allowed_event_);
-    scoped_refptr<FakePictureLayer> layer =
-        FakePictureLayer::CreateWithRecordingSource(&client_, pile.Pass());
-    layer->SetBounds(gfx::Size(500, 500));
-    layer->SetContentsOpaque(true);
-    pinch->AddChild(layer);
-
-    layer_tree_host()->RegisterViewportLayers(root, pinch, pinch);
-    layer_tree_host()->SetPageScaleFactorAndLimits(1.f, 1.f, 4.f);
-    layer_tree_host()->SetRootLayer(root);
-    LayerTreeHostTest::SetupTree();
-  }
-
-  // Returns the delta scale of all quads in the frame's root pass from their
-  // ideal, or 0 if they are not all the same.
-  float FrameQuadScaleDeltaFromIdeal(LayerTreeHostImpl::FrameData* frame_data) {
-    if (frame_data->has_no_damage)
-      return 0.f;
-    float frame_scale = 0.f;
-    RenderPass* root_pass = frame_data->render_passes.back();
-    for (const auto& draw_quad : root_pass->quad_list) {
-      // Checkerboards mean an incomplete frame.
-      if (draw_quad->material != DrawQuad::TILED_CONTENT)
-        return 0.f;
-      const TileDrawQuad* quad = TileDrawQuad::MaterialCast(draw_quad);
-      float quad_scale =
-          quad->tex_coord_rect.width() / static_cast<float>(quad->rect.width());
-      float transform_scale =
-          SkMScalarToFloat(quad->quadTransform().matrix().get(0, 0));
-      float scale = quad_scale / transform_scale;
-      if (frame_scale != 0.f && frame_scale != scale)
-        return 0.f;
-      frame_scale = scale;
-    }
-    return frame_scale;
-  }
-
-  void BeginTest() override { PostSetNeedsCommitToMainThread(); }
-
-  DrawResult PrepareToDrawOnThread(LayerTreeHostImpl* host_impl,
-                                   LayerTreeHostImpl::FrameData* frame_data,
-                                   DrawResult draw_result) override {
-    float quad_scale_delta = FrameQuadScaleDeltaFromIdeal(frame_data);
-    switch (frame_) {
-      case 1:
-        // Drew at page scale 1 before any pinching.
-        EXPECT_EQ(1.f, host_impl->active_tree()->total_page_scale_factor());
-        EXPECT_EQ(1.f, quad_scale_delta);
-        PostNextAfterDraw(host_impl);
-        break;
-      case 2:
-        if (quad_scale_delta != 1.f)
-          break;
-        // Drew at page scale 2.2 after pinching in.
-        EXPECT_EQ(2.2f, host_impl->active_tree()->total_page_scale_factor());
-        EXPECT_EQ(1.f, quad_scale_delta);
-        PostNextAfterDraw(host_impl);
-        break;
-      case 3:
-        if (quad_scale_delta != 2.2f)
-          break;
-        // Drew at page scale 1 with the 2.2 tiling while pinching out.
-        EXPECT_EQ(1.f, host_impl->active_tree()->total_page_scale_factor());
-        EXPECT_EQ(2.2f, quad_scale_delta);
-        PostNextAfterDraw(host_impl);
-        break;
-      case 4:
-        // Drew at page scale 1 with the 2.2 tiling after pinching out completed
-        // while waiting for texture uploads to complete.
-        EXPECT_EQ(1.f, host_impl->active_tree()->total_page_scale_factor());
-        // This frame will not have any damage, since it's actually the same as
-        // the last frame, and should contain no incomplete tiles. We just want
-        // to make sure we drew here at least once after the pinch ended to be
-        // sure that drawing after pinch doesn't leave us at the wrong scale
-        // forever.
-        EXPECT_TRUE(frame_data->has_no_damage);
-        PostNextAfterDraw(host_impl);
-        break;
-      case 5:
-        if (quad_scale_delta != 1.f)
-          break;
-        // Drew at scale 1 after texture uploads are done.
-        EXPECT_EQ(1.f, host_impl->active_tree()->total_page_scale_factor());
-        EXPECT_EQ(1.f, quad_scale_delta);
-        EndTest();
-        break;
-    }
-    return draw_result;
-  }
-
-  void PostNextAfterDraw(LayerTreeHostImpl* host_impl) {
-    if (posted_)
-      return;
-    posted_ = true;
-    ImplThreadTaskRunner()->PostDelayedTask(
-        FROM_HERE, base::Bind(&LayerTreeHostTestCrispUpAfterPinchEnds::Next,
-                              base::Unretained(this), host_impl),
-        // Use a delay to allow raster/upload to happen in between frames. This
-        // should cause flakiness if we fail to block raster/upload when
-        // desired.
-        base::TimeDelta::FromMilliseconds(16 * 6));
-  }
-
-  void Next(LayerTreeHostImpl* host_impl) {
-    ++frame_;
-    posted_ = false;
-    switch (frame_) {
-      case 2:
-        // Pinch zoom in.
-        host_impl->PinchGestureBegin();
-        host_impl->PinchGestureUpdate(2.2f, gfx::Point(100, 100));
-        host_impl->PinchGestureEnd();
-        break;
-      case 3:
-        // Pinch zoom back to 1.f but don't end it.
-        host_impl->PinchGestureBegin();
-        host_impl->PinchGestureUpdate(1.f / 2.2f, gfx::Point(100, 100));
-        break;
-      case 4:
-        // End the pinch, but delay tile production.
-        playback_allowed_event_.Reset();
-        host_impl->PinchGestureEnd();
-        break;
-      case 5:
-        // Let tiles complete.
-        playback_allowed_event_.Signal();
-        break;
-    }
-  }
-
-  void NotifyTileStateChangedOnThread(LayerTreeHostImpl* host_impl,
-                                      const Tile* tile) override {
-    // On frame_ == 4, we are preventing texture uploads from completing,
-    // so this verifies they are not completing before frame_ == 5.
-    // Flaky failures here indicate we're failing to prevent uploads from
-    // completing.
-    EXPECT_NE(4, frame_);
-  }
-
-  void AfterTest() override {}
-
-  FakeContentLayerClient client_;
-  int frame_;
-  bool posted_;
-  base::WaitableEvent playback_allowed_event_;
-};
-
-// TODO(danakj): Disabled for flake: crbug.com/433208
-// MULTI_THREAD_TEST_F(LayerTreeHostTestCrispUpAfterPinchEnds);
-
-class LayerTreeHostTestCrispUpAfterPinchEndsWithOneCopy
-    : public LayerTreeHostTestCrispUpAfterPinchEnds {
- protected:
-  void InitializeSettings(LayerTreeSettings* settings) override {
-    settings->impl_side_painting = true;
-    settings->use_one_copy = true;
-  }
-
-  scoped_ptr<FakeOutputSurface> CreateFakeOutputSurface(
-      bool fallback) override {
-    scoped_ptr<TestWebGraphicsContext3D> context3d =
-        TestWebGraphicsContext3D::Create();
-    context3d->set_support_image(true);
-    context3d->set_support_sync_query(true);
-
-    if (delegating_renderer())
-      return FakeOutputSurface::CreateDelegating3d(context3d.Pass());
-    else
-      return FakeOutputSurface::Create3d(context3d.Pass());
-  }
-};
-
-// TODO(danakj): Disabled for flake: crbug.com/433208
-#if !defined(OS_LINUX) || defined(NDEBUG)
-MULTI_THREAD_TEST_F(LayerTreeHostTestCrispUpAfterPinchEndsWithOneCopy);
-#endif
-
-class LayerTreeHostTestContinuousDrawWhenCreatingVisibleTiles
-    : public LayerTreeHostTest {
- protected:
-  LayerTreeHostTestContinuousDrawWhenCreatingVisibleTiles()
-      : playback_allowed_event_(true, true) {}
-
-  void InitializeSettings(LayerTreeSettings* settings) override {
-    settings->impl_side_painting = true;
-  }
-
-  void SetupTree() override {
-    step_ = 1;
-    continuous_draws_ = 0;
-    client_.set_fill_with_nonsolid_color(true);
-
-    scoped_refptr<Layer> root = Layer::Create();
-    root->SetBounds(gfx::Size(500, 500));
-
-    scoped_refptr<Layer> pinch = Layer::Create();
-    pinch->SetBounds(gfx::Size(500, 500));
-    pinch->SetScrollClipLayerId(root->id());
-    pinch->SetIsContainerForFixedPositionLayers(true);
-    root->AddChild(pinch);
-
-    scoped_ptr<FakePicturePile> pile(new FakePicturePile);
-    pile->SetPlaybackAllowedEvent(&playback_allowed_event_);
-    scoped_refptr<FakePictureLayer> layer =
-        FakePictureLayer::CreateWithRecordingSource(&client_, pile.Pass());
-    layer->SetBounds(gfx::Size(500, 500));
-    layer->SetContentsOpaque(true);
-    pinch->AddChild(layer);
-
-    layer_tree_host()->RegisterViewportLayers(root, pinch, pinch);
-    layer_tree_host()->SetPageScaleFactorAndLimits(1.f, 1.f, 4.f);
-    layer_tree_host()->SetRootLayer(root);
-    LayerTreeHostTest::SetupTree();
-  }
-
-  // Returns the delta scale of all quads in the frame's root pass from their
-  // ideal, or 0 if they are not all the same.
-  float FrameQuadScaleDeltaFromIdeal(LayerTreeHostImpl::FrameData* frame_data) {
-    if (frame_data->has_no_damage)
-      return 0.f;
-    float frame_scale = 0.f;
-    RenderPass* root_pass = frame_data->render_passes.back();
-    for (const auto& draw_quad : root_pass->quad_list) {
-      const TileDrawQuad* quad = TileDrawQuad::MaterialCast(draw_quad);
-      float quad_scale =
-          quad->tex_coord_rect.width() / static_cast<float>(quad->rect.width());
-      float transform_scale =
-          SkMScalarToFloat(quad->quadTransform().matrix().get(0, 0));
-      float scale = quad_scale / transform_scale;
-      if (frame_scale != 0.f && frame_scale != scale)
-        return 0.f;
-      frame_scale = scale;
-    }
-    return frame_scale;
-  }
-
-  void BeginTest() override { PostSetNeedsCommitToMainThread(); }
-
-  DrawResult PrepareToDrawOnThread(LayerTreeHostImpl* host_impl,
-                                   LayerTreeHostImpl::FrameData* frame_data,
-                                   DrawResult draw_result) override {
-    float quad_scale_delta = FrameQuadScaleDeltaFromIdeal(frame_data);
-    switch (step_) {
-      case 1:
-        // Drew at scale 1 before any pinching.
-        EXPECT_EQ(1.f, host_impl->active_tree()->total_page_scale_factor());
-        EXPECT_EQ(1.f, quad_scale_delta);
-        break;
-      case 2:
-        if (quad_scale_delta != 1.f / 1.5f)
-          break;
-        // Drew at scale 1 still though the ideal is 1.5.
-        EXPECT_EQ(1.5f, host_impl->active_tree()->total_page_scale_factor());
-        EXPECT_EQ(1.f / 1.5f, quad_scale_delta);
-        break;
-      case 3:
-        // Continuous draws are attempted.
-        EXPECT_EQ(1.5f, host_impl->active_tree()->total_page_scale_factor());
-        if (!frame_data->has_no_damage)
-          EXPECT_EQ(1.f / 1.5f, quad_scale_delta);
-        break;
-      case 4:
-        if (quad_scale_delta != 1.f)
-          break;
-        // Drew at scale 1.5 when all the tiles completed.
-        EXPECT_EQ(1.5f, host_impl->active_tree()->total_page_scale_factor());
-        EXPECT_EQ(1.f, quad_scale_delta);
-
-        // We should not continue to draw any more. End the test after a timeout
-        // to watch for any extraneous draws.
-        // TODO(brianderson): We could remove this delay and instead wait until
-        // the BeginFrameSource decides it doesn't need to send frames anymore,
-        // or test that it already doesn't here.
-        EndTestAfterDelayMs(16 * 4);
-        ++step_;
-        break;
-      case 5:
-        ADD_FAILURE()
-            << "No draws should happen once we have a complete frame.";
-        break;
-    }
-    return draw_result;
-  }
-
-  void DrawLayersOnThread(LayerTreeHostImpl* host_impl) override {
-    switch (step_) {
-      case 1:
-        // Delay tile production.
-        playback_allowed_event_.Reset();
-        // Pinch zoom in to cause new tiles to be required.
-        host_impl->PinchGestureBegin();
-        host_impl->PinchGestureUpdate(1.5f, gfx::Point(100, 100));
-        host_impl->PinchGestureEnd();
-        ++step_;
-        break;
-      case 2:
-        ++step_;
-        break;
-      case 3:
-        // We should continue to try draw while there are incomplete visible
-        // tiles.
-        if (++continuous_draws_ > 5) {
-          // Allow the tiles to complete.
-          playback_allowed_event_.Signal();
-          ++step_;
-        }
-        break;
-    }
-  }
-
-  void NotifyTileStateChangedOnThread(LayerTreeHostImpl* host_impl,
-                                      const Tile* tile) override {
-    // On step_ == 2, we are preventing texture uploads from completing,
-    // so this verifies they are not completing before step_ == 3.
-    // Flaky failures here indicate we're failing to prevent uploads from
-    // completing.
-    EXPECT_NE(2, step_);
-  }
-
-  void AfterTest() override { EXPECT_GT(continuous_draws_, 5); }
-
-  FakeContentLayerClient client_;
-  int step_;
-  int continuous_draws_;
-  base::WaitableEvent playback_allowed_event_;
-};
-
-MULTI_THREAD_TEST_F(LayerTreeHostTestContinuousDrawWhenCreatingVisibleTiles);
-
 }  // namespace cc

@@ -45,7 +45,7 @@ class MockDebugDelegate : public QuicSentPacketManager::DebugDelegate {
 class QuicSentPacketManagerTest : public ::testing::TestWithParam<bool> {
  protected:
   QuicSentPacketManagerTest()
-      : manager_(true, &clock_, &stats_, kCubic, kNack, false),
+      : manager_(true, &clock_, &stats_, kCubic, kNack),
         send_algorithm_(new StrictMock<MockSendAlgorithm>),
         network_change_visitor_(new StrictMock<MockNetworkChangeVisitor>) {
     QuicSentPacketManagerPeer::SetSendAlgorithm(&manager_, send_algorithm_);
@@ -1080,12 +1080,12 @@ TEST_F(QuicSentPacketManagerTest, GetTransmissionTimeCryptoHandshake) {
 
   // Check the min.
   RttStats* rtt_stats = QuicSentPacketManagerPeer::GetRttStats(&manager_);
-  rtt_stats->set_initial_rtt_us(1 * kNumMicrosPerMilli);
+  rtt_stats->set_initial_rtt_us(1 * base::Time::kMicrosecondsPerMillisecond);
   EXPECT_EQ(clock_.Now().Add(QuicTime::Delta::FromMilliseconds(10)),
             manager_.GetRetransmissionTime());
 
   // Test with a standard smoothed RTT.
-  rtt_stats->set_initial_rtt_us(100 * kNumMicrosPerMilli);
+  rtt_stats->set_initial_rtt_us(100 * base::Time::kMicrosecondsPerMillisecond);
 
   QuicTime::Delta srtt =
       QuicTime::Delta::FromMicroseconds(rtt_stats->initial_rtt_us());
@@ -1109,12 +1109,12 @@ TEST_F(QuicSentPacketManagerTest, GetTransmissionTimeTailLossProbe) {
 
   // Check the min.
   RttStats* rtt_stats = QuicSentPacketManagerPeer::GetRttStats(&manager_);
-  rtt_stats->set_initial_rtt_us(1 * kNumMicrosPerMilli);
+  rtt_stats->set_initial_rtt_us(1 * base::Time::kMicrosecondsPerMillisecond);
   EXPECT_EQ(clock_.Now().Add(QuicTime::Delta::FromMilliseconds(10)),
             manager_.GetRetransmissionTime());
 
   // Test with a standard smoothed RTT.
-  rtt_stats->set_initial_rtt_us(100 * kNumMicrosPerMilli);
+  rtt_stats->set_initial_rtt_us(100 * base::Time::kMicrosecondsPerMillisecond);
   QuicTime::Delta srtt =
       QuicTime::Delta::FromMicroseconds(rtt_stats->initial_rtt_us());
   QuicTime::Delta expected_tlp_delay = srtt.Multiply(2);
@@ -1277,7 +1277,7 @@ TEST_F(QuicSentPacketManagerTest, NegotiateTimeLossDetectionFromOptions) {
   QuicTagVector options;
   options.push_back(kTIME);
   QuicConfigPeer::SetReceivedConnectionOptions(&config, options);
-  EXPECT_CALL(*send_algorithm_, SetFromConfig(_, _, _));
+  EXPECT_CALL(*send_algorithm_, SetFromConfig(_, _));
   EXPECT_CALL(*network_change_visitor_, OnCongestionWindowChange());
   manager_.SetFromConfig(config);
 
@@ -1318,7 +1318,7 @@ TEST_F(QuicSentPacketManagerTest, NegotiateNumConnectionsFromOptions) {
   QuicConfigPeer::SetReceivedConnectionOptions(&config, options);
   EXPECT_CALL(*network_change_visitor_, OnCongestionWindowChange());
   EXPECT_CALL(*send_algorithm_, SetNumEmulatedConnections(1));
-  EXPECT_CALL(*send_algorithm_, SetFromConfig(_, _, _));
+  EXPECT_CALL(*send_algorithm_, SetFromConfig(_, _));
   manager_.SetFromConfig(config);
 
   QuicSentPacketManagerPeer::SetIsServer(&manager_, false);
@@ -1326,7 +1326,7 @@ TEST_F(QuicSentPacketManagerTest, NegotiateNumConnectionsFromOptions) {
   client_config.SetConnectionOptionsToSend(options);
   EXPECT_CALL(*network_change_visitor_, OnCongestionWindowChange());
   EXPECT_CALL(*send_algorithm_, SetNumEmulatedConnections(1));
-  EXPECT_CALL(*send_algorithm_, SetFromConfig(_, _, _));
+  EXPECT_CALL(*send_algorithm_, SetFromConfig(_, _));
   manager_.SetFromConfig(client_config);
 }
 
@@ -1340,7 +1340,7 @@ TEST_F(QuicSentPacketManagerTest, NegotiateNConnectionFromOptions) {
   options.push_back(kNCON);
   QuicConfigPeer::SetReceivedConnectionOptions(&config, options);
   EXPECT_CALL(*network_change_visitor_, OnCongestionWindowChange());
-  EXPECT_CALL(*send_algorithm_, SetFromConfig(_, _, _));
+  EXPECT_CALL(*send_algorithm_, SetFromConfig(_, _));
   manager_.SetFromConfig(config);
 
   EXPECT_CALL(*send_algorithm_, SetNumEmulatedConnections(5));
@@ -1354,7 +1354,7 @@ TEST_F(QuicSentPacketManagerTest, NegotiateNoTLPFromOptionsAtServer) {
   options.push_back(kNTLP);
   QuicConfigPeer::SetReceivedConnectionOptions(&config, options);
   EXPECT_CALL(*network_change_visitor_, OnCongestionWindowChange());
-  EXPECT_CALL(*send_algorithm_, SetFromConfig(_, _, _));
+  EXPECT_CALL(*send_algorithm_, SetFromConfig(_, _));
   manager_.SetFromConfig(config);
   EXPECT_EQ(0u, QuicSentPacketManagerPeer::GetMaxTailLossProbes(&manager_));
 }
@@ -1367,7 +1367,7 @@ TEST_F(QuicSentPacketManagerTest, NegotiateNoTLPFromOptionsAtClient) {
   QuicSentPacketManagerPeer::SetIsServer(&manager_, false);
   client_config.SetConnectionOptionsToSend(options);
   EXPECT_CALL(*network_change_visitor_, OnCongestionWindowChange());
-  EXPECT_CALL(*send_algorithm_, SetFromConfig(_, _, _));
+  EXPECT_CALL(*send_algorithm_, SetFromConfig(_, _));
   manager_.SetFromConfig(client_config);
   EXPECT_EQ(0u, QuicSentPacketManagerPeer::GetMaxTailLossProbes(&manager_));
 }
@@ -1380,7 +1380,7 @@ TEST_F(QuicSentPacketManagerTest, NegotiatePacingFromOptions) {
   options.push_back(kPACE);
   QuicConfigPeer::SetReceivedConnectionOptions(&config, options);
   EXPECT_CALL(*network_change_visitor_, OnCongestionWindowChange());
-  EXPECT_CALL(*send_algorithm_, SetFromConfig(_, _, /* using_pacing= */ true));
+  EXPECT_CALL(*send_algorithm_, SetFromConfig(_, _));
   manager_.SetFromConfig(config);
 
   EXPECT_TRUE(manager_.using_pacing());
@@ -1393,7 +1393,7 @@ TEST_F(QuicSentPacketManagerTest, NegotiateReceiveWindowFromOptions) {
   // Try to set a size below the minimum and ensure it gets set to the min.
   QuicConfig client_config;
   QuicConfigPeer::SetReceivedSocketReceiveBuffer(&client_config, 1024);
-  EXPECT_CALL(*send_algorithm_, SetFromConfig(_, _, _));
+  EXPECT_CALL(*send_algorithm_, SetFromConfig(_, _));
   EXPECT_CALL(*network_change_visitor_, OnCongestionWindowChange());
   manager_.SetFromConfig(client_config);
 
@@ -1417,27 +1417,6 @@ TEST_F(QuicSentPacketManagerTest, NegotiateReceiveWindowFromOptions) {
             manager_.TimeUntilSend(clock_.Now(), HAS_RETRANSMITTABLE_DATA));
 }
 
-TEST_F(QuicSentPacketManagerTest, ReceiveWindowLimited) {
-  EXPECT_EQ(kDefaultSocketReceiveBuffer,
-            QuicSentPacketManagerPeer::GetReceiveWindow(&manager_));
-
-  // Ensure the smaller send window only allows 256 * 0.95 packets to be sent.
-  for (QuicPacketSequenceNumber i = 1; i <= 244; ++i) {
-    EXPECT_CALL(*send_algorithm_, TimeUntilSend(_, _, _)).WillOnce(Return(
-        QuicTime::Delta::Zero()));
-    EXPECT_EQ(QuicTime::Delta::Zero(),
-              manager_.TimeUntilSend(clock_.Now(), HAS_RETRANSMITTABLE_DATA));
-    EXPECT_CALL(*send_algorithm_, OnPacketSent(_, BytesInFlight(), i,
-                                               1024, HAS_RETRANSMITTABLE_DATA))
-        .WillOnce(Return(true));
-    SerializedPacket packet(CreatePacket(i, true));
-    manager_.OnPacketSent(&packet, 0, clock_.Now(), 1024,
-                          NOT_RETRANSMISSION, HAS_RETRANSMITTABLE_DATA);
-  }
-  EXPECT_EQ(QuicTime::Delta::Infinite(),
-            manager_.TimeUntilSend(clock_.Now(), HAS_RETRANSMITTABLE_DATA));
-}
-
 TEST_F(QuicSentPacketManagerTest, UseInitialRoundTripTimeToSend) {
   uint32 initial_rtt_us = 325000;
   EXPECT_NE(initial_rtt_us,
@@ -1445,7 +1424,7 @@ TEST_F(QuicSentPacketManagerTest, UseInitialRoundTripTimeToSend) {
 
   QuicConfig config;
   config.SetInitialRoundTripTimeUsToSend(initial_rtt_us);
-  EXPECT_CALL(*send_algorithm_, SetFromConfig(_, _, _));
+  EXPECT_CALL(*send_algorithm_, SetFromConfig(_, _));
   EXPECT_CALL(*network_change_visitor_, OnCongestionWindowChange());
   manager_.SetFromConfig(config);
 

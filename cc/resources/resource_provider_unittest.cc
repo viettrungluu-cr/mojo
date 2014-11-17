@@ -103,11 +103,11 @@ class TextureStateTrackingContext : public TestWebGraphicsContext3D {
 
   // Force all textures to be consecutive numbers starting at "1",
   // so we easily can test for them.
-  GLuint NextTextureId() override {
+  virtual GLuint NextTextureId() override {
     base::AutoLock lock(namespace_->lock);
     return namespace_->next_texture_id++;
   }
-  void RetireTextureId(GLuint) override {}
+  virtual void RetireTextureId(GLuint) override {}
 };
 
 // Shared data between multiple ResourceProviderContext. This contains mailbox

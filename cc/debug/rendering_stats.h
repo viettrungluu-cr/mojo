@@ -6,7 +6,6 @@
 #define CC_DEBUG_RENDERING_STATS_H_
 
 #include <list>
-#include <vector>
 
 #include "base/basictypes.h"
 #include "base/debug/trace_event_argument.h"

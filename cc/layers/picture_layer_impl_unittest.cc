@@ -71,7 +71,9 @@ class PictureLayerImplTest : public testing::Test {
   virtual ~PictureLayerImplTest() {
   }
 
-  void SetUp() override { InitializeRenderer(); }
+  virtual void SetUp() override {
+    InitializeRenderer();
+  }
 
   virtual void InitializeRenderer() {
     host_impl_.InitializeRenderer(FakeOutputSurface::Create3d());
@@ -2472,7 +2474,7 @@ class DeferredInitPictureLayerImplTest : public PictureLayerImplTest {
         delegated_rendering));
   }
 
-  void SetUp() override {
+  virtual void SetUp() override {
     PictureLayerImplTest::SetUp();
 
     // Create some default active and pending trees.

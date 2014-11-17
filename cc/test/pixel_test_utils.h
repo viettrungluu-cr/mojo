@@ -5,8 +5,6 @@
 #ifndef CC_TEST_PIXEL_TEST_UTILS_H_
 #define CC_TEST_PIXEL_TEST_UTILS_H_
 
-#include <string>
-
 #include "base/files/file_path.h"
 #include "cc/test/pixel_comparator.h"
 

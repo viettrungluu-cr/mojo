@@ -125,7 +125,9 @@ class StreamBlocker {
 class TestSession : public QuicSession {
  public:
   explicit TestSession(QuicConnection* connection)
-      : QuicSession(connection, DefaultQuicConfig()),
+      : QuicSession(connection,
+                    DefaultQuicConfig(),
+                    false),
         crypto_stream_(this),
         writev_consumes_all_data_(false) {
     InitializeSession();
@@ -578,7 +580,8 @@ TEST_P(QuicSessionTest, DoNotSendGoAwayTwice) {
 }
 
 TEST_P(QuicSessionTest, IncreasedTimeoutAfterCryptoHandshake) {
-  EXPECT_EQ(kInitialIdleTimeoutSecs + 3,
+  EXPECT_EQ((FLAGS_quic_unified_timeouts ?
+             kInitialIdleTimeoutSecs : kDefaultIdleTimeoutSecs) + 3,
             QuicConnectionPeer::GetNetworkTimeout(connection_).ToSeconds());
   CryptoHandshakeMessage msg;
   session_.GetCryptoStream()->OnHandshakeMessage(msg);

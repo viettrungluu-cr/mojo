@@ -233,6 +233,7 @@ TileManager::TileManager(
       scheduled_raster_task_limit_(scheduled_raster_task_limit),
       all_tiles_that_need_to_be_rasterized_are_scheduled_(true),
       rendering_stats_instrumentation_(rendering_stats_instrumentation),
+      did_initialize_visible_tile_(false),
       did_check_for_completed_tasks_since_last_schedule_tasks_(true),
       did_oom_on_last_assign_(false),
       ready_to_activate_check_notifier_(
@@ -432,7 +433,7 @@ void TileManager::ManageTiles(const GlobalStateThatImpactsTilePriority& state) {
                         resource_pool_->acquired_memory_usage_bytes());
 }
 
-void TileManager::UpdateVisibleTiles() {
+bool TileManager::UpdateVisibleTiles() {
   TRACE_EVENT0("cc", "TileManager::UpdateVisibleTiles");
 
   rasterizer_->CheckForCompletedTasks();
@@ -445,6 +446,10 @@ void TileManager::UpdateVisibleTiles() {
       "stats",
       RasterTaskCompletionStatsAsValue(update_visible_tiles_stats_));
   update_visible_tiles_stats_ = RasterTaskCompletionStats();
+
+  bool did_initialize_visible_tile = did_initialize_visible_tile_;
+  did_initialize_visible_tile_ = false;
+  return did_initialize_visible_tile;
 }
 
 scoped_refptr<base::debug::ConvertableToTraceFormat>
@@ -822,6 +827,9 @@ void TileManager::OnRasterTaskCompleted(
     mts.draw_info.set_use_resource();
     mts.draw_info.resource_ = resource.Pass();
   }
+
+  if (tile->priority(ACTIVE_TREE).distance_to_visible == 0.f)
+    did_initialize_visible_tile_ = true;
 
   client_->NotifyTileStateChanged(tile);
 }

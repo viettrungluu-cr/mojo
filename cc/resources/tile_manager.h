@@ -108,7 +108,8 @@ class CC_EXPORT TileManager : public RasterizerClient,
 
   void ManageTiles(const GlobalStateThatImpactsTilePriority& state);
 
-  void UpdateVisibleTiles();
+  // Returns true when visible tiles have been initialized.
+  bool UpdateVisibleTiles();
 
   scoped_refptr<Tile> CreateTile(RasterSource* raster_source,
                                  const gfx::Size& tile_size,
@@ -253,6 +254,7 @@ class CC_EXPORT TileManager : public RasterizerClient,
 
   RenderingStatsInstrumentation* rendering_stats_instrumentation_;
 
+  bool did_initialize_visible_tile_;
   bool did_check_for_completed_tasks_since_last_schedule_tasks_;
   bool did_oom_on_last_assign_;
 

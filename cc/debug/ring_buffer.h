@@ -12,7 +12,9 @@ namespace cc {
 template<typename T, size_t kSize>
 class RingBuffer {
  public:
-  RingBuffer() : current_index_(0) {}
+  explicit RingBuffer()
+    : current_index_(0) {
+  }
 
   size_t BufferSize() const {
     return kSize;

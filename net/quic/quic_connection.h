@@ -251,7 +251,6 @@ class NET_EXPORT_PRIVATE QuicConnection
                  const PacketWriterFactory& writer_factory,
                  bool owns_writer,
                  bool is_server,
-                 bool is_secure,
                  const QuicVersionVector& supported_versions);
   ~QuicConnection() override;
 
@@ -398,8 +397,8 @@ class NET_EXPORT_PRIVATE QuicConnection
   QuicConnectionId connection_id() const { return connection_id_; }
   const QuicClock* clock() const { return clock_; }
   QuicRandom* random_generator() const { return random_generator_; }
-  QuicByteCount max_packet_length() const;
-  void set_max_packet_length(QuicByteCount length);
+  size_t max_packet_length() const;
+  void set_max_packet_length(size_t length);
 
   bool connected() const { return connected_; }
 
@@ -425,6 +424,16 @@ class NET_EXPORT_PRIVATE QuicConnection
 
   // Returns true if the connection has queued packets or frames.
   bool HasQueuedData() const;
+
+  // TODO(ianswett): Remove when quic_unified_timeouts is removed.
+  // Sets (or resets) the idle state connection timeout. Also, checks and times
+  // out the connection if network timer has expired for |timeout|.
+  void SetIdleNetworkTimeout(QuicTime::Delta timeout);
+
+  // Sets (or resets) the total time delta the connection can be alive for.
+  // Used to limit the time a connection can be alive before crypto handshake
+  // finishes.
+  void SetOverallConnectionTimeout(QuicTime::Delta timeout);
 
   // Sets the overall and idle state connection timeouts.
   void SetNetworkTimeouts(QuicTime::Delta overall_timeout,
@@ -521,9 +530,6 @@ class NET_EXPORT_PRIVATE QuicConnection
   QuicPacketSequenceNumber sequence_number_of_last_sent_packet() const {
     return sequence_number_of_last_sent_packet_;
   }
-  const QuicPacketWriter* writer() const { return writer_; }
-
-  bool is_secure() const { return is_secure_; }
 
  protected:
   // Packets which have not been written to the wire.
@@ -561,6 +567,7 @@ class NET_EXPORT_PRIVATE QuicConnection
   bool SelectMutualVersion(const QuicVersionVector& available_versions);
 
   QuicPacketWriter* writer() { return writer_; }
+  const QuicPacketWriter* writer() const { return writer_; }
 
   bool peer_port_changed() const { return peer_port_changed_; }
 
@@ -695,7 +702,7 @@ class NET_EXPORT_PRIVATE QuicConnection
   // decrypted.
   bool last_packet_decrypted_;
   bool last_packet_revived_;  // True if the last packet was revived from FEC.
-  QuicByteCount last_size_;  // Size of the last received packet.
+  size_t last_size_;  // Size of the last received packet.
   EncryptionLevel last_decrypted_packet_level_;
   QuicPacketHeader last_header_;
   std::vector<QuicStreamFrame> last_stream_frames_;
@@ -829,9 +836,6 @@ class NET_EXPORT_PRIVATE QuicConnection
   // If non-empty this contains the set of versions received in a
   // version negotiation packet.
   QuicVersionVector server_supported_versions_;
-
-  // True if this is a secure QUIC connection.
-  bool is_secure_;
 
   DISALLOW_COPY_AND_ASSIGN(QuicConnection);
 };

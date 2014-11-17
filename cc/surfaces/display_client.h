@@ -25,7 +25,6 @@ class DisplayClient {
  protected:
   virtual ~DisplayClient() {}
 };
-
-}  // namespace cc
+}
 
 #endif  // CC_SURFACES_DISPLAY_CLIENT_H_

@@ -4,9 +4,9 @@
 
 #include "net/tools/quic/quic_server_session.h"
 
-#include "net/quic/crypto/cached_network_parameters.h"
 #include "net/quic/crypto/quic_crypto_server_config.h"
 #include "net/quic/crypto/quic_random.h"
+#include "net/quic/crypto/source_address_token.h"
 #include "net/quic/quic_connection.h"
 #include "net/quic/quic_crypto_server_stream.h"
 #include "net/quic/quic_flags.h"
@@ -79,7 +79,8 @@ class QuicServerSessionTest : public ::testing::TestWithParam<QuicVersion> {
 
     connection_ =
         new StrictMock<MockConnection>(true, SupportedVersions(GetParam()));
-    session_.reset(new QuicServerSession(config_, connection_, &owner_));
+    session_.reset(new QuicServerSession(config_, connection_, &owner_,
+                                         /*is_secure=*/false));
     MockClock clock;
     handshake_message_.reset(crypto_config_.AddDefaultConfig(
         QuicRandom::GetInstance(), &clock,

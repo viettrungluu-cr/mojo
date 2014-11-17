@@ -17,14 +17,7 @@
 #include "cc/resources/raster_source.h"
 #include "skia/ext/analysis_canvas.h"
 #include "skia/ext/refptr.h"
-
-class SkCanvas;
-class SkPicture;
-class SkPixelRef;
-
-namespace gfx {
-class Rect;
-}
+#include "third_party/skia/include/core/SkPicture.h"
 
 namespace cc {
 

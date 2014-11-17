@@ -420,13 +420,6 @@ struct BASE_EXPORT TraceOptions {
   bool enable_systrace;
 };
 
-struct BASE_EXPORT TraceLogStatus {
-  TraceLogStatus();
-  ~TraceLogStatus();
-  size_t event_capacity;
-  size_t event_count;
-};
-
 class BASE_EXPORT TraceLog {
  public:
   enum Mode {
@@ -502,7 +495,7 @@ class BASE_EXPORT TraceLog {
   void RemoveEnabledStateObserver(EnabledStateObserver* listener);
   bool HasEnabledStateObserver(EnabledStateObserver* listener) const;
 
-  TraceLogStatus GetStatus() const;
+  float GetBufferPercentFull() const;
   bool BufferIsFull() const;
 
   // Not using base::Callback because of its limited by 7 parameters.
@@ -610,6 +603,7 @@ class BASE_EXPORT TraceLog {
   static void DeleteForTesting();
 
   // Allow tests to inspect TraceEvents.
+  size_t GetEventsSize() const { return logged_events_->Size(); }
   TraceEvent* GetEventByHandle(TraceEventHandle handle);
 
   void SetProcessID(int process_id);

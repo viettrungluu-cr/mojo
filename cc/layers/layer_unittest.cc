@@ -64,11 +64,11 @@ class LayerTest : public testing::Test {
         fake_client_(FakeLayerTreeHostClient::DIRECT_3D) {}
 
  protected:
-  void SetUp() override {
+  virtual void SetUp() override {
     layer_tree_host_.reset(new StrictMock<MockLayerTreeHost>(&fake_client_));
   }
 
-  void TearDown() override {
+  virtual void TearDown() override {
     Mock::VerifyAndClearExpectations(layer_tree_host_.get());
     EXPECT_CALL(*layer_tree_host_, SetNeedsFullTreeSync()).Times(AnyNumber());
     parent_ = nullptr;

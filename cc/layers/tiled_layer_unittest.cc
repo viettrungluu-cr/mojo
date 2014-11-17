@@ -103,7 +103,7 @@ class TiledLayerTest : public testing::Test {
     settings_.layer_transforms_should_scale_layer_contents = true;
   }
 
-  void SetUp() override {
+  virtual void SetUp() {
     impl_thread_.Start();
     shared_bitmap_manager_.reset(new TestSharedBitmapManager());
     layer_tree_host_ = SynchronousOutputSurfaceLayerTreeHost::Create(

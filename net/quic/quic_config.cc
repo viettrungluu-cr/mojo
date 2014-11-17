@@ -434,6 +434,7 @@ QuicConfig::QuicConfig()
       keepalive_timeout_seconds_(kKATO, PRESENCE_OPTIONAL),
       max_streams_per_connection_(kMSPC, PRESENCE_REQUIRED),
       bytes_for_connection_id_(kTCID, PRESENCE_OPTIONAL),
+      initial_congestion_window_(kSWND, PRESENCE_OPTIONAL),
       initial_round_trip_time_us_(kIRTT, PRESENCE_OPTIONAL),
       // TODO(rjshade): Remove this when retiring QUIC_VERSION_19.
       initial_flow_control_window_bytes_(kIFCW, PRESENCE_OPTIONAL),
@@ -521,6 +522,18 @@ bool QuicConfig::HasReceivedBytesForConnectionId() const {
 
 uint32 QuicConfig::ReceivedBytesForConnectionId() const {
   return bytes_for_connection_id_.GetReceivedValue();
+}
+
+void QuicConfig::SetInitialCongestionWindowToSend(size_t initial_window) {
+  initial_congestion_window_.SetSendValue(initial_window);
+}
+
+bool QuicConfig::HasReceivedInitialCongestionWindow() const {
+  return initial_congestion_window_.HasReceivedValue();
+}
+
+uint32 QuicConfig::ReceivedInitialCongestionWindow() const {
+  return initial_congestion_window_.GetReceivedValue();
 }
 
 void QuicConfig::SetInitialRoundTripTimeUsToSend(size_t rtt) {
@@ -662,6 +675,7 @@ void QuicConfig::ToHandshakeMessage(CryptoHandshakeMessage* out) const {
   keepalive_timeout_seconds_.ToHandshakeMessage(out);
   max_streams_per_connection_.ToHandshakeMessage(out);
   bytes_for_connection_id_.ToHandshakeMessage(out);
+  initial_congestion_window_.ToHandshakeMessage(out);
   initial_round_trip_time_us_.ToHandshakeMessage(out);
   initial_flow_control_window_bytes_.ToHandshakeMessage(out);
   initial_stream_flow_control_window_bytes_.ToHandshakeMessage(out);
@@ -695,6 +709,10 @@ QuicErrorCode QuicConfig::ProcessPeerHello(
   }
   if (error == QUIC_NO_ERROR) {
     error = bytes_for_connection_id_.ProcessPeerHello(
+        peer_hello, hello_type, error_details);
+  }
+  if (error == QUIC_NO_ERROR) {
+    error = initial_congestion_window_.ProcessPeerHello(
         peer_hello, hello_type, error_details);
   }
   if (error == QUIC_NO_ERROR) {

@@ -207,14 +207,14 @@ void NinePatchLayerImpl::AppendQuads(
                        uv_top.width(),
                        uv_left.height());
 
+  // Nothing is opaque here.
+  // TODO(danakj): Should we look at the SkBitmaps to determine opaqueness?
   gfx::Rect opaque_rect;
   gfx::Rect visible_rect;
   const float vertex_opacity[] = {1.0f, 1.0f, 1.0f, 1.0f};
-  const bool opaque = layer_tree_impl()->IsUIResourceOpaque(ui_resource_id_);
 
   visible_rect =
       occlusion_in_content_space.GetUnoccludedContentRect(layer_top_left);
-  opaque_rect = opaque ? visible_rect : gfx::Rect();
   if (!visible_rect.IsEmpty()) {
     TextureDrawQuad* quad =
         render_pass->CreateAndAppendDrawQuad<TextureDrawQuad>();
@@ -233,7 +233,6 @@ void NinePatchLayerImpl::AppendQuads(
 
   visible_rect =
       occlusion_in_content_space.GetUnoccludedContentRect(layer_top_right);
-  opaque_rect = opaque ? visible_rect : gfx::Rect();
   if (!visible_rect.IsEmpty()) {
     TextureDrawQuad* quad =
         render_pass->CreateAndAppendDrawQuad<TextureDrawQuad>();
@@ -252,7 +251,6 @@ void NinePatchLayerImpl::AppendQuads(
 
   visible_rect =
       occlusion_in_content_space.GetUnoccludedContentRect(layer_bottom_left);
-  opaque_rect = opaque ? visible_rect : gfx::Rect();
   if (!visible_rect.IsEmpty()) {
     TextureDrawQuad* quad =
         render_pass->CreateAndAppendDrawQuad<TextureDrawQuad>();
@@ -271,7 +269,6 @@ void NinePatchLayerImpl::AppendQuads(
 
   visible_rect =
       occlusion_in_content_space.GetUnoccludedContentRect(layer_bottom_right);
-  opaque_rect = opaque ? visible_rect : gfx::Rect();
   if (!visible_rect.IsEmpty()) {
     TextureDrawQuad* quad =
         render_pass->CreateAndAppendDrawQuad<TextureDrawQuad>();
@@ -289,7 +286,6 @@ void NinePatchLayerImpl::AppendQuads(
   }
 
   visible_rect = occlusion_in_content_space.GetUnoccludedContentRect(layer_top);
-  opaque_rect = opaque ? visible_rect : gfx::Rect();
   if (!visible_rect.IsEmpty()) {
     TextureDrawQuad* quad =
         render_pass->CreateAndAppendDrawQuad<TextureDrawQuad>();
@@ -308,7 +304,6 @@ void NinePatchLayerImpl::AppendQuads(
 
   visible_rect =
       occlusion_in_content_space.GetUnoccludedContentRect(layer_left);
-  opaque_rect = opaque ? visible_rect : gfx::Rect();
   if (!visible_rect.IsEmpty()) {
     TextureDrawQuad* quad =
         render_pass->CreateAndAppendDrawQuad<TextureDrawQuad>();
@@ -327,7 +322,6 @@ void NinePatchLayerImpl::AppendQuads(
 
   visible_rect =
       occlusion_in_content_space.GetUnoccludedContentRect(layer_right);
-  opaque_rect = opaque ? visible_rect : gfx::Rect();
   if (!visible_rect.IsEmpty()) {
     TextureDrawQuad* quad =
         render_pass->CreateAndAppendDrawQuad<TextureDrawQuad>();
@@ -346,7 +340,6 @@ void NinePatchLayerImpl::AppendQuads(
 
   visible_rect =
       occlusion_in_content_space.GetUnoccludedContentRect(layer_bottom);
-  opaque_rect = opaque ? visible_rect : gfx::Rect();
   if (!visible_rect.IsEmpty()) {
     TextureDrawQuad* quad =
         render_pass->CreateAndAppendDrawQuad<TextureDrawQuad>();
@@ -366,7 +359,6 @@ void NinePatchLayerImpl::AppendQuads(
   if (fill_center_) {
     visible_rect =
         occlusion_in_content_space.GetUnoccludedContentRect(layer_center);
-    opaque_rect = opaque ? visible_rect : gfx::Rect();
     if (!visible_rect.IsEmpty()) {
       TextureDrawQuad* quad =
           render_pass->CreateAndAppendDrawQuad<TextureDrawQuad>();

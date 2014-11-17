@@ -37,13 +37,13 @@ class LayerPerfTest : public testing::Test {
                kTimeCheckInterval) {}
 
  protected:
-  void SetUp() override {
+  virtual void SetUp() override {
     layer_tree_host_ = FakeLayerTreeHost::Create(&fake_client_);
     layer_tree_host_->InitializeSingleThreaded(
         &fake_client_, base::MessageLoopProxy::current(), nullptr);
   }
 
-  void TearDown() override {
+  virtual void TearDown() override {
     layer_tree_host_->SetRootLayer(nullptr);
     layer_tree_host_ = nullptr;
   }

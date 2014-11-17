@@ -99,8 +99,7 @@ class SdchDictionaryFetcherTest : public ::testing::Test {
   }
 
   void OnDictionaryFetched(const std::string& dictionary_text,
-                           const GURL& dictionary_url,
-                           const BoundNetLog& net_log) {
+                           const GURL& dictionary_url) {
     dictionary_additions.push_back(
         DictionaryAdditions(dictionary_text, dictionary_url));
   }

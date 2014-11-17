@@ -45,6 +45,7 @@
         }
       },
       "jingle_unittests",
+      "content_unittests",
       "device_unittests",
       "media_unittests",
       {
