@@ -8,6 +8,7 @@
 #include "base/message_loop/message_loop.h"
 #include "base/run_loop.h"
 #include "base/threading/thread.h"
+#include "mojo/application_manager/application_loader.h"
 #include "mojo/application_manager/application_manager.h"
 #include "mojo/common/common_type_converters.h"
 #include "mojo/public/interfaces/application/application.mojom.h"
@@ -25,11 +26,26 @@
 namespace mojo {
 namespace shell {
 
+class NotAnApplicationLoader : public ApplicationLoader {
+ public:
+  NotAnApplicationLoader() {}
+  ~NotAnApplicationLoader() override {}
+
+  void Load(ApplicationManager* application_manager,
+            const GURL& url,
+            scoped_refptr<LoadCallbacks> callbacks) override {
+    NOTREACHED();
+  }
+
+  void OnApplicationError(ApplicationManager* manager,
+                          const GURL& url) override {
+    NOTREACHED();
+  }
+};
+
 class ExternalApplicationListenerTest : public testing::Test {
  public:
-  ExternalApplicationListenerTest()
-      : io_thread_("io thread"),
-        application_manager_(&delegate_) {}
+  ExternalApplicationListenerTest() : io_thread_("io thread") {}
   ~ExternalApplicationListenerTest() override {}
 
   void SetUp() override {
@@ -49,8 +65,6 @@ class ExternalApplicationListenerTest : public testing::Test {
   base::Thread io_thread_;
 
   base::ScopedTempDir temp_dir_;
-  ApplicationManager::Delegate delegate_;
-  ApplicationManager application_manager_;
   base::FilePath socket_path_;
   scoped_ptr<ExternalApplicationListener> listener_;
 };
@@ -209,10 +223,14 @@ void DestroyOnIOThread(scoped_ptr<FakeExternalApplication> doomed1,
 // Create two external applications, have them discover and connect to
 // the registrar, and then have one app connect to the other by URL.
 TEST_F(ExternalApplicationListenerTest, ConnectTwoExternalApplications) {
+  ApplicationManager::Delegate delegate;
+  ApplicationManager application_manager(&delegate);
+  application_manager.set_default_loader(
+      scoped_ptr<ApplicationLoader>(new NotAnApplicationLoader));
+
   listener_->ListenInBackground(
-      socket_path_,
-      base::Bind(&ApplicationManager::RegisterExternalApplication,
-                 base::Unretained(&application_manager_)));
+      socket_path_, base::Bind(&ApplicationManager::RegisterExternalApplication,
+                               base::Unretained(&application_manager)));
   listener_->WaitForListening();
 
   // Create two external apps.

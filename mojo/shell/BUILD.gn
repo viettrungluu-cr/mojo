@@ -225,10 +225,11 @@ source_set("external_application_registrar_connection") {
 
   deps = [
     ":external_application_registrar_bindings",
+    "//mojo/shell/domain_socket"
   ]
 
-  if (!is_win) {
-    deps += [
+  if (is_win) {
+    deps -= [
       "//mojo/shell/domain_socket"
     ]
   }
@@ -289,8 +290,7 @@ source_set("test_support") {
   ]
 }
 
-# GYP version: mojo/mojo.gyp:external_application_tests
-test("external_application_tests") {
+test("external_application_unittests") {
   sources = [
     "incoming_connection_listener_unittest.cc",
     "external_application_listener_unittest.cc",
@@ -310,4 +310,22 @@ test("external_application_tests") {
     "//mojo/environment:chromium",
     "//mojo/shell/domain_socket:tests",
   ]
+
+  if (is_win) {
+    sources -= [
+      "incoming_connection_listener_unittest.cc",
+      "external_application_listener_unittest.cc",
+    ]
+
+    deps -= [
+      ":lib",
+      ":external_application_registrar_connection",
+      "//url",
+      "//mojo/application_manager",
+      "//mojo/common",
+      "//mojo/edk/system",
+      "//mojo/environment:chromium",
+      "//mojo/shell/domain_socket:tests",
+    ]
+  }
 }

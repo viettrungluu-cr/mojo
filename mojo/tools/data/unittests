@@ -16,6 +16,7 @@ mojo_public_utility_unittests
 clipboard_unittests
 mojo_application_manager_unittests
 mojo_common_unittests
+external_application_unittests
 # These tests currently crash. We should re-enable them when they pass.
 # mojo_view_manager_lib_unittests
 mojo_surfaces_lib_unittests

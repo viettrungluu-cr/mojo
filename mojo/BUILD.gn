@@ -89,7 +89,7 @@ group("tests") {
 
   if (!is_win) {
     deps += [
-      "//mojo/shell:external_application_tests",
+      "//mojo/shell:external_application_unittests",
     ]
   }
 
