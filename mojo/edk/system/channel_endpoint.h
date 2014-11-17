@@ -146,12 +146,6 @@ class MOJO_SYSTEM_IMPL_EXPORT ChannelEndpoint
   bool OnReadMessage(const MessageInTransit::View& message_view,
                      embedder::ScopedPlatformHandleVectorPtr platform_handles);
 
-  // Called by |Channel| to notify that it'll no longer receive messages for the
-  // message pipe (i.e., |OnReadMessage()| will no longer be called).
-  // TODO(vtl): After more simplification, we might be able to get rid of this
-  // (and merge it with |DetachFromChannel()|).
-  void OnDisconnect();
-
   // Called by |Channel| before it gives up its reference to this object.
   void DetachFromChannel();
 

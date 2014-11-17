@@ -53,8 +53,7 @@ void ChannelEndpoint::DetachFromMessagePipe() {
     if (!channel_)
       return;
     DCHECK(local_id_.is_valid());
-    // TODO(vtl): Once we combine "run" into "attach", |remote_id_| should valid
-    // here as well.
+    DCHECK(remote_id_.is_valid());
     channel_->DetachEndpoint(this, local_id_, remote_id_);
     channel_ = nullptr;
     local_id_ = ChannelEndpointId();
@@ -123,35 +122,32 @@ bool ChannelEndpoint::OnReadMessage(
   return (result == MOJO_RESULT_OK);
 }
 
-void ChannelEndpoint::OnDisconnect() {
+void ChannelEndpoint::DetachFromChannel() {
   scoped_refptr<MessagePipe> message_pipe;
   unsigned port;
   {
     base::AutoLock locker(lock_);
-    if (!message_pipe_.get())
-      return;
 
-    // Take a ref, and call |Close()| outside the lock.
-    message_pipe = message_pipe_;
-    port = port_;
+    if (message_pipe_.get()) {
+      // Take a ref, and call |Close()| outside the lock.
+      message_pipe = message_pipe_;
+      port = port_;
+    }
+
+    // |channel_| may already be null if we already detached from the channel in
+    // |DetachFromMessagePipe()| by calling |Channel::DetachEndpoint()| (and
+    // there are racing detaches).
+    if (channel_) {
+      DCHECK(local_id_.is_valid());
+      DCHECK(remote_id_.is_valid());
+      channel_ = nullptr;
+      local_id_ = ChannelEndpointId();
+      remote_id_ = ChannelEndpointId();
+    }
   }
-  message_pipe->Close(port);
-}
 
-void ChannelEndpoint::DetachFromChannel() {
-  base::AutoLock locker(lock_);
-  // This may already be null if we already detached from the channel in
-  // |DetachFromMessagePipe()| by calling |Channel::DetachEndpoint()| (and there
-  // are racing detaches).
-  if (!channel_)
-    return;
-
-  DCHECK(local_id_.is_valid());
-  // TODO(vtl): Once we combine "run" into "attach", |remote_id_| should valid
-  // here as well.
-  channel_ = nullptr;
-  local_id_ = ChannelEndpointId();
-  remote_id_ = ChannelEndpointId();
+  if (message_pipe.get())
+    message_pipe->Close(port);
 }
 
 ChannelEndpoint::~ChannelEndpoint() {
