@@ -25,12 +25,14 @@ TextureUploader::Client::~Client() {
 
 TextureUploader::TextureUploader(Client* client,
                                  mojo::Shell* shell,
-                                 MojoGLES2Context gles2_context)
+                                 base::WeakPtr<mojo::GLContext> context)
     : client_(client),
-      gles2_context_(gles2_context),
+      context_(context),
       next_resource_id_(0),
       id_namespace_(0),
       weak_factory_(this) {
+  context_->AddObserver(this);
+
   mojo::ServiceProviderPtr surfaces_service_provider;
   shell->ConnectToApplication("mojo:surfaces_service",
                               mojo::GetProxy(&surfaces_service_provider));
@@ -44,14 +46,17 @@ TextureUploader::TextureUploader(Client* client,
 TextureUploader::~TextureUploader() {
   if (surface_id_)
     surface_->DestroySurface(surface_id_.Clone());
+  if (context_.get())
+    context_->RemoveObserver(this);
 }
 
-void TextureUploader::Upload(uint32_t texture_id, mojo::Size size) {
+void TextureUploader::Upload(scoped_ptr<mojo::GLTexture> texture) {
   if (!surface_) {
-    pending_upload_.reset(new PendingUpload(texture_id, size));
+    pending_upload_ = texture.Pass();
     return;
   }
 
+  mojo::Size size = texture->size();
   EnsureSurfaceForSize(size);
 
   mojo::FramePtr frame = mojo::Frame::New();
@@ -64,8 +69,8 @@ void TextureUploader::Upload(uint32_t texture_id, mojo::Size size) {
   pass->quads.resize(0u);
   pass->shared_quad_states.push_back(mojo::CreateDefaultSQS(size));
 
-  MojoGLES2MakeCurrent(gles2_context_);
-  glBindTexture(GL_TEXTURE_2D, texture_id);
+  context_->MakeCurrent();
+  glBindTexture(GL_TEXTURE_2D, texture->texture_id());
   GLbyte mailbox[GL_MAILBOX_SIZE_CHROMIUM];
   glGenMailboxCHROMIUM(mailbox);
   glProduceTextureCHROMIUM(GL_TEXTURE_2D, mailbox);
@@ -73,7 +78,7 @@ void TextureUploader::Upload(uint32_t texture_id, mojo::Size size) {
 
   mojo::TransferableResourcePtr resource = mojo::TransferableResource::New();
   resource->id = next_resource_id_++;
-  resource_to_texture_id_map_[resource->id] = texture_id;
+  resource_to_texture_map_[resource->id] = texture.release();
   resource->format = mojo::RESOURCE_FORMAT_RGBA_8888;
   resource->filter = GL_LINEAR;
   resource->size = size.Clone();
@@ -137,19 +142,23 @@ void TextureUploader::EnsureSurfaceForSize(const mojo::Size& size) {
   surface_size_ = size;
 }
 
+void TextureUploader::OnContextLost() {
+  LOG(FATAL) << "Context lost.";
+}
+
 void TextureUploader::ReturnResources(
     mojo::Array<mojo::ReturnedResourcePtr> resources) {
   if (!resources.size())
     return;
-  MojoGLES2MakeCurrent(gles2_context_);
+  context_->MakeCurrent();
   for (size_t i = 0u; i < resources.size(); ++i) {
     mojo::ReturnedResourcePtr resource = resources[i].Pass();
     DCHECK_EQ(1, resource->count);
     glWaitSyncPointCHROMIUM(resource->sync_point);
-    uint32_t texture_id = resource_to_texture_id_map_[resource->id];
-    DCHECK_NE(0u, texture_id);
-    resource_to_texture_id_map_.erase(resource->id);
-    glDeleteTextures(1, &texture_id);
+    mojo::GLTexture* texture = resource_to_texture_map_[resource->id];
+    DCHECK_NE(0u, texture->texture_id());
+    resource_to_texture_map_.erase(resource->id);
+    delete texture;
   }
 }
 
@@ -159,10 +168,8 @@ void TextureUploader::OnSurfaceConnectionCreated(mojo::SurfacePtr surface,
   surface_.set_client(this);
   id_namespace_ = id_namespace;
 
-  if (pending_upload_) {
-    scoped_ptr<PendingUpload> pending = pending_upload_.Pass();
-    Upload(pending->texture_id, pending->size);
-  }
+  if (pending_upload_)
+    Upload(pending_upload_.Pass());
 }
 
 }  // namespace examples

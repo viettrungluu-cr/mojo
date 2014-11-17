@@ -8,7 +8,8 @@
 #include "base/containers/hash_tables.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/memory/weak_ptr.h"
-#include "mojo/public/c/gles2/gles2.h"
+#include "mojo/gpu/gl_context.h"
+#include "mojo/gpu/gl_texture.h"
 #include "mojo/services/public/interfaces/geometry/geometry.mojom.h"
 #include "mojo/services/public/interfaces/surfaces/surface_id.mojom.h"
 #include "mojo/services/public/interfaces/surfaces/surfaces.mojom.h"
@@ -20,7 +21,8 @@ class Shell;
 
 namespace examples {
 
-class TextureUploader : public mojo::SurfaceClient {
+class TextureUploader : public mojo::SurfaceClient,
+                        public mojo::GLContext::Observer {
  public:
   class Client {
    public:
@@ -32,19 +34,16 @@ class TextureUploader : public mojo::SurfaceClient {
 
   TextureUploader(Client* client,
                   mojo::Shell* shell,
-                  MojoGLES2Context gles2_context);
+                  base::WeakPtr<mojo::GLContext> context);
   ~TextureUploader();
 
-  void Upload(uint32_t texture_id, mojo::Size size);
+  void Upload(scoped_ptr<mojo::GLTexture> texture);
 
  private:
-  struct PendingUpload {
-    PendingUpload(uint32_t tex, mojo::Size sz) : texture_id(tex), size(sz) {}
+  // mojo::GLContext::Observer
+  void OnContextLost() override;
 
-    uint32_t texture_id;
-    mojo::Size size;
-  };
-
+  // mojo::SurfaceClient
   void ReturnResources(
       mojo::Array<mojo::ReturnedResourcePtr> resources) override;
   void OnSurfaceConnectionCreated(mojo::SurfacePtr surface,
@@ -52,15 +51,15 @@ class TextureUploader : public mojo::SurfaceClient {
   void EnsureSurfaceForSize(const mojo::Size& size);
 
   Client* client_;
-  MojoGLES2Context gles2_context_;
+  base::WeakPtr<mojo::GLContext> context_;
   mojo::SurfacesServicePtr surfaces_service_;
-  scoped_ptr<PendingUpload> pending_upload_;
+  scoped_ptr<mojo::GLTexture> pending_upload_;
   mojo::SurfacePtr surface_;
   mojo::Size surface_size_;
   uint32_t next_resource_id_;
   uint32_t id_namespace_;
   mojo::SurfaceIdPtr surface_id_;
-  base::hash_map<uint32_t, uint32_t> resource_to_texture_id_map_;
+  base::hash_map<uint32_t, mojo::GLTexture*> resource_to_texture_map_;
 
   base::WeakPtrFactory<TextureUploader> weak_factory_;
 

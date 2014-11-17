@@ -5,11 +5,11 @@
 #ifndef EXAMPLES_GANESH_APP_GANESH_VIEW_H_
 #define EXAMPLES_GANESH_APP_GANESH_VIEW_H_
 
-#include "examples/ganesh_app/ganesh_context.h"
-#include "examples/ganesh_app/mojo_gl_context.h"
 #include "examples/ganesh_app/texture_uploader.h"
+#include "mojo/gpu/gl_context.h"
 #include "mojo/services/public/cpp/view_manager/view_observer.h"
 #include "mojo/services/public/interfaces/surfaces/surface_id.mojom.h"
+#include "mojo/skia/ganesh_context.h"
 
 namespace mojo {
 class Shell;
@@ -33,8 +33,8 @@ class GaneshView : public TextureUploader::Client, public mojo::ViewObserver {
   void Draw(const mojo::Size& size);
 
   mojo::View* view_;
-  MojoGLContext gl_context_;
-  GaneshContext gr_context_;
+  base::WeakPtr<mojo::GLContext> gl_context_;
+  mojo::GaneshContext gr_context_;
   TextureUploader texture_uploader_;
 
   DISALLOW_COPY_AND_ASSIGN(GaneshView);
