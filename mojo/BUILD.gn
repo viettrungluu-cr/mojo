@@ -82,16 +82,11 @@ group("tests") {
     "//mojo/services/clipboard:clipboard_unittests",
     "//mojo/services/network:apptests",
     "//mojo/services/network:unittests",
+    "//mojo/shell:external_application_unittests",
     "//mojo/shell:mojo_shell_tests",
     "//mojo/tools:message_generator",
     "//services/js:js_services_unittests",
   ]
-
-  if (!is_win) {
-    deps += [
-      "//mojo/shell:external_application_unittests",
-    ]
-  }
 
   if (use_aura) {
     deps += [

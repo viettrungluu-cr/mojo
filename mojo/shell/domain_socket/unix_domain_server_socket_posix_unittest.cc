@@ -83,11 +83,11 @@ TEST_F(UnixDomainServerSocketTest, AcceptWithForbiddenUser) {
                                        kUseAbstractNamespace);
   EXPECT_EQ(net::OK, server_socket.ListenWithPath(socket_path_, 1));
 
-  SocketDescriptor accepted_socket;
+  SocketDescriptor accepted_socket = kInvalidSocket;
   TestCompletionCallback accept_callback;
   EXPECT_EQ(net::ERR_IO_PENDING,
             server_socket.Accept(&accepted_socket, accept_callback.callback()));
-  EXPECT_FALSE(accepted_socket);
+  EXPECT_EQ(accepted_socket, kInvalidSocket);
 
   UnixDomainClientSocket client_socket(socket_path_, kUseAbstractNamespace);
   EXPECT_FALSE(client_socket.IsConnected());
@@ -108,7 +108,7 @@ TEST_F(UnixDomainServerSocketTest, AcceptWithForbiddenUser) {
   // The server socket should not have called |accept_callback| or modified
   // |accepted_socket|.
   EXPECT_FALSE(accept_callback.have_result());
-  EXPECT_FALSE(accepted_socket);
+  EXPECT_EQ(accepted_socket, kInvalidSocket);
 }
 
 // Normal cases including read/write are tested by UnixDomainClientSocketTest.
