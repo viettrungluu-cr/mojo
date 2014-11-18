@@ -4,23 +4,72 @@
 
 #include "mojo/services/window_manager/view_target.h"
 
+#include "mojo/converters/geometry/geometry_type_converters.h"
 #include "mojo/services/public/cpp/view_manager/view.h"
+#include "mojo/services/public/cpp/view_manager/view_property.h"
+#include "mojo/services/window_manager/view_targeter.h"
 #include "mojo/services/window_manager/window_manager_app.h"
 #include "ui/events/event.h"
 #include "ui/events/event_target_iterator.h"
 #include "ui/events/event_targeter.h"
+#include "ui/gfx/geometry/rect.h"
+#include "ui/gfx/point3_f.h"
+#include "ui/gfx/transform.h"
 
 namespace mojo {
 
-class ViewTargeter : public ui::EventTargeter {};
+namespace {
 
-ViewTarget::ViewTarget(WindowManagerApp* app, View* view_to_wrap)
-    : app_(app),
-      view_(view_to_wrap) {
-}
+DEFINE_OWNED_VIEW_PROPERTY_KEY(ViewTarget, kViewTargetKey, nullptr);
+
+}  // namespace
 
 ViewTarget::~ViewTarget() {
-  // We don't own our children or |view_|.
+}
+
+// static
+ViewTarget* ViewTarget::TargetFromView(View* view) {
+  if (!view)
+    return nullptr;
+
+  ViewTarget* target = view->GetLocalProperty(kViewTargetKey);
+  if (target)
+    return target;
+
+  return new ViewTarget(view);
+}
+
+void ViewTarget::ConvertPointToTarget(const ViewTarget* source,
+                                      const ViewTarget* target,
+                                      gfx::Point* point) {
+  // TODO(erg): Do we need to deal with |source| and |target| being in
+  // different trees?
+  DCHECK_EQ(source->GetRoot(), target->GetRoot());
+  if (source == target)
+    return;
+
+  const ViewTarget* root_target = source->GetRoot();
+  CHECK_EQ(root_target, target->GetRoot());
+
+  if (source != root_target)
+    source->ConvertPointForAncestor(root_target, point);
+  if (target != root_target)
+    target->ConvertPointFromAncestor(root_target, point);
+}
+
+std::vector<ViewTarget*> ViewTarget::GetChildren() {
+  std::vector<ViewTarget*> targets;
+  for (View* child : view_->children())
+    targets.push_back(TargetFromView(child));
+  return targets;
+}
+
+const ViewTarget* ViewTarget::GetParent() const {
+  return TargetFromView(view_->parent());
+}
+
+gfx::Rect ViewTarget::GetBounds() const {
+  return view_->bounds().To<gfx::Rect>();
 }
 
 bool ViewTarget::HasParent() const {
@@ -31,8 +80,11 @@ bool ViewTarget::IsVisible() const {
   return view_->visible();
 }
 
-void ViewTarget::AddChild(ViewTarget* view) {
-  children_.push_back(view);
+const ViewTarget* ViewTarget::GetRoot() const {
+  const ViewTarget* root = this;
+  for (; root; root = root->GetParent()) {
+  }
+  return root;
 }
 
 scoped_ptr<ViewTargeter> ViewTarget::SetEventTargeter(
@@ -56,25 +108,20 @@ bool ViewTarget::CanAcceptEvent(const ui::Event& event) {
   if (!view_->parent())
     return true;
 
-  // For located events (i.e. mouse, touch etc.), an assumption is made that
-  // windows that don't have a default event-handler cannot process the event
-  // (see more in GetWindowForPoint()). This assumption is not made for key
-  // events.
-  return event.IsKeyEvent() || target_handler();
+  // In aura, we only accept events if this is a key event or if the user
+  // supplied a TargetHandler, usually the aura::WindowDelegate. Here, we're
+  // just forwarding events to other Views which may be in other processes, so
+  // always accept.
+  return true;
 }
 
 ui::EventTarget* ViewTarget::GetParentTarget() {
-  if (!view_->parent()) {
-    // We are the root node.
-    return nullptr;
-  }
-
-  return app_->GetViewTargetForViewId(view_->parent()->id());
+  return TargetFromView(view_->parent());
 }
 
-scoped_ptr<ui::EventTargetIterator> ViewTarget::GetChildIterator() const {
+scoped_ptr<ui::EventTargetIterator> ViewTarget::GetChildIterator() {
   return scoped_ptr<ui::EventTargetIterator>(
-      new ui::EventTargetIteratorImpl<ViewTarget>(children_));
+      new ui::CopyingEventTargetIteratorImpl<ViewTarget>(GetChildren()));
 }
 
 ui::EventTargeter* ViewTarget::GetEventTargeter() {
@@ -83,11 +130,38 @@ ui::EventTargeter* ViewTarget::GetEventTargeter() {
 
 void ViewTarget::ConvertEventToTarget(ui::EventTarget* target,
                                       ui::LocatedEvent* event) {
-  // TODO(erg): Actually doing enabling this line requires doing some partially
-  // specialized template cruft. Punt for now.
-  //
-  // event->ConvertLocationToTarget(this,
-  //                                static_cast<ViewTarget*>(target));
+  event->ConvertLocationToTarget(this, static_cast<ViewTarget*>(target));
+}
+
+ViewTarget::ViewTarget(View* view_to_wrap) : view_(view_to_wrap) {
+  DCHECK(view_->GetLocalProperty(kViewTargetKey) == nullptr);
+  view_->SetLocalProperty(kViewTargetKey, this);
+}
+
+bool ViewTarget::ConvertPointForAncestor(const ViewTarget* ancestor,
+                                         gfx::Point* point) const {
+  gfx::Vector2d offset;
+  bool result = GetTargetOffsetRelativeTo(ancestor, &offset);
+  *point += offset;
+  return result;
+}
+
+bool ViewTarget::ConvertPointFromAncestor(const ViewTarget* ancestor,
+                                          gfx::Point* point) const {
+  gfx::Vector2d offset;
+  bool result = GetTargetOffsetRelativeTo(ancestor, &offset);
+  *point -= offset;
+  return result;
+}
+
+bool ViewTarget::GetTargetOffsetRelativeTo(const ViewTarget* ancestor,
+                                           gfx::Vector2d* offset) const {
+  const ViewTarget* v = this;
+  for (; v && v != ancestor; v = v->GetParent()) {
+    gfx::Rect bounds = v->GetBounds();
+    *offset += gfx::Vector2d(bounds.x(), bounds.y());
+  }
+  return v == ancestor;
 }
 
 }  // namespace mojo

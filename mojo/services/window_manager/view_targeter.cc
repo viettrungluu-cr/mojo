@@ -4,10 +4,73 @@
 
 #include "mojo/services/window_manager/view_targeter.h"
 
+#include "mojo/services/window_manager/view_target.h"
+
 namespace mojo {
 
 ViewTargeter::ViewTargeter() {}
 
 ViewTargeter::~ViewTargeter() {}
+
+ui::EventTarget* ViewTargeter::FindTargetForEvent(ui::EventTarget* root,
+                                                  ui::Event* event) {
+  // TODO(erg): We currently don't deal with key events very well here; we need
+  // to implement the logic in the aura version to fix key events here.
+  return EventTargeter::FindTargetForEvent(root, event);
+}
+
+ui::EventTarget* ViewTargeter::FindTargetForLocatedEvent(
+    ui::EventTarget* root,
+    ui::LocatedEvent* event) {
+  ViewTarget* view = static_cast<ViewTarget*>(root);
+  if (!view->HasParent()) {
+    ViewTarget* target = FindTargetInRootView(view, *event);
+    if (target) {
+      view->ConvertEventToTarget(target, event);
+      return target;
+    }
+  }
+  return EventTargeter::FindTargetForLocatedEvent(view, event);
+}
+
+bool ViewTargeter::SubtreeCanAcceptEvent(ui::EventTarget* target,
+                                         const ui::LocatedEvent& event) const {
+  ViewTarget* view = static_cast<ViewTarget*>(target);
+
+  if (!view->IsVisible())
+    return false;
+
+  // TODO(erg): We may need to keep track of the parent on ViewTarget, because
+  // we have a check here about
+  // WindowDelegate::ShouldDescendIntoChildForEventHandling().
+
+  return true;
+}
+
+bool ViewTargeter::EventLocationInsideBounds(
+    ui::EventTarget* target,
+    const ui::LocatedEvent& event) const {
+  ViewTarget* view = static_cast<ViewTarget*>(target);
+  gfx::Point point = event.location();
+  const ViewTarget* parent = view->GetParent();
+  if (parent)
+    ViewTarget::ConvertPointToTarget(parent, view, &point);
+  return gfx::Rect(view->GetBounds().size()).Contains(point);
+}
+
+ViewTarget* ViewTargeter::FindTargetInRootView(ViewTarget* root_view,
+                                               const ui::LocatedEvent& event) {
+  // TODO(erg): This here is important because it resolves
+  // mouse_pressed_handler() in the aura version. This is what makes sure
+  // that a view gets both the mouse down and up.
+
+  // TODO(erg): We redirect to a currently active capture window here. Add this
+  // when we have capture working.
+
+  // TODO(erg): There's a whole bunch of junk about handling touch events
+  // here. Handle later.
+
+  return nullptr;
+}
 
 }  // namespace mojo

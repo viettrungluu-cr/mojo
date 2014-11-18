@@ -60,8 +60,16 @@ source_set("lib") {
 
 test("window_manager_unittests") {
   sources = [
+    "view_target_unittest.cc",
+    "view_targeter_unittest.cc",
     "window_manager_api_unittest.cc",
+    "window_manager_test_util.cc",
+    "window_manager_test_util.h",
     "window_manager_unittests.cc",
+  ]
+
+  public_deps = [
+    ":lib",
   ]
 
   deps = [
@@ -74,6 +82,9 @@ test("window_manager_unittests") {
     "//mojo/services/public/interfaces/window_manager",
     "//mojo/shell:test_support",
     "//testing/gtest",
+    "//ui/events:test_support",
+    "//ui/gfx",
+    "//ui/gfx:test_support",
     "//ui/gl",
   ]
 

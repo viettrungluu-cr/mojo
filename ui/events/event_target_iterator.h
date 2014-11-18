@@ -28,17 +28,42 @@ class EventTargetIteratorImpl : public EventTargetIterator {
       : begin_(children.rbegin()),
         end_(children.rend()) {
   }
-  virtual ~EventTargetIteratorImpl() {}
+  ~EventTargetIteratorImpl() override {}
 
-  virtual EventTarget* GetNextTarget() override {
+  EventTarget* GetNextTarget() override {
     if (begin_ == end_)
-      return NULL;
+      return nullptr;
     EventTarget* target = *(begin_);
     ++begin_;
     return target;
   }
 
  private:
+  typename std::vector<T*>::const_reverse_iterator begin_;
+  typename std::vector<T*>::const_reverse_iterator end_;
+};
+
+// Provides a version which keeps a copy of the data (for when it has to be
+// derived instead of pointed at).
+template <typename T>
+class CopyingEventTargetIteratorImpl : public EventTargetIterator {
+ public:
+  explicit CopyingEventTargetIteratorImpl(const std::vector<T*>& children)
+      : children_(children),
+        begin_(children_.rbegin()),
+        end_(children_.rend()) {}
+  ~CopyingEventTargetIteratorImpl() override {}
+
+  EventTarget* GetNextTarget() override {
+    if (begin_ == end_)
+      return nullptr;
+    EventTarget* target = *(begin_);
+    ++begin_;
+    return target;
+  }
+
+ private:
+  typename std::vector<T*> children_;
   typename std::vector<T*>::const_reverse_iterator begin_;
   typename std::vector<T*>::const_reverse_iterator end_;
 };

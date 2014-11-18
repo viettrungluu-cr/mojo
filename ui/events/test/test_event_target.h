@@ -56,7 +56,7 @@ class TestEventTarget : public EventTarget {
   // EventTarget:
   bool CanAcceptEvent(const ui::Event& event) override;
   EventTarget* GetParentTarget() override;
-  scoped_ptr<EventTargetIterator> GetChildIterator() const override;
+  scoped_ptr<EventTargetIterator> GetChildIterator() override;
   EventTargeter* GetEventTargeter() override;
 
   // EventHandler:

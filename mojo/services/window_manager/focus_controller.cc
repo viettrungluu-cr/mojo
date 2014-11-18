@@ -118,8 +118,7 @@ void FocusController::OnKeyEvent(ui::KeyEvent* event) {
 
 void FocusController::OnMouseEvent(ui::MouseEvent* event) {
   if (event->type() == ui::ET_MOUSE_PRESSED && !event->handled()) {
-    View* view = mojo::WindowManagerApp::GetViewForViewTarget(
-        static_cast<ViewTarget*>(event->target()));
+    View* view = static_cast<ViewTarget*>(event->target())->view();
     ViewFocusedFromInputEvent(view);
   }
 }
@@ -134,8 +133,7 @@ void FocusController::OnGestureEvent(ui::GestureEvent* event) {
   if (event->type() == ui::ET_GESTURE_BEGIN &&
       event->details().touch_points() == 1 &&
       !event->handled()) {
-    View* view = mojo::WindowManagerApp::GetViewForViewTarget(
-        static_cast<ViewTarget*>(event->target()));
+    View* view = static_cast<ViewTarget*>(event->target())->view();
     ViewFocusedFromInputEvent(view);
   }
 }

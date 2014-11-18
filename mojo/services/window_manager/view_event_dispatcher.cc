@@ -4,6 +4,7 @@
 
 #include "mojo/services/window_manager/view_event_dispatcher.h"
 
+#include "mojo/services/public/cpp/view_manager/view.h"
 #include "mojo/services/window_manager/view_target.h"
 
 namespace mojo {
@@ -16,11 +17,11 @@ ViewEventDispatcher::ViewEventDispatcher()
 ViewEventDispatcher::~ViewEventDispatcher() {}
 
 void ViewEventDispatcher::SetRootViewTarget(ViewTarget* root_view_target) {
-  root_view_target_.reset(root_view_target);
+  root_view_target_ = root_view_target;
 }
 
 ui::EventTarget* ViewEventDispatcher::GetRootTarget() {
-  return root_view_target_.get();
+  return root_view_target_;
 }
 
 void ViewEventDispatcher::OnEventProcessingStarted(ui::Event* event) {

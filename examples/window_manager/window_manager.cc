@@ -396,8 +396,7 @@ class WindowManager
 
   // Overridden from ui::EventHandler:
   virtual void OnEvent(ui::Event* event) override {
-    View* view = WindowManagerApp::GetViewForViewTarget(
-        static_cast<ViewTarget*>(event->target()));
+    View* view = static_cast<ViewTarget*>(event->target())->view();
     if (event->type() == ui::ET_MOUSE_PRESSED &&
         !IsDescendantOfKeyboard(view)) {
       view->SetFocus();

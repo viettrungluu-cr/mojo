@@ -63,7 +63,7 @@ EventTarget* TestEventTarget::GetParentTarget() {
   return parent_;
 }
 
-scoped_ptr<EventTargetIterator> TestEventTarget::GetChildIterator() const {
+scoped_ptr<EventTargetIterator> TestEventTarget::GetChildIterator() {
   return scoped_ptr<EventTargetIterator>(
       new EventTargetIteratorImpl<TestEventTarget>(children_.get()));
 }

@@ -1415,7 +1415,7 @@ ui::EventTarget* Window::GetParentTarget() {
   return parent_;
 }
 
-scoped_ptr<ui::EventTargetIterator> Window::GetChildIterator() const {
+scoped_ptr<ui::EventTargetIterator> Window::GetChildIterator() {
   return scoped_ptr<ui::EventTargetIterator>(
       new ui::EventTargetIteratorImpl<Window>(children()));
 }

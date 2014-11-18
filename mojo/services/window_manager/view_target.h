@@ -7,31 +7,59 @@
 
 #include "ui/events/event_target.h"
 
+namespace gfx {
+class Point;
+class Rect;
+class Vector2d;
+}
+
 namespace ui {
 class EventTargeter;
 }
 
 namespace mojo {
 
+class TestView;
 class View;
 class ViewTargeter;
 class WindowManagerApp;
 
-// A wrapper class around mojo::View. We maintain a shadow tree of ViewTargets,
-// which mirrors the main View tree. The ViewTarget tree wraps mojo::View
-// because we can't subclass View to implement the event targeting interfaces.
+// A wrapper class around mojo::View; we can't subclass View to implement the
+// event targeting interfaces, so we create a separate object which observes
+// the View and ties its lifetime to it.
+//
+// We set ourselves as a property of the view passed in, and we are owned by
+// said View.
 class ViewTarget : public ui::EventTarget {
  public:
-  ViewTarget(WindowManagerApp* app, View* view_to_wrap);
   ~ViewTarget() override;
+
+  // Returns the ViewTarget for a View. ViewTargets are owned by the |view|
+  // passed in, and are created on demand.
+  static ViewTarget* TargetFromView(View* view);
+
+  // Converts |point| from |source|'s coordinates to |target|'s. If |source| is
+  // NULL, the function returns without modifying |point|. |target| cannot be
+  // NULL.
+  static void ConvertPointToTarget(const ViewTarget* source,
+                                   const ViewTarget* target,
+                                   gfx::Point* point);
 
   View* view() { return view_; }
 
+  // TODO(erg): Make this const once we've removed aura from the tree and it's
+  // feasible to change all callers of the EventTargeter interface to pass and
+  // accept const objects. (When that gets done, re-const the
+  // EventTargetIterator::GetNextTarget and EventTarget::GetChildIterator
+  // interfaces.)
+  std::vector<ViewTarget*> GetChildren();
+
+  const ViewTarget* GetParent() const;
+  gfx::Rect GetBounds() const;
   bool HasParent() const;
   bool IsVisible() const;
 
-  // We keep track of our children here.
-  void AddChild(ViewTarget* view);
+  const ViewTarget* GetRoot() const;
 
   // Sets a new ViewTargeter for the view, and returns the previous
   // ViewTargeter.
@@ -40,19 +68,24 @@ class ViewTarget : public ui::EventTarget {
   // Overridden from ui::EventTarget:
   bool CanAcceptEvent(const ui::Event& event) override;
   EventTarget* GetParentTarget() override;
-  scoped_ptr<ui::EventTargetIterator> GetChildIterator() const override;
+  scoped_ptr<ui::EventTargetIterator> GetChildIterator() override;
   ui::EventTargeter* GetEventTargeter() override;
   void ConvertEventToTarget(ui::EventTarget* target,
                             ui::LocatedEvent* event) override;
 
  private:
-  // The WindowManagerApp which owns us.
-  WindowManagerApp* app_;
+  friend class TestView;
+  explicit ViewTarget(View* view_to_wrap);
+
+  bool ConvertPointForAncestor(const ViewTarget* ancestor,
+                               gfx::Point* point) const;
+  bool ConvertPointFromAncestor(const ViewTarget* ancestor,
+                                gfx::Point* point) const;
+  bool GetTargetOffsetRelativeTo(const ViewTarget* ancestor,
+                                 gfx::Vector2d* offset) const;
 
   // The mojo::View that we dispatch to.
   View* view_;
-
-  std::vector<ViewTarget*> children_;
 
   scoped_ptr<ViewTargeter> targeter_;
 

@@ -55,9 +55,6 @@ class WindowManagerApp : public ApplicationDelegate,
                    WindowManagerDelegate* window_manager_delegate);
   ~WindowManagerApp() override;
 
-  static View* GetViewForViewTarget(ViewTarget* view);
-  ViewTarget* GetViewTargetForViewId(Id view);
-
   mojo::ViewEventDispatcher* event_dispatcher() {
     return view_event_dispatcher_.get();
   }
@@ -93,7 +90,7 @@ class WindowManagerApp : public ApplicationDelegate,
  private:
   // TODO(sky): rename this. Connections is ambiguous.
   typedef std::set<WindowManagerImpl*> Connections;
-  typedef std::map<Id, ViewTarget*> ViewIdToViewTargetMap;
+  typedef std::set<Id> RegisteredViewIdSet;
 
   struct PendingEmbed;
   class WindowManagerInternalImpl;
@@ -102,7 +99,7 @@ class WindowManagerApp : public ApplicationDelegate,
   // and adds to the registry so that it can be retrieved later via
   // GetViewTargetForViewId().
   // TODO(beng): perhaps View should have a property bag.
-  void RegisterSubtree(View* view, ViewTarget* parent);
+  void RegisterSubtree(View* view);
 
   // Recursively invokes Unregister() for |view| and all its descendants.
   void UnregisterSubtree(View* view);
@@ -121,9 +118,6 @@ class WindowManagerApp : public ApplicationDelegate,
   // Overridden from ViewObserver:
   void OnTreeChanged(const ViewObserver::TreeChangeParams& params) override;
   void OnViewDestroying(View* view) override;
-  void OnViewBoundsChanged(View* view,
-                           const Rect& old_bounds,
-                           const Rect& new_bounds) override;
 
   // Overridden from ui::EventHandler:
   void OnEvent(ui::Event* event) override;
@@ -158,7 +152,7 @@ class WindowManagerApp : public ApplicationDelegate,
   scoped_ptr<mojo::FocusController> focus_controller_;
 
   Connections connections_;
-  ViewIdToViewTargetMap view_id_to_view_target_map_;
+  RegisteredViewIdSet registered_view_id_set_;
 
   WindowManagerInternalClientPtr window_manager_client_;
 

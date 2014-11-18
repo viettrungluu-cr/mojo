@@ -32,8 +32,9 @@ class ViewEventDispatcher : public ui::EventProcessor {
   ui::EventDispatchDetails PostDispatchEvent(
       ui::EventTarget* target, const ui::Event& event) override;
 
-  // We own the root of the shadow tree which mirrors the mojo::View* tree.
-  scoped_ptr<ViewTarget> root_view_target_;
+  // We keep a weak reference to ViewTarget*, which corresponds to the root of
+  // the mojo::View tree.
+  ViewTarget* root_view_target_;
 
   ViewTarget* event_dispatch_target_;
   ViewTarget* old_dispatch_target_;

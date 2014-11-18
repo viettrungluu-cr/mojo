@@ -85,17 +85,6 @@ WindowManagerApp::~WindowManagerApp() {
   STLDeleteElements(&connections_);
 }
 
-// static
-View* WindowManagerApp::GetViewForViewTarget(ViewTarget* target) {
-  return target->view();
-}
-
-ViewTarget* WindowManagerApp::GetViewTargetForViewId(Id view) {
-  ViewIdToViewTargetMap::const_iterator it =
-      view_id_to_view_target_map_.find(view);
-  return it != view_id_to_view_target_map_.end() ? it->second : nullptr;
-}
-
 void WindowManagerApp::AddConnection(WindowManagerImpl* connection) {
   DCHECK(connections_.find(connection) == connections_.end());
   connections_.insert(connection);
@@ -176,7 +165,7 @@ void WindowManagerApp::OnEmbed(ViewManager* view_manager,
 
   view_event_dispatcher_.reset(new ViewEventDispatcher());
 
-  RegisterSubtree(root_, nullptr);
+  RegisterSubtree(root_);
 
   // TODO(erg): Also move the capture client over.
   //
@@ -214,12 +203,12 @@ void WindowManagerApp::OnTreeChanged(
     return;
 
   if (params.new_parent) {
-    if (view_id_to_view_target_map_.find(params.target->id()) ==
-        view_id_to_view_target_map_.end()) {
-      ViewIdToViewTargetMap::const_iterator it =
-          view_id_to_view_target_map_.find(params.new_parent->id());
-      DCHECK(it != view_id_to_view_target_map_.end());
-      RegisterSubtree(params.target, it->second);
+    if (registered_view_id_set_.find(params.target->id()) ==
+        registered_view_id_set_.end()) {
+      RegisteredViewIdSet::const_iterator it =
+          registered_view_id_set_.find(params.new_parent->id());
+      DCHECK(it != registered_view_id_set_.end());
+      RegisterSubtree(params.target);
     }
   } else if (params.old_parent) {
     UnregisterSubtree(params.target);
@@ -236,13 +225,6 @@ void WindowManagerApp::OnViewDestroying(View* view) {
     focus_controller_->RemoveObserver(this);
 }
 
-void WindowManagerApp::OnViewBoundsChanged(View* view,
-                                           const Rect& old_bounds,
-                                           const Rect& new_bounds) {
-  // aura::Window* window = GetWindowForViewId(view->id());
-  // window->SetBounds(new_bounds.To<gfx::Rect>());
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 // WindowManagerApp, ui::EventHandler implementation:
 
@@ -250,7 +232,7 @@ void WindowManagerApp::OnEvent(ui::Event* event) {
   if (!window_manager_client_)
     return;
 
-  View* view = GetViewForViewTarget(static_cast<ViewTarget*>(event->target()));
+  View* view = static_cast<ViewTarget*>(event->target())->view();
   if (!view)
     return;
 
@@ -287,24 +269,22 @@ void WindowManagerApp::OnViewActivated(View* gained_active,
 ////////////////////////////////////////////////////////////////////////////////
 // WindowManagerApp, private:
 
-void WindowManagerApp::RegisterSubtree(View* view, ViewTarget* parent) {
+void WindowManagerApp::RegisterSubtree(View* view) {
   view->AddObserver(this);
-  DCHECK(view_id_to_view_target_map_.find(view->id()) ==
-         view_id_to_view_target_map_.end());
-  ViewTarget* target = new ViewTarget(this, view);
+  DCHECK(registered_view_id_set_.find(view->id()) ==
+         registered_view_id_set_.end());
   // All events pass through the root during dispatch, so we only need a handler
   // installed there.
   if (view == root_) {
+    ViewTarget* target = ViewTarget::TargetFromView(view);
     target->SetEventTargeter(scoped_ptr<ViewTargeter>(new ViewTargeter()));
     target->AddPreTargetHandler(this);
     view_event_dispatcher_->SetRootViewTarget(target);
   }
-  // TODO(erg): Why is there no matching RemoveChild()? How does that work in
-  // the aura version?
-  view_id_to_view_target_map_[view->id()] = target;
+  registered_view_id_set_.insert(view->id());
   View::Children::const_iterator it = view->children().begin();
   for (; it != view->children().end(); ++it)
-    RegisterSubtree(*it, target);
+    RegisterSubtree(*it);
 }
 
 void WindowManagerApp::UnregisterSubtree(View* view) {
@@ -314,19 +294,15 @@ void WindowManagerApp::UnregisterSubtree(View* view) {
 }
 
 void WindowManagerApp::Unregister(View* view) {
-  ViewIdToViewTargetMap::iterator it =
-      view_id_to_view_target_map_.find(view->id());
-  if (it == view_id_to_view_target_map_.end()) {
+  RegisteredViewIdSet::iterator it = registered_view_id_set_.find(view->id());
+  if (it == registered_view_id_set_.end()) {
     // Because we unregister in OnViewDestroying() we can still get a subsequent
     // OnTreeChanged for the same view. Ignore this one.
     return;
   }
   view->RemoveObserver(this);
-  DCHECK(it != view_id_to_view_target_map_.end());
-  // Delete before we remove from map as destruction may want to look up view
-  // for window.
-  delete it->second;
-  view_id_to_view_target_map_.erase(it);
+  DCHECK(it != registered_view_id_set_.end());
+  registered_view_id_set_.erase(it);
 }
 
 void WindowManagerApp::DispatchInputEventToView(View* view, EventPtr event) {

@@ -46,7 +46,7 @@ class TestTarget : public EventTarget {
     return parent_;
   }
 
-  virtual scoped_ptr<EventTargetIterator> GetChildIterator() const override {
+  virtual scoped_ptr<EventTargetIterator> GetChildIterator() override {
     return scoped_ptr<EventTargetIterator>();
   }
 

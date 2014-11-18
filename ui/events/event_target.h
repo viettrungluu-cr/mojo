@@ -47,7 +47,7 @@ class EVENTS_EXPORT EventTarget : public EventHandler {
 
   // Returns an iterator an EventTargeter can use to iterate over the list of
   // child EventTargets.
-  virtual scoped_ptr<EventTargetIterator> GetChildIterator() const = 0;
+  virtual scoped_ptr<EventTargetIterator> GetChildIterator() = 0;
 
   // Returns the EventTargeter that should be used to find the target for an
   // event in the subtree rooted at this EventTarget.

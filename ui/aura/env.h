@@ -89,7 +89,7 @@ class AURA_EXPORT Env : public ui::EventTarget, public base::SupportsUserData {
   // Overridden from ui::EventTarget:
   virtual bool CanAcceptEvent(const ui::Event& event) override;
   virtual ui::EventTarget* GetParentTarget() override;
-  virtual scoped_ptr<ui::EventTargetIterator> GetChildIterator() const override;
+  virtual scoped_ptr<ui::EventTargetIterator> GetChildIterator() override;
   virtual ui::EventTargeter* GetEventTargeter() override;
 
   ObserverList<EnvObserver> observers_;
