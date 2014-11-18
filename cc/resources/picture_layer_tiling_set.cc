@@ -19,6 +19,12 @@ class LargestToSmallestScaleFunctor {
 
 }  // namespace
 
+// static
+scoped_ptr<PictureLayerTilingSet> PictureLayerTilingSet::Create(
+    PictureLayerTilingClient* client) {
+  return make_scoped_ptr(new PictureLayerTilingSet(client));
+}
+
 PictureLayerTilingSet::PictureLayerTilingSet(PictureLayerTilingClient* client)
     : client_(client) {
 }
@@ -40,7 +46,8 @@ void PictureLayerTilingSet::RemoveTilesInRegion(const Region& region) {
 bool PictureLayerTilingSet::SyncTilings(const PictureLayerTilingSet& other,
                                         const gfx::Size& new_layer_bounds,
                                         const Region& layer_invalidation,
-                                        float minimum_contents_scale) {
+                                        float minimum_contents_scale,
+                                        RasterSource* raster_source) {
   if (new_layer_bounds.IsEmpty()) {
     RemoveAllTilings();
     return false;
@@ -69,8 +76,8 @@ bool PictureLayerTilingSet::SyncTilings(const PictureLayerTilingSet& other,
     if (PictureLayerTiling* this_tiling = TilingAtScale(contents_scale)) {
       this_tiling->set_resolution(other.tilings_[i]->resolution());
 
-      this_tiling->UpdateTilesToCurrentRasterSource(layer_invalidation,
-                                                    new_layer_bounds);
+      this_tiling->UpdateTilesToCurrentRasterSource(
+          raster_source, layer_invalidation, new_layer_bounds);
       this_tiling->CreateMissingTilesInLiveTilesRect();
       if (this_tiling->resolution() == HIGH_RESOLUTION)
         have_high_res_tiling = true;
@@ -143,6 +150,35 @@ void PictureLayerTilingSet::Remove(PictureLayerTiling* tiling) {
 void PictureLayerTilingSet::RemoveAllTiles() {
   for (size_t i = 0; i < tilings_.size(); ++i)
     tilings_[i]->Reset();
+}
+
+bool PictureLayerTilingSet::UpdateTilePriorities(
+    const gfx::Rect& required_rect_in_layer_space,
+    float ideal_contents_scale,
+    double current_frame_time_in_seconds,
+    const Occlusion& occlusion_in_layer_space,
+    bool can_require_tiles_for_activation) {
+  bool tiling_needs_update = false;
+  // TODO(vmpstr): Check if we have to early out here, or if we can just do it
+  // as part of computing tile priority rects for tilings.
+  for (auto* tiling : tilings_) {
+    if (tiling->NeedsUpdateForFrameAtTimeAndViewport(
+            current_frame_time_in_seconds, required_rect_in_layer_space)) {
+      tiling_needs_update = true;
+      break;
+    }
+  }
+  if (!tiling_needs_update)
+    return false;
+
+  for (auto* tiling : tilings_) {
+    tiling->set_can_require_tiles_for_activation(
+        can_require_tiles_for_activation);
+    tiling->ComputeTilePriorityRects(
+        required_rect_in_layer_space, ideal_contents_scale,
+        current_frame_time_in_seconds, occlusion_in_layer_space);
+  }
+  return true;
 }
 
 PictureLayerTilingSet::CoverageIterator::CoverageIterator(

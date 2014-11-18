@@ -43,7 +43,7 @@ class PictureLayerTilingPerfTest : public testing::Test {
                                                   1).Pass();
   }
 
-  virtual void SetUp() override {
+  void SetUp() override {
     picture_layer_tiling_client_.SetTileSize(gfx::Size(256, 256));
     picture_layer_tiling_client_.set_max_tiles_for_interest_area(250);
     picture_layer_tiling_client_.set_tree(PENDING_TREE);
@@ -52,15 +52,14 @@ class PictureLayerTilingPerfTest : public testing::Test {
     picture_layer_tiling_->CreateAllTilesForTesting();
   }
 
-  virtual void TearDown() override {
-    picture_layer_tiling_.reset(NULL);
-  }
+  void TearDown() override { picture_layer_tiling_.reset(NULL); }
 
   void RunInvalidateTest(const std::string& test_name, const Region& region) {
     timer_.Reset();
     do {
       picture_layer_tiling_->UpdateTilesToCurrentRasterSource(
-          region, picture_layer_tiling_->tiling_size());
+          picture_layer_tiling_client_.raster_source(), region,
+          picture_layer_tiling_->tiling_size());
       timer_.NextLap();
     } while (!timer_.HasTimeLimitExpired());
 
@@ -76,7 +75,7 @@ class PictureLayerTilingPerfTest : public testing::Test {
     timer_.Reset();
     do {
       picture_layer_tiling_->ComputeTilePriorityRects(
-          PENDING_TREE, viewport_rect, 1.f, timer_.NumLaps() + 1, Occlusion());
+          viewport_rect, 1.f, timer_.NumLaps() + 1, Occlusion());
       timer_.NextLap();
     } while (!timer_.HasTimeLimitExpired());
 
@@ -102,7 +101,7 @@ class PictureLayerTilingPerfTest : public testing::Test {
     timer_.Reset();
     do {
       picture_layer_tiling_->ComputeTilePriorityRects(
-          PENDING_TREE, viewport_rect, 1.f, timer_.NumLaps() + 1, Occlusion());
+          viewport_rect, 1.f, timer_.NumLaps() + 1, Occlusion());
 
       viewport_rect = gfx::Rect(viewport_rect.x() + xoffsets[offsetIndex],
                                 viewport_rect.y() + yoffsets[offsetIndex],
@@ -130,8 +129,8 @@ class PictureLayerTilingPerfTest : public testing::Test {
     picture_layer_tiling_ =
         PictureLayerTiling::Create(1, bounds, &picture_layer_tiling_client_);
     picture_layer_tiling_client_.set_tree(ACTIVE_TREE);
-    picture_layer_tiling_->ComputeTilePriorityRects(
-        ACTIVE_TREE, viewport, 1.0f, 1.0, Occlusion());
+    picture_layer_tiling_->ComputeTilePriorityRects(viewport, 1.0f, 1.0,
+                                                    Occlusion());
 
     timer_.Reset();
     do {
@@ -155,8 +154,8 @@ class PictureLayerTilingPerfTest : public testing::Test {
     picture_layer_tiling_ =
         PictureLayerTiling::Create(1, bounds, &picture_layer_tiling_client_);
     picture_layer_tiling_client_.set_tree(ACTIVE_TREE);
-    picture_layer_tiling_->ComputeTilePriorityRects(
-        ACTIVE_TREE, viewport, 1.0f, 1.0, Occlusion());
+    picture_layer_tiling_->ComputeTilePriorityRects(viewport, 1.0f, 1.0,
+                                                    Occlusion());
 
     timer_.Reset();
     do {
@@ -185,8 +184,8 @@ class PictureLayerTilingPerfTest : public testing::Test {
     picture_layer_tiling_ =
         PictureLayerTiling::Create(1, bounds, &picture_layer_tiling_client_);
     picture_layer_tiling_client_.set_tree(ACTIVE_TREE);
-    picture_layer_tiling_->ComputeTilePriorityRects(
-        ACTIVE_TREE, viewport, 1.0f, 1.0, Occlusion());
+    picture_layer_tiling_->ComputeTilePriorityRects(viewport, 1.0f, 1.0,
+                                                    Occlusion());
 
     timer_.Reset();
     TreePriority priorities[] = {SAME_PRIORITY_FOR_BOTH_TREES,
@@ -217,8 +216,8 @@ class PictureLayerTilingPerfTest : public testing::Test {
     picture_layer_tiling_ =
         PictureLayerTiling::Create(1, bounds, &picture_layer_tiling_client_);
     picture_layer_tiling_client_.set_tree(ACTIVE_TREE);
-    picture_layer_tiling_->ComputeTilePriorityRects(
-        ACTIVE_TREE, viewport, 1.0f, 1.0, Occlusion());
+    picture_layer_tiling_->ComputeTilePriorityRects(viewport, 1.0f, 1.0,
+                                                    Occlusion());
 
     TreePriority priorities[] = {SAME_PRIORITY_FOR_BOTH_TREES,
                                  SMOOTHNESS_TAKES_PRIORITY,

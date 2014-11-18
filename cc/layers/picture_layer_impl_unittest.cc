@@ -71,9 +71,7 @@ class PictureLayerImplTest : public testing::Test {
   virtual ~PictureLayerImplTest() {
   }
 
-  virtual void SetUp() override {
-    InitializeRenderer();
-  }
+  void SetUp() override { InitializeRenderer(); }
 
   virtual void InitializeRenderer() {
     host_impl_.InitializeRenderer(FakeOutputSurface::Create3d());
@@ -883,18 +881,13 @@ TEST_F(PictureLayerImplTest, PinchGestureTilings) {
 
   // Zoom out further, close to our low-res scale factor. We should
   // use that tiling as high-res, and not create a new tiling.
-  SetContentsScaleOnBothLayers(
-      low_res_factor, 1.0f, low_res_factor / 2.0f, 1.0f, false);
+  SetContentsScaleOnBothLayers(low_res_factor * 2.1f, 1.0f,
+                               low_res_factor * 2.1f, 1.0f, false);
   EXPECT_EQ(3u, active_layer_->tilings()->num_tilings());
 
   // Zoom in a lot now. Since we increase by increments of
-  // kMaxScaleRatioDuringPinch, this will first use 1.0, then 2.0
-  // and then finally create a new tiling at 4.0.
-  SetContentsScaleOnBothLayers(4.2f, 1.0f, 2.1f, 1.f, false);
-  EXPECT_EQ(3u, active_layer_->tilings()->num_tilings());
-  SetContentsScaleOnBothLayers(4.2f, 1.0f, 2.1f, 1.f, false);
-  EXPECT_EQ(3u, active_layer_->tilings()->num_tilings());
-  SetContentsScaleOnBothLayers(4.2f, 1.0f, 2.1f, 1.f, false);
+  // kMaxScaleRatioDuringPinch, this will create a new tiling at 4.0.
+  SetContentsScaleOnBothLayers(3.8f, 1.0f, 2.1f, 1.f, false);
   EXPECT_EQ(4u, active_layer_->tilings()->num_tilings());
   EXPECT_FLOAT_EQ(4.0f,
                   active_layer_->tilings()->tiling_at(0)->contents_scale());
@@ -938,10 +931,17 @@ TEST_F(PictureLayerImplTest, SnappedTilingDuringZoom) {
   SetContentsScaleOnBothLayers(0.1f, 1.0f, 0.1f, 1.0f, false);
   EXPECT_EQ(3u, active_layer_->tilings()->num_tilings());
 
-  // Zoom in. 0.125(desired_scale) should be snapped to 0.12 during zoom-in
-  // because 0.125(desired_scale) is within the ratio(1.2)
-  SetContentsScaleOnBothLayers(0.5f, 1.0f, 0.5f, 1.0f, false);
+  // Zoom in. 0.25(desired_scale) should be snapped to 0.24 during zoom-in
+  // because 0.25(desired_scale) is within the ratio(1.2).
+  SetContentsScaleOnBothLayers(0.25f, 1.0f, 0.25f, 1.0f, false);
   EXPECT_EQ(3u, active_layer_->tilings()->num_tilings());
+
+  // Zoom in a lot. Since we move in factors of two, we should get a scale that
+  // is a power of 2 times 0.24.
+  SetContentsScaleOnBothLayers(1.f, 1.0f, 1.f, 1.0f, false);
+  EXPECT_EQ(4u, active_layer_->tilings()->num_tilings());
+  EXPECT_FLOAT_EQ(1.92f,
+                  active_layer_->tilings()->tiling_at(0)->contents_scale());
 }
 
 TEST_F(PictureLayerImplTest, CleanUpTilings) {
@@ -1188,8 +1188,8 @@ TEST_F(PictureLayerImplTest, DontAddLowResForSmallLayers) {
   ResetTilingsAndRasterScales();
 
   // Mask layers dont create low res since they always fit on one tile.
-  pending_pile->SetIsMask(true);
-  active_pile->SetIsMask(true);
+  pending_layer_->set_is_mask(true);
+  active_layer_->set_is_mask(true);
   SetContentsScaleOnBothLayers(contents_scale,
                                device_scale,
                                page_scale,
@@ -1204,8 +1204,8 @@ TEST_F(PictureLayerImplTest, HugeMasksDontGetTiles) {
 
   scoped_refptr<FakePicturePileImpl> valid_pile =
       FakePicturePileImpl::CreateFilledPile(tile_size, gfx::Size(1000, 1000));
-  valid_pile->SetIsMask(true);
   SetupPendingTree(valid_pile);
+  pending_layer_->set_is_mask(true);
 
   SetupDrawPropertiesAndUpdateTiles(pending_layer_, 1.f, 1.f, 1.f, 1.f, false);
   EXPECT_EQ(1.f, pending_layer_->HighResTiling()->contents_scale());
@@ -1231,8 +1231,8 @@ TEST_F(PictureLayerImplTest, HugeMasksDontGetTiles) {
   scoped_refptr<FakePicturePileImpl> huge_pile =
       FakePicturePileImpl::CreateFilledPile(
           tile_size, gfx::Size(max_texture_size + 1, 10));
-  huge_pile->SetIsMask(true);
   SetupPendingTree(huge_pile);
+  pending_layer_->set_is_mask(true);
 
   SetupDrawPropertiesAndUpdateTiles(pending_layer_, 1.f, 1.f, 1.f, 1.f, false);
   EXPECT_EQ(1.f, pending_layer_->HighResTiling()->contents_scale());
@@ -1256,8 +1256,8 @@ TEST_F(PictureLayerImplTest, ScaledMaskLayer) {
 
   scoped_refptr<FakePicturePileImpl> valid_pile =
       FakePicturePileImpl::CreateFilledPile(tile_size, gfx::Size(1000, 1000));
-  valid_pile->SetIsMask(true);
   SetupPendingTree(valid_pile);
+  pending_layer_->set_is_mask(true);
 
   float ideal_contents_scale = 1.3f;
   SetupDrawPropertiesAndUpdateTiles(
@@ -2027,7 +2027,7 @@ TEST_F(PictureLayerImplTest, HighResRequiredWhenActiveHasDifferentBounds) {
   // TODO(vmpstr): This is confusing. Rework the test to create different bounds
   // on different trees instead of fudging tilings.
   pending_layer_->HighResTiling()->ComputeTilePriorityRects(
-      PENDING_TREE, gfx::Rect(pending_layer_bounds), 1.f, 1.f, Occlusion());
+      gfx::Rect(pending_layer_bounds), 1.f, 1.f, Occlusion());
 
   pending_layer_->HighResTiling()->UpdateAllTilePrioritiesForTesting();
   active_layer_->SetAllTilesReady();
@@ -2117,8 +2117,7 @@ TEST_F(PictureLayerImplTest, ShareTilesOnNextFrame) {
 
   // Drop the tiles on the active tree and recreate them. The same tiles
   // should be shared or not.
-  active_tiling->ComputeTilePriorityRects(
-      ACTIVE_TREE, gfx::Rect(), 1.f, 1.0, Occlusion());
+  active_tiling->ComputeTilePriorityRects(gfx::Rect(), 1.f, 1.0, Occlusion());
   EXPECT_TRUE(active_tiling->AllTilesForTesting().empty());
   active_tiling->CreateAllTilesForTesting();
 
@@ -2459,7 +2458,8 @@ TEST_F(PictureLayerImplTest, PinchingTooSmall) {
   EXPECT_LT(page_scale * contents_scale,
             pending_layer_->MinimumContentsScale());
 
-  SetContentsScaleOnBothLayers(contents_scale, 1.f, page_scale, 1.f, false);
+  SetContentsScaleOnBothLayers(contents_scale * page_scale, 1.f, page_scale,
+                               1.f, false);
   ASSERT_GE(pending_layer_->num_tilings(), 0u);
   EXPECT_FLOAT_EQ(pending_layer_->MinimumContentsScale(),
                   pending_layer_->HighResTiling()->contents_scale());
@@ -2474,7 +2474,7 @@ class DeferredInitPictureLayerImplTest : public PictureLayerImplTest {
         delegated_rendering));
   }
 
-  virtual void SetUp() override {
+  void SetUp() override {
     PictureLayerImplTest::SetUp();
 
     // Create some default active and pending trees.
@@ -3716,10 +3716,10 @@ TEST_F(PictureLayerImplTest, UpdateTilesForMasksWithNoVisibleContent) {
 
   scoped_refptr<FakePicturePileImpl> pending_pile =
       FakePicturePileImpl::CreateFilledPile(tile_size, bounds);
-  pending_pile->SetIsMask(true);
   scoped_ptr<FakePictureLayerImpl> mask =
       FakePictureLayerImpl::CreateWithRasterSource(host_impl_.pending_tree(), 3,
                                                    pending_pile);
+  mask->set_is_mask(true);
 
   mask->SetBounds(bounds);
   mask->SetContentBounds(bounds);
@@ -4504,8 +4504,8 @@ void PictureLayerImplTest::TestQuadsForSolidColor(bool test_for_solid) {
 
   Region invalidation(layer_rect);
   recording_source->UpdateAndExpandInvalidation(
-      &client, &invalidation, SK_ColorWHITE, false, false, layer_bounds,
-      layer_rect, frame_number++, Picture::RECORD_NORMALLY);
+      &client, &invalidation, layer_bounds, layer_rect, frame_number++,
+      Picture::RECORD_NORMALLY);
 
   scoped_refptr<RasterSource> pending_raster_source =
       recording_source->CreateRasterSource();
@@ -4571,8 +4571,8 @@ TEST_F(PictureLayerImplTest, NonSolidToSolidNoTilings) {
 
   Region invalidation1(layer_rect);
   recording_source->UpdateAndExpandInvalidation(
-      &client, &invalidation1, SK_ColorWHITE, false, false, layer_bounds,
-      layer_rect, frame_number++, Picture::RECORD_NORMALLY);
+      &client, &invalidation1, layer_bounds, layer_rect, frame_number++,
+      Picture::RECORD_NORMALLY);
 
   scoped_refptr<RasterSource> raster_source1 =
       recording_source->CreateRasterSource();
@@ -4589,8 +4589,8 @@ TEST_F(PictureLayerImplTest, NonSolidToSolidNoTilings) {
 
   Region invalidation2(layer_rect);
   recording_source->UpdateAndExpandInvalidation(
-      &client, &invalidation2, SK_ColorWHITE, false, false, layer_bounds,
-      layer_rect, frame_number++, Picture::RECORD_NORMALLY);
+      &client, &invalidation2, layer_bounds, layer_rect, frame_number++,
+      Picture::RECORD_NORMALLY);
 
   scoped_refptr<RasterSource> raster_source2 =
       recording_source->CreateRasterSource();

@@ -38,7 +38,6 @@ class CC_EXPORT PictureLayerTilingClient {
   virtual scoped_refptr<Tile> CreateTile(
     PictureLayerTiling* tiling,
     const gfx::Rect& content_rect) = 0;
-  virtual RasterSource* GetRasterSource() = 0;
   virtual gfx::Size CalculateTileSize(
     const gfx::Size& content_bounds) const = 0;
   // This invalidation region defines the area (if any, it can by null) that
@@ -145,7 +144,8 @@ class CC_EXPORT PictureLayerTiling {
       const gfx::Size& layer_bounds,
       PictureLayerTilingClient* client);
   gfx::Size layer_bounds() const { return layer_bounds_; }
-  void UpdateTilesToCurrentRasterSource(const Region& layer_invalidation,
+  void UpdateTilesToCurrentRasterSource(RasterSource* raster_source,
+                                        const Region& layer_invalidation,
                                         const gfx::Size& new_layer_bounds);
   void CreateMissingTilesInLiveTilesRect();
   void RemoveTilesInRegion(const Region& layer_region);
@@ -260,8 +260,7 @@ class CC_EXPORT PictureLayerTiling {
 
   void Reset();
 
-  void ComputeTilePriorityRects(WhichTree tree,
-                                const gfx::Rect& viewport_in_layer_space,
+  void ComputeTilePriorityRects(const gfx::Rect& viewport_in_layer_space,
                                 float ideal_contents_scale,
                                 double current_frame_time_in_seconds,
                                 const Occlusion& occlusion_in_layer_space);

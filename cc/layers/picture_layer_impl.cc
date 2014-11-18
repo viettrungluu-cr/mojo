@@ -31,6 +31,8 @@
 #include "ui/gfx/geometry/size_conversions.h"
 
 namespace {
+// This must be > 1 as we multiply or divide by this to find a new raster
+// scale during pinch.
 const float kMaxScaleRatioDuringPinch = 2.0f;
 
 // When creating a new tiling during pinch, snap to an existing
@@ -85,7 +87,8 @@ PictureLayerImpl::PictureLayerImpl(LayerTreeImpl* tree_impl, int id)
       was_screen_space_transform_animating_(false),
       needs_post_commit_initialization_(true),
       should_update_tile_priorities_(false),
-      only_used_low_res_last_append_quads_(false) {
+      only_used_low_res_last_append_quads_(false),
+      is_mask_(false) {
   layer_tree_impl()->RegisterPictureLayerImpl(this);
 }
 
@@ -124,7 +127,7 @@ void PictureLayerImpl::PushPropertiesTo(LayerImpl* base_layer) {
 
   layer_impl->UpdateRasterSource(raster_source_);
 
-  DCHECK(!raster_source_->IsSolidColor() || !tilings_->num_tilings());
+  DCHECK_IMPLIES(raster_source_->IsSolidColor(), tilings_->num_tilings() == 0);
   // Tilings would be expensive to push, so we swap.
   layer_impl->tilings_.swap(tilings_);
   layer_impl->tilings_->SetClient(layer_impl);
@@ -472,7 +475,7 @@ void PictureLayerImpl::UpdateTiles(const Occlusion& occlusion_in_content_space,
 
   UpdateIdealScales();
 
-  DCHECK(tilings_->num_tilings() > 0 || raster_contents_scale_ == 0.f)
+  DCHECK_IMPLIES(tilings_->num_tilings() == 0, raster_contents_scale_ == 0.f)
       << "A layer with no tilings shouldn't have valid raster scales";
   if (!raster_contents_scale_ || ShouldAdjustRasterScale()) {
     RecalculateRasterScales();
@@ -498,47 +501,40 @@ void PictureLayerImpl::UpdateTiles(const Occlusion& occlusion_in_content_space,
 
 void PictureLayerImpl::UpdateTilePriorities(
     const Occlusion& occlusion_in_content_space) {
-  DCHECK(!raster_source_->IsSolidColor() || !tilings_->num_tilings());
+  DCHECK_IMPLIES(raster_source_->IsSolidColor(), tilings_->num_tilings() == 0);
+
   double current_frame_time_in_seconds =
       (layer_tree_impl()->CurrentBeginFrameArgs().frame_time -
        base::TimeTicks()).InSecondsF();
-
   gfx::Rect viewport_rect_in_layer_space =
       GetViewportForTilePriorityInContentSpace();
-  bool tiling_needs_update = false;
-  for (size_t i = 0; i < tilings_->num_tilings(); ++i) {
-    if (tilings_->tiling_at(i)->NeedsUpdateForFrameAtTimeAndViewport(
-            current_frame_time_in_seconds, viewport_rect_in_layer_space)) {
-      tiling_needs_update = true;
-      break;
-    }
-  }
-  if (!tiling_needs_update)
-    return;
 
-  WhichTree tree =
-      layer_tree_impl()->IsActiveTree() ? ACTIVE_TREE : PENDING_TREE;
+  // The tiling set can require tiles for activation any of the following
+  // conditions are true:
+  // - This layer produced a high-res or non-ideal-res tile last frame.
+  // - We're in requires high res to draw mode.
+  // - We're not in smoothness takes priority mode.
+  // To put different, the tiling set can't require tiles for activation if
+  // we're in smoothness mode and only used low-res or checkerboard to draw last
+  // frame and we don't need high res to draw.
+  //
+  // The reason for this is that we should be able to activate sooner and get a
+  // more up to date recording, so we don't run out of recording on the active
+  // tree.
   bool can_require_tiles_for_activation =
       !only_used_low_res_last_append_quads_ || RequiresHighResToDraw() ||
       !layer_tree_impl()->SmoothnessTakesPriority();
-  for (size_t i = 0; i < tilings_->num_tilings(); ++i) {
-    PictureLayerTiling* tiling = tilings_->tiling_at(i);
 
-    tiling->set_can_require_tiles_for_activation(
-        can_require_tiles_for_activation);
+  // Pass |occlusion_in_content_space| for |occlusion_in_layer_space| since
+  // they are the same space in picture layer, as contents scale is always 1.
+  bool updated = tilings_->UpdateTilePriorities(
+      viewport_rect_in_layer_space, ideal_contents_scale_,
+      current_frame_time_in_seconds, occlusion_in_content_space,
+      can_require_tiles_for_activation);
 
-    // Pass |occlusion_in_content_space| for |occlusion_in_layer_space| since
-    // they are the same space in picture layer, as contents scale is always 1.
-    tiling->ComputeTilePriorityRects(tree,
-                                     viewport_rect_in_layer_space,
-                                     ideal_contents_scale_,
-                                     current_frame_time_in_seconds,
-                                     occlusion_in_content_space);
-  }
-
-  // Tile priorities were modified.
   // TODO(vmpstr): See if this can be removed in favour of calling it from LTHI
-  layer_tree_impl()->DidModifyTilePriorities();
+  if (updated)
+    layer_tree_impl()->DidModifyTilePriorities();
 }
 
 gfx::Rect PictureLayerImpl::GetViewportForTilePriorityInContentSpace() const {
@@ -623,17 +619,13 @@ scoped_refptr<Tile> PictureLayerImpl::CreateTile(PictureLayerTiling* tiling,
   // memory savings that we can get. Note that we don't handle solid color
   // masks, so we shouldn't bother analyzing those.
   // Bugs: crbug.com/397198, crbug.com/396908
-  if (!raster_source_->IsMask())
+  if (!is_mask_)
     flags = Tile::USE_PICTURE_ANALYSIS;
 
   return layer_tree_impl()->tile_manager()->CreateTile(
       raster_source_.get(), content_rect.size(), content_rect,
       tiling->contents_scale(), id(), layer_tree_impl()->source_frame_number(),
       flags);
-}
-
-RasterSource* PictureLayerImpl::GetRasterSource() {
-  return raster_source_.get();
 }
 
 const Region* PictureLayerImpl::GetPendingInvalidation() {
@@ -699,7 +691,7 @@ gfx::Size PictureLayerImpl::CalculateTileSize(
   int max_texture_size =
       layer_tree_impl()->resource_provider()->max_texture_size();
 
-  if (raster_source_->IsMask()) {
+  if (is_mask_) {
     // Masks are not tiled, so if we can't cover the whole mask with one tile,
     // don't make any tiles at all. Returning an empty size signals this.
     if (content_bounds.width() > max_texture_size ||
@@ -788,9 +780,9 @@ void PictureLayerImpl::SyncFromActiveLayer(const PictureLayerImpl* other) {
 
   bool synced_high_res_tiling = false;
   if (CanHaveTilings()) {
-    synced_high_res_tiling =
-        tilings_->SyncTilings(*other->tilings_, raster_source_->GetSize(),
-                              invalidation_, MinimumContentsScale());
+    synced_high_res_tiling = tilings_->SyncTilings(
+        *other->tilings_, raster_source_->GetSize(), invalidation_,
+        MinimumContentsScale(), raster_source_.get());
   } else {
     RemoveAllTilings();
   }
@@ -865,7 +857,7 @@ void PictureLayerImpl::DoPostCommitInitialization() {
   DCHECK(layer_tree_impl()->IsPendingTree());
 
   if (!tilings_)
-    tilings_ = make_scoped_ptr(new PictureLayerTilingSet(this));
+    tilings_ = PictureLayerTilingSet::Create(this);
 
   PictureLayerImpl* twin_layer = GetPendingOrActiveTwinLayer();
   if (twin_layer) {
@@ -1052,16 +1044,20 @@ void PictureLayerImpl::RecalculateRasterScales() {
 
   // During pinch we completely ignore the current ideal scale, and just use
   // a multiple of the previous scale.
-  // TODO(danakj): This seems crazy, we should use the current ideal, no?
   bool is_pinching = layer_tree_impl()->PinchGestureActive();
   if (is_pinching && old_raster_contents_scale) {
     // See ShouldAdjustRasterScale:
     // - When zooming out, preemptively create new tiling at lower resolution.
     // - When zooming in, approximate ideal using multiple of kMaxScaleRatio.
     bool zooming_out = old_raster_page_scale > ideal_page_scale_;
-    float desired_contents_scale =
-        zooming_out ? old_raster_contents_scale / kMaxScaleRatioDuringPinch
-                    : old_raster_contents_scale * kMaxScaleRatioDuringPinch;
+    float desired_contents_scale = old_raster_contents_scale;
+    if (zooming_out) {
+      while (desired_contents_scale > ideal_contents_scale_)
+        desired_contents_scale /= kMaxScaleRatioDuringPinch;
+    } else {
+      while (desired_contents_scale < ideal_contents_scale_)
+        desired_contents_scale *= kMaxScaleRatioDuringPinch;
+    }
     raster_contents_scale_ = SnappedContentsScale(desired_contents_scale);
     raster_page_scale_ =
         raster_contents_scale_ / raster_device_scale_ / raster_source_scale_;

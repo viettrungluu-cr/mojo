@@ -119,7 +119,6 @@ class CC_EXPORT PictureLayerImpl
   // PictureLayerTilingClient overrides.
   scoped_refptr<Tile> CreateTile(PictureLayerTiling* tiling,
                                  const gfx::Rect& content_rect) override;
-  RasterSource* GetRasterSource() override;
   gfx::Size CalculateTileSize(const gfx::Size& content_bounds) const override;
   const Region* GetPendingInvalidation() override;
   const PictureLayerTiling* GetPendingOrActiveTwinTiling(
@@ -139,6 +138,7 @@ class CC_EXPORT PictureLayerImpl
   // Mask-related functions.
   void GetContentsResourceId(ResourceProvider::ResourceId* resource_id,
                              gfx::Size* resource_size) const override;
+  void set_is_mask(bool is_mask) { is_mask_ = is_mask; }
 
   size_t GPUMemoryUsageInBytes() const override;
 
@@ -222,6 +222,7 @@ class CC_EXPORT PictureLayerImpl
   // after a CalculateContentsScale/ManageTilings.
   bool should_update_tile_priorities_;
   bool only_used_low_res_last_append_quads_;
+  bool is_mask_;
 
   // Any draw properties derived from |transform|, |viewport|, and |clip|
   // parameters in LayerTreeHostImpl::SetExternalDrawConstraints are not valid

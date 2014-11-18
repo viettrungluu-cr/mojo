@@ -28,6 +28,8 @@
          disable_depth_texture)                              \
   GPU_OP(DISABLE_EGL_KHR_FENCE_SYNC,                         \
          disable_egl_khr_fence_sync)                         \
+  GPU_OP(DISABLE_EGL_KHR_WAIT_SYNC,                          \
+         disable_egl_khr_wait_sync)                          \
   GPU_OP(DISABLE_EXT_DISCARD_FRAMEBUFFER,                    \
          disable_ext_discard_framebuffer)                    \
   GPU_OP(DISABLE_EXT_DRAW_BUFFERS,                           \
@@ -52,6 +54,8 @@
          force_gl_finish_after_compositing)                  \
   GPU_OP(FORCE_INTEGRATED_GPU,                               \
          force_integrated_gpu)                               \
+  GPU_OP(GL_CLEAR_BROKEN,                                    \
+         gl_clear_broken)                                    \
   GPU_OP(INIT_GL_POSITION_IN_VERTEX_SHADER,                  \
          init_gl_position_in_vertex_shader)                  \
   GPU_OP(INIT_TEXTURE_MAX_ANISOTROPY,                        \

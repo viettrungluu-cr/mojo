@@ -29,14 +29,17 @@ class NET_EXPORT_PRIVATE SendAlgorithmInterface {
   typedef std::vector<std::pair<QuicPacketSequenceNumber, TransmissionInfo>>
       CongestionVector;
 
-  static SendAlgorithmInterface* Create(const QuicClock* clock,
-                                        const RttStats* rtt_stats,
-                                        CongestionControlType type,
-                                        QuicConnectionStats* stats);
+  static SendAlgorithmInterface* Create(
+      const QuicClock* clock,
+      const RttStats* rtt_stats,
+      CongestionControlType type,
+      QuicConnectionStats* stats,
+      QuicPacketCount initial_congestion_window);
 
   virtual ~SendAlgorithmInterface() {}
 
-  virtual void SetFromConfig(const QuicConfig& config, bool is_server) = 0;
+  virtual void SetFromConfig(
+      const QuicConfig& config, bool is_server, bool using_pacing) = 0;
 
   // Sets the number of connections to emulate when doing congestion control,
   // particularly for congestion avoidance.  Can be set any time.

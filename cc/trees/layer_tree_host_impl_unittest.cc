@@ -87,7 +87,6 @@ class LayerTreeHostImplTest : public testing::Test,
         did_request_redraw_(false),
         did_request_animate_(false),
         did_request_manage_tiles_(false),
-        did_upload_visible_tile_(false),
         reduce_memory_result_(true),
         current_limit_bytes_(0),
         current_priority_cutoff_value_(0) {
@@ -103,11 +102,11 @@ class LayerTreeHostImplTest : public testing::Test,
     return settings;
   }
 
-  virtual void SetUp() override {
+  void SetUp() override {
     CreateHostImpl(DefaultSettings(), CreateOutputSurface());
   }
 
-  virtual void TearDown() override {}
+  void TearDown() override {}
 
   void UpdateRendererCapabilitiesOnImplThread() override {}
   void DidLoseOutputSurfaceOnImplThread() override {}
@@ -132,9 +131,6 @@ class LayerTreeHostImplTest : public testing::Test,
   void SetNeedsAnimateOnImplThread() override { did_request_animate_ = true; }
   void SetNeedsManageTilesOnImplThread() override {
     did_request_manage_tiles_ = true;
-  }
-  void DidInitializeVisibleTileOnImplThread() override {
-    did_upload_visible_tile_ = true;
   }
   void SetNeedsCommitOnImplThread() override { did_request_commit_ = true; }
   void PostAnimationEventsToMainThreadOnImplThread(
@@ -394,7 +390,6 @@ class LayerTreeHostImplTest : public testing::Test,
   bool did_request_redraw_;
   bool did_request_animate_;
   bool did_request_manage_tiles_;
-  bool did_upload_visible_tile_;
   bool reduce_memory_result_;
   base::Closure scrollbar_fade_start_;
   base::TimeDelta requested_scrollbar_animation_delay_;
@@ -6224,7 +6219,7 @@ TEST_F(LayerTreeHostImplTest,
 
 class LayerTreeHostImplTestDeferredInitialize : public LayerTreeHostImplTest {
  protected:
-  virtual void SetUp() override {
+  void SetUp() override {
     LayerTreeHostImplTest::SetUp();
 
     set_reduce_memory_result(false);
@@ -6413,7 +6408,7 @@ TEST_F(LayerTreeHostImplTest, RequireHighResAfterGpuRasterizationToggles) {
 
 class LayerTreeHostImplTestManageTiles : public LayerTreeHostImplTest {
  public:
-  virtual void SetUp() override {
+  void SetUp() override {
     LayerTreeSettings settings;
     settings.impl_side_painting = true;
 
@@ -7071,7 +7066,7 @@ TEST_F(LayerTreeHostImplTest, SimpleSwapPromiseMonitor) {
 
 class LayerTreeHostImplWithTopControlsTest : public LayerTreeHostImplTest {
  public:
-  virtual void SetUp() override {
+  void SetUp() override {
     LayerTreeSettings settings = DefaultSettings();
     settings.calculate_top_controls_position = true;
     settings.top_controls_height = top_controls_height_;
@@ -7459,7 +7454,7 @@ TEST_F(LayerTreeHostImplVirtualViewportTest, FlingScrollBubblesToInner) {
 
 class LayerTreeHostImplWithImplicitLimitsTest : public LayerTreeHostImplTest {
  public:
-  virtual void SetUp() override {
+  void SetUp() override {
     LayerTreeSettings settings = DefaultSettings();
     settings.max_memory_for_prepaint_percentage = 50;
     CreateHostImpl(settings, CreateOutputSurface());

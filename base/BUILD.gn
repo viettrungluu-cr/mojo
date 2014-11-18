@@ -399,6 +399,7 @@ component("base") {
     "metrics/histogram_delta_serialization.cc",
     "metrics/histogram_delta_serialization.",
     "metrics/histogram_flattener.h",
+    "metrics/histogram_macros.h",
     "metrics/histogram_samples.cc",
     "metrics/histogram_samples.h",
     "metrics/histogram_snapshot_manager.cc",
@@ -1401,6 +1402,11 @@ test("base_unittests") {
     set_sources_assignment_filter([])
     sources += [ "debug/proc_maps_linux_unittest.cc" ]
     set_sources_assignment_filter(sources_assignment_filter)
+  }
+
+  if (is_win) {
+    # TODO(jschuh): crbug.com/167187 fix size_t to int truncations.
+    cflags = [ "/wd4267" ]
   }
 }
 

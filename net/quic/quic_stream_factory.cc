@@ -60,16 +60,6 @@ const int kIdleConnectionTimeoutSeconds = 30;
 // The initial receive window size for both streams and sessions.
 const int32 kInitialReceiveWindowSize = 10 * 1024 * 1024;  // 10MB
 
-// The suggested initial congestion windows for a server to use.
-// TODO: This should be tested and optimized, and even better, suggest a window
-// that corresponds to historical bandwidth and min-RTT.
-// Larger initial congestion windows can, if we don't overshoot, reduce latency
-// by avoiding the RTT needed for slow start to double (and re-double) from a
-// default of 10.
-// We match SPDY's use of 32 when secure (since we'd compete with SPDY).
-const int32 kServerSecureInitialCongestionWindow = 32;
-// Be conservative, and just use double a typical TCP  ICWND for HTTP.
-const int32 kServerInecureInitialCongestionWindow = 20;
 // Set the maximum number of undecryptable packets the connection will store.
 const int32 kMaxUndecryptablePackets = 100;
 
@@ -922,15 +912,13 @@ int QuicStreamFactory::CreateSession(
                                                   packet_writer_factory,
                                                   true  /* owns_writer */,
                                                   false  /* is_server */,
+                                                  server_id.is_https(),
                                                   supported_versions_);
   connection->set_max_packet_length(max_packet_length_);
 
   InitializeCachedStateInCryptoConfig(server_id, server_info);
 
   QuicConfig config = config_;
-  config.SetInitialCongestionWindowToSend(
-      server_id.is_https() ? kServerSecureInitialCongestionWindow
-                           : kServerInecureInitialCongestionWindow);
   config.set_max_undecryptable_packets(kMaxUndecryptablePackets);
   config.SetInitialFlowControlWindowToSend(kInitialReceiveWindowSize);
   config.SetInitialStreamFlowControlWindowToSend(kInitialReceiveWindowSize);
@@ -954,7 +942,7 @@ int QuicStreamFactory::CreateSession(
 
   *session = new QuicClientSession(
       connection, socket.Pass(), this, transport_security_state_,
-      server_info.Pass(), config, server_id.is_https(),
+      server_info.Pass(), config,
       base::MessageLoop::current()->message_loop_proxy().get(),
       net_log.net_log());
   all_sessions_[*session] = server_id;  // owning pointer

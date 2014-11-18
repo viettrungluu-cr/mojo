@@ -19,7 +19,7 @@ const char kGpuDriverBugListJson[] = LONG_STRING_CONST(
 {
   "name": "gpu driver bug list",
   // Please update the version number whenever you change this file.
-  "version": "7.7",
+  "version": "7.9",
   "entries": [
     {
       "id": 1,
@@ -915,17 +915,6 @@ LONG_STRING_CONST(
       ]
     },
     {
-      "id": 79,
-      "cr_bugs": [371530],
-      "description": "Testing ARB sync fences is broken on MacOSX",
-      "os": {
-        "type": "macosx"
-      },
-      "features": [
-        "disable_arb_sync"
-      ]
-    },
-    {
       "id": 82,
       "description": "PBO mappings segfault on certain older Qualcomm drivers",
       "cr_bugs": [394510],
@@ -1045,6 +1034,44 @@ LONG_STRING_CONST(
       },
       "features": [
         "disable_async_readpixels"
+      ]
+    },
+    {
+      "id": 94,
+      "description": "Disable EGL_KHR_wait_sync on NVIDIA with GLES 3.1",
+      "cr_bugs": [433057],
+      "os": {
+        "type": "android",
+        "version": {
+          "op": "<=",
+          "value": "5.0.0"
+        }
+      },
+      "gl_vendor": "NVIDIA.*",
+      "gl_type": "gles",
+      "gl_version": {
+        "op": "=",
+        "value": "3.1"
+      },
+      "features": [
+        "disable_egl_khr_wait_sync"
+      ]
+    },
+    {
+      "id": 95,
+      "cr_bugs": [421271],
+      "description": "glClear does not always work on these drivers",
+      "os": {
+        "type": "android"
+      },
+      "gl_type": "gles",
+      "gl_version": {
+        "op": "<",
+        "value": "3.0"
+      },
+      "gl_vendor": "Imagination.*",
+      "features": [
+        "gl_clear_broken"
       ]
     }
   ]
