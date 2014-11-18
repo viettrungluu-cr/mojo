@@ -6,6 +6,8 @@ import("//mojo/public/tools/bindings/mojom.gni")
 
 source_set("gles2") {
   sources = [
+    "command_buffer_driver.cc",
+    "command_buffer_driver.h",
     "command_buffer_impl.cc",
     "command_buffer_impl.h",
     "gpu_impl.cc",

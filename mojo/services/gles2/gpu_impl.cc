@@ -6,6 +6,7 @@
 
 #include "gpu/command_buffer/service/mailbox_manager.h"
 #include "mojo/converters/geometry/geometry_type_converters.h"
+#include "mojo/services/gles2/command_buffer_driver.h"
 #include "mojo/services/gles2/command_buffer_impl.h"
 #include "ui/gl/gl_share_group.h"
 
@@ -29,14 +30,17 @@ void GpuImpl::CreateOnscreenGLES2Context(
     InterfaceRequest<CommandBuffer> request) {
   gfx::AcceleratedWidget widget = bit_cast<gfx::AcceleratedWidget>(
       static_cast<uintptr_t>(native_viewport_id));
-  new CommandBufferImpl(request.Pass(), widget, size.To<gfx::Size>(),
-                        share_group_.get(), mailbox_manager_.get());
+  new CommandBufferImpl(request.Pass(),
+                        make_scoped_ptr(new CommandBufferDriver(
+                            widget, size.To<gfx::Size>(), share_group_.get(),
+                            mailbox_manager_.get())));
 }
 
 void GpuImpl::CreateOffscreenGLES2Context(
     InterfaceRequest<CommandBuffer> request) {
-  new CommandBufferImpl(request.Pass(), share_group_.get(),
-                        mailbox_manager_.get());
+  new CommandBufferImpl(request.Pass(),
+                        make_scoped_ptr(new CommandBufferDriver(
+                            share_group_.get(), mailbox_manager_.get())));
 }
 
 }  // namespace mojo

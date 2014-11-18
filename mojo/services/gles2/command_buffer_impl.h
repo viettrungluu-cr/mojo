@@ -1,49 +1,21 @@
-// Copyright 2013 The Chromium Authors. All rights reserved.
+// Copyright 2014 The Chromium Authors. All rights reserved.
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
 #ifndef MOJO_SERVICES_GLES2_COMMAND_BUFFER_IMPL_H_
 #define MOJO_SERVICES_GLES2_COMMAND_BUFFER_IMPL_H_
 
-#include "base/macros.h"
 #include "base/memory/scoped_ptr.h"
-#include "base/timer/timer.h"
 #include "mojo/public/cpp/bindings/strong_binding.h"
-#include "mojo/public/cpp/system/core.h"
 #include "mojo/services/public/interfaces/gpu/command_buffer.mojom.h"
-#include "ui/gfx/native_widget_types.h"
-#include "ui/gfx/size.h"
-
-namespace gpu {
-class CommandBufferService;
-class GpuScheduler;
-class GpuControlService;
-namespace gles2 {
-class GLES2Decoder;
-class MailboxManager;
-}
-}
-
-namespace gfx {
-class GLContext;
-class GLShareGroup;
-class GLSurface;
-}
 
 namespace mojo {
+class CommandBufferDriver;
 
 class CommandBufferImpl : public CommandBuffer {
  public:
-  // Offscreen.
   CommandBufferImpl(InterfaceRequest<CommandBuffer> request,
-                    gfx::GLShareGroup* share_group,
-                    gpu::gles2::MailboxManager* mailbox_manager);
-  // Onscreen.
-  CommandBufferImpl(InterfaceRequest<CommandBuffer> request,
-                    gfx::AcceleratedWidget widget,
-                    const gfx::Size& size,
-                    gfx::GLShareGroup* share_group,
-                    gpu::gles2::MailboxManager* mailbox_manager);
+                    scoped_ptr<CommandBufferDriver> driver);
   ~CommandBufferImpl() override;
 
   void Initialize(CommandBufferSyncClientPtr sync_client,
@@ -58,25 +30,10 @@ class CommandBufferImpl : public CommandBuffer {
   void Echo(const Callback<void()>& callback) override;
 
  private:
-  bool DoInitialize(mojo::ScopedSharedBufferHandle shared_state);
-
-  void OnResize(gfx::Size size, float scale_factor);
-
-  void OnParseError();
-
-  CommandBufferSyncClientPtr sync_client_;
-
-  gfx::AcceleratedWidget widget_;
-  gfx::Size size_;
-  scoped_ptr<gpu::CommandBufferService> command_buffer_;
-  scoped_ptr<gpu::gles2::GLES2Decoder> decoder_;
-  scoped_ptr<gpu::GpuScheduler> scheduler_;
-  scoped_refptr<gfx::GLContext> context_;
-  scoped_refptr<gfx::GLSurface> surface_;
-  scoped_refptr<gfx::GLShareGroup> share_group_;
-  scoped_refptr<gpu::gles2::MailboxManager> mailbox_manager_;
+  void OnContextLost(int32_t reason);
 
   StrongBinding<CommandBuffer> binding_;
+  scoped_ptr<CommandBufferDriver> driver_;
 
   DISALLOW_COPY_AND_ASSIGN(CommandBufferImpl);
 };
