@@ -17,6 +17,24 @@ using ViewTargetTest = testing::Test;
 
 // V1
 //  +-- V2
+//       +-- V3
+TEST_F(ViewTargetTest, GetRoot) {
+  TestView v1(1, gfx::Rect(20, 20, 400, 400));
+  TestView v2(2, gfx::Rect(10, 10, 350, 350));
+  TestView v3(3, gfx::Rect(10, 10, 100, 100));
+  v1.AddChild(&v2);
+  v2.AddChild(&v3);
+
+  EXPECT_EQ(ViewTarget::TargetFromView(&v1),
+            ViewTarget::TargetFromView(&v1)->GetRoot());
+  EXPECT_EQ(ViewTarget::TargetFromView(&v1),
+            ViewTarget::TargetFromView(&v2)->GetRoot());
+  EXPECT_EQ(ViewTarget::TargetFromView(&v1),
+            ViewTarget::TargetFromView(&v3)->GetRoot());
+}
+
+// V1
+//  +-- V2
 TEST_F(ViewTargetTest, ConvertPointToTarget_Simple) {
   TestView v1(1, gfx::Rect(20, 20, 400, 400));
   TestView v2(2, gfx::Rect(10, 10, 350, 350));

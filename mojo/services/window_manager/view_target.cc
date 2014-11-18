@@ -82,8 +82,8 @@ bool ViewTarget::IsVisible() const {
 
 const ViewTarget* ViewTarget::GetRoot() const {
   const ViewTarget* root = this;
-  for (; root; root = root->GetParent()) {
-  }
+  for (const ViewTarget* parent = this; parent; parent = parent->GetParent())
+    root = parent;
   return root;
 }
 
