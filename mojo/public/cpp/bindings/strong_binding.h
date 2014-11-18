@@ -25,8 +25,8 @@ namespace mojo {
 //
 //   class StronglyBound : public Foo {
 //    public:
-//     explicit StronglyBound(ScopedMessagePipeHandle handle)
-//         : binding_(this, handle.Pass()) {}
+//     explicit StronglyBound(InterfaceRequest<Foo> request)
+//         : binding_(this, request.Pass()) {}
 //
 //     // Foo implementation here
 //
