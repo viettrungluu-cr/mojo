@@ -139,7 +139,7 @@ MojoResult MessagePipe::WriteMessage(
     std::vector<DispatcherTransport>* transports,
     MojoWriteMessageFlags flags) {
   DCHECK(port == 0 || port == 1);
-  return EnqueueMessageInternal(
+  return EnqueueMessage(
       GetPeerPort(port),
       make_scoped_ptr(new MessageInTransit(
           MessageInTransit::kTypeMessagePipeEndpoint,
@@ -257,9 +257,18 @@ scoped_refptr<ChannelEndpoint> MessagePipe::ConvertLocalToProxy(unsigned port) {
   return channel_endpoint;
 }
 
-MojoResult MessagePipe::EnqueueMessage(unsigned port,
-                                       scoped_ptr<MessageInTransit> message) {
-  return EnqueueMessageInternal(port, message.Pass(), nullptr);
+bool MessagePipe::OnReadMessage(unsigned port,
+                                scoped_ptr<MessageInTransit> message) {
+  // This is called when the |ChannelEndpoint| for the
+  // |ProxyMessagePipeEndpoint| |port| receives a message (from the |Channel|).
+  // We need to pass this message on to its peer port (typically a
+  // |LocalMessagePipeEndpoint|).
+  return EnqueueMessage(GetPeerPort(port), message.Pass(), nullptr) ==
+         MOJO_RESULT_OK;
+}
+
+void MessagePipe::OnDetachFromChannel(unsigned port) {
+  Close(port);
 }
 
 MessagePipe::MessagePipe() {
@@ -273,7 +282,7 @@ MessagePipe::~MessagePipe() {
   DCHECK(!endpoints_[1]);
 }
 
-MojoResult MessagePipe::EnqueueMessageInternal(
+MojoResult MessagePipe::EnqueueMessage(
     unsigned port,
     scoped_ptr<MessageInTransit> message,
     std::vector<DispatcherTransport>* transports) {

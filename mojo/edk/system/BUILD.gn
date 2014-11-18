@@ -17,6 +17,7 @@ component("system") {
     "channel.h",
     "channel_endpoint.cc",
     "channel_endpoint.h",
+    "channel_endpoint_client.h",
     "channel_endpoint_id.cc",
     "channel_endpoint_id.h",
     "channel_info.cc",

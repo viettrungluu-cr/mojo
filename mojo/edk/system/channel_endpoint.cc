@@ -6,18 +6,17 @@
 
 #include "base/logging.h"
 #include "mojo/edk/system/channel.h"
-#include "mojo/edk/system/message_pipe.h"
+#include "mojo/edk/system/channel_endpoint_client.h"
 #include "mojo/edk/system/transport_data.h"
 
 namespace mojo {
 namespace system {
 
-ChannelEndpoint::ChannelEndpoint(MessagePipe* message_pipe,
-                                 unsigned port,
+ChannelEndpoint::ChannelEndpoint(ChannelEndpointClient* client,
+                                 unsigned client_port,
                                  MessageInTransitQueue* message_queue)
-    : message_pipe_(message_pipe), port_(port), channel_(nullptr) {
-  DCHECK(message_pipe_.get() || message_queue);
-  DCHECK(port_ == 0 || port_ == 1);
+    : client_(client), client_port_(client_port), channel_(nullptr) {
+  DCHECK(client_.get() || message_queue);
 
   if (message_queue)
     paused_message_queue_.Swap(message_queue);
@@ -44,11 +43,11 @@ bool ChannelEndpoint::EnqueueMessage(scoped_ptr<MessageInTransit> message) {
   return WriteMessageNoLock(message.Pass());
 }
 
-void ChannelEndpoint::DetachFromMessagePipe() {
+void ChannelEndpoint::DetachFromClient() {
   {
     base::AutoLock locker(lock_);
-    DCHECK(message_pipe_.get());
-    message_pipe_ = nullptr;
+    DCHECK(client_.get());
+    client_ = nullptr;
 
     if (!channel_)
       return;
@@ -81,7 +80,7 @@ void ChannelEndpoint::AttachAndRun(Channel* channel,
         << "Failed to write enqueue message to channel";
   }
 
-  if (!message_pipe_.get()) {
+  if (!client_.get()) {
     channel_->DetachEndpoint(this, local_id_, remote_id_);
     channel_ = nullptr;
     local_id_ = ChannelEndpointId();
@@ -93,12 +92,12 @@ bool ChannelEndpoint::OnReadMessage(
     const MessageInTransit::View& message_view,
     embedder::ScopedPlatformHandleVectorPtr platform_handles) {
   scoped_ptr<MessageInTransit> message(new MessageInTransit(message_view));
-  scoped_refptr<MessagePipe> message_pipe;
-  unsigned port;
+  scoped_refptr<ChannelEndpointClient> client;
+  unsigned client_port;
   {
     base::AutoLock locker(lock_);
     DCHECK(channel_);
-    if (!message_pipe_.get()) {
+    if (!client_.get()) {
       // This isn't a failure per se. (It just means that, e.g., the other end
       // of the message point closed first.)
       return true;
@@ -113,30 +112,28 @@ bool ChannelEndpoint::OnReadMessage(
     }
 
     // Take a ref, and call |EnqueueMessage()| outside the lock.
-    message_pipe = message_pipe_;
-    port = port_;
+    client = client_;
+    client_port = client_port_;
   }
 
-  MojoResult result = message_pipe->EnqueueMessage(
-      MessagePipe::GetPeerPort(port), message.Pass());
-  return (result == MOJO_RESULT_OK);
+  return client->OnReadMessage(client_port, message.Pass());
 }
 
 void ChannelEndpoint::DetachFromChannel() {
-  scoped_refptr<MessagePipe> message_pipe;
-  unsigned port = 0;
+  scoped_refptr<ChannelEndpointClient> client;
+  unsigned client_port = 0;
   {
     base::AutoLock locker(lock_);
 
-    if (message_pipe_.get()) {
-      // Take a ref, and call |Close()| outside the lock.
-      message_pipe = message_pipe_;
-      port = port_;
+    if (client_.get()) {
+      // Take a ref, and call |OnDetachFromChannel()| outside the lock.
+      client = client_;
+      client_port = client_port_;
     }
 
     // |channel_| may already be null if we already detached from the channel in
-    // |DetachFromMessagePipe()| by calling |Channel::DetachEndpoint()| (and
-    // there are racing detaches).
+    // |DetachFromClient()| by calling |Channel::DetachEndpoint()| (and there
+    // are racing detaches).
     if (channel_) {
       DCHECK(local_id_.is_valid());
       DCHECK(remote_id_.is_valid());
@@ -146,12 +143,12 @@ void ChannelEndpoint::DetachFromChannel() {
     }
   }
 
-  if (message_pipe.get())
-    message_pipe->Close(port);
+  if (client.get())
+    client->OnDetachFromChannel(client_port);
 }
 
 ChannelEndpoint::~ChannelEndpoint() {
-  DCHECK(!message_pipe_.get());
+  DCHECK(!client_.get());
   DCHECK(!channel_);
   DCHECK(!local_id_.is_valid());
   DCHECK(!remote_id_.is_valid());

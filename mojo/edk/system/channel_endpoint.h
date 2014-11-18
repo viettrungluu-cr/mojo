@@ -11,6 +11,7 @@
 #include "base/synchronization/lock.h"
 #include "mojo/edk/embedder/platform_handle_vector.h"
 #include "mojo/edk/system/channel_endpoint_id.h"
+#include "mojo/edk/system/message_in_transit.h"
 #include "mojo/edk/system/message_in_transit_queue.h"
 #include "mojo/edk/system/system_impl_export.h"
 
@@ -18,8 +19,8 @@ namespace mojo {
 namespace system {
 
 class Channel;
+class ChannelEndpointClient;
 class MessageInTransit;
-class MessagePipe;
 
 // TODO(vtl): The plan:
 //   - (Done.) Move |Channel::Endpoint| to |ChannelEndpoint|. Make it
@@ -112,26 +113,26 @@ class MessagePipe;
 class MOJO_SYSTEM_IMPL_EXPORT ChannelEndpoint
     : public base::RefCountedThreadSafe<ChannelEndpoint> {
  public:
-  // Constructor for a |ChannelEndpoint| attached to the given message pipe
-  // endpoint (specified by |message_pipe| and |port|). Optionally takes
-  // messages from |*message_queue| if |message_queue| is non-null.
+  // Constructor for a |ChannelEndpoint| with the given client (specified by
+  // |client| and |client_port|). Optionally takes messages from
+  // |*message_queue| if |message_queue| is non-null.
   //
-  // |message_pipe| may be null if this endpoint will never need to receive
-  // messages, in which case |message_queue| should not be null. In that case,
-  // this endpoint will simply send queued messages upon being attached to a
+  // |client| may be null if this endpoint will never need to receive messages,
+  // in which case |message_queue| should not be null. In that case, this
+  // endpoint will simply send queued messages upon being attached to a
   // |Channel| and immediately detach itself.
-  ChannelEndpoint(MessagePipe* message_pipe,
-                  unsigned port,
+  ChannelEndpoint(ChannelEndpointClient* client,
+                  unsigned client_port,
                   MessageInTransitQueue* message_queue = nullptr);
 
-  // Methods called by |MessagePipe| (via |ProxyMessagePipeEndpoint|):
+  // Methods called by |ChannelEndpointClient|:
 
   // TODO(vtl): This currently only works if we're "running". We'll move the
   // "paused message queue" here (will this be needed when we have
   // locally-allocated remote IDs?).
   bool EnqueueMessage(scoped_ptr<MessageInTransit> message);
 
-  void DetachFromMessagePipe();
+  void DetachFromClient();
 
   // Methods called by |Channel|:
 
@@ -142,7 +143,7 @@ class MOJO_SYSTEM_IMPL_EXPORT ChannelEndpoint
                     ChannelEndpointId local_id,
                     ChannelEndpointId remote_id);
 
-  // Called by |Channel| when it receives a message for the message pipe.
+  // Called by |Channel| when it receives a message for the |ChannelEndpoint|.
   bool OnReadMessage(const MessageInTransit::View& message_view,
                      embedder::ScopedPlatformHandleVectorPtr platform_handles);
 
@@ -159,18 +160,17 @@ class MOJO_SYSTEM_IMPL_EXPORT ChannelEndpoint
   // Protects the members below.
   base::Lock lock_;
 
-  // |message_pipe_| must be valid whenever it is non-null. Before
-  // |*message_pipe_| gives up its reference to this object, it must call
-  // |DetachFromMessagePipe()|.
+  // |client_| must be valid whenever it is non-null. Before |*client_| gives up
+  // its reference to this object, it must call |DetachFromClient()|.
   // NOTE: This is a |scoped_refptr<>|, rather than a raw pointer, since the
   // |Channel| needs to keep the |MessagePipe| alive for the "proxy-proxy" case.
   // Possibly we'll be able to eliminate that case when we have full
   // multiprocess support.
-  // WARNING: |MessagePipe| methods must not be called under |lock_|. Thus to
-  // make such a call, a reference must first be taken under |lock_| and the
-  // lock released.
-  scoped_refptr<MessagePipe> message_pipe_;
-  unsigned port_;
+  // WARNING: |ChannelEndpointClient| methods must not be called under |lock_|.
+  // Thus to make such a call, a reference must first be taken under |lock_| and
+  // the lock released.
+  scoped_refptr<ChannelEndpointClient> client_;
+  unsigned client_port_;
 
   // |channel_| must be valid whenever it is non-null. Before |*channel_| gives
   // up its reference to this object, it must call |DetachFromChannel()|.
