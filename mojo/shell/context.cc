@@ -33,7 +33,7 @@
 #include "mojo/spy/spy.h"
 
 #if defined(OS_ANDROID)
-#include "mojo/services/native_viewport/gpu_impl.h"
+#include "mojo/services/gles2/gpu_impl.h"
 #include "mojo/services/native_viewport/native_viewport_impl.h"
 #include "mojo/shell/network_application_loader.h"
 #include "ui/gl/gl_share_group.h"

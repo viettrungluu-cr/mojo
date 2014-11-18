@@ -8,12 +8,16 @@ source_set("gles2") {
   sources = [
     "command_buffer_impl.cc",
     "command_buffer_impl.h",
+    "gpu_impl.cc",
+    "gpu_impl.h",
   ]
 
   public_deps = [ ":lib" ]
   deps = [
     "//base",
     "//gpu/command_buffer/service",
+    "//mojo/converters/geometry",
+    "//mojo/services/public/interfaces/geometry",
     "//ui/gfx",
     "//ui/gfx/geometry",
     "//ui/gl",

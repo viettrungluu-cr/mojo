@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-#include "mojo/services/native_viewport/gpu_impl.h"
+#include "mojo/services/gles2/gpu_impl.h"
 
 #include "gpu/command_buffer/service/mailbox_manager.h"
 #include "mojo/converters/geometry/geometry_type_converters.h"

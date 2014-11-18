@@ -38,7 +38,7 @@ class GpuImpl : public InterfaceImpl<Gpu> {
       InterfaceRequest<CommandBuffer> command_buffer_request) override;
 
  private:
-  // We need to share these across all NativeViewport instances so that contexts
+  // We need to share these across all CommandBuffer instances so that contexts
   // they create can share resources with each other via mailboxes.
   scoped_refptr<gfx::GLShareGroup> share_group_;
   scoped_refptr<gpu::gles2::MailboxManager> mailbox_manager_;
