@@ -446,6 +446,7 @@ def _CheckGNCheck(input_api, output_api):
     KNOWN_PASSING = [
       '//mojo/edk/*',
       '//mojo/public/*',
+      '//mojo/tools/*',
     ]
     if input_api.platform != 'win32':
       KNOWN_PASSING += [

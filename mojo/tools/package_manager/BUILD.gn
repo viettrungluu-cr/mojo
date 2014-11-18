@@ -22,7 +22,9 @@ mojo_native_application("package_manager") {
   deps = [
     "//base",
     "//mojo/application",
+    "//mojo/common",
     "//mojo/public/c/system:for_shared_library",
+    "//mojo/public/cpp/system",
     "//mojo/public/cpp/utility",
     "//mojo/services/public/interfaces/network",
     "//third_party/zlib:zip",
