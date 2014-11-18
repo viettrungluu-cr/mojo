@@ -4,8 +4,8 @@
 
 #include "base/macros.h"
 #include "base/memory/ref_counted.h"
-#include "mojo/public/cpp/bindings/interface_impl.h"
 #include "mojo/public/cpp/bindings/interface_request.h"
+#include "mojo/public/cpp/bindings/strong_binding.h"
 #include "mojo/services/public/interfaces/geometry/geometry.mojom.h"
 #include "mojo/services/public/interfaces/gpu/command_buffer.mojom.h"
 #include "mojo/services/public/interfaces/gpu/gpu.mojom.h"
@@ -22,9 +22,10 @@ class MailboxManager;
 
 namespace mojo {
 
-class GpuImpl : public InterfaceImpl<Gpu> {
+class GpuImpl : public Gpu {
  public:
-  GpuImpl(const scoped_refptr<gfx::GLShareGroup>& share_group,
+  GpuImpl(InterfaceRequest<Gpu> request,
+          const scoped_refptr<gfx::GLShareGroup>& share_group,
           const scoped_refptr<gpu::gles2::MailboxManager> mailbox_manager);
 
   ~GpuImpl() override;
@@ -42,6 +43,8 @@ class GpuImpl : public InterfaceImpl<Gpu> {
   // they create can share resources with each other via mailboxes.
   scoped_refptr<gfx::GLShareGroup> share_group_;
   scoped_refptr<gpu::gles2::MailboxManager> mailbox_manager_;
+
+  StrongBinding<Gpu> binding_;
 
   DISALLOW_COPY_AND_ASSIGN(GpuImpl);
 };

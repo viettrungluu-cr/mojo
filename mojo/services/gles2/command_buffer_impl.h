@@ -8,6 +8,7 @@
 #include "base/macros.h"
 #include "base/memory/scoped_ptr.h"
 #include "base/timer/timer.h"
+#include "mojo/public/cpp/bindings/strong_binding.h"
 #include "mojo/public/cpp/system/core.h"
 #include "mojo/services/public/interfaces/gpu/command_buffer.mojom.h"
 #include "ui/gfx/native_widget_types.h"
@@ -31,13 +32,15 @@ class GLSurface;
 
 namespace mojo {
 
-class CommandBufferImpl : public InterfaceImpl<CommandBuffer> {
+class CommandBufferImpl : public CommandBuffer {
  public:
   // Offscreen.
-  CommandBufferImpl(gfx::GLShareGroup* share_group,
+  CommandBufferImpl(InterfaceRequest<CommandBuffer> request,
+                    gfx::GLShareGroup* share_group,
                     gpu::gles2::MailboxManager* mailbox_manager);
   // Onscreen.
-  CommandBufferImpl(gfx::AcceleratedWidget widget,
+  CommandBufferImpl(InterfaceRequest<CommandBuffer> request,
+                    gfx::AcceleratedWidget widget,
                     const gfx::Size& size,
                     gfx::GLShareGroup* share_group,
                     gpu::gles2::MailboxManager* mailbox_manager);
@@ -72,6 +75,8 @@ class CommandBufferImpl : public InterfaceImpl<CommandBuffer> {
   scoped_refptr<gfx::GLSurface> surface_;
   scoped_refptr<gfx::GLShareGroup> share_group_;
   scoped_refptr<gpu::gles2::MailboxManager> mailbox_manager_;
+
+  StrongBinding<CommandBuffer> binding_;
 
   DISALLOW_COPY_AND_ASSIGN(CommandBufferImpl);
 };

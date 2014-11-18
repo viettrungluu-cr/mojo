@@ -44,15 +44,18 @@ class MemoryTrackerStub : public gpu::gles2::MemoryTracker {
 }  // anonymous namespace
 
 CommandBufferImpl::CommandBufferImpl(
+    InterfaceRequest<CommandBuffer> request,
     gfx::GLShareGroup* share_group,
     gpu::gles2::MailboxManager* mailbox_manager)
-    : widget_(gfx::kNullAcceleratedWidget),
-      size_(1, 1),
-      share_group_(share_group),
-      mailbox_manager_(mailbox_manager) {
+    : CommandBufferImpl(request.Pass(),
+                        gfx::kNullAcceleratedWidget,
+                        gfx::Size(1, 1),
+                        share_group,
+                        mailbox_manager) {
 }
 
 CommandBufferImpl::CommandBufferImpl(
+    InterfaceRequest<CommandBuffer> request,
     gfx::AcceleratedWidget widget,
     const gfx::Size& size,
     gfx::GLShareGroup* share_group,
@@ -60,11 +63,12 @@ CommandBufferImpl::CommandBufferImpl(
     : widget_(widget),
       size_(size),
       share_group_(share_group),
-      mailbox_manager_(mailbox_manager) {
+      mailbox_manager_(mailbox_manager),
+      binding_(this, request.Pass()) {
 }
 
 CommandBufferImpl::~CommandBufferImpl() {
-  client()->DidDestroy();
+  binding_.client()->DidDestroy();
   if (decoder_) {
     bool have_context = decoder_->MakeCurrent();
     decoder_->Destroy(have_context);
@@ -159,7 +163,7 @@ void CommandBufferImpl::SetGetBuffer(int32_t buffer) {
 void CommandBufferImpl::Flush(int32_t put_offset) {
   if (!context_->MakeCurrent(surface_.get())) {
     DLOG(WARNING) << "Context lost";
-    client()->LostContext(gpu::error::kUnknown);
+    binding_.client()->LostContext(gpu::error::kUnknown);
     return;
   }
   command_buffer_->Flush(put_offset);
@@ -196,7 +200,7 @@ void CommandBufferImpl::Echo(const Callback<void()>& callback) {
 
 void CommandBufferImpl::OnParseError() {
   gpu::CommandBuffer::State state = command_buffer_->GetLastState();
-  client()->LostContext(state.context_lost_reason);
+  binding_.client()->LostContext(state.context_lost_reason);
 }
 
 void CommandBufferImpl::OnResize(gfx::Size size, float scale_factor) {

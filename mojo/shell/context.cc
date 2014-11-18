@@ -164,8 +164,7 @@ class Context::NativeViewportApplicationLoader
   // InterfaceFactory<Gpu> implementation.
   virtual void Create(ApplicationConnection* connection,
                       InterfaceRequest<Gpu> request) override {
-    BindToRequest(new GpuImpl(share_group_.get(), mailbox_manager_.get()),
-                  &request);
+    new GpuImpl(request.Pass(), share_group_.get(), mailbox_manager_.get());
   }
 
   scoped_refptr<gfx::GLShareGroup> share_group_;

@@ -61,8 +61,7 @@ class NativeViewportAppDelegate
   // InterfaceFactory<Gpu> implementation.
   void Create(ApplicationConnection* connection,
               InterfaceRequest<Gpu> request) override {
-    BindToRequest(new GpuImpl(share_group_.get(), mailbox_manager_.get()),
-                  &request);
+    new GpuImpl(request.Pass(), share_group_.get(), mailbox_manager_.get());
   }
 
   ApplicationImpl* app_;
