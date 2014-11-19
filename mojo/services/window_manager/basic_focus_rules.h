@@ -9,7 +9,6 @@
 
 namespace mojo {
 
-class WindowManagerApp;
 class View;
 
 // The focusing rules used inside a window manager.
@@ -22,8 +21,7 @@ class View;
 // is very incomplete. crbug.com/431047
 class BasicFocusRules : public FocusRules {
  public:
-  BasicFocusRules(mojo::WindowManagerApp* window_manager_app,
-                  mojo::View* window_container);
+  BasicFocusRules(mojo::View* window_container);
   ~BasicFocusRules() override;
 
  protected:
@@ -38,7 +36,6 @@ class BasicFocusRules : public FocusRules {
 
  private:
   mojo::View* window_container_;
-  mojo::WindowManagerApp* window_manager_app_;
 
   DISALLOW_COPY_AND_ASSIGN(BasicFocusRules);
 };

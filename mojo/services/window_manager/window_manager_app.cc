@@ -123,6 +123,9 @@ bool WindowManagerApp::IsReady() const {
 void WindowManagerApp::InitFocus(scoped_ptr<mojo::FocusRules> rules) {
   focus_controller_.reset(new mojo::FocusController(rules.Pass()));
   focus_controller_->AddObserver(this);
+
+  DCHECK(root_);
+  SetFocusController(root_, focus_controller_.get());
 }
 
 void WindowManagerApp::Embed(

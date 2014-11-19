@@ -5,6 +5,7 @@
 #include "mojo/services/window_manager/focus_controller.h"
 
 #include "base/auto_reset.h"
+#include "mojo/services/public/cpp/view_manager/view_property.h"
 #include "mojo/services/public/cpp/view_manager/view_tracker.h"
 #include "mojo/services/window_manager/focus_controller_observer.h"
 #include "mojo/services/window_manager/focus_rules.h"
@@ -12,7 +13,13 @@
 #include "mojo/services/window_manager/window_manager_app.h"
 #include "ui/events/event.h"
 
+DECLARE_VIEW_PROPERTY_TYPE(mojo::FocusController*);
+
 namespace mojo {
+
+namespace {
+DEFINE_VIEW_PROPERTY_KEY(FocusController*, kRootViewFocusController, nullptr);
+}  // namespace
 
 FocusController::FocusController(scoped_ptr<FocusRules> rules)
     : active_view_(nullptr),
@@ -296,6 +303,18 @@ void FocusController::ViewFocusedFromInputEvent(View* view) {
   // currently focused one.
   if (rules_->CanFocusView(GetToplevelView(view)))
     FocusView(view);
+}
+
+void SetFocusController(View* root_view, FocusController* focus_controller) {
+  DCHECK_EQ(root_view->GetRoot(), root_view);
+  root_view->SetLocalProperty(kRootViewFocusController, focus_controller);
+}
+
+FocusController* GetFocusController(View* root_view) {
+  if (root_view)
+    DCHECK_EQ(root_view->GetRoot(), root_view);
+  return root_view ?
+      root_view->GetLocalProperty(kRootViewFocusController) : nullptr;
 }
 
 }  // namespace mojo

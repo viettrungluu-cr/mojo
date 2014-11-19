@@ -65,8 +65,7 @@ class SimpleWM : public mojo::ApplicationDelegate,
     root_->AddChild(window_container_);
 
     window_manager_app_->InitFocus(scoped_ptr<mojo::FocusRules>(
-        new mojo::BasicFocusRules(window_manager_app_.get(),
-                                  window_container_)));
+        new mojo::BasicFocusRules(window_container_)));
   }
   virtual void OnViewManagerDisconnected(
       mojo::ViewManager* view_manager) override {

@@ -270,6 +270,13 @@ void View::RemoveObserver(ViewObserver* observer) {
   observers_.RemoveObserver(observer);
 }
 
+const View* View::GetRoot() const {
+  const View* root = this;
+  for (const View* parent = this; parent; parent = parent->parent())
+    root = parent;
+  return root;
+}
+
 void View::AddChild(View* child) {
   // TODO(beng): not necessarily valid to all connections, but possibly to the
   //             embeddee in an embedder-embeddee relationship.

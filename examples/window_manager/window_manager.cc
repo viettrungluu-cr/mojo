@@ -376,9 +376,8 @@ class WindowManager
     // PreTargetHandler to the window() here. We probably have to do something
     // analogous here.
 
-    window_manager_app_->InitFocus(scoped_ptr<mojo::FocusRules>(
-        new mojo::BasicFocusRules(window_manager_app_.get(),
-                                  view)));
+    window_manager_app_->InitFocus(
+        scoped_ptr<mojo::FocusRules>(new mojo::BasicFocusRules(view)));
   }
   virtual void OnViewManagerDisconnected(ViewManager* view_manager) override {
     DCHECK_EQ(view_manager_, view_manager);

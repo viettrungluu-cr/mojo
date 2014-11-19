@@ -101,6 +101,7 @@ class View {
   View* parent() { return parent_; }
   const View* parent() const { return parent_; }
   const Children& children() const { return children_; }
+  const View* GetRoot() const;
 
   void AddChild(View* child);
   void RemoveChild(View* child);

@@ -4,6 +4,7 @@
 
 #include "mojo/services/window_manager/view_targeter.h"
 
+#include "mojo/services/window_manager/focus_controller.h"
 #include "mojo/services/window_manager/view_target.h"
 
 namespace mojo {
@@ -14,9 +15,19 @@ ViewTargeter::~ViewTargeter() {}
 
 ui::EventTarget* ViewTargeter::FindTargetForEvent(ui::EventTarget* root,
                                                   ui::Event* event) {
-  // TODO(erg): We currently don't deal with key events very well here; we need
-  // to implement the logic in the aura version to fix key events here.
-  return EventTargeter::FindTargetForEvent(root, event);
+  ViewTarget* view = static_cast<ViewTarget*>(root);
+  ViewTarget* target =
+      event->IsKeyEvent()
+          ? FindTargetForKeyEvent(view, *static_cast<ui::KeyEvent*>(event))
+          : static_cast<ViewTarget*>(
+                EventTargeter::FindTargetForEvent(root, event));
+
+  // TODO(erg): The aura version of this method does a lot of work to handle
+  // dispatching to a target that isn't a child of |view|. For now, punt on
+  // this.
+  DCHECK_EQ(view->GetRoot(), target->GetRoot());
+
+  return target;
 }
 
 ui::EventTarget* ViewTargeter::FindTargetForLocatedEvent(
@@ -56,6 +67,16 @@ bool ViewTargeter::EventLocationInsideBounds(
   if (parent)
     ViewTarget::ConvertPointToTarget(parent, view, &point);
   return gfx::Rect(view->GetBounds().size()).Contains(point);
+}
+
+ViewTarget* ViewTargeter::FindTargetForKeyEvent(ViewTarget* view_target,
+                                                const ui::KeyEvent& key) {
+  FocusController* focus_controller = GetFocusController(view_target->view());
+  View* focused_view = focus_controller->GetFocusedView();
+  if (focused_view)
+    return ViewTarget::TargetFromView(focused_view);
+
+  return view_target;
 }
 
 ViewTarget* ViewTargeter::FindTargetInRootView(ViewTarget* root_view,

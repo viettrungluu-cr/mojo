@@ -95,6 +95,10 @@ class FocusController : public ui::EventHandler,
   DISALLOW_COPY_AND_ASSIGN(FocusController);
 };
 
+// Sets/Gets the focus controller for a root view.
+void SetFocusController(View* view, FocusController* focus_controller);
+FocusController* GetFocusController(View* view);
+
 }  // namespace mojo
 
 #endif  // MOJO_SERIVCES_WINDOW_MANAGER_FOCUS_CONTROLLER_H_

@@ -6,14 +6,12 @@
 
 #include "base/macros.h"
 #include "mojo/services/public/cpp/view_manager/view.h"
-#include "mojo/services/window_manager/window_manager_app.h"
 
 namespace mojo {
 
-BasicFocusRules::BasicFocusRules(mojo::WindowManagerApp* window_manager_app,
-                           mojo::View* window_container)
-    : window_container_(window_container),
-      window_manager_app_(window_manager_app) {}
+BasicFocusRules::BasicFocusRules(mojo::View* window_container)
+    : window_container_(window_container) {
+}
 
 BasicFocusRules::~BasicFocusRules() {}
 

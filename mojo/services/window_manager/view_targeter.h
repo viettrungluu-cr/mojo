@@ -28,6 +28,9 @@ class ViewTargeter : public ui::EventTargeter {
                                  const ui::LocatedEvent& event) const override;
 
  private:
+  // Targets either the root View or the currently focused view.
+  ViewTarget* FindTargetForKeyEvent(ViewTarget* view, const ui::KeyEvent& key);
+
   // Deals with cases where the |root_view| needs to change how things are
   // dispatched. (For example, in the case of capture.)
   ViewTarget* FindTargetInRootView(ViewTarget* root_view,
