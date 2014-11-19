@@ -34,7 +34,6 @@ namespace mojo {
 //    private:
 //     Binding<Foo> binding_;
 //   };
-//
 template <typename Interface>
 class Binding : public ErrorHandler {
  public:
@@ -104,6 +103,11 @@ class Binding : public ErrorHandler {
   bool WaitForIncomingMethodCall() {
     MOJO_DCHECK(internal_router_);
     return internal_router_->WaitForIncomingMessage();
+  }
+
+  void Close() {
+    MOJO_DCHECK(internal_router_);
+    internal_router_->CloseMessagePipe();
   }
 
   void set_error_handler(ErrorHandler* error_handler) {
