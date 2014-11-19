@@ -31,6 +31,7 @@ class Context : ApplicationManager::Delegate {
   Context();
   ~Context() override;
 
+  static void EnsureEmbedderIsInitialized();
   bool Init();
 
   void Run(const GURL& url);

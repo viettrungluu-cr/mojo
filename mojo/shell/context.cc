@@ -182,8 +182,12 @@ Context::~Context() {
   DCHECK(!base::MessageLoop::current());
 }
 
-bool Context::Init() {
+void Context::EnsureEmbedderIsInitialized() {
   setup.Get();
+}
+
+bool Context::Init() {
+  EnsureEmbedderIsInitialized();
   task_runners_.reset(
       new TaskRunners(base::MessageLoop::current()->message_loop_proxy()));
 
