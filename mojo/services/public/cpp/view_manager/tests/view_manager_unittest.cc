@@ -632,4 +632,7 @@ TEST_F(ViewManagerTest, DISABLED_Drawn) {
 // - focus between views unknown to one of the connections.
 // - focus between views unknown to either connection.
 
+// TODO(sky): need test of root being destroyed with existing views. See
+// 434555 for specific case.
+
 }  // namespace mojo

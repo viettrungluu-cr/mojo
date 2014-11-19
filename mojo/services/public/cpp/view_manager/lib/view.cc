@@ -393,6 +393,15 @@ View::~View() {
   FOR_EACH_OBSERVER(ViewObserver, observers_, OnViewDestroying(this));
   if (parent_)
     parent_->LocalRemoveChild(this);
+
+  // We may still have children. This can happen if the embedder destroys the
+  // root while we're still alive.
+  while (!children_.empty()) {
+    View* child = children_.front();
+    LocalRemoveChild(child);
+    DCHECK(children_.empty() || children_.front() != child);
+  }
+
   // TODO(beng): It'd be better to do this via a destruction observer in the
   //             ViewManagerClientImpl.
   if (manager_)

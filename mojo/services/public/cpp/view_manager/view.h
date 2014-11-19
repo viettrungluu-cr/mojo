@@ -33,7 +33,7 @@ struct ViewProperty;
 //             Investigate some kind of smart pointer or weak pointer for these.
 class View {
  public:
-  typedef std::vector<View*> Children;
+  using Children = std::vector<View*>;
 
   static View* Create(ViewManager* view_manager);
 
