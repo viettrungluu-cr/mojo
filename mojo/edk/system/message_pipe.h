@@ -106,10 +106,6 @@ class MOJO_SYSTEM_IMPL_EXPORT MessagePipe : public ChannelEndpointClient {
                     size_t* actual_size,
                     embedder::PlatformHandleVector* platform_handles);
 
-  // Used by |EndSerialize()|. TODO(vtl): Remove this (merge it into
-  // |EndSerialize()|).
-  scoped_refptr<ChannelEndpoint> ConvertLocalToProxy(unsigned port);
-
   // |ChannelEndpointClient| methods:
   bool OnReadMessage(unsigned port,
                      scoped_ptr<MessageInTransit> message) override;
