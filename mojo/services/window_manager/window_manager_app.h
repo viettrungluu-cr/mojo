@@ -11,6 +11,7 @@
 #include "base/memory/scoped_vector.h"
 #include "mojo/public/cpp/application/application_delegate.h"
 #include "mojo/public/cpp/application/interface_factory_impl.h"
+#include "mojo/public/cpp/bindings/binding.h"
 #include "mojo/public/cpp/bindings/string.h"
 #include "mojo/services/public/cpp/view_manager/types.h"
 #include "mojo/services/public/cpp/view_manager/view_manager_client_factory.h"
@@ -49,7 +50,9 @@ class WindowManagerApp : public ApplicationDelegate,
                          public ViewObserver,
                          public ui::EventHandler,
                          public FocusControllerObserver,
-                         public InterfaceFactory<WindowManagerInternal> {
+                         public InterfaceFactory<WindowManager>,
+                         public InterfaceFactory<WindowManagerInternal>,
+                         public WindowManagerInternal {
  public:
   WindowManagerApp(ViewManagerDelegate* view_manager_delegate,
                    WindowManagerDelegate* window_manager_delegate);
@@ -133,10 +136,16 @@ class WindowManagerApp : public ApplicationDelegate,
   void Create(ApplicationConnection* connection,
               InterfaceRequest<WindowManagerInternal> request) override;
 
-  Shell* shell_;
+  // InterfaceFactory<WindowManager>:
+  void Create(ApplicationConnection* connection,
+              InterfaceRequest<WindowManager> request) override;
 
-  InterfaceFactoryImplWithContext<WindowManagerImpl, WindowManagerApp>
-      window_manager_factory_;
+  // WindowManagerInternal:
+  void CreateWindowManagerForViewManagerClient(
+      uint16_t connection_id,
+      ScopedMessagePipeHandle window_manager_pipe) override;
+
+  Shell* shell_;
 
   InterfaceFactoryImplWithContext<NativeViewportEventDispatcherImpl,
                                   WindowManagerApp>
@@ -161,6 +170,8 @@ class WindowManagerApp : public ApplicationDelegate,
   scoped_ptr<ViewManagerClient> view_manager_client_;
 
   scoped_ptr<ViewEventDispatcher> view_event_dispatcher_;
+
+  scoped_ptr<Binding<WindowManagerInternal>> wm_internal_binding_;
 
   DISALLOW_COPY_AND_ASSIGN(WindowManagerApp);
 };

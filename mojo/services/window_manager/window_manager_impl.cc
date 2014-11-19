@@ -8,19 +8,19 @@
 
 namespace mojo {
 
-WindowManagerImpl::WindowManagerImpl(WindowManagerApp* window_manager)
-    : window_manager_(window_manager), from_vm_(false) {
-  window_manager_->AddConnection(this);
-}
-
 WindowManagerImpl::WindowManagerImpl(WindowManagerApp* window_manager,
                                      bool from_vm)
-    : window_manager_(window_manager), from_vm_(from_vm) {
+    : window_manager_(window_manager), from_vm_(from_vm), binding_(this) {
   window_manager_->AddConnection(this);
+  binding_.set_error_handler(this);
 }
 
 WindowManagerImpl::~WindowManagerImpl() {
   window_manager_->RemoveConnection(this);
+}
+
+void WindowManagerImpl::Bind(ScopedMessagePipeHandle window_manager_pipe) {
+  binding_.Bind(window_manager_pipe.Pass());
 }
 
 void WindowManagerImpl::NotifyViewFocused(Id new_focused_id,
@@ -72,6 +72,10 @@ void WindowManagerImpl::ActivateWindow(Id view,
   if (success)
     window_manager_->ActivateWindow(view);
   callback.Run(success);
+}
+
+void WindowManagerImpl::OnConnectionError() {
+  delete this;
 }
 
 }  // namespace mojo

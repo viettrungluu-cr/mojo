@@ -31,34 +31,6 @@ Id GetIdForView(View* view) {
 
 }  // namespace
 
-class WindowManagerApp::WindowManagerInternalImpl
-    : public InterfaceImpl<WindowManagerInternal> {
- public:
-  WindowManagerInternalImpl(WindowManagerApp* app) : app_(app) {}
-  ~WindowManagerInternalImpl() override {}
-
-  // WindowManagerInternal:
-  void CreateWindowManagerForViewManagerClient(
-      uint16_t connection_id,
-      ScopedMessagePipeHandle window_manager_pipe) override {
-    // |wm_internal| is tied to the life of the pipe.
-    WindowManagerImpl* wm = new WindowManagerImpl(app_, true);
-    WeakBindToPipe(wm, window_manager_pipe.Pass());
-  }
-
-  // InterfaceImpl:
-  void OnConnectionError() override {
-    // Necessary since we used WeakBindToPipe and are not automatically deleted.
-    // crbug.com/431911
-    delete this;
-  }
-
- private:
-  WindowManagerApp* app_;
-
-  DISALLOW_COPY_AND_ASSIGN(WindowManagerInternalImpl);
-};
-
 // Used for calls to Embed() that occur before we've connected to the
 // ViewManager.
 struct WindowManagerApp::PendingEmbed {
@@ -73,7 +45,6 @@ WindowManagerApp::WindowManagerApp(
     ViewManagerDelegate* view_manager_delegate,
     WindowManagerDelegate* window_manager_delegate)
     : shell_(nullptr),
-      window_manager_factory_(this),
       native_viewport_event_dispatcher_factory_(this),
       wrapped_view_manager_delegate_(view_manager_delegate),
       window_manager_delegate_(window_manager_delegate),
@@ -151,7 +122,7 @@ void WindowManagerApp::Initialize(ApplicationImpl* impl) {
 
 bool WindowManagerApp::ConfigureIncomingConnection(
     ApplicationConnection* connection) {
-  connection->AddService(&window_manager_factory_);
+  connection->AddService(static_cast<InterfaceFactory<WindowManager>*>(this));
   return true;
 }
 
@@ -339,8 +310,30 @@ void WindowManagerApp::LaunchViewManager(ApplicationImpl* app) {
 
 void WindowManagerApp::Create(ApplicationConnection* connection,
                               InterfaceRequest<WindowManagerInternal> request) {
-  WindowManagerInternalImpl* impl = new WindowManagerInternalImpl(this);
-  BindToRequest(impl, &request);
+  if (wm_internal_binding_.get()) {
+    VLOG(1) <<
+        "WindowManager allows only one WindowManagerInternal connection.";
+    return;
+  }
+  wm_internal_binding_.reset(
+      new Binding<WindowManagerInternal>(this, request.Pass()));
+}
+
+void WindowManagerApp::Create(ApplicationConnection* connection,
+                              InterfaceRequest<WindowManager> request) {
+  WindowManagerImpl* wm = new WindowManagerImpl(this, false);
+  wm->Bind(request.PassMessagePipe());
+  // WindowManagerImpl is deleted when the connection has an error, or from our
+  // destructor.
+}
+
+void WindowManagerApp::CreateWindowManagerForViewManagerClient(
+    uint16_t connection_id,
+    ScopedMessagePipeHandle window_manager_pipe) {
+  WindowManagerImpl* wm = new WindowManagerImpl(this, true);
+  wm->Bind(window_manager_pipe.Pass());
+  // WindowManagerImpl is deleted when the connection has an error, or from our
+  // destructor.
 }
 
 }  // namespace mojo
