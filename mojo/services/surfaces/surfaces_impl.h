@@ -9,6 +9,7 @@
 #include "cc/surfaces/surface_factory.h"
 #include "cc/surfaces/surface_factory_client.h"
 #include "mojo/public/cpp/application/application_connection.h"
+#include "mojo/public/cpp/bindings/strong_binding.h"
 #include "mojo/services/public/interfaces/gpu/command_buffer.mojom.h"
 #include "mojo/services/public/interfaces/surfaces/surfaces.mojom.h"
 
@@ -21,7 +22,7 @@ class ApplicationManager;
 
 class SurfaceNativeViewportClient;
 
-class SurfacesImpl : public InterfaceImpl<Surface>,
+class SurfacesImpl : public Surface,
                      public cc::SurfaceFactoryClient,
                      public cc::DisplayClient {
  public:
@@ -34,7 +35,9 @@ class SurfacesImpl : public InterfaceImpl<Surface>,
 
   SurfacesImpl(cc::SurfaceManager* manager,
                uint32_t id_namespace,
-               Client* client);
+               Client* client,
+               SurfacePtr* surface);
+
   ~SurfacesImpl() override;
 
   // Surface implementation.
@@ -66,6 +69,7 @@ class SurfacesImpl : public InterfaceImpl<Surface>,
   Client* client_;
   scoped_ptr<cc::Display> display_;
   ScopedMessagePipeHandle command_buffer_handle_;
+  StrongBinding<Surface> binding_;
 
   DISALLOW_COPY_AND_ASSIGN(SurfacesImpl);
 };

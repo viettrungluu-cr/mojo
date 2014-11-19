@@ -17,11 +17,13 @@ namespace mojo {
 
 SurfacesImpl::SurfacesImpl(cc::SurfaceManager* manager,
                            uint32_t id_namespace,
-                           Client* client)
+                           Client* client,
+                           SurfacePtr* surface)
     : manager_(manager),
       factory_(manager, this),
       id_namespace_(id_namespace),
-      client_(client) {
+      client_(client),
+      binding_(this, surface) {
 }
 
 SurfacesImpl::~SurfacesImpl() {
@@ -92,7 +94,7 @@ void SurfacesImpl::ReturnResources(const cc::ReturnedResourceArray& resources) {
   for (size_t i = 0; i < resources.size(); ++i) {
     ret[i] = ReturnedResource::From(resources[i]);
   }
-  client()->ReturnResources(ret.Pass());
+  binding_.client()->ReturnResources(ret.Pass());
 }
 
 void SurfacesImpl::DisplayDamaged() {

@@ -28,8 +28,7 @@ bool SurfacesServiceApplication::ConfigureIncomingConnection(
 void SurfacesServiceApplication::Create(
     ApplicationConnection* connection,
     InterfaceRequest<SurfacesService> request) {
-  BindToRequest(new SurfacesServiceImpl(&manager_, &next_id_namespace_, this),
-                &request);
+  new SurfacesServiceImpl(&manager_, &next_id_namespace_, this, request.Pass());
 }
 
 void SurfacesServiceApplication::FrameSubmitted() {

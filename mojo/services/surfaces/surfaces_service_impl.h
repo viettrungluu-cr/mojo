@@ -6,6 +6,7 @@
 #define MOJO_SERVICES_SURFACES_SURFACES_SERVICE_IMPL_H_
 
 #include "base/macros.h"
+#include "mojo/public/cpp/bindings/strong_binding.h"
 #include "mojo/services/public/interfaces/surfaces/surfaces_service.mojom.h"
 #include "mojo/services/surfaces/surfaces_impl.h"
 
@@ -15,16 +16,18 @@ class SurfaceManager;
 
 namespace mojo {
 
-class SurfacesServiceImpl : public InterfaceImpl<SurfacesService> {
+class SurfacesServiceImpl : public SurfacesService {
  public:
   // The instances pointed to by |manager|, |next_id_namespace| and |client| are
   // owned by the caller and must outlive the SurfacesServiceImpl instance.
   SurfacesServiceImpl(cc::SurfaceManager* manager,
                       uint32_t* next_id_namespace,
-                      SurfacesImpl::Client* client);
+                      SurfacesImpl::Client* client,
+                      InterfaceRequest<SurfacesService> request);
+
   ~SurfacesServiceImpl() override;
 
-  // InterfaceImpl<SurfacesService> implementation.
+  // SurfacesService implementation.
   void CreateSurfaceConnection(
       const mojo::Callback<void(mojo::SurfacePtr, uint32_t)>& callback)
       override;
@@ -33,6 +36,7 @@ class SurfacesServiceImpl : public InterfaceImpl<SurfacesService> {
   cc::SurfaceManager* manager_;
   uint32_t* next_id_namespace_;
   SurfacesImpl::Client* client_;
+  StrongBinding<SurfacesService> binding_;
 
   DISALLOW_COPY_AND_ASSIGN(SurfacesServiceImpl);
 };

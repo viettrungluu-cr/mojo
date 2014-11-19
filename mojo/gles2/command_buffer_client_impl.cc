@@ -45,19 +45,20 @@ CommandBufferDelegate::~CommandBufferDelegate() {}
 
 void CommandBufferDelegate::ContextLost() {}
 
-class CommandBufferClientImpl::SyncClientImpl
-    : public InterfaceImpl<CommandBufferSyncClient> {
+class CommandBufferClientImpl::SyncClientImpl : public CommandBufferSyncClient {
  public:
-  SyncClientImpl() : initialized_successfully_(false) {}
+  SyncClientImpl(CommandBufferSyncClientPtr* ptr,
+                 const MojoAsyncWaiter* async_waiter)
+      : initialized_successfully_(false), binding_(this, ptr, async_waiter) {}
 
   bool WaitForInitialization() {
-    if (!WaitForIncomingMethodCall())
+    if (!binding_.WaitForIncomingMethodCall())
       return false;
     return initialized_successfully_;
   }
 
   CommandBufferStatePtr WaitForProgress() {
-    if (!WaitForIncomingMethodCall())
+    if (!binding_.WaitForIncomingMethodCall())
       return CommandBufferStatePtr();
     return command_buffer_state_.Pass();
   }
@@ -79,6 +80,9 @@ class CommandBufferClientImpl::SyncClientImpl
   bool initialized_successfully_;
   GpuCapabilitiesPtr capabilities_;
   CommandBufferStatePtr command_buffer_state_;
+  Binding<CommandBufferSyncClient> binding_;
+
+  DISALLOW_COPY_AND_ASSIGN(SyncClientImpl);
 };
 
 CommandBufferClientImpl::CommandBufferClientImpl(
@@ -111,8 +115,7 @@ bool CommandBufferClientImpl::Initialize() {
   shared_state()->Initialize();
 
   CommandBufferSyncClientPtr sync_client;
-  sync_client_impl_.reset(
-      WeakBindToProxy(new SyncClientImpl(), &sync_client, async_waiter_));
+  sync_client_impl_.reset(new SyncClientImpl(&sync_client, async_waiter_));
 
   command_buffer_->Initialize(sync_client.Pass(), duped.Pass());
 

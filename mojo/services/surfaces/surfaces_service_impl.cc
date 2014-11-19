@@ -6,13 +6,17 @@
 
 namespace mojo {
 
-SurfacesServiceImpl::SurfacesServiceImpl(cc::SurfaceManager* manager,
-                                         uint32_t* next_id_namespace,
-                                         SurfacesImpl::Client* client)
+SurfacesServiceImpl::SurfacesServiceImpl(
+    cc::SurfaceManager* manager,
+    uint32_t* next_id_namespace,
+    SurfacesImpl::Client* client,
+    InterfaceRequest<SurfacesService> request)
     : manager_(manager),
       next_id_namespace_(next_id_namespace),
-      client_(client) {
+      client_(client),
+      binding_(this, request.Pass()) {
 }
+
 SurfacesServiceImpl::~SurfacesServiceImpl() {
 }
 
@@ -20,7 +24,7 @@ void SurfacesServiceImpl::CreateSurfaceConnection(
     const Callback<void(SurfacePtr, uint32_t)>& callback) {
   uint32_t id_namespace = (*next_id_namespace_)++;
   SurfacePtr surface;
-  BindToProxy(new SurfacesImpl(manager_, id_namespace, client_), &surface);
+  new SurfacesImpl(manager_, id_namespace, client_, &surface);
   callback.Run(surface.Pass(), id_namespace);
 }
 
