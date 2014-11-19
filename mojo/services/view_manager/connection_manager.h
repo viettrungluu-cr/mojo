@@ -10,11 +10,11 @@
 
 #include "base/basictypes.h"
 #include "base/memory/scoped_ptr.h"
+#include "base/timer/timer.h"
 #include "mojo/public/cpp/bindings/array.h"
 #include "mojo/services/public/interfaces/view_manager/view_manager.mojom.h"
 #include "mojo/services/public/interfaces/window_manager/window_manager_internal.mojom.h"
 #include "mojo/services/view_manager/ids.h"
-#include "mojo/services/view_manager/server_view.h"
 #include "mojo/services/view_manager/server_view_delegate.h"
 
 namespace mojo {
@@ -23,6 +23,7 @@ namespace service {
 class ClientConnection;
 class ConnectionManagerDelegate;
 class DisplayManager;
+class ServerView;
 class ViewManagerServiceImpl;
 
 // ConnectionManager manages the set of connections to the ViewManager (all the
@@ -77,8 +78,8 @@ class ConnectionManager : public ServerViewDelegate,
   // See description of ViewManagerService::Embed() for details. This assumes
   // |transport_view_id| is valid.
   void EmbedAtView(ConnectionSpecificId creator_id,
-                   const String& url,
-                   Id transport_view_id,
+                   const std::string& url,
+                   const ViewId& view_id,
                    InterfaceRequest<ServiceProvider> service_provider);
 
   // Returns the connection by id.
@@ -116,6 +117,9 @@ class ConnectionManager : public ServerViewDelegate,
   bool has_window_manager_client_connection() const {
     return window_manager_client_connection_ != nullptr;
   }
+
+  // WindowManagerInternalClient implementation helper; see mojom for details.
+  bool CloneAndAnimate(const ViewId& view_id);
 
   // These functions trivially delegate to all ViewManagerServiceImpls, which in
   // term notify their clients.
@@ -156,11 +160,16 @@ class ConnectionManager : public ServerViewDelegate,
   // Adds |connection| to internal maps.
   void AddConnection(ClientConnection* connection);
 
+  // Callback from animation timer.
+  // TODO(sky): make this real (move to a different class).
+  void DoAnimation();
+
   // Overridden from ServerViewDelegate:
+  void OnWillDestroyView(ServerView* view) override;
   void OnViewDestroyed(const ServerView* view) override;
-  void OnWillChangeViewHierarchy(const ServerView* view,
-                                 const ServerView* new_parent,
-                                 const ServerView* old_parent) override;
+  void OnWillChangeViewHierarchy(ServerView* view,
+                                 ServerView* new_parent,
+                                 ServerView* old_parent) override;
   void OnViewHierarchyChanged(const ServerView* view,
                               const ServerView* new_parent,
                               const ServerView* old_parent) override;
@@ -171,16 +180,17 @@ class ConnectionManager : public ServerViewDelegate,
   void OnViewReordered(const ServerView* view,
                        const ServerView* relative,
                        OrderDirection direction) override;
-  void OnWillChangeViewVisibility(const ServerView* view) override;
+  void OnWillChangeViewVisibility(ServerView* view) override;
   void OnViewSharedPropertyChanged(
       const ServerView* view,
       const std::string& name,
       const std::vector<uint8_t>* new_data) override;
+  void OnScheduleViewPaint(const ServerView* view) override;
 
   // WindowManagerInternalClient:
-  void DispatchInputEventToView(Id transport_view_id,
-                                EventPtr event) override;
+  void DispatchInputEventToView(Id transport_view_id, EventPtr event) override;
   void SetViewportSize(SizePtr size) override;
+  void CloneAndAnimate(Id transport_view_id) override;
 
   ConnectionManagerDelegate* delegate_;
 
@@ -206,6 +216,9 @@ class ConnectionManager : public ServerViewDelegate,
   ScopedChange* current_change_;
 
   bool in_destructor_;
+
+  // TODO(sky): nuke! Just a proof of concept until get real animation api.
+  base::RepeatingTimer<ConnectionManager> animation_timer_;
 
   DISALLOW_COPY_AND_ASSIGN(ConnectionManager);
 };

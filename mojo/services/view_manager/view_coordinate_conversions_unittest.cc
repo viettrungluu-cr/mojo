@@ -20,10 +20,11 @@ class MockServerViewDelegate : public ServerViewDelegate {
 
  private:
   // ServerViewDelegate:
+  void OnWillDestroyView(ServerView* view) override {}
   void OnViewDestroyed(const ServerView* view) override {}
-  void OnWillChangeViewHierarchy(const ServerView* view,
-                                 const ServerView* new_parent,
-                                 const ServerView* old_parent) override {}
+  void OnWillChangeViewHierarchy(ServerView* view,
+                                 ServerView* new_parent,
+                                 ServerView* old_parent) override {}
   void OnViewHierarchyChanged(const ServerView* view,
                               const ServerView* new_parent,
                               const ServerView* old_parent) override {}
@@ -34,11 +35,12 @@ class MockServerViewDelegate : public ServerViewDelegate {
   void OnViewReordered(const ServerView* view,
                        const ServerView* relative,
                        OrderDirection direction) override {}
-  void OnWillChangeViewVisibility(const ServerView* view) override {}
+  void OnWillChangeViewVisibility(ServerView* view) override {}
   void OnViewSharedPropertyChanged(
       const ServerView* view,
       const std::string& name,
       const std::vector<uint8_t>* new_data) override {}
+  void OnScheduleViewPaint(const ServerView* view) override {}
 
   DISALLOW_COPY_AND_ASSIGN(MockServerViewDelegate);
 };

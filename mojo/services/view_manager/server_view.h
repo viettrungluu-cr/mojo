@@ -60,6 +60,9 @@ class ServerView {
   bool visible() const { return visible_; }
   void SetVisible(bool value);
 
+  float opacity() const { return opacity_; }
+  void SetOpacity(float value);
+
   const std::map<std::string, std::vector<uint8_t>>& properties() const {
     return properties_;
   }
@@ -85,6 +88,8 @@ class ServerView {
   bool visible_;
   gfx::Rect bounds_;
   cc::SurfaceId surface_id_;
+  float opacity_;
+
   std::map<std::string, std::vector<uint8_t>> properties_;
 
   DISALLOW_COPY_AND_ASSIGN(ServerView);

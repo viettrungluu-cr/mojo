@@ -53,6 +53,11 @@ inline ViewId InvalidViewId() {
   return ViewId(kInvalidConnectionId, 0);
 }
 
+// All cloned views use this id.
+inline ViewId ClonedViewId() {
+  return ViewId(kInvalidConnectionId, 2);
+}
+
 }  // namespace service
 }  // namespace mojo
 

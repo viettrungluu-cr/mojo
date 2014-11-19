@@ -31,7 +31,7 @@ void DrawViewTree(Pass* pass,
   for (std::vector<const ServerView*>::reverse_iterator it = children.rbegin();
        it != children.rend();
        ++it) {
-    DrawViewTree(pass, *it, offset + view->bounds().OffsetFromOrigin());
+    DrawViewTree(pass, *it, node_bounds.OffsetFromOrigin());
   }
 
   cc::SurfaceId node_id = view->surface_id();
@@ -53,6 +53,8 @@ void DrawViewTree(Pass* pass,
   surface_quad->surface_quad_state = surface_quad_state.Pass();
 
   SharedQuadStatePtr sqs = CreateDefaultSQS(*Size::From(node_bounds.size()));
+  sqs->blend_mode = SK_XFERMODE_kSrcOver_Mode;
+  sqs->opacity = view->opacity();
   sqs->content_to_target_transform = Transform::From(node_transform);
 
   pass->quads.push_back(surface_quad.Pass());

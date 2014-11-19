@@ -171,6 +171,27 @@ bool SetViewProperty(ViewManagerService* vm,
   return result;
 }
 
+// Utility functions -----------------------------------------------------------
+
+// Waits for all messages to be received by |vm|. This is done by attempting to
+// create a bogus view. When we get the response we know all messages have been
+// processed.
+bool WaitForAllMessages(ViewManagerService* vm) {
+  ErrorCode result = ERROR_CODE_NONE;
+  base::RunLoop run_loop;
+  vm->CreateView(ViewIdToTransportId(InvalidViewId()),
+                 base::Bind(&ErrorCodeResultCallback, &run_loop, &result));
+  run_loop.Run();
+  return result != ERROR_CODE_NONE;
+}
+
+bool HasClonedView(const std::vector<TestView>& views) {
+  for (size_t i = 0; i < views.size(); ++i)
+    if (views[i].view_id == ViewIdToTransportId(ClonedViewId()))
+      return true;
+  return false;
+}
+
 // -----------------------------------------------------------------------------
 
 // A ViewManagerClient implementation that logs all changes to a tracker.
@@ -1322,6 +1343,39 @@ TEST_F(ViewManagerServiceAppTest, DontCleanMapOnDestroy) {
   std::vector<TestView> views;
   GetViewTree(vm1(), BuildViewId(1, 1), &views);
   EXPECT_FALSE(views.empty());
+}
+
+TEST_F(ViewManagerServiceAppTest, CloneAndAnimate) {
+  // Create connection 2 and 3.
+  ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(true));
+  ASSERT_TRUE(AddView(vm1(), BuildViewId(0, 1), BuildViewId(1, 1)));
+  ASSERT_TRUE(CreateView(vm2(), BuildViewId(2, 2)));
+  ASSERT_TRUE(CreateView(vm2(), BuildViewId(2, 3)));
+  ASSERT_TRUE(AddView(vm2(), BuildViewId(1, 1), BuildViewId(2, 2)));
+  ASSERT_TRUE(AddView(vm2(), BuildViewId(2, 2), BuildViewId(2, 3)));
+  changes2()->clear();
+
+  ASSERT_TRUE(WaitForAllMessages(vm1()));
+  changes1()->clear();
+
+  wm_internal_->CloneAndAnimate(BuildViewId(2, 3));
+  ASSERT_TRUE(WaitForAllMessages(vm1()));
+
+  ASSERT_TRUE(WaitForAllMessages(vm1()));
+  ASSERT_TRUE(WaitForAllMessages(vm2()));
+
+  // No messages should have been received.
+  EXPECT_TRUE(changes1()->empty());
+  EXPECT_TRUE(changes2()->empty());
+
+  // No one should be able to see the cloned tree.
+  std::vector<TestView> views;
+  GetViewTree(vm1(), BuildViewId(1, 1), &views);
+  EXPECT_FALSE(HasClonedView(views));
+  views.clear();
+
+  GetViewTree(vm2(), BuildViewId(1, 1), &views);
+  EXPECT_FALSE(HasClonedView(views));
 }
 
 // TODO(sky): need to better track changes to initial connection. For example,

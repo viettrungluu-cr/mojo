@@ -65,12 +65,23 @@ class ViewManagerServiceImpl : public ViewManagerService,
   // Returns true if this connection's root is |id|.
   bool IsRoot(const ViewId& id) const;
 
+  // Returns the id of the root node. This is null if the root has been
+  // destroyed but the connection is still valid.
+  const ViewId* root() const { return root_.get(); }
+
   // Invoked when a connection is about to be destroyed.
   void OnWillDestroyViewManagerServiceImpl(ViewManagerServiceImpl* connection);
 
-  // Synchronous implementation of ViewManagerService::CreateView(), see the
-  // mojom for details.
+  // These functions are synchronous variants of those defined in the mojom. The
+  // ViewManagerService implementations all call into these. See the mojom for
+  // details.
   ErrorCode CreateView(const ViewId& view_id);
+  bool AddView(const ViewId& parent_id, const ViewId& child_id);
+  std::vector<const ServerView*> GetViewTree(const ViewId& view_id) const;
+  bool SetViewVisibility(const ViewId& view_id, bool visible);
+  bool Embed(const std::string& url,
+             const ViewId& view_id,
+             InterfaceRequest<ServiceProvider> service_provider);
 
   // The following methods are invoked after the corresponding change has been
   // processed. They do the appropriate bookkeeping and update the client as

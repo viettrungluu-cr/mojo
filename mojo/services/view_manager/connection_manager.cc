@@ -12,10 +12,87 @@
 #include "mojo/services/view_manager/client_connection.h"
 #include "mojo/services/view_manager/connection_manager_delegate.h"
 #include "mojo/services/view_manager/display_manager.h"
+#include "mojo/services/view_manager/server_view.h"
+#include "mojo/services/view_manager/view_coordinate_conversions.h"
 #include "mojo/services/view_manager/view_manager_service_impl.h"
 
 namespace mojo {
 namespace service {
+namespace {
+
+// Creates a copy of |view|. The copied view has |delegate| as its delegate.
+// This does not recurse.
+ServerView* CloneView(const ServerView* view, ServerViewDelegate* delegate) {
+  ServerView* clone = new ServerView(delegate, ClonedViewId());
+  clone->SetBounds(view->bounds());
+  clone->SetSurfaceId(view->surface_id());
+  clone->SetOpacity(view->opacity());
+  return clone;
+}
+
+// Creates copies of all the visible children of |parent|. Newly cloned views
+// are added to |cloned_parent| and have |delegate| as their delegate. The
+// stacking order of the cloned views is preseved.
+void CloneViewTree(const ServerView* parent,
+                   ServerView* cloned_parent,
+                   ServerViewDelegate* delegate) {
+  DCHECK(parent->visible());
+  for (const ServerView* to_clone : parent->GetChildren()) {
+    if (to_clone->visible()) {
+      ServerView* cloned = CloneView(to_clone, delegate);
+      cloned_parent->Add(cloned);
+      CloneViewTree(to_clone, cloned, delegate);
+    }
+  }
+}
+
+// Recurses through all the children of |view| moving any cloned views to
+// |new_parent| stacked above |stack_above|. |stack_above| is updated as views
+// are moved.
+void ReparentClonedViews(ServerView* new_parent,
+                         ServerView** stack_above,
+                         ServerView* view) {
+  if (view->id() == ClonedViewId()) {
+    const gfx::Rect new_bounds(ConvertRectBetweenViews(
+        view, new_parent, gfx::Rect(view->bounds().size())));
+    new_parent->Add(view);
+    new_parent->Reorder(view, *stack_above, ORDER_DIRECTION_ABOVE);
+    view->SetBounds(new_bounds);
+    *stack_above = view;
+    return;
+  }
+
+  for (ServerView* child : view->GetChildren())
+    ReparentClonedViews(new_parent, stack_above, child);
+}
+
+// Deletes |view| and all its descendants.
+void DeleteViewTree(ServerView* view) {
+  for (ServerView* child : view->GetChildren())
+    DeleteViewTree(child);
+
+  delete view;
+}
+
+// TODO(sky): nuke, proof of concept.
+bool DecrementAnimatingViewsOpacity(ServerView* view) {
+  if (view->id() == ClonedViewId()) {
+    const float new_opacity = view->opacity() - .05f;
+    if (new_opacity <= 0)
+      DeleteViewTree(view);
+    else
+      view->SetOpacity(new_opacity);
+    return true;
+  }
+  bool ret_value = false;
+  for (ServerView* child : view->GetChildren()) {
+    if (DecrementAnimatingViewsOpacity(child))
+      ret_value = true;
+  }
+  return ret_value;
+}
+
+}  // namespace
 
 ConnectionManager::ScopedChange::ScopedChange(
     ViewManagerServiceImpl* connection,
@@ -82,8 +159,8 @@ void ConnectionManager::OnConnectionError(ClientConnection* connection) {
 
 void ConnectionManager::EmbedAtView(
     ConnectionSpecificId creator_id,
-    const String& url,
-    Id transport_view_id,
+    const std::string& url,
+    const ViewId& view_id,
     InterfaceRequest<ServiceProvider> service_provider) {
   std::string creator_url;
   ConnectionMap::const_iterator it = connection_map_.find(creator_id);
@@ -92,8 +169,7 @@ void ConnectionManager::EmbedAtView(
 
   ClientConnection* client_connection =
       delegate_->CreateClientConnectionForEmbedAtView(
-          this, creator_id, creator_url, url.To<std::string>(),
-          ViewIdFromTransportId(transport_view_id));
+          this, creator_id, creator_url, url, view_id);
   AddConnection(client_connection);
   client_connection->service()->Init(client_connection->client(),
                                      service_provider.Pass());
@@ -140,6 +216,21 @@ void ConnectionManager::SetWindowManagerClientConnection(
   window_manager_client_connection_->service()->Init(
       window_manager_client_connection_->client(),
       InterfaceRequest<ServiceProvider>());
+}
+
+bool ConnectionManager::CloneAndAnimate(const ViewId& view_id) {
+  ServerView* view = GetView(view_id);
+  if (!view || !view->IsDrawn(root_.get()) || view == root_.get())
+    return false;
+  if (!animation_timer_.IsRunning()) {
+    animation_timer_.Start(FROM_HERE, base::TimeDelta::FromMilliseconds(100),
+                           this, &ConnectionManager::DoAnimation);
+  }
+  ServerView* clone = CloneView(view, this);
+  CloneViewTree(view, clone, this);
+  view->parent()->Add(clone);
+  view->parent()->Reorder(clone, view, ORDER_DIRECTION_ABOVE);
+  return true;
 }
 
 void ConnectionManager::ProcessViewBoundsChanged(const ServerView* view,
@@ -199,9 +290,25 @@ void ConnectionManager::FinishChange() {
   current_change_ = NULL;
 }
 
+void ConnectionManager::DoAnimation() {
+  if (!DecrementAnimatingViewsOpacity(root()))
+    animation_timer_.Stop();
+}
+
 void ConnectionManager::AddConnection(ClientConnection* connection) {
   DCHECK_EQ(0u, connection_map_.count(connection->service()->id()));
   connection_map_[connection->service()->id()] = connection;
+}
+
+void ConnectionManager::OnWillDestroyView(ServerView* view) {
+  if (!in_destructor_ && root_->Contains(view) && view != root_.get() &&
+      view->id() != ClonedViewId()) {
+    // We're about to destroy a view. Any cloned views need to be reparented
+    // else the animation would no longer be visible. By moving to a visible
+    // view, view->parent(), we ensure the animation is still visible.
+    ServerView* parent_above = view;
+    ReparentClonedViews(view->parent(), &parent_above, view);
+  }
 }
 
 void ConnectionManager::OnViewDestroyed(const ServerView* view) {
@@ -209,12 +316,22 @@ void ConnectionManager::OnViewDestroyed(const ServerView* view) {
     ProcessViewDeleted(view->id());
 }
 
-void ConnectionManager::OnWillChangeViewHierarchy(
-    const ServerView* view,
-    const ServerView* new_parent,
-    const ServerView* old_parent) {
-  if (!in_destructor_)
-    ProcessWillChangeViewHierarchy(view, new_parent, old_parent);
+void ConnectionManager::OnWillChangeViewHierarchy(ServerView* view,
+                                                  ServerView* new_parent,
+                                                  ServerView* old_parent) {
+  if (view->id() == ClonedViewId() || in_destructor_)
+    return;
+
+  if (root_->Contains(view) && view != root_.get()) {
+    // We're about to reparent a view. Any cloned views need to be reparented
+    // else the animation may be effected in unusual ways. For example, the view
+    // could move to a new location such that the animation is entirely clipped.
+    // By moving to view->parent() we ensure the animation is still visible.
+    ServerView* parent_above = view;
+    ReparentClonedViews(view->parent(), &parent_above, view);
+  }
+
+  ProcessWillChangeViewHierarchy(view, new_parent, old_parent);
 }
 
 void ConnectionManager::OnViewHierarchyChanged(const ServerView* view,
@@ -263,9 +380,17 @@ void ConnectionManager::OnViewReordered(const ServerView* view,
     display_manager_->SchedulePaint(view, gfx::Rect(view->bounds().size()));
 }
 
-void ConnectionManager::OnWillChangeViewVisibility(const ServerView* view) {
+void ConnectionManager::OnWillChangeViewVisibility(ServerView* view) {
   if (in_destructor_)
     return;
+
+  if (view != root_.get() && view->id() != ClonedViewId() &&
+      root_->Contains(view) && view->IsDrawn(root_.get())) {
+    // We're about to hide |view|, this would implicitly make any cloned views
+    // hide to. Reparent so that animations are still visible.
+    ServerView* parent_above = view;
+    ReparentClonedViews(view->parent(), &parent_above, view);
+  }
 
   for (auto& pair : connection_map_) {
     pair.second->service()->ProcessWillChangeViewVisibility(
@@ -283,9 +408,9 @@ void ConnectionManager::OnViewSharedPropertyChanged(
   }
 }
 
-void ConnectionManager::SetViewportSize(SizePtr size) {
-  gfx::Size new_size = size.To<gfx::Size>();
-  display_manager_->SetViewportSize(new_size);
+void ConnectionManager::OnScheduleViewPaint(const ServerView* view) {
+  if (!in_destructor_)
+    display_manager_->SchedulePaint(view, gfx::Rect(view->bounds().size()));
 }
 
 void ConnectionManager::DispatchInputEventToView(Id transport_view_id,
@@ -299,6 +424,15 @@ void ConnectionManager::DispatchInputEventToView(Id transport_view_id,
     connection->client()->OnViewInputEvent(
         transport_view_id, event.Pass(), base::Bind(&base::DoNothing));
   }
+}
+
+void ConnectionManager::SetViewportSize(SizePtr size) {
+  gfx::Size new_size = size.To<gfx::Size>();
+  display_manager_->SetViewportSize(new_size);
+}
+
+void ConnectionManager::CloneAndAnimate(Id transport_view_id) {
+  CloneAndAnimate(ViewIdFromTransportId(transport_view_id));
 }
 
 }  // namespace service

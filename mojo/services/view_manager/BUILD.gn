@@ -14,9 +14,12 @@ mojo_native_application("view_manager") {
 
   deps = [
     ":view_manager_lib",
+    "//base",
     "//mojo/application",
     "//mojo/environment:chromium",
     "//mojo/public/c/system:for_shared_library",
+    "//mojo/public/cpp/bindings:bindings",
+    "//mojo/services/public/interfaces/window_manager",
   ]
 }
 
@@ -77,6 +80,7 @@ source_set("test_support") {
   deps = [
     "//base",
     "//mojo/common",
+    "//mojo/public/cpp/bindings:bindings",
     "//mojo/services/public/interfaces/geometry",
     "//mojo/services/public/interfaces/view_manager",
   ]

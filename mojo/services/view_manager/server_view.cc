@@ -10,11 +10,13 @@ namespace mojo {
 namespace service {
 
 ServerView::ServerView(ServerViewDelegate* delegate, const ViewId& id)
-    : delegate_(delegate), id_(id), parent_(NULL), visible_(true) {
+    : delegate_(delegate), id_(id), parent_(NULL), visible_(true), opacity_(1) {
   DCHECK(delegate);  // Must provide a delegate.
 }
 
 ServerView::~ServerView() {
+  delegate_->OnWillDestroyView(this);
+
   while (!children_.empty())
     children_.front()->parent()->Remove(children_.front());
 
@@ -36,7 +38,7 @@ void ServerView::Add(ServerView* child) {
     return;
   }
 
-  const ServerView* old_parent = child->parent();
+  ServerView* old_parent = child->parent();
   child->delegate_->OnWillChangeViewHierarchy(child, this, old_parent);
   if (child->parent())
     child->parent()->RemoveImpl(child);
@@ -119,6 +121,13 @@ void ServerView::SetVisible(bool value) {
 
   delegate_->OnWillChangeViewVisibility(this);
   visible_ = value;
+}
+
+void ServerView::SetOpacity(float value) {
+  if (value == opacity_)
+    return;
+  opacity_ = value;
+  delegate_->OnScheduleViewPaint(this);
 }
 
 void ServerView::SetProperty(const std::string& name,

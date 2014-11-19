@@ -44,12 +44,12 @@ bool WindowManagerAccessPolicy::CanDeleteView(const ServerView* view) const {
 }
 
 bool WindowManagerAccessPolicy::CanGetViewTree(const ServerView* view) const {
-  return true;
+  return view->id() != ClonedViewId();
 }
 
 bool WindowManagerAccessPolicy::CanDescendIntoViewForViewTree(
     const ServerView* view) const {
-  return true;
+  return view->id() != ClonedViewId();
 }
 
 bool WindowManagerAccessPolicy::CanEmbed(const ServerView* view) const {
@@ -82,6 +82,9 @@ bool WindowManagerAccessPolicy::ShouldNotifyOnHierarchyChange(
     const ServerView* view,
     const ServerView** new_parent,
     const ServerView** old_parent) const {
+  if (view->id() == ClonedViewId())
+    return false;
+
   // Notify if we've already told the window manager about the view, or if we've
   // already told the window manager about the parent. The later handles the
   // case of a view that wasn't parented to the root getting added to the root.
