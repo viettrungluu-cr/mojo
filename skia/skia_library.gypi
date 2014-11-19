@@ -105,7 +105,6 @@
   '../third_party/skia/include/utils/SkParsePaint.h',
   '../third_party/skia/include/utils/SkParsePath.h',
   '../third_party/skia/include/utils/SkRandom.h',
-  '../third_party/skia/include/utils/SkWGL.h',
 
   '../third_party/skia/src/utils/SkBitmapHasher.cpp',
   '../third_party/skia/src/utils/SkBitmapHasher.h',
@@ -189,7 +188,8 @@
     }],
     ['skia_support_pdf == 0', {
       'sources/': [
-        ['exclude', '../third_party/skia/src/pdf/']
+        ['exclude', '../third_party/skia/src/doc/SkDocument_PDF.cpp'],
+        ['exclude', '../third_party/skia/src/pdf/'],
       ],
     }],
     ['skia_support_pdf == 1', {

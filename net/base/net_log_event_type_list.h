@@ -796,6 +796,14 @@ EVENT_TYPE(URL_REQUEST_FAKE_RESPONSE_HEADERS_CREATED)
 //     "headers": <The list of header:value pairs>,
 //   }
 
+EVENT_TYPE(URL_REQUEST_FILTERS_SET)
+// This event is logged when a URLRequestJob sets up the filters, if any
+// filters were added to the job.  It logs the filters added.
+// The following parameters are attached:
+//   {
+//     "filters": <The list of filter names>
+//   }
+
 // ------------------------------------------------------------------------
 // HttpCache
 // ------------------------------------------------------------------------
@@ -2398,3 +2406,11 @@ EVENT_TYPE(SDCH_DICTIONARY_ERROR)
 // This event is created when SdchDictionaryFetcher starts fetch.  It contains
 // no parameters.
 EVENT_TYPE(SDCH_DICTIONARY_FETCH)
+
+// This event is created if the SdchDictionaryFetcher URLRequest returns
+// no error, but signals an error through bytes_read < 0.
+// It contains the following parameters:
+//   {
+//     "net_error": <error created>
+//   }
+EVENT_TYPE(SDCH_DICTIONARY_FETCH_IMPLIED_ERROR)

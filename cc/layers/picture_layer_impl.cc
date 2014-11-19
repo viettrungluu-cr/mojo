@@ -645,7 +645,7 @@ const PictureLayerTiling* PictureLayerImpl::GetPendingOrActiveTwinTiling(
   // TODO(danakj): Remove this when no longer swapping tilings.
   if (!twin_layer->tilings_)
     return nullptr;
-  return twin_layer->tilings_->TilingAtScale(tiling->contents_scale());
+  return twin_layer->tilings_->FindTilingWithScale(tiling->contents_scale());
 }
 
 PictureLayerTiling* PictureLayerImpl::GetRecycledTwinTiling(
@@ -653,7 +653,7 @@ PictureLayerTiling* PictureLayerImpl::GetRecycledTwinTiling(
   PictureLayerImpl* recycled_twin = GetRecycledTwinLayer();
   if (!recycled_twin || !recycled_twin->tilings_)
     return nullptr;
-  return recycled_twin->tilings_->TilingAtScale(tiling->contents_scale());
+  return recycled_twin->tilings_->FindTilingWithScale(tiling->contents_scale());
 }
 
 TilePriority::PriorityBin PictureLayerImpl::GetMaxTilePriorityBin() const {
@@ -889,13 +889,7 @@ void PictureLayerImpl::RemoveTiling(float contents_scale) {
   if (!tilings_ || tilings_->num_tilings() == 0)
     return;
 
-  for (size_t i = 0; i < tilings_->num_tilings(); ++i) {
-    PictureLayerTiling* tiling = tilings_->tiling_at(i);
-    if (tiling->contents_scale() == contents_scale) {
-      tilings_->Remove(tiling);
-      break;
-    }
-  }
+  tilings_->RemoveTilingWithScale(contents_scale);
   if (tilings_->num_tilings() == 0)
     ResetRasterScale();
   SanityCheckTilingState();
@@ -908,44 +902,32 @@ void PictureLayerImpl::RemoveAllTilings() {
   ResetRasterScale();
 }
 
-namespace {
-
-inline float PositiveRatio(float float1, float float2) {
-  DCHECK_GT(float1, 0);
-  DCHECK_GT(float2, 0);
-  return float1 > float2 ? float1 / float2 : float2 / float1;
-}
-
-}  // namespace
-
 void PictureLayerImpl::AddTilingsForRasterScale() {
-  PictureLayerTiling* high_res = nullptr;
-  PictureLayerTiling* low_res = nullptr;
+  // Reset all resolution enums on tilings, we'll be setting new values in this
+  // function.
+  tilings_->MarkAllTilingsNonIdeal();
 
-  for (size_t i = 0; i < tilings_->num_tilings(); ++i) {
-    PictureLayerTiling* tiling = tilings_->tiling_at(i);
-    if (tiling->contents_scale() == raster_contents_scale_)
-      high_res = tiling;
-    if (tiling->contents_scale() == low_res_raster_contents_scale_)
-      low_res = tiling;
-
-    // Reset all tilings to non-ideal until the end of this function.
-    tiling->set_resolution(NON_IDEAL_RESOLUTION);
-  }
-
-  if (!high_res) {
+  PictureLayerTiling* high_res =
+      tilings_->FindTilingWithScale(raster_contents_scale_);
+  // We always need a high res tiling, so create one if it doesn't exist.
+  if (!high_res)
     high_res = AddTiling(raster_contents_scale_);
-    if (raster_contents_scale_ == low_res_raster_contents_scale_)
-      low_res = high_res;
-  }
+
+  // Try and find a low res tiling.
+  PictureLayerTiling* low_res = nullptr;
+  if (raster_contents_scale_ == low_res_raster_contents_scale_)
+    low_res = high_res;
+  else
+    low_res = tilings_->FindTilingWithScale(low_res_raster_contents_scale_);
 
   // Only create new low res tilings when the transform is static.  This
   // prevents wastefully creating a paired low res tiling for every new high res
   // tiling during a pinch or a CSS animation.
+  bool can_have_low_res = layer_tree_impl()->create_low_res_tiling();
+  bool needs_low_res = !low_res;
   bool is_pinching = layer_tree_impl()->PinchGestureActive();
-  if (layer_tree_impl()->create_low_res_tiling() && !is_pinching &&
-      !draw_properties().screen_space_transform_is_animating && !low_res &&
-      low_res != high_res)
+  bool is_animating = draw_properties().screen_space_transform_is_animating;
+  if (can_have_low_res && needs_low_res && !is_pinching && !is_animating)
     low_res = AddTiling(low_res_raster_contents_scale_);
 
   // Set low-res if we have one.
@@ -999,21 +981,6 @@ bool PictureLayerImpl::ShouldAdjustRasterScale() const {
   return false;
 }
 
-float PictureLayerImpl::SnappedContentsScale(float scale) {
-  // If a tiling exists within the max snapping ratio, snap to its scale.
-  float snapped_contents_scale = scale;
-  float snapped_ratio = kSnapToExistingTilingRatio;
-  for (size_t i = 0; i < tilings_->num_tilings(); ++i) {
-    float tiling_contents_scale = tilings_->tiling_at(i)->contents_scale();
-    float ratio = PositiveRatio(tiling_contents_scale, scale);
-    if (ratio < snapped_ratio) {
-      snapped_contents_scale = tiling_contents_scale;
-      snapped_ratio = ratio;
-    }
-  }
-  return snapped_contents_scale;
-}
-
 void PictureLayerImpl::RecalculateRasterScales() {
   float old_raster_contents_scale = raster_contents_scale_;
   float old_raster_page_scale = raster_page_scale_;
@@ -1058,7 +1025,8 @@ void PictureLayerImpl::RecalculateRasterScales() {
       while (desired_contents_scale < ideal_contents_scale_)
         desired_contents_scale *= kMaxScaleRatioDuringPinch;
     }
-    raster_contents_scale_ = SnappedContentsScale(desired_contents_scale);
+    raster_contents_scale_ = tilings_->GetSnappedContentsScale(
+        desired_contents_scale, kSnapToExistingTilingRatio);
     raster_page_scale_ =
         raster_contents_scale_ / raster_device_scale_ / raster_source_scale_;
   }
@@ -1142,14 +1110,14 @@ void PictureLayerImpl::CleanUpTilingsOnActiveLayer(
     // TODO(danakj): Remove the tilings_ check when we create them in the
     // constructor.
     if (twin->tilings_) {
-      for (size_t i = 0; i < twin->tilings_->num_tilings(); ++i) {
-        PictureLayerTiling* tiling = twin->tilings_->tiling_at(i);
-        if (tiling->resolution() == LOW_RESOLUTION)
-          twin_low_res_scale = tiling->contents_scale();
-      }
+      PictureLayerTiling* tiling =
+          twin->tilings_->FindTilingWithResolution(LOW_RESOLUTION);
+      if (tiling)
+        twin_low_res_scale = tiling->contents_scale();
     }
   }
 
+  // TODO(vmpstr): Put this logic into PictureLayerTilingSet.
   std::vector<PictureLayerTiling*> to_remove;
   for (size_t i = 0; i < tilings_->num_tilings(); ++i) {
     PictureLayerTiling* tiling = tilings_->tiling_at(i);
@@ -1269,12 +1237,8 @@ bool PictureLayerImpl::ShouldAdjustRasterScaleDuringScaleAnimations() const {
 }
 
 float PictureLayerImpl::MaximumTilingContentsScale() const {
-  float max_contents_scale = MinimumContentsScale();
-  for (size_t i = 0; i < tilings_->num_tilings(); ++i) {
-    const PictureLayerTiling* tiling = tilings_->tiling_at(i);
-    max_contents_scale = std::max(max_contents_scale, tiling->contents_scale());
-  }
-  return max_contents_scale;
+  float max_contents_scale = tilings_->GetMaximumContentsScale();
+  return std::max(max_contents_scale, MinimumContentsScale());
 }
 
 void PictureLayerImpl::UpdateIdealScales() {
@@ -1310,9 +1274,7 @@ void PictureLayerImpl::GetAllTilesForTracing(
     std::set<const Tile*>* tiles) const {
   if (!tilings_)
     return;
-
-  for (size_t i = 0; i < tilings_->num_tilings(); ++i)
-    tilings_->tiling_at(i)->GetAllTilesForTracing(tiles);
+  tilings_->GetAllTilesForTracing(tiles);
 }
 
 void PictureLayerImpl::AsValueInto(base::debug::TracedValue* state) const {
@@ -1394,31 +1356,34 @@ bool PictureLayerImpl::AllTilesRequiredAreReadyToDraw(
   gfx::Rect rect = GetViewportForTilePriorityInContentSpace();
   rect.Intersect(visible_rect_for_tile_priority_);
 
-  for (size_t i = 0; i < tilings_->num_tilings(); ++i) {
-    PictureLayerTiling* tiling = tilings_->tiling_at(i);
-    if (tiling->resolution() != HIGH_RESOLUTION &&
-        tiling->resolution() != LOW_RESOLUTION)
+  // The high resolution tiling is the only tiling that can mark tiles as
+  // requiring either draw or activation. There is an explicit check in those
+  // callbacks to return false if they are not high resolution tilings. This
+  // check needs to remain since there are other callers of that function that
+  // rely on it. However, for the purposes of this function, we don't have to
+  // check other tilings.
+  PictureLayerTiling* tiling =
+      tilings_->FindTilingWithResolution(HIGH_RESOLUTION);
+  if (!tiling)
+    return true;
+
+  for (PictureLayerTiling::CoverageIterator iter(tiling, 1.f, rect); iter;
+       ++iter) {
+    const Tile* tile = *iter;
+    // A null tile (i.e. missing recording) can just be skipped.
+    // TODO(vmpstr): Verify this is true if we create tiles in raster
+    // iterators.
+    if (!tile)
       continue;
 
-    for (PictureLayerTiling::CoverageIterator iter(tiling, 1.f, rect); iter;
-         ++iter) {
-      const Tile* tile = *iter;
-      // A null tile (i.e. missing recording) can just be skipped.
-      // TODO(vmpstr): Verify this is true if we create tiles in raster
-      // iterators.
-      if (!tile)
-        continue;
-
-      // We can't check tile->required_for_activation, because that value might
-      // be out of date. It is updated in the raster/eviction iterators.
-      // TODO(vmpstr): Remove the comment once you can't access this information
-      // from the tile.
-      if ((tiling->*is_tile_required_callback)(tile) &&
-          !tile->IsReadyToDraw()) {
-        TRACE_EVENT_INSTANT0("cc", "Tile required, but not ready to draw.",
-                             TRACE_EVENT_SCOPE_THREAD);
-        return false;
-      }
+    // We can't check tile->required_for_activation, because that value might
+    // be out of date. It is updated in the raster/eviction iterators.
+    // TODO(vmpstr): Remove the comment once you can't access this information
+    // from the tile.
+    if ((tiling->*is_tile_required_callback)(tile) && !tile->IsReadyToDraw()) {
+      TRACE_EVENT_INSTANT0("cc", "Tile required, but not ready to draw.",
+                           TRACE_EVENT_SCOPE_THREAD);
+      return false;
     }
   }
 
