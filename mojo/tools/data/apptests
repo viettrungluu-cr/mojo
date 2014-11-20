@@ -1,0 +1,3 @@
+mojo:example_apptests
+mojo:network_service_apptests
+mojo:view_manager_server_apptests

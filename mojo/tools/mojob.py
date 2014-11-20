@@ -113,6 +113,18 @@ def run_unittests(args):
   command.append('mojob_test_successes')
   return subprocess.call(command)
 
+def run_apptests(args):
+  out_dir = get_out_dir(args)
+  print 'Running application tests in %s ...' % out_dir
+  command = ['python']
+  if platform.system() == 'Linux':
+    command.append('./testing/xvfb.py')
+    command.append(out_dir)
+
+  command.append(os.path.join('mojo', 'tools', 'apptest_runner.py'))
+  command.append(os.path.join('mojo', 'tools', 'data', 'apptests'))
+  command.append(out_dir)
+  return subprocess.call(command)
 
 def run_skytests(args):
   out_dir = get_out_dir(args)
@@ -170,6 +182,9 @@ def run_pytests(args):
 
 def test(args):
   exit_code = run_unittests(args)
+  if exit_code:
+    return exit_code
+  exit_code = run_apptests(args)
   if exit_code:
     return exit_code
   exit_code = run_pytests(args)

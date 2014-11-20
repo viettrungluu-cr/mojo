@@ -10,9 +10,18 @@ from mopy.mojo_python_tests_runner import MojoPythonTestRunner
 
 
 def main():
-  runner = MojoPythonTestRunner(os.path.join('mojo', 'public', 'tools',
-                                             'bindings', 'pylib'))
-  sys.exit(runner.run())
+  test_dir_list = [
+    # Tests of pylib bindings.
+    os.path.join('mojo', 'public', 'tools', 'bindings', 'pylib'),
+    # Tests of "mopy" python tools code.
+    os.path.join('mojo', 'tools', 'mopy')
+  ]
+
+  for test_dir in test_dir_list:
+    runner = MojoPythonTestRunner(test_dir)
+    exit_code = runner.run()
+    if exit_code:
+      return exit_code
 
 
 if __name__ == '__main__':
