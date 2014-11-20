@@ -67,9 +67,13 @@ class RawMojoHandle {
     return new MojoResult(_MojoHandleNatives.register(handle));
   }
 
-  static bool isValid(RawMojoHandle h) => (h.h != INVALID);
+  bool get isValid => (h != INVALID);
 
   String toString() => "$h";
+
+  bool operator ==(RawMojoHandle other) {
+    return h == other.h;
+  }
 }
 
 
@@ -107,6 +111,7 @@ class MojoHandle extends Stream<int> {
   void close() {
     if (_eventHandlerAdded) {
       MojoHandleWatcher.close(_handle);
+      _eventHandlerAdded = false;
     } else {
       // If we're not in the handle watcher, then close the handle manually.
       _handle.close();
@@ -128,11 +133,11 @@ class MojoHandle extends Stream<int> {
 
       // The callback could have closed the handle. If so, don't add it back to
       // the MojoHandleWatcher.
-      if (RawMojoHandle.isValid(_handle)) {
+      if (_handle.isValid) {
         assert(!_eventHandlerAdded);
         var res = MojoHandleWatcher.add(_handle, _sendPort, _signals);
         if (!res.isOk) {
-          throw new Exception("Failed to re-add handle: $_handle");
+          throw new Exception("Failed to re-add handle: $res");
         }
         _eventHandlerAdded = true;
       }
@@ -196,7 +201,10 @@ class MojoHandle extends Stream<int> {
   void _onPauseStateChange() {
     if (_controller.isPaused) {
       if (_eventHandlerAdded) {
-        MojoHandleWatcher.remove(_handle);
+        var res = MojoHandleWatcher.remove(_handle);
+        if (!res.isOk) {
+          throw new Exception("MojoHandleWatcher add failed: $res");
+        }
         _eventHandlerAdded = false;
       }
     } else {

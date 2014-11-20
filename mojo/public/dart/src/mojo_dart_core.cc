@@ -680,8 +680,7 @@ static void MojoHandleWatcher_SendControlData(Dart_NativeArguments arguments) {
   cd.data = data;
   const void* bytes = reinterpret_cast<const void*>(&cd);
   MojoResult res = MojoWriteMessage(
-      control_handle, bytes,  sizeof(cd), NULL, 0, 0);
-
+      control_handle, bytes, sizeof(cd), NULL, 0, 0);
   Dart_SetIntegerReturnValue(arguments, static_cast<int64_t>(res));
 }
 

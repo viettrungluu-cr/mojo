@@ -16,7 +16,7 @@ RawMojoHandle leakMojoHandle() {
   Expect.isNotNull(pipe);
 
   var endpoint = pipe.endpoints[0];
-  Expect.notEquals(endpoint.handle, RawMojoHandle.INVALID);
+  Expect.isTrue(endpoint.handle.isValid);
 
   var handle = new MojoHandle(endpoint.handle);
   // After making a high-level MojoHandle, the underlying mojo handle will have

@@ -84,8 +84,8 @@ basicMessagePipeTest() {
 
   MojoMessagePipeEndpoint end0 = pipe.endpoints[0];
   MojoMessagePipeEndpoint end1 = pipe.endpoints[1];
-  Expect.isTrue(RawMojoHandle.isValid(end0.handle));
-  Expect.isTrue(RawMojoHandle.isValid(end1.handle));
+  Expect.isTrue(end0.handle.isValid);
+  Expect.isTrue(end1.handle.isValid);
 
   // Not readable, yet.
   MojoResult result = end0.handle.wait(MojoHandleSignals.READABLE, 0);
@@ -145,13 +145,13 @@ basicDataPipeTest() {
   MojoDataPipe pipe = new MojoDataPipe();
   Expect.isNotNull(pipe);
   Expect.isTrue(pipe.status.isOk);
-  Expect.notEquals(pipe.consumer.handle, RawMojoHandle.INVALID);
-  Expect.notEquals(pipe.producer.handle, RawMojoHandle.INVALID);
+  Expect.isTrue(pipe.consumer.handle.isValid);
+  Expect.isTrue(pipe.producer.handle.isValid);
 
   MojoDataPipeProducer producer = pipe.producer;
   MojoDataPipeConsumer consumer = pipe.consumer;
-  Expect.notEquals(producer.handle.h, RawMojoHandle.INVALID);
-  Expect.notEquals(consumer.handle.h, RawMojoHandle.INVALID);
+  Expect.isTrue(producer.handle.isValid);
+  Expect.isTrue(consumer.handle.isValid);
 
   // Consumer should not be readable.
   MojoResult result = consumer.handle.wait(MojoHandleSignals.READABLE, 0);
@@ -248,7 +248,7 @@ basicSharedBufferTest() {
   Expect.isTrue(mojoBuffer.status.isOk);
   Expect.isNotNull(mojoBuffer.handle);
   Expect.isTrue(mojoBuffer.handle is RawMojoHandle);
-  Expect.notEquals(mojoBuffer.handle.h, RawMojoHandle.INVALID);
+  Expect.isTrue(mojoBuffer.handle.isValid);
 
   mojoBuffer.map(0, 100, MojoSharedBuffer.MAP_FLAG_NONE);
   Expect.isNotNull(mojoBuffer.status);
@@ -264,7 +264,7 @@ basicSharedBufferTest() {
   Expect.isNotNull(duplicate.status);
   Expect.isTrue(duplicate.status.isOk);
   Expect.isTrue(duplicate.handle is RawMojoHandle);
-  Expect.notEquals(duplicate.handle.h, RawMojoHandle.INVALID);
+  Expect.isTrue(duplicate.handle.isValid);
   Expect.isNotNull(duplicate.mapping);
   Expect.isTrue(duplicate.mapping is ByteData);
 
