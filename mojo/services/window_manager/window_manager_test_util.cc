@@ -18,6 +18,11 @@ TestView::TestView(int id, const gfx::Rect& rect)
   SetBounds(mojo_rect);
 }
 
+TestView::TestView(int id, const gfx::Rect& rect, View* parent)
+    : TestView(id, rect) {
+  parent->AddChild(this);
+}
+
 TestView::~TestView() {
 }
 

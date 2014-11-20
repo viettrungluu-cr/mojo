@@ -60,6 +60,7 @@ source_set("lib") {
 
 test("window_manager_unittests") {
   sources = [
+    "focus_controller_unittest.cc",
     "view_target_unittest.cc",
     "view_targeter_unittest.cc",
     "window_manager_api_unittest.cc",

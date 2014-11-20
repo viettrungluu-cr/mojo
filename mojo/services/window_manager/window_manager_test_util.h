@@ -22,6 +22,7 @@ namespace mojo {
 class TestView : public View {
  public:
   TestView(int id, const gfx::Rect& rect);
+  TestView(int id, const gfx::Rect& rect, View* parent);
   ~TestView();
 
   ViewTarget* target() { return target_; }
