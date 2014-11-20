@@ -16,7 +16,6 @@
 #include "mojo/public/interfaces/application/shell.mojom.h"
 #include "mojo/services/public/cpp/geometry/geometry_util.h"
 #include "mojo/services/public/cpp/surfaces/surfaces_utils.h"
-#include "mojo/services/public/cpp/surfaces/surfaces_utils.h"
 
 namespace examples {
 

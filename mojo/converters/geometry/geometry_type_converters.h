@@ -70,6 +70,15 @@ struct MOJO_GEOMETRY_EXPORT TypeConverter<gfx::Transform, TransformPtr> {
 };
 
 template <>
+struct MOJO_GEOMETRY_EXPORT TypeConverter<Size, gfx::Size> {
+  static Size Convert(const gfx::Size& input);
+};
+template <>
+struct MOJO_GEOMETRY_EXPORT TypeConverter<gfx::Size, Size> {
+  static gfx::Size Convert(const Size& input);
+};
+
+template <>
 struct MOJO_GEOMETRY_EXPORT TypeConverter<Rect, gfx::Rect> {
   static Rect Convert(const gfx::Rect& input);
 };

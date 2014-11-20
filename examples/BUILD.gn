@@ -16,6 +16,7 @@ group("examples") {
     "//examples/png_viewer",
     "//examples/recursive_content_handler",
     "//examples/sample_app",
+    "//examples/sky_compositor_app",
     "//examples/surfaces_app",
     "//examples/wget",
   ]
