@@ -22,6 +22,10 @@ namespace {
 gfx::Size ToSize(const mojo::Rect& rect) {
   return gfx::Size(rect.width, rect.height);
 }
+
+int RadiusAt(base::TimeDelta delta) {
+  return 50 + (delta.InMilliseconds() % 6000) * 100 / 6000;
+}
 }
 
 class SkyCompositorApp : public mojo::ApplicationDelegate,
@@ -49,10 +53,12 @@ class SkyCompositorApp : public mojo::ApplicationDelegate,
                mojo::ServiceProviderImpl* exported_services,
                scoped_ptr<mojo::ServiceProvider> imported_services) override {
     view_ = root;
+    base_time_ = base::TimeTicks::Now();
 
     layer_host_.reset(new sky::LayerHost(this));
     root_layer_ = make_scoped_refptr(new sky::Layer(this));
     layer_host_->SetRootLayer(root_layer_);
+    layer_host_->SetNeedsAnimate();
   }
 
   void OnViewManagerDisconnected(mojo::ViewManager* view_manager) override {
@@ -63,7 +69,10 @@ class SkyCompositorApp : public mojo::ApplicationDelegate,
   // sky::LayerHostClient
   mojo::Shell* GetShell() override { return shell_; }
 
-  void BeginFrame() override { root_layer_->SetSize(ToSize(view_->bounds())); }
+  void BeginFrame(base::TimeTicks frame_time) override {
+    root_layer_->SetSize(ToSize(view_->bounds()));
+    layer_host_->SetNeedsAnimate();
+  }
 
   void OnSurfaceIdAvailable(mojo::SurfaceIdPtr surface_id) override {
     view_->SetSurfaceId(surface_id.Pass());
@@ -71,10 +80,16 @@ class SkyCompositorApp : public mojo::ApplicationDelegate,
 
   // sky::LayerClient
   void PaintContents(SkCanvas* canvas, const gfx::Rect& clip) override {
+    base::TimeTicks frame_time = base::TimeTicks::Now();
+    printf("Frame delta: %f\n",
+           (frame_time - last_frame_time_).InMillisecondsF());
+    last_frame_time_ = frame_time;
+
+    canvas->clear(SK_ColorGREEN);
     SkPaint paint;
-    paint.setColor(SK_ColorGREEN);
+    paint.setColor(SK_ColorBLUE);
     paint.setFlags(SkPaint::kAntiAlias_Flag);
-    canvas->drawCircle(50, 100, 100, paint);
+    canvas->drawCircle(50, 100, RadiusAt(frame_time - base_time_), paint);
   }
 
   mojo::Shell* shell_;
@@ -83,6 +98,9 @@ class SkyCompositorApp : public mojo::ApplicationDelegate,
 
   scoped_ptr<sky::LayerHost> layer_host_;
   scoped_refptr<sky::Layer> root_layer_;
+
+  base::TimeTicks base_time_;
+  base::TimeTicks last_frame_time_;
 
   DISALLOW_COPY_AND_ASSIGN(SkyCompositorApp);
 };
