@@ -8,6 +8,7 @@
 #include "base/callback.h"
 #include "base/macros.h"
 #include "base/memory/scoped_ptr.h"
+#include "base/single_thread_task_runner.h"
 #include "base/timer/timer.h"
 #include "mojo/services/public/interfaces/gpu/command_buffer.mojom.h"
 #include "ui/gfx/native_widget_types.h"
@@ -52,8 +53,11 @@ class CommandBufferDriver {
                               ScopedSharedBufferHandle transfer_buffer,
                               uint32_t size);
   void DestroyTransferBuffer(int32_t id);
+  void Echo(const Callback<void()>& callback);
 
-  void SetContextLostCallback(const base::Callback<void(int32_t)>& callback);
+  void SetContextLostCallback(
+      scoped_refptr<base::SingleThreadTaskRunner> task_runner,
+      const base::Callback<void(int32_t)>& callback);
 
  private:
   bool DoInitialize(ScopedSharedBufferHandle shared_state);
@@ -72,6 +76,8 @@ class CommandBufferDriver {
   scoped_refptr<gfx::GLSurface> surface_;
   scoped_refptr<gfx::GLShareGroup> share_group_;
   scoped_refptr<gpu::gles2::MailboxManager> mailbox_manager_;
+
+  scoped_refptr<base::SingleThreadTaskRunner> context_lost_task_runner_;
   base::Callback<void(int32_t)> context_lost_callback_;
 
   DISALLOW_COPY_AND_ASSIGN(CommandBufferDriver);

@@ -15,7 +15,6 @@
 #include "base/memory/scoped_vector.h"
 #include "base/strings/string_split.h"
 #include "build/build_config.h"
-#include "gpu/command_buffer/service/mailbox_manager_impl.h"
 #include "mojo/application_manager/application_loader.h"
 #include "mojo/application_manager/application_manager.h"
 #include "mojo/application_manager/background_shell_application_loader.h"
@@ -36,7 +35,6 @@
 #include "mojo/services/gles2/gpu_impl.h"
 #include "mojo/services/native_viewport/native_viewport_impl.h"
 #include "mojo/shell/network_application_loader.h"
-#include "ui/gl/gl_share_group.h"
 #endif  // defined(OS_ANDROID)
 
 namespace mojo {
@@ -129,9 +127,7 @@ class Context::NativeViewportApplicationLoader
       public InterfaceFactory<NativeViewport>,
       public InterfaceFactory<Gpu> {
  public:
-  NativeViewportApplicationLoader()
-      : share_group_(new gfx::GLShareGroup),
-        mailbox_manager_(new gpu::gles2::MailboxManagerImpl) {}
+  NativeViewportApplicationLoader() : gpu_state_(new GpuImpl::State) {}
   virtual ~NativeViewportApplicationLoader() {}
 
  private:
@@ -164,11 +160,10 @@ class Context::NativeViewportApplicationLoader
   // InterfaceFactory<Gpu> implementation.
   virtual void Create(ApplicationConnection* connection,
                       InterfaceRequest<Gpu> request) override {
-    new GpuImpl(request.Pass(), share_group_.get(), mailbox_manager_.get());
+    new GpuImpl(request.Pass(), gpu_state_);
   }
 
-  scoped_refptr<gfx::GLShareGroup> share_group_;
-  scoped_refptr<gpu::gles2::MailboxManager> mailbox_manager_;
+  scoped_refptr<GpuImpl::State> gpu_state_;
   scoped_ptr<ApplicationImpl> app_;
   DISALLOW_COPY_AND_ASSIGN(NativeViewportApplicationLoader);
 };

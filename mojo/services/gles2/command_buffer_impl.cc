@@ -4,52 +4,93 @@
 
 #include "mojo/services/gles2/command_buffer_impl.h"
 
+#include "base/message_loop/message_loop.h"
 #include "mojo/services/gles2/command_buffer_driver.h"
 
 namespace mojo {
+namespace {
+void DestroyDriver(scoped_ptr<CommandBufferDriver> driver) {
+  // Just let ~scoped_ptr run.
+}
 
-CommandBufferImpl::CommandBufferImpl(InterfaceRequest<CommandBuffer> request,
-                                     scoped_ptr<CommandBufferDriver> driver)
-    : binding_(this, request.Pass()), driver_(driver.Pass()) {
-  driver_->SetContextLostCallback(
-      base::Bind(&CommandBufferImpl::OnContextLost, base::Unretained(this)));
+void RunCallback(const Callback<void()>& callback) {
+  callback.Run();
+}
+}
+
+CommandBufferImpl::CommandBufferImpl(
+    InterfaceRequest<CommandBuffer> request,
+    scoped_refptr<base::SingleThreadTaskRunner> control_task_runner,
+    scoped_ptr<CommandBufferDriver> driver)
+    : driver_task_runner_(base::MessageLoop::current()->task_runner()),
+      driver_(driver.Pass()),
+      binding_(this),
+      weak_factory_(this) {
+  driver_->SetContextLostCallback(control_task_runner,
+                                  base::Bind(&CommandBufferImpl::OnContextLost,
+                                             weak_factory_.GetWeakPtr()));
+
+  control_task_runner->PostTask(
+      FROM_HERE, base::Bind(&CommandBufferImpl::BindToRequest,
+                            base::Unretained(this), base::Passed(&request)));
 }
 
 CommandBufferImpl::~CommandBufferImpl() {
   binding_.client()->DidDestroy();
+  driver_task_runner_->PostTask(
+      FROM_HERE, base::Bind(&DestroyDriver, base::Passed(&driver_)));
 }
 
-void CommandBufferImpl::Initialize(
-    CommandBufferSyncClientPtr sync_client,
-    mojo::ScopedSharedBufferHandle shared_state) {
-  driver_->Initialize(sync_client.Pass(), shared_state.Pass());
+void CommandBufferImpl::Initialize(CommandBufferSyncClientPtr sync_client,
+                                   ScopedSharedBufferHandle shared_state) {
+  driver_task_runner_->PostTask(
+      FROM_HERE,
+      base::Bind(&CommandBufferDriver::Initialize,
+                 base::Unretained(driver_.get()), base::Passed(&sync_client),
+                 base::Passed(&shared_state)));
 }
 
 void CommandBufferImpl::SetGetBuffer(int32_t buffer) {
-  driver_->SetGetBuffer(buffer);
+  driver_task_runner_->PostTask(
+      FROM_HERE, base::Bind(&CommandBufferDriver::SetGetBuffer,
+                            base::Unretained(driver_.get()), buffer));
 }
 
 void CommandBufferImpl::Flush(int32_t put_offset) {
-  driver_->Flush(put_offset);
+  driver_task_runner_->PostTask(
+      FROM_HERE, base::Bind(&CommandBufferDriver::Flush,
+                            base::Unretained(driver_.get()), put_offset));
 }
 
 void CommandBufferImpl::MakeProgress(int32_t last_get_offset) {
-  driver_->MakeProgress(last_get_offset);
+  driver_task_runner_->PostTask(
+      FROM_HERE, base::Bind(&CommandBufferDriver::MakeProgress,
+                            base::Unretained(driver_.get()), last_get_offset));
 }
 
 void CommandBufferImpl::RegisterTransferBuffer(
     int32_t id,
-    mojo::ScopedSharedBufferHandle transfer_buffer,
+    ScopedSharedBufferHandle transfer_buffer,
     uint32_t size) {
-  driver_->RegisterTransferBuffer(id, transfer_buffer.Pass(), size);
+  driver_task_runner_->PostTask(
+      FROM_HERE, base::Bind(&CommandBufferDriver::RegisterTransferBuffer,
+                            base::Unretained(driver_.get()), id,
+                            base::Passed(&transfer_buffer), size));
 }
 
 void CommandBufferImpl::DestroyTransferBuffer(int32_t id) {
-  driver_->DestroyTransferBuffer(id);
+  driver_task_runner_->PostTask(
+      FROM_HERE, base::Bind(&CommandBufferDriver::DestroyTransferBuffer,
+                            base::Unretained(driver_.get()), id));
 }
 
 void CommandBufferImpl::Echo(const Callback<void()>& callback) {
-  callback.Run();
+  driver_task_runner_->PostTaskAndReply(FROM_HERE, base::Bind(&base::DoNothing),
+                                        base::Bind(&RunCallback, callback));
+}
+
+void CommandBufferImpl::BindToRequest(InterfaceRequest<CommandBuffer> request) {
+  binding_.Bind(request.Pass());
 }
 
 void CommandBufferImpl::OnContextLost(int32_t reason) {

@@ -122,6 +122,9 @@ class Binding : public ErrorHandler {
 
   Interface* impl() { return impl_; }
   Client* client() { return proxy_; }
+
+  bool is_bound() const { return !!internal_router_; }
+
   // Exposed for testing, should not generally be used.
   internal::Router* internal_router() { return internal_router_; }
 

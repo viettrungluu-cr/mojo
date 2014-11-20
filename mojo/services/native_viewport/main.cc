@@ -4,7 +4,6 @@
 
 #include "base/macros.h"
 #include "base/message_loop/message_loop.h"
-#include "gpu/command_buffer/service/mailbox_manager_impl.h"
 #include "mojo/application/application_runner_chromium.h"
 #include "mojo/public/c/system/main.h"
 #include "mojo/public/cpp/application/application_connection.h"
@@ -14,7 +13,6 @@
 #include "mojo/services/gles2/gpu_impl.h"
 #include "mojo/services/native_viewport/native_viewport_impl.h"
 #include "mojo/services/public/cpp/native_viewport/args.h"
-#include "ui/gl/gl_share_group.h"
 #include "ui/gl/gl_surface.h"
 
 namespace mojo {
@@ -24,10 +22,7 @@ class NativeViewportAppDelegate
       public InterfaceFactory<NativeViewport>,
       public InterfaceFactory<Gpu> {
  public:
-  NativeViewportAppDelegate()
-      : share_group_(new gfx::GLShareGroup),
-        mailbox_manager_(new gpu::gles2::MailboxManagerImpl),
-        is_headless_(false) {}
+  NativeViewportAppDelegate() : is_headless_(false) {}
   ~NativeViewportAppDelegate() override {}
 
  private:
@@ -61,12 +56,13 @@ class NativeViewportAppDelegate
   // InterfaceFactory<Gpu> implementation.
   void Create(ApplicationConnection* connection,
               InterfaceRequest<Gpu> request) override {
-    new GpuImpl(request.Pass(), share_group_.get(), mailbox_manager_.get());
+    if (!gpu_state_.get())
+      gpu_state_ = new GpuImpl::State;
+    new GpuImpl(request.Pass(), gpu_state_);
   }
 
   ApplicationImpl* app_;
-  scoped_refptr<gfx::GLShareGroup> share_group_;
-  scoped_refptr<gpu::gles2::MailboxManager> mailbox_manager_;
+  scoped_refptr<GpuImpl::State> gpu_state_;
   bool is_headless_;
   DISALLOW_COPY_AND_ASSIGN(NativeViewportAppDelegate);
 };

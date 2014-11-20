@@ -181,8 +181,14 @@ void CommandBufferDriver::DestroyTransferBuffer(int32_t id) {
   command_buffer_->DestroyTransferBuffer(id);
 }
 
+void CommandBufferDriver::Echo(const Callback<void()>& callback) {
+  callback.Run();
+}
+
 void CommandBufferDriver::SetContextLostCallback(
+    scoped_refptr<base::SingleThreadTaskRunner> task_runner,
     const base::Callback<void(int32_t)>& callback) {
+  context_lost_task_runner_ = task_runner;
   context_lost_callback_ = callback;
 }
 
@@ -196,8 +202,10 @@ void CommandBufferDriver::OnResize(gfx::Size size, float scale_factor) {
 }
 
 void CommandBufferDriver::OnContextLost(uint32_t reason) {
-  if (!context_lost_callback_.is_null())
-    context_lost_callback_.Run(reason);
+  if (!context_lost_callback_.is_null()) {
+    context_lost_task_runner_->PostTask(
+        FROM_HERE, base::Bind(context_lost_callback_, reason));
+  }
 }
 
 }  // namespace mojo
