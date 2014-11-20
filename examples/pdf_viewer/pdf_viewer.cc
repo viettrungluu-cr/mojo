@@ -30,24 +30,41 @@
 namespace mojo {
 namespace examples {
 
+namespace {
+
+class EmbedderData {
+ public:
+  EmbedderData(Shell* shell, View* root) : bitmap_uploader_(root) {
+    bitmap_uploader_.Init(shell);
+    bitmap_uploader_.SetColor(BACKGROUND_COLOR);
+  }
+
+  BitmapUploader& bitmap_uploader() { return bitmap_uploader_; }
+
+ private:
+  BitmapUploader bitmap_uploader_;
+
+  DISALLOW_COPY_AND_ASSIGN(EmbedderData);
+};
+
+}  // namespace
+
 class PDFView : public ApplicationDelegate,
                 public ViewManagerDelegate,
                 public ViewObserver {
  public:
   PDFView(URLResponsePtr response)
-      : current_page_(0),
-        page_count_(0),
-        doc_(NULL),
-        app_(nullptr),
-        root_(nullptr) {
+      : current_page_(0), page_count_(0), doc_(NULL), app_(nullptr) {
     FetchPDF(response.Pass());
   }
 
   virtual ~PDFView() {
     if (doc_)
       FPDF_CloseDocument(doc_);
-    if (root_)
-      root_->RemoveObserver(this);
+    for (auto& roots : embedder_for_roots_) {
+      roots.first->RemoveObserver(this);
+      delete roots.second;
+    }
   }
 
  private:
@@ -69,29 +86,27 @@ class PDFView : public ApplicationDelegate,
                        View* root,
                        ServiceProviderImpl* exported_services,
                        scoped_ptr<ServiceProvider> imported_services) override {
-    root_ = root;
-    root_->AddObserver(this);
-    bitmap_uploader_.reset(new BitmapUploader(root_));
-    bitmap_uploader_->Init(app_->shell());
-    bitmap_uploader_->SetColor(BACKGROUND_COLOR);
-    DrawBitmap();
+    DCHECK(embedder_for_roots_.find(root) == embedder_for_roots_.end());
+    root->AddObserver(this);
+    EmbedderData* embedder_data = new EmbedderData(app_->shell(), root);
+    embedder_for_roots_[root] = embedder_data;
+    DrawBitmap(embedder_data);
   }
 
-  virtual void OnViewManagerDisconnected(ViewManager* view_manager) override {
-  }
+  virtual void OnViewManagerDisconnected(ViewManager* view_manager) override {}
 
   // Overridden from ViewObserver:
   virtual void OnViewBoundsChanged(View* view,
                                    const Rect& old_bounds,
                                    const Rect& new_bounds) override {
-    DCHECK_EQ(view, root_);
-    DrawBitmap();
+    DCHECK(embedder_for_roots_.find(view) != embedder_for_roots_.end());
+    DrawBitmap(embedder_for_roots_[view]);
   }
 
   virtual void OnViewInputEvent(View* view, const EventPtr& event) override {
+    DCHECK(embedder_for_roots_.find(view) != embedder_for_roots_.end());
     if (event->key_data &&
-        (event->action != EVENT_TYPE_KEY_PRESSED ||
-         event->key_data->is_char)) {
+        (event->action != EVENT_TYPE_KEY_PRESSED || event->key_data->is_char)) {
       return;
     }
     if ((event->key_data &&
@@ -99,28 +114,30 @@ class PDFView : public ApplicationDelegate,
         (event->wheel_data && event->wheel_data->y_offset < 0)) {
       if (current_page_ < (page_count_ - 1)) {
         current_page_++;
-        DrawBitmap();
+        DrawBitmap(embedder_for_roots_[view]);
       }
     } else if ((event->key_data &&
                 event->key_data->windows_key_code == KEYBOARD_CODE_UP) ||
                (event->wheel_data && event->wheel_data->y_offset > 0)) {
       if (current_page_ > 0) {
         current_page_--;
-        DrawBitmap();
+        DrawBitmap(embedder_for_roots_[view]);
       }
     }
   }
 
   virtual void OnViewDestroyed(View* view) override {
-    DCHECK_EQ(view, root_);
-    // TODO(qsr): It should not be necessary to cleanup the uploader, but it
-    // crashes if the GL context goes away.
-    bitmap_uploader_.reset();
-    ApplicationImpl::Terminate();
+    DCHECK(embedder_for_roots_.find(view) != embedder_for_roots_.end());
+    const auto& it = embedder_for_roots_.find(view);
+    DCHECK(it != embedder_for_roots_.end());
+    delete it->second;
+    embedder_for_roots_.erase(it);
+    if (embedder_for_roots_.size() == 0)
+      ApplicationImpl::Terminate();
   }
 
-  void DrawBitmap() {
-    if (!root_ || !doc_)
+  void DrawBitmap(EmbedderData* embedder_data) {
+    if (!doc_)
       return;
 
     FPDF_PAGE page = FPDF_LoadPage(doc_, current_page_);
@@ -131,16 +148,16 @@ class PDFView : public ApplicationDelegate,
     bitmap.reset(new std::vector<unsigned char>);
     bitmap->resize(width * height * 4);
 
-    FPDF_BITMAP f_bitmap = FPDFBitmap_CreateEx(
-        width, height, FPDFBitmap_BGRA, &(*bitmap)[0], width * 4);
+    FPDF_BITMAP f_bitmap = FPDFBitmap_CreateEx(width, height, FPDFBitmap_BGRA,
+                                               &(*bitmap)[0], width * 4);
     FPDFBitmap_FillRect(f_bitmap, 0, 0, width, height, 0xFFFFFFFF);
     FPDF_RenderPageBitmap(f_bitmap, page, 0, 0, width, height, 0, 0);
     FPDFBitmap_Destroy(f_bitmap);
 
     FPDF_ClosePage(page);
 
-    bitmap_uploader_->SetBitmap(width, height, bitmap.Pass(),
-                                BitmapUploader::BGRA);
+    embedder_data->bitmap_uploader().SetBitmap(width, height, bitmap.Pass(),
+                                               BitmapUploader::BGRA);
   }
 
   void FetchPDF(URLResponsePtr response) {
@@ -151,11 +168,10 @@ class PDFView : public ApplicationDelegate,
     uint32_t bytes_remaining = content_length;
     uint32_t num_bytes = bytes_remaining;
     while (bytes_remaining > 0) {
-      MojoResult result = ReadDataRaw(
-          response->body.get(), buf, &num_bytes, MOJO_READ_DATA_FLAG_NONE);
+      MojoResult result = ReadDataRaw(response->body.get(), buf, &num_bytes,
+                                      MOJO_READ_DATA_FLAG_NONE);
       if (result == MOJO_RESULT_SHOULD_WAIT) {
-        Wait(response->body.get(),
-             MOJO_HANDLE_SIGNAL_READABLE,
+        Wait(response->body.get(), MOJO_HANDLE_SIGNAL_READABLE,
              MOJO_DEADLINE_INDEFINITE);
       } else if (result == MOJO_RESULT_OK) {
         buf += num_bytes;
@@ -189,9 +205,8 @@ class PDFView : public ApplicationDelegate,
   int page_count_;
   FPDF_DOCUMENT doc_;
   ApplicationImpl* app_;
-  View* root_;
+  std::map<View*, EmbedderData*> embedder_for_roots_;
   scoped_ptr<ViewManagerClientFactory> view_manager_client_factory_;
-  scoped_ptr<BitmapUploader> bitmap_uploader_;
 
   DISALLOW_COPY_AND_ASSIGN(PDFView);
 };

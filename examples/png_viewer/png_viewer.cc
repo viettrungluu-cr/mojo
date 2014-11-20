@@ -31,6 +31,25 @@
 namespace mojo {
 namespace examples {
 
+namespace {
+
+class EmbedderData {
+ public:
+  EmbedderData(Shell* shell, View* root) : bitmap_uploader_(root) {
+    bitmap_uploader_.Init(shell);
+    bitmap_uploader_.SetColor(SK_ColorGRAY);
+  }
+
+  BitmapUploader& bitmap_uploader() { return bitmap_uploader_; }
+
+ private:
+  BitmapUploader bitmap_uploader_;
+
+  DISALLOW_COPY_AND_ASSIGN(EmbedderData);
+};
+
+}  // namespace
+
 // TODO(aa): Hook up ZoomableMedia interface again.
 class PNGView : public ApplicationDelegate,
                 public ViewManagerDelegate,
@@ -40,14 +59,15 @@ class PNGView : public ApplicationDelegate,
       : width_(0),
         height_(0),
         app_(nullptr),
-        root_(nullptr),
         zoom_percentage_(kDefaultZoomPercentage) {
     DecodePNG(response.Pass());
   }
 
   virtual ~PNGView() {
-    if (root_)
-      root_->RemoveObserver(this);
+    for (auto& roots : embedder_for_roots_) {
+      roots.first->RemoveObserver(this);
+      delete roots.second;
+    }
   }
 
  private:
@@ -76,63 +96,53 @@ class PNGView : public ApplicationDelegate,
                        ServiceProviderImpl* exported_services,
                        scoped_ptr<ServiceProvider> imported_services) override {
     // TODO(qsr): The same view should be embeddable on multiple views.
-    DCHECK(!root_);
-    root_ = root;
-    root_->AddObserver(this);
-    bitmap_uploader_.reset(new BitmapUploader(root_));
-    bitmap_uploader_->Init(app_->shell());
-    bitmap_uploader_->SetColor(SK_ColorGRAY);
-    if (bitmap_.get())
-      DrawBitmap();
+    DCHECK(embedder_for_roots_.find(root) == embedder_for_roots_.end());
+    root->AddObserver(this);
+    EmbedderData* embedder_data = new EmbedderData(app_->shell(), root);
+    embedder_for_roots_[root] = embedder_data;
+    embedder_data->bitmap_uploader().SetBitmap(
+        width_, height_,
+        make_scoped_ptr(new std::vector<unsigned char>(*bitmap_)),
+        BitmapUploader::BGRA);
   }
 
   virtual void OnViewManagerDisconnected(ViewManager* view_manager) override {
-    // TODO(aa): Need to figure out how shutdown works.
   }
 
   // Overridden from ViewObserver:
   virtual void OnViewBoundsChanged(View* view,
                                    const Rect& old_bounds,
                                    const Rect& new_bounds) override {
-    DCHECK_EQ(view, root_);
-    DrawBitmap();
+    DCHECK(embedder_for_roots_.find(view) != embedder_for_roots_.end());
   }
 
   virtual void OnViewDestroyed(View* view) override {
-    DCHECK_EQ(view, root_);
-    // TODO(qsr): It should not be necessary to cleanup the uploader, but it
-    // crashes if the GL context goes away.
-    bitmap_uploader_.reset();
-    ApplicationImpl::Terminate();
-  }
-
-  void DrawBitmap() {
-    if (!root_)
-      return;
-
-    bitmap_uploader_->SetBitmap(
-        width_, height_, bitmap_.Pass(), BitmapUploader::BGRA);
+    // TODO(aa): Need to figure out how shutdown works.
+    const auto& it = embedder_for_roots_.find(view);
+    DCHECK(it != embedder_for_roots_.end());
+    delete it->second;
+    embedder_for_roots_.erase(it);
+    if (embedder_for_roots_.size() == 0)
+      ApplicationImpl::Terminate();
   }
 
   void ZoomIn() {
+    // TODO(qsr,aa) Zoom should be per embedder view.
     if (zoom_percentage_ >= kMaxZoomPercentage)
       return;
     zoom_percentage_ += kZoomStep;
-    DrawBitmap();
   }
 
   void ZoomOut() {
     if (zoom_percentage_ <= kMinZoomPercentage)
       return;
     zoom_percentage_ -= kZoomStep;
-    DrawBitmap();
   }
 
   void ZoomToActualSize() {
     if (zoom_percentage_ == kDefaultZoomPercentage)
       return;
     zoom_percentage_ = kDefaultZoomPercentage;
-    DrawBitmap();
   }
 
   void DecodePNG(URLResponsePtr response) {
@@ -142,11 +152,10 @@ class PNGView : public ApplicationDelegate,
     uint32_t bytes_remaining = content_length;
     uint32_t num_bytes = bytes_remaining;
     while (bytes_remaining > 0) {
-      MojoResult result = ReadDataRaw(
-          response->body.get(), buf, &num_bytes, MOJO_READ_DATA_FLAG_NONE);
+      MojoResult result = ReadDataRaw(response->body.get(), buf, &num_bytes,
+                                      MOJO_READ_DATA_FLAG_NONE);
       if (result == MOJO_RESULT_SHOULD_WAIT) {
-        Wait(response->body.get(),
-             MOJO_HANDLE_SIGNAL_READABLE,
+        Wait(response->body.get(), MOJO_HANDLE_SIGNAL_READABLE,
              MOJO_DEADLINE_INDEFINITE);
       } else if (result == MOJO_RESULT_OK) {
         buf += num_bytes;
@@ -158,11 +167,8 @@ class PNGView : public ApplicationDelegate,
 
     bitmap_.reset(new std::vector<unsigned char>);
     gfx::PNGCodec::Decode(static_cast<const unsigned char*>(data.get()),
-                          content_length,
-                          gfx::PNGCodec::FORMAT_BGRA,
-                          bitmap_.get(),
-                          &width_,
-                          &height_);
+                          content_length, gfx::PNGCodec::FORMAT_BGRA,
+                          bitmap_.get(), &width_, &height_);
   }
 
   int GetContentLength(const Array<String>& headers) {
@@ -184,10 +190,9 @@ class PNGView : public ApplicationDelegate,
   int height_;
   scoped_ptr<std::vector<unsigned char>> bitmap_;
   ApplicationImpl* app_;
-  View* root_;
+  std::map<View*, EmbedderData*> embedder_for_roots_;
   scoped_ptr<ViewManagerClientFactory> view_manager_client_factory_;
   uint16_t zoom_percentage_;
-  scoped_ptr<BitmapUploader> bitmap_uploader_;
 
   DISALLOW_COPY_AND_ASSIGN(PNGView);
 };
