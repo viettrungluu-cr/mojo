@@ -303,7 +303,8 @@ void WindowManagerApp::LaunchViewManager(ApplicationImpl* app) {
                              pipe.handle0.Pass(), shell_, this).Pass();
 
   view_manager_app->AddService(&native_viewport_event_dispatcher_factory_);
-  view_manager_app->AddService(this);
+  view_manager_app->AddService(
+      static_cast<InterfaceFactory<WindowManagerInternal>*>(this));
 
   view_manager_app->ConnectToService(&window_manager_client_);
 }
