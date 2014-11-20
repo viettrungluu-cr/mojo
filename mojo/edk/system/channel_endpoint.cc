@@ -27,18 +27,15 @@ bool ChannelEndpoint::EnqueueMessage(scoped_ptr<MessageInTransit> message) {
 
   base::AutoLock locker(lock_);
 
-  if (!channel_ || !remote_id_.is_valid()) {
-    // We may reach here if we haven't been attached or run yet.
+  if (!channel_) {
+    // We may reach here if we haven't been attached/run yet.
     // TODO(vtl): We may also reach here if the channel is shut down early for
-    // some reason (with live message pipes on it). We can't check |state_| yet,
-    // until it's protected under lock, but in this case we should return false
-    // (and not enqueue any messages).
+    // some reason (with live message pipes on it). Ideally, we'd return false
+    // (and not enqueue the message), but we currently don't have a way to check
+    // this.
     paused_message_queue_.AddMessage(message.Pass());
     return true;
   }
-
-  // TODO(vtl): Currently, this only works in the "running" case.
-  DCHECK(remote_id_.is_valid());
 
   return WriteMessageNoLock(message.Pass());
 }
@@ -111,7 +108,7 @@ bool ChannelEndpoint::OnReadMessage(
           channel_));
     }
 
-    // Take a ref, and call |EnqueueMessage()| outside the lock.
+    // Take a ref, and call |OnReadMessage()| outside the lock.
     client = client_;
     client_port = client_port_;
   }

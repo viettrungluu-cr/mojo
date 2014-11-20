@@ -127,27 +127,29 @@ class MOJO_SYSTEM_IMPL_EXPORT ChannelEndpoint
 
   // Methods called by |ChannelEndpointClient|:
 
-  // TODO(vtl): This currently only works if we're "running". We'll move the
-  // "paused message queue" here (will this be needed when we have
-  // locally-allocated remote IDs?).
+  // Called to enqueue an outbound message. (If |AttachAndRun()| has not yet
+  // been called, the message will be enqueued and sent when |AttachAndRun()| is
+  // called.)
   bool EnqueueMessage(scoped_ptr<MessageInTransit> message);
 
+  // Called before the |ChannelEndpointClient| gives up its reference to this
+  // object.
   void DetachFromClient();
 
   // Methods called by |Channel|:
 
-  // Called by |Channel| when it takes a reference to this object. It will send
+  // Called when the |Channel| takes a reference to this object. This will send
   // all queue messages (in |paused_message_queue_|).
   // TODO(vtl): Maybe rename this "OnAttach"?
   void AttachAndRun(Channel* channel,
                     ChannelEndpointId local_id,
                     ChannelEndpointId remote_id);
 
-  // Called by |Channel| when it receives a message for the |ChannelEndpoint|.
+  // Called when the |Channel| receives a message for the |ChannelEndpoint|.
   bool OnReadMessage(const MessageInTransit::View& message_view,
                      embedder::ScopedPlatformHandleVectorPtr platform_handles);
 
-  // Called by |Channel| before it gives up its reference to this object.
+  // Called before the |Channel| gives up its reference to this object.
   void DetachFromChannel();
 
  private:
@@ -174,6 +176,7 @@ class MOJO_SYSTEM_IMPL_EXPORT ChannelEndpoint
 
   // |channel_| must be valid whenever it is non-null. Before |*channel_| gives
   // up its reference to this object, it must call |DetachFromChannel()|.
+  // |local_id_| and |remote_id_| are valid if and only |channel_| is non-null.
   Channel* channel_;
   ChannelEndpointId local_id_;
   ChannelEndpointId remote_id_;
