@@ -6,6 +6,10 @@
     this.receiver_ = receiver;
   }
 
+  {{interface.name}}Proxy.prototype.getConnection$ = function() {
+    return connection.getProxyConnection(this, {{interface.name}});
+  }
+
 {%- for method in interface.methods %}
   {{interface.name}}Proxy.prototype.{{method.name|stylize_method}} = function(
 {%- for parameter in method.parameters -%}
@@ -14,7 +18,19 @@
 ) {
     var params = new {{interface.name}}_{{method.name}}_Params();
 {%- for parameter in method.parameters %}
+{%-   if parameter|is_interface_parameter %}
+    if ({{parameter.name}} instanceof {{parameter.kind|js_type}}.stubClass)
+      params.{{parameter.name}} = {{parameter.name}}.getConnection$().messagePipeHandle;
+    else
+      params.{{parameter.name}} = {{parameter.name}};
+{%-   elif parameter|is_interface_request_parameter %}
+    if ({{parameter.name}} instanceof {{parameter.kind.kind|js_type}}.proxyClass)
+      params.{{parameter.name}} = {{parameter.name}}.getConnection$().messagePipeHandle;
+    else
+      params.{{parameter.name}} = {{parameter.name}};
+{%-   else %}
     params.{{parameter.name}} = {{parameter.name}};
+{%-   endif %}
 {%- endfor %}
 
 {%- if method.response_parameters == None %}
@@ -45,28 +61,37 @@
   };
 {%- endfor %}
 
-  function {{interface.name}}Stub() {
+  function {{interface.name}}Stub(delegate) {
+      this.delegate$ = delegate;
   }
+
+  {{interface.name}}Stub.prototype.getConnection$ = function() {
+    return connection.getStubConnection(this, {{interface.name}});
+  }
+
+{%- for method in interface.methods %}
+{% macro stub_method_parameters() -%}
+{%- for parameter in method.parameters -%}
+  {{parameter.name}}{% if not loop.last %}, {% endif %}
+{%- endfor %}
+{%- endmacro %}
+  {{interface.name}}Stub.prototype.{{method.name|stylize_method}} = function({{stub_method_parameters()}}) {
+    if (this.delegate$.{{method.name|stylize_method}})
+      return this.delegate$.{{method.name|stylize_method}}({{stub_method_parameters()}});
+  }
+{%- endfor %}
 
   {{interface.name}}Stub.prototype.accept = function(message) {
     var reader = new codec.MessageReader(message);
     switch (reader.messageName) {
 {%- for method in interface.methods %}
-{% macro call_stub_method(target) -%}
-      {{target}}.{{method.name|stylize_method}}(
-{%- for parameter in method.parameters -%}
-  params.{{parameter.name}}{% if not loop.last %}, {% endif %}
-{%- endfor %});
-{%- endmacro %}
 {%- if method.response_parameters == None %}
     case k{{interface.name}}_{{method.name}}_Name:
       var params = reader.decodeStruct({{interface.name}}_{{method.name}}_Params);
-      if (this.delegate$) {
-         if (this.delegate$.{{method.name|stylize_method}})
-           {{call_stub_method('this.delegate$')}}
-      } else {
-           {{call_stub_method('this')}}
-      }
+      this.{{method.name|stylize_method}}(
+{%- for parameter in method.parameters -%}
+  params.{{parameter.name}}{% if not loop.last %}, {% endif %}
+{%- endfor %});
       return true;
 {%- endif %}
 {%- endfor %}
