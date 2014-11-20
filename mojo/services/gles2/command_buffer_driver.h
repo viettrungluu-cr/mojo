@@ -18,6 +18,7 @@ namespace gpu {
 class CommandBufferService;
 class GpuScheduler;
 class GpuControlService;
+class SyncPointManager;
 namespace gles2 {
 class GLES2Decoder;
 class MailboxManager;
@@ -36,12 +37,14 @@ class CommandBufferDriver {
  public:
   // Offscreen.
   CommandBufferDriver(gfx::GLShareGroup* share_group,
-                      gpu::gles2::MailboxManager* mailbox_manager);
+                      gpu::gles2::MailboxManager* mailbox_manager,
+                      gpu::SyncPointManager* sync_point_manager);
   // Onscreen.
   CommandBufferDriver(gfx::AcceleratedWidget widget,
                       const gfx::Size& size,
                       gfx::GLShareGroup* share_group,
-                      gpu::gles2::MailboxManager* mailbox_manager);
+                      gpu::gles2::MailboxManager* mailbox_manager,
+                      gpu::SyncPointManager* sync_point_manager);
   ~CommandBufferDriver();
 
   void Initialize(CommandBufferSyncClientPtr sync_client,
@@ -62,6 +65,8 @@ class CommandBufferDriver {
  private:
   bool DoInitialize(ScopedSharedBufferHandle shared_state);
   void OnResize(gfx::Size size, float scale_factor);
+  bool OnWaitSyncPoint(uint32_t sync_point);
+  void OnSyncPointRetired();
   void OnParseError();
   void OnContextLost(uint32_t reason);
 
@@ -76,9 +81,12 @@ class CommandBufferDriver {
   scoped_refptr<gfx::GLSurface> surface_;
   scoped_refptr<gfx::GLShareGroup> share_group_;
   scoped_refptr<gpu::gles2::MailboxManager> mailbox_manager_;
+  scoped_refptr<gpu::SyncPointManager> sync_point_manager_;
 
   scoped_refptr<base::SingleThreadTaskRunner> context_lost_task_runner_;
   base::Callback<void(int32_t)> context_lost_callback_;
+
+  base::WeakPtrFactory<CommandBufferDriver> weak_factory_;
 
   DISALLOW_COPY_AND_ASSIGN(CommandBufferDriver);
 };

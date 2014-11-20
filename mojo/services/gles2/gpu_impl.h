@@ -16,6 +16,7 @@ class GLShareGroup;
 }
 
 namespace gpu {
+class SyncPointManager;
 namespace gles2 {
 class MailboxManager;
 }
@@ -44,12 +45,16 @@ class GpuImpl : public Gpu {
     gpu::gles2::MailboxManager* mailbox_manager() const {
       return mailbox_manager_.get();
     }
+    gpu::SyncPointManager* sync_point_manager() const {
+      return sync_point_manager_.get();
+    }
 
    private:
     friend class base::RefCounted<State>;
     ~State();
 
     base::Thread control_thread_;
+    scoped_refptr<gpu::SyncPointManager> sync_point_manager_;
     scoped_refptr<gfx::GLShareGroup> share_group_;
     scoped_refptr<gpu::gles2::MailboxManager> mailbox_manager_;
   };

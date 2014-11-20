@@ -21,9 +21,14 @@ interface CommandBufferSyncClient {
   DidMakeProgress(CommandBufferState? state);
 };
 
+interface CommandBufferSyncPointClient {
+  DidInsertSyncPoint(uint32 sync_point);
+};
+
 [Client=CommandBufferClient]
 interface CommandBuffer {
   Initialize(CommandBufferSyncClient? sync_client,
+             CommandBufferSyncPointClient? sync_point_client,
              handle<shared_buffer>? shared_state);
   SetGetBuffer(int32 buffer);
   Flush(int32 put_offset);
@@ -31,6 +36,7 @@ interface CommandBuffer {
   RegisterTransferBuffer(
       int32 id, handle<shared_buffer>? transfer_buffer, uint32 size);
   DestroyTransferBuffer(int32 id);
+  InsertSyncPoint();  // Sync point returned via DidInsertSyncPoint
   Echo() => ();
 
   // TODO(piman): sync points

@@ -85,6 +85,31 @@ class CommandBufferClientImpl::SyncClientImpl : public CommandBufferSyncClient {
   DISALLOW_COPY_AND_ASSIGN(SyncClientImpl);
 };
 
+class CommandBufferClientImpl::SyncPointClientImpl
+    : public CommandBufferSyncPointClient {
+ public:
+  SyncPointClientImpl(CommandBufferSyncPointClientPtr* ptr,
+                      const MojoAsyncWaiter* async_waiter)
+      : sync_point_(0u), binding_(this, ptr, async_waiter) {}
+
+  uint32_t WaitForInsertSyncPoint() {
+    if (!binding_.WaitForIncomingMethodCall())
+      return 0u;
+    uint32_t result = sync_point_;
+    sync_point_ = 0u;
+    return result;
+  }
+
+ private:
+  void DidInsertSyncPoint(uint32_t sync_point) override {
+    sync_point_ = sync_point;
+  }
+
+  uint32_t sync_point_;
+
+  Binding<CommandBufferSyncPointClient> binding_;
+};
+
 CommandBufferClientImpl::CommandBufferClientImpl(
     CommandBufferDelegate* delegate,
     const MojoAsyncWaiter* async_waiter,
@@ -117,7 +142,12 @@ bool CommandBufferClientImpl::Initialize() {
   CommandBufferSyncClientPtr sync_client;
   sync_client_impl_.reset(new SyncClientImpl(&sync_client, async_waiter_));
 
-  command_buffer_->Initialize(sync_client.Pass(), duped.Pass());
+  CommandBufferSyncPointClientPtr sync_point_client;
+  sync_point_client_impl_.reset(
+      new SyncPointClientImpl(&sync_point_client, async_waiter_));
+
+  command_buffer_->Initialize(sync_client.Pass(), sync_point_client.Pass(),
+                              duped.Pass());
 
   // Wait for DidInitialize to come on the sync client pipe.
   if (!sync_client_impl_->WaitForInitialization()) {
@@ -224,15 +254,17 @@ int32_t CommandBufferClientImpl::CreateGpuMemoryBufferImage(
 }
 
 uint32 CommandBufferClientImpl::InsertSyncPoint() {
-  // TODO(jamesr): Optimize this.
-  WaitForGetOffsetInRange(last_put_offset_, last_put_offset_);
-  return 0;
+  command_buffer_->InsertSyncPoint();
+  return sync_point_client_impl_->WaitForInsertSyncPoint();
 }
 
 uint32 CommandBufferClientImpl::InsertFutureSyncPoint() {
-  // TODO(jamesr): Optimize this.
-  WaitForGetOffsetInRange(last_put_offset_, last_put_offset_);
-  return 0;
+  // TODO(abarth): I'm not sure this implementation is correct. Don't we need
+  // to wait until RetireSyncPoint is called to retire the sync point? Otherwise
+  // it seems like we won't know whether the commands inserted between now and
+  // RetireSyncPoint will have bee processed by the server.
+  command_buffer_->InsertSyncPoint();
+  return sync_point_client_impl_->WaitForInsertSyncPoint();
 }
 
 void CommandBufferClientImpl::RetireSyncPoint(uint32 sync_point) {

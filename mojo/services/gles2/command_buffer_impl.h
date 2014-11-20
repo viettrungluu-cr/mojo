@@ -11,6 +11,10 @@
 #include "mojo/public/cpp/bindings/strong_binding.h"
 #include "mojo/services/public/interfaces/gpu/command_buffer.mojom.h"
 
+namespace gpu {
+class SyncPointManager;
+}
+
 namespace mojo {
 class CommandBufferDriver;
 
@@ -23,10 +27,12 @@ class CommandBufferImpl : public CommandBuffer {
   CommandBufferImpl(
       InterfaceRequest<CommandBuffer> request,
       scoped_refptr<base::SingleThreadTaskRunner> control_task_runner,
+      gpu::SyncPointManager* sync_point_manager,
       scoped_ptr<CommandBufferDriver> driver);
   ~CommandBufferImpl() override;
 
   void Initialize(CommandBufferSyncClientPtr sync_client,
+                  CommandBufferSyncPointClientPtr sync_point_client,
                   ScopedSharedBufferHandle shared_state) override;
   void SetGetBuffer(int32_t buffer) override;
   void Flush(int32_t put_offset) override;
@@ -35,18 +41,20 @@ class CommandBufferImpl : public CommandBuffer {
                               ScopedSharedBufferHandle transfer_buffer,
                               uint32_t size) override;
   void DestroyTransferBuffer(int32_t id) override;
+  void InsertSyncPoint() override;
   void Echo(const Callback<void()>& callback) override;
 
  private:
   void BindToRequest(InterfaceRequest<CommandBuffer> request);
   void OnContextLost(int32_t reason);
 
+  scoped_refptr<gpu::SyncPointManager> sync_point_manager_;
   scoped_refptr<base::SingleThreadTaskRunner> driver_task_runner_;
   scoped_ptr<CommandBufferDriver> driver_;
-
+  CommandBufferSyncPointClientPtr sync_point_client_;
   StrongBinding<CommandBuffer> binding_;
-  base::WeakPtrFactory<CommandBufferImpl> weak_factory_;
 
+  base::WeakPtrFactory<CommandBufferImpl> weak_factory_;
   DISALLOW_COPY_AND_ASSIGN(CommandBufferImpl);
 };
 

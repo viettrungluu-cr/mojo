@@ -15,6 +15,7 @@
 #include "gpu/command_buffer/service/image_manager.h"
 #include "gpu/command_buffer/service/mailbox_manager.h"
 #include "gpu/command_buffer/service/memory_tracking.h"
+#include "gpu/command_buffer/service/sync_point_manager.h"
 #include "mojo/services/gles2/command_buffer_type_conversions.h"
 #include "mojo/services/gles2/mojo_buffer_backing.h"
 #include "ui/gl/gl_context.h"
@@ -45,22 +46,27 @@ class MemoryTrackerStub : public gpu::gles2::MemoryTracker {
 
 CommandBufferDriver::CommandBufferDriver(
     gfx::GLShareGroup* share_group,
-    gpu::gles2::MailboxManager* mailbox_manager)
+    gpu::gles2::MailboxManager* mailbox_manager,
+    gpu::SyncPointManager* sync_point_manager)
     : CommandBufferDriver(gfx::kNullAcceleratedWidget,
                           gfx::Size(1, 1),
                           share_group,
-                          mailbox_manager) {
+                          mailbox_manager,
+                          sync_point_manager) {
 }
 
 CommandBufferDriver::CommandBufferDriver(
     gfx::AcceleratedWidget widget,
     const gfx::Size& size,
     gfx::GLShareGroup* share_group,
-    gpu::gles2::MailboxManager* mailbox_manager)
+    gpu::gles2::MailboxManager* mailbox_manager,
+    gpu::SyncPointManager* sync_point_manager)
     : widget_(widget),
       size_(size),
       share_group_(share_group),
-      mailbox_manager_(mailbox_manager) {
+      mailbox_manager_(mailbox_manager),
+      sync_point_manager_(sync_point_manager),
+      weak_factory_(this) {
 }
 
 CommandBufferDriver::~CommandBufferDriver() {
@@ -115,6 +121,8 @@ bool CommandBufferDriver::DoInitialize(ScopedSharedBufferHandle shared_state) {
   decoder_->set_engine(scheduler_.get());
   decoder_->SetResizeCallback(
       base::Bind(&CommandBufferDriver::OnResize, base::Unretained(this)));
+  decoder_->SetWaitSyncPointCallback(base::Bind(
+      &CommandBufferDriver::OnWaitSyncPoint, base::Unretained(this)));
 
   gpu::gles2::DisallowedFeatures disallowed_features;
 
@@ -199,6 +207,22 @@ void CommandBufferDriver::OnParseError() {
 
 void CommandBufferDriver::OnResize(gfx::Size size, float scale_factor) {
   surface_->Resize(size);
+}
+
+bool CommandBufferDriver::OnWaitSyncPoint(uint32_t sync_point) {
+  if (!sync_point)
+    return true;
+  if (sync_point_manager_->IsSyncPointRetired(sync_point))
+    return true;
+  scheduler_->SetScheduled(false);
+  sync_point_manager_->AddSyncPointCallback(
+      sync_point, base::Bind(&CommandBufferDriver::OnSyncPointRetired,
+                             weak_factory_.GetWeakPtr()));
+  return scheduler_->IsScheduled();
+}
+
+void CommandBufferDriver::OnSyncPointRetired() {
+  scheduler_->SetScheduled(true);
 }
 
 void CommandBufferDriver::OnContextLost(uint32_t reason) {

@@ -74,6 +74,7 @@ class CommandBufferClientImpl : public CommandBufferClient,
 
  private:
   class SyncClientImpl;
+  class SyncPointClientImpl;
 
   // CommandBufferClient implementation:
   void DidDestroy() override;
@@ -90,6 +91,7 @@ class CommandBufferClientImpl : public CommandBufferClient,
   CommandBufferDelegate* delegate_;
   CommandBufferPtr command_buffer_;
   scoped_ptr<SyncClientImpl> sync_client_impl_;
+  scoped_ptr<SyncPointClientImpl> sync_point_client_impl_;
 
   gpu::Capabilities capabilities_;
   State last_state_;

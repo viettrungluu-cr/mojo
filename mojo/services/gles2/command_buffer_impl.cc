@@ -4,7 +4,9 @@
 
 #include "mojo/services/gles2/command_buffer_impl.h"
 
+#include "base/bind.h"
 #include "base/message_loop/message_loop.h"
+#include "gpu/command_buffer/service/sync_point_manager.h"
 #include "mojo/services/gles2/command_buffer_driver.h"
 
 namespace mojo {
@@ -16,13 +18,20 @@ void DestroyDriver(scoped_ptr<CommandBufferDriver> driver) {
 void RunCallback(const Callback<void()>& callback) {
   callback.Run();
 }
+
+void RetireSyncPoint(scoped_refptr<gpu::SyncPointManager> sync_point_manager,
+                     uint32_t sync_point) {
+  sync_point_manager->RetireSyncPoint(sync_point);
+}
 }
 
 CommandBufferImpl::CommandBufferImpl(
     InterfaceRequest<CommandBuffer> request,
     scoped_refptr<base::SingleThreadTaskRunner> control_task_runner,
+    gpu::SyncPointManager* sync_point_manager,
     scoped_ptr<CommandBufferDriver> driver)
-    : driver_task_runner_(base::MessageLoop::current()->task_runner()),
+    : sync_point_manager_(sync_point_manager),
+      driver_task_runner_(base::MessageLoop::current()->task_runner()),
       driver_(driver.Pass()),
       binding_(this),
       weak_factory_(this) {
@@ -41,8 +50,11 @@ CommandBufferImpl::~CommandBufferImpl() {
       FROM_HERE, base::Bind(&DestroyDriver, base::Passed(&driver_)));
 }
 
-void CommandBufferImpl::Initialize(CommandBufferSyncClientPtr sync_client,
-                                   ScopedSharedBufferHandle shared_state) {
+void CommandBufferImpl::Initialize(
+    CommandBufferSyncClientPtr sync_client,
+    CommandBufferSyncPointClientPtr sync_point_client,
+    ScopedSharedBufferHandle shared_state) {
+  sync_point_client_ = sync_point_client.Pass();
   driver_task_runner_->PostTask(
       FROM_HERE,
       base::Bind(&CommandBufferDriver::Initialize,
@@ -82,6 +94,13 @@ void CommandBufferImpl::DestroyTransferBuffer(int32_t id) {
   driver_task_runner_->PostTask(
       FROM_HERE, base::Bind(&CommandBufferDriver::DestroyTransferBuffer,
                             base::Unretained(driver_.get()), id));
+}
+
+void CommandBufferImpl::InsertSyncPoint() {
+  uint32_t sync_point = sync_point_manager_->GenerateSyncPoint();
+  sync_point_client_->DidInsertSyncPoint(sync_point);
+  driver_task_runner_->PostTask(
+      FROM_HERE, base::Bind(&RetireSyncPoint, sync_point_manager_, sync_point));
 }
 
 void CommandBufferImpl::Echo(const Callback<void()>& callback) {
