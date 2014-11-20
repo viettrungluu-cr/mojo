@@ -181,17 +181,18 @@ def run_pytests(args):
 
 
 def test(args):
-  exit_code = run_unittests(args)
-  if exit_code:
-    return exit_code
-  exit_code = run_apptests(args)
-  if exit_code:
-    return exit_code
-  exit_code = run_pytests(args)
-  if exit_code:
-    return exit_code
-  return run_skytests(args)
+  test_suites = [run_unittests, run_apptests, run_pytests, run_skytests]
+  final_exit_code = 0
 
+  for test_suite in test_suites:
+    exit_code = test_suite(args)
+    # TODO(ojan): Find a better way to do this. We want to run all the tests
+    # so we get coverage even if an early test suite fails, but we only have
+    # one exit code.
+    if not final_exit_code:
+      final_exit_code = exit_code
+
+  return final_exit_code
 
 def perftest(args):
   out_dir = get_out_dir(args)
