@@ -108,6 +108,7 @@ FrameController::FrameController(
       maximized_(false),
       window_manager_app_(window_manager_app) {
   view_->AddChild(app_view_);
+  app_view_->SetVisible(true);
   view_->AddObserver(this);
   *app_view = app_view_;
   frame_view_->set_background(

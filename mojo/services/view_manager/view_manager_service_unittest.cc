@@ -256,6 +256,7 @@ const ServerView* GetFirstCloned(const ServerView* view) {
 void SetUpAnimate1(ViewManagerServiceTest* test, ViewId* embed_view_id) {
   *embed_view_id = ViewId(test->wm_connection()->id(), 1);
   EXPECT_EQ(ERROR_CODE_NONE, test->wm_connection()->CreateView(*embed_view_id));
+  EXPECT_TRUE(test->wm_connection()->SetViewVisibility(*embed_view_id, true));
   EXPECT_TRUE(test->wm_connection()->AddView(*(test->wm_connection()->root()),
                                              *embed_view_id));
   EXPECT_TRUE(test->wm_connection()->Embed(
@@ -273,10 +274,13 @@ void SetUpAnimate1(ViewManagerServiceTest* test, ViewId* embed_view_id) {
   EXPECT_EQ(ERROR_CODE_NONE, connection1->CreateView(child3));
 
   ServerView* v1 = connection1->GetView(child1);
+  v1->SetVisible(true);
   v1->SetBounds(gfx::Rect(1, 2, 11, 22));
   ServerView* v2 = connection1->GetView(child2);
+  v2->SetVisible(true);
   v2->SetBounds(gfx::Rect(2, 3, 6, 7));
   ServerView* v3 = connection1->GetView(child3);
+  v3->SetVisible(true);
   v3->SetBounds(gfx::Rect(3, 4, 6, 7));
 
   EXPECT_TRUE(connection1->AddView(*embed_view_id, child1));
@@ -389,6 +393,7 @@ TEST_F(ViewManagerServiceTest, ClonedViewsPromotedOnHide) {
 TEST_F(ViewManagerServiceTest, CloneAndAnimateLargerDepth) {
   const ViewId embed_view_id(wm_connection()->id(), 1);
   EXPECT_EQ(ERROR_CODE_NONE, wm_connection()->CreateView(embed_view_id));
+  EXPECT_TRUE(wm_connection()->SetViewVisibility(embed_view_id, true));
   EXPECT_TRUE(
       wm_connection()->AddView(*(wm_connection()->root()), embed_view_id));
   EXPECT_TRUE(wm_connection()->Embed(std::string(), embed_view_id,
@@ -406,6 +411,9 @@ TEST_F(ViewManagerServiceTest, CloneAndAnimateLargerDepth) {
   EXPECT_EQ(ERROR_CODE_NONE, connection1->CreateView(child3));
 
   ServerView* v1 = connection1->GetView(child1);
+  v1->SetVisible(true);
+  connection1->GetView(child2)->SetVisible(true);
+  connection1->GetView(child3)->SetVisible(true);
 
   EXPECT_TRUE(connection1->AddView(embed_view_id, child1));
   EXPECT_TRUE(connection1->AddView(child1, child2));

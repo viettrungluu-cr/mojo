@@ -641,17 +641,22 @@ TEST_F(ViewManagerServiceAppTest, AddToRoot) {
 TEST_F(ViewManagerServiceAppTest, ViewHierarchyChangedViews) {
   // 1,2->1,11.
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 2)));
+  ASSERT_TRUE(SetViewVisibility(vm1(), BuildViewId(1, 2), true));
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 11)));
+  ASSERT_TRUE(SetViewVisibility(vm1(), BuildViewId(1, 11), true));
   ASSERT_TRUE(AddView(vm1(), BuildViewId(1, 2), BuildViewId(1, 11)));
 
   ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(true));
+  ASSERT_TRUE(SetViewVisibility(vm1(), BuildViewId(1, 1), true));
+
+  ASSERT_TRUE(WaitForAllMessages(vm2()));
+  changes2()->clear();
 
   // 1,1->1,2->1,11
   {
     // Client 2 should not get anything (1,2 is from another connection).
-    changes2()->clear();
     ASSERT_TRUE(AddView(vm1(), BuildViewId(1, 1), BuildViewId(1, 2)));
-    ASSERT_TRUE(CreateView(vm2(), BuildViewId(2, 100)));
+    ASSERT_TRUE(WaitForAllMessages(vm2()));
     EXPECT_TRUE(changes2()->empty());
   }
 
@@ -678,10 +683,11 @@ TEST_F(ViewManagerServiceAppTest, ViewHierarchyChangedViews) {
 
   // 1,1->1,2->1,11->1,111.
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 111)));
+  ASSERT_TRUE(SetViewVisibility(vm1(), BuildViewId(1, 111), true));
   {
     changes2()->clear();
     ASSERT_TRUE(AddView(vm1(), BuildViewId(1, 11), BuildViewId(1, 111)));
-    ASSERT_TRUE(CreateView(vm2(), BuildViewId(2, 103)));
+    ASSERT_TRUE(WaitForAllMessages(vm2()));
     EXPECT_TRUE(changes2()->empty());
   }
 
@@ -1121,6 +1127,19 @@ TEST_F(ViewManagerServiceAppTest, SetViewVisibility) {
     ASSERT_EQ(2u, views.size());
     EXPECT_EQ("view=0,1 parent=null visible=true drawn=true",
               views[0].ToString2());
+    EXPECT_EQ("view=1,1 parent=0,1 visible=false drawn=false",
+              views[1].ToString2());
+  }
+
+  // Show all the views.
+  ASSERT_TRUE(SetViewVisibility(vm1(), BuildViewId(1, 1), true));
+  ASSERT_TRUE(SetViewVisibility(vm1(), BuildViewId(1, 2), true));
+  {
+    std::vector<TestView> views;
+    GetViewTree(vm1(), BuildViewId(0, 1), &views);
+    ASSERT_EQ(2u, views.size());
+    EXPECT_EQ("view=0,1 parent=null visible=true drawn=true",
+              views[0].ToString2());
     EXPECT_EQ("view=1,1 parent=0,1 visible=true drawn=true",
               views[1].ToString2());
   }
@@ -1164,7 +1183,9 @@ TEST_F(ViewManagerServiceAppTest, SetViewVisibility) {
 TEST_F(ViewManagerServiceAppTest, SetViewVisibilityNotifications) {
   // Create 1,1 and 1,2. 1,2 is made a child of 1,1 and 1,1 a child of the root.
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 1)));
+  ASSERT_TRUE(SetViewVisibility(vm1(), BuildViewId(1, 1), true));
   ASSERT_TRUE(CreateView(vm1(), BuildViewId(1, 2)));
+  ASSERT_TRUE(SetViewVisibility(vm1(), BuildViewId(1, 2), true));
   ASSERT_TRUE(AddView(vm1(), BuildViewId(0, 1), BuildViewId(1, 1)));
   ASSERT_TRUE(AddView(vm1(), BuildViewId(1, 1), BuildViewId(1, 2)));
 
@@ -1173,9 +1194,9 @@ TEST_F(ViewManagerServiceAppTest, SetViewVisibilityNotifications) {
 
   // Add 2,3 as a child of 1,2.
   ASSERT_TRUE(CreateView(vm2(), BuildViewId(2, 3)));
-  changes1()->clear();
+  ASSERT_TRUE(SetViewVisibility(vm2(), BuildViewId(2, 3), true));
   ASSERT_TRUE(AddView(vm2(), BuildViewId(1, 2), BuildViewId(2, 3)));
-  vm_client1_.WaitForChangeCount(1);
+  WaitForAllMessages(vm1());
 
   changes2()->clear();
   // Hide 1,2 from connection 1. Connection 2 should see this.
@@ -1253,16 +1274,9 @@ TEST_F(ViewManagerServiceAppTest, SetViewProperty) {
     std::vector<TestView> views;
     GetViewTree(vm1(), BuildViewId(0, 1), &views);
     ASSERT_EQ(2u, views.size());
-    EXPECT_EQ("view=0,1 parent=null visible=true drawn=true",
-              views[0].ToString2());
-    EXPECT_EQ("view=1,1 parent=0,1 visible=true drawn=true",
-              views[1].ToString2());
-
+    EXPECT_EQ(BuildViewId(0, 1), views[0].view_id);
+    EXPECT_EQ(BuildViewId(1, 1), views[1].view_id);
     ASSERT_EQ(0u, views[1].properties.size());
-
-    vm_client2_->WaitForChangeCount(1);
-    EXPECT_EQ("DrawnStateChanged view=1,1 drawn=true",
-              SingleChangeToDescription(*changes2()));
   }
 
   // Set properties on 1.

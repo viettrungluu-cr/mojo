@@ -424,7 +424,7 @@ View::View(ViewManager* manager)
     : manager_(manager),
       id_(static_cast<ViewManagerClientImpl*>(manager_)->CreateView()),
       parent_(NULL),
-      visible_(true),
+      visible_(false),
       drawn_(false) {
 }
 

@@ -53,6 +53,7 @@ class DefaultWindowManager : public ApplicationDelegate,
              InterfaceRequest<ServiceProvider> service_provider) override {
     View* view = View::Create(view_manager_);
     root_->AddChild(view);
+    view->SetVisible(true);
     view->Embed(url, scoped_ptr<mojo::ServiceProviderImpl>(
         new mojo::ServiceProviderImpl).Pass());
   }

@@ -360,6 +360,7 @@ class WindowManager
     rect.width = root->bounds().width;
     rect.height = root->bounds().height;
     view->SetBounds(rect);
+    view->SetVisible(true);
     content_view_id_ = view->id();
 
     Id launcher_ui_id = CreateLauncherUI();
@@ -467,6 +468,7 @@ class WindowManager
     View* view = View::Create(view_manager_);
     content->AddChild(view);
     view->SetBounds(bounds);
+    view->SetVisible(true);
     view->SetFocus();
     return new Window(this, view);
   }
@@ -487,6 +489,7 @@ class WindowManager
     bounds.height =
         root->bounds().height - kBorderInset * 3 - kTextfieldHeight;
     view->SetBounds(bounds);
+    view->SetVisible(true);
 
     debug_panel_ = new DebugPanel(this, shell_, view);
     return view->id();

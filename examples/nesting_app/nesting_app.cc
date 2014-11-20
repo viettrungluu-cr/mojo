@@ -74,6 +74,7 @@ class NestingApp
     rect.x = rect.y = 20;
     rect.width = rect.height = 50;
     nested_->SetBounds(rect);
+    nested_->SetVisible(true);
     nested_->Embed(kEmbeddedAppURL);
   }
   virtual void OnViewManagerDisconnected(ViewManager* view_manager) override {

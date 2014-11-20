@@ -75,6 +75,11 @@ class ServerView {
   void SetSurfaceId(cc::SurfaceId surface_id);
   const cc::SurfaceId surface_id() const { return surface_id_; }
 
+#if !defined(NDEBUG)
+  std::string GetDebugWindowHierarchy() const;
+  void BuildDebugInfo(const std::string& depth, std::string* result) const;
+#endif
+
  private:
   typedef std::vector<ServerView*> Views;
 

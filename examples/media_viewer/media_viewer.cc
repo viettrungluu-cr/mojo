@@ -252,9 +252,11 @@ class MediaViewer
     view_manager_ = view_manager;
 
     control_view_ = View::Create(view_manager_);
+    control_view_->SetVisible(true);
     root_view_->AddChild(control_view_);
 
     content_view_ = View::Create(view_manager_);
+    content_view_->SetVisible(true);
     root_view_->AddChild(content_view_);
 
     control_panel_.Initialize(control_view_, shell_);

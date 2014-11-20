@@ -35,6 +35,8 @@ class View {
  public:
   using Children = std::vector<View*>;
 
+  // Creates and returns a new View (which is owned by the ViewManager). Views
+  // are initially hidden, use SetVisible(true) to show.
   static View* Create(ViewManager* view_manager);
 
   // Destroys this view and all its children.
@@ -49,7 +51,7 @@ class View {
   const Rect& bounds() const { return bounds_; }
   void SetBounds(const Rect& bounds);
 
-  // Visibility (also see IsDrawn()).
+  // Visibility (also see IsDrawn()). When created views are hidden.
   bool visible() const { return visible_; }
   void SetVisible(bool value);
 

@@ -4,13 +4,18 @@
 
 #include "mojo/services/view_manager/server_view.h"
 
+#include "base/strings/stringprintf.h"
 #include "mojo/services/view_manager/server_view_delegate.h"
 
 namespace mojo {
 namespace service {
 
 ServerView::ServerView(ServerViewDelegate* delegate, const ViewId& id)
-    : delegate_(delegate), id_(id), parent_(NULL), visible_(true), opacity_(1) {
+    : delegate_(delegate),
+      id_(id),
+      parent_(nullptr),
+      visible_(false),
+      opacity_(1) {
   DCHECK(delegate);  // Must provide a delegate.
 }
 
@@ -164,6 +169,25 @@ void ServerView::SetSurfaceId(cc::SurfaceId surface_id) {
   surface_id_ = surface_id;
   delegate_->OnViewSurfaceIdChanged(this);
 }
+
+#if !defined(NDEBUG)
+std::string ServerView::GetDebugWindowHierarchy() const {
+  std::string result;
+  BuildDebugInfo(std::string(), &result);
+  return result;
+}
+
+void ServerView::BuildDebugInfo(const std::string& depth,
+                                std::string* result) const {
+  *result += base::StringPrintf(
+      "%sid=%d,%d visible=%s bounds=%d,%d %dx%d surface_id=%ld\n",
+      depth.c_str(), static_cast<int>(id_.connection_id),
+      static_cast<int>(id_.view_id), visible_ ? "true" : "false", bounds_.x(),
+      bounds_.y(), bounds_.width(), bounds_.height(), surface_id_.id);
+  for (const ServerView* child : children_)
+    child->BuildDebugInfo(depth + "  ", result);
+}
+#endif
 
 void ServerView::RemoveImpl(ServerView* view) {
   view->parent_ = NULL;

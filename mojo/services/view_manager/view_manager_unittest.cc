@@ -915,13 +915,17 @@ TEST_F(ViewManagerTest, AddToRoot) {
 TEST_F(ViewManagerTest, ViewHierarchyChangedViews) {
   // 1,2->1,11.
   ASSERT_TRUE(connection_->CreateView(BuildViewId(1, 2)));
+  ASSERT_TRUE(connection_->SetViewVisibility(BuildViewId(1, 2), true));
   ASSERT_TRUE(connection_->CreateView(BuildViewId(1, 11)));
+  ASSERT_TRUE(connection_->SetViewVisibility(BuildViewId(1, 11), true));
   ASSERT_TRUE(connection_->AddView(BuildViewId(1, 2), BuildViewId(1, 11)));
 
   ASSERT_NO_FATAL_FAILURE(EstablishSecondConnection(true));
+  ASSERT_TRUE(connection_->SetViewVisibility(BuildViewId(1, 1), true));
 
   // 1,1->1,2->1,11
   {
+    ASSERT_TRUE(connection2_->CreateView(BuildViewId(2, 101)));
     // Client 2 should not get anything (1,2 is from another connection).
     connection2_->ClearChanges();
     ASSERT_TRUE(connection_->AddView(BuildViewId(1, 1), BuildViewId(1, 2)));
@@ -954,6 +958,7 @@ TEST_F(ViewManagerTest, ViewHierarchyChangedViews) {
 
   // 1,1->1,2->1,11->1,111.
   ASSERT_TRUE(connection_->CreateView(BuildViewId(1, 111)));
+  ASSERT_TRUE(connection_->SetViewVisibility(BuildViewId(1, 111), true));
   {
     connection2_->ClearChanges();
     ASSERT_TRUE(connection_->AddView(BuildViewId(1, 11), BuildViewId(1, 111)));
@@ -1429,6 +1434,18 @@ TEST_F(ViewManagerTest, SetViewVisibility) {
     ASSERT_EQ(2u, views.size());
     EXPECT_EQ("view=0,1 parent=null visible=true drawn=true",
               views[0].ToString2());
+    EXPECT_EQ("view=1,1 parent=0,1 visible=false drawn=false",
+              views[1].ToString2());
+  }
+
+  ASSERT_TRUE(connection_->SetViewVisibility(BuildViewId(1, 1), true));
+  ASSERT_TRUE(connection_->SetViewVisibility(BuildViewId(1, 2), true));
+  {
+    std::vector<TestView> views;
+    connection_->GetViewTree(BuildViewId(0, 1), &views);
+    ASSERT_EQ(2u, views.size());
+    EXPECT_EQ("view=0,1 parent=null visible=true drawn=true",
+              views[0].ToString2());
     EXPECT_EQ("view=1,1 parent=0,1 visible=true drawn=true",
               views[1].ToString2());
   }
@@ -1472,7 +1489,9 @@ TEST_F(ViewManagerTest, SetViewVisibility) {
 TEST_F(ViewManagerTest, SetViewVisibilityNotifications) {
   // Create 1,1 and 1,2, 1,2 and child of 1,1 and 1,1 a child of the root.
   ASSERT_TRUE(connection_->CreateView(BuildViewId(1, 1)));
+  ASSERT_TRUE(connection_->SetViewVisibility(BuildViewId(1, 1), true));
   ASSERT_TRUE(connection_->CreateView(BuildViewId(1, 2)));
+  ASSERT_TRUE(connection_->SetViewVisibility(BuildViewId(1, 2), true));
   ASSERT_TRUE(connection_->AddView(BuildViewId(0, 1), BuildViewId(1, 1)));
   ASSERT_TRUE(connection_->AddView(BuildViewId(1, 1), BuildViewId(1, 2)));
 
@@ -1482,6 +1501,7 @@ TEST_F(ViewManagerTest, SetViewVisibilityNotifications) {
 
   // Add 2,3 as a child of 1,2.
   ASSERT_TRUE(connection2_->CreateView(BuildViewId(2, 3)));
+  ASSERT_TRUE(connection2_->SetViewVisibility(BuildViewId(2, 3), true));
   connection_->ClearChanges();
   ASSERT_TRUE(connection2_->AddView(BuildViewId(1, 2), BuildViewId(2, 3)));
   connection_->DoRunLoopUntilChangesCount(1);
@@ -1564,15 +1584,10 @@ TEST_F(ViewManagerTest, SetViewProperty) {
     ASSERT_EQ(2u, views.size());
     EXPECT_EQ("view=0,1 parent=null visible=true drawn=true",
               views[0].ToString2());
-    EXPECT_EQ("view=1,1 parent=0,1 visible=true drawn=true",
+    EXPECT_EQ("view=1,1 parent=0,1 visible=false drawn=false",
               views[1].ToString2());
 
     ASSERT_EQ(0u, views[1].properties.size());
-
-    connection2_->DoRunLoopUntilChangesCount(1);
-    ASSERT_EQ(1u, connection2_->changes().size());
-    EXPECT_EQ("DrawnStateChanged view=1,1 drawn=true",
-              ChangesToDescription1(connection2_->changes())[0]);
   }
 
   // Set properties on 1.

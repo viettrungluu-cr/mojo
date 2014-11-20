@@ -99,6 +99,7 @@ class WMFlowApp : public mojo::ApplicationDelegate,
     bounds.width = root->bounds().width - 50;
     bounds.height = root->bounds().height - 50;
     embed->SetBounds(bounds);
+    embed->SetVisible(true);
 
     scoped_ptr<mojo::ServiceProviderImpl> registry(
         new mojo::ServiceProviderImpl);

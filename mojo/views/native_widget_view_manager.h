@@ -35,19 +35,19 @@ class NativeWidgetViewManager : public views::NativeWidgetAura,
   NativeWidgetViewManager(views::internal::NativeWidgetDelegate* delegate,
                           Shell* shell,
                           View* view);
-  virtual ~NativeWidgetViewManager();
+  ~NativeWidgetViewManager() override;
 
  private:
   // Overridden from internal::NativeWidgetAura:
-  virtual void InitNativeWidget(
-      const views::Widget::InitParams& in_params) override;
+  void InitNativeWidget(const views::Widget::InitParams& in_params) override;
+  void OnWindowVisibilityChanged(aura::Window* window, bool visible) override;
 
   // ViewObserver:
-  virtual void OnViewDestroyed(View* view) override;
-  virtual void OnViewBoundsChanged(View* view,
-                                   const Rect& old_bounds,
-                                   const Rect& new_bounds) override;
-  virtual void OnViewInputEvent(View* view, const EventPtr& event) override;
+  void OnViewDestroyed(View* view) override;
+  void OnViewBoundsChanged(View* view,
+                           const Rect& old_bounds,
+                           const Rect& new_bounds) override;
+  void OnViewInputEvent(View* view, const EventPtr& event) override;
 
   scoped_ptr<WindowTreeHostMojo> window_tree_host_;
 

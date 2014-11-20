@@ -63,6 +63,7 @@ class SimpleWM : public mojo::ApplicationDelegate,
     window_container_ = mojo::View::Create(view_manager_);
     window_container_->SetBounds(root_->bounds());
     root_->AddChild(window_container_);
+    window_container_->SetVisible(true);
 
     window_manager_app_->InitFocus(scoped_ptr<mojo::FocusRules>(
         new mojo::BasicFocusRules(window_container_)));

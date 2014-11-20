@@ -120,6 +120,7 @@ ConnectionManager::ConnectionManager(ConnectionManagerDelegate* delegate,
       current_change_(nullptr),
       in_destructor_(false) {
   root_->SetBounds(gfx::Rect(800, 600));
+  root_->SetVisible(true);
   display_manager_->Init(this);
 }
 
@@ -383,6 +384,13 @@ void ConnectionManager::OnViewReordered(const ServerView* view,
 void ConnectionManager::OnWillChangeViewVisibility(ServerView* view) {
   if (in_destructor_)
     return;
+
+  // Need to repaint if the view was drawn (which means it'll in the process of
+  // hiding) or the view is transitioning to drawn.
+  if (view->IsDrawn(root_.get()) || (!view->visible() && view->parent() &&
+                                     view->parent()->IsDrawn(root_.get()))) {
+    display_manager_->SchedulePaint(view->parent(), view->bounds());
+  }
 
   if (view != root_.get() && view->id() != ClonedViewId() &&
       root_->Contains(view) && view->IsDrawn(root_.get())) {
