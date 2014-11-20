@@ -16,6 +16,7 @@ static_library("gpu") {
     "//gpu/command_buffer/common",
     "//mojo/environment:chromium",
     "//mojo/public/c/system:for_shared_library",
+    "//mojo/public/cpp/application",
     "//mojo/public/cpp/bindings",
     "//mojo/public/cpp/environment",
     "//mojo/public/cpp/system",
