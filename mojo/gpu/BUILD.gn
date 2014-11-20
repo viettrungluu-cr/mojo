@@ -22,6 +22,8 @@ static_library("gpu") {
     "//mojo/public/cpp/system",
     "//mojo/public/cpp/utility",
     "//mojo/public/gles2:for_shared_library",
+    "//mojo/public/interfaces/application",
+    "//mojo/services/public/interfaces/geometry",
     "//mojo/services/public/interfaces/gpu",
   ]
 }
