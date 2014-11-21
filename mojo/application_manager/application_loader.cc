@@ -4,27 +4,23 @@
 
 #include "mojo/application_manager/application_loader.h"
 
+#include "base/bind.h"
 #include "base/logging.h"
 
 namespace mojo {
 
-ApplicationLoader::SimpleLoadCallbacks::SimpleLoadCallbacks(
-    ScopedMessagePipeHandle shell_handle)
-    : shell_handle_(shell_handle.Pass()) {
-}
+namespace {
 
-ApplicationLoader::SimpleLoadCallbacks::~SimpleLoadCallbacks() {
-}
-
-ScopedMessagePipeHandle
-ApplicationLoader::SimpleLoadCallbacks::RegisterApplication() {
-  return shell_handle_.Pass();
-}
-
-void ApplicationLoader::SimpleLoadCallbacks::LoadWithContentHandler(
-    const GURL& content_handle_url,
-    URLResponsePtr url_response) {
+void NotReached(const GURL& url,
+                ScopedMessagePipeHandle shell_handle,
+                URLResponsePtr response) {
   NOTREACHED();
+}
+
+}  // namespace
+
+ApplicationLoader::LoadCallback ApplicationLoader::SimpleLoadCallback() {
+  return base::Bind(&NotReached);
 }
 
 }  // namespace mojo

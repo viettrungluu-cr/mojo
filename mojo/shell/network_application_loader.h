@@ -32,7 +32,8 @@ class NetworkApplicationLoader : public ApplicationLoader,
   // ApplicationLoader overrides:
   virtual void Load(ApplicationManager* manager,
                     const GURL& url,
-                    scoped_refptr<LoadCallbacks> callbacks) override;
+                    ScopedMessagePipeHandle shell_handle,
+                    LoadCallback callback) override;
   virtual void OnApplicationError(ApplicationManager* manager,
                                   const GURL& url) override;
 

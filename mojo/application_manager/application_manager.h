@@ -109,7 +109,6 @@ class MOJO_APPLICATION_MANAGER_EXPORT ApplicationManager {
   };
 
   class ContentHandlerConnection;
-  class LoadCallbacksImpl;
   class ShellImpl;
 
   typedef std::map<std::string, ApplicationLoader*> SchemeToLoaderMap;
@@ -129,18 +128,9 @@ class MOJO_APPLICATION_MANAGER_EXPORT ApplicationManager {
                        const GURL& requestor_url,
                        ServiceProviderPtr service_provider);
 
-  void RegisterLoadedApplication(const GURL& requested_url,
-                                 const GURL& resolved_url,
-                                 const GURL& requestor_url,
-                                 ServiceProviderPtr service_provider,
-                                 ScopedMessagePipeHandle* shell_handle);
-
-  void LoadWithContentHandler(const GURL& requested_url,
-                              const GURL& resolved_url,
-                              const GURL& requestor_url,
-                              const GURL& content_handler_url,
-                              URLResponsePtr url_response,
-                              ServiceProviderPtr service_provider);
+  void LoadWithContentHandler(const GURL& content_handler_url,
+                              ScopedMessagePipeHandle shell_handle,
+                              URLResponsePtr url_response);
 
   // Return the appropriate loader for |url|. This can return NULL if there is
   // no default loader configured.
@@ -166,7 +156,6 @@ class MOJO_APPLICATION_MANAGER_EXPORT ApplicationManager {
   URLToShellImplMap url_to_shell_impl_;
   URLToContentHandlerMap url_to_content_handler_;
   URLToArgsMap url_to_args_;
-  std::set<ShellImpl*> content_shell_impls_;
 
   base::WeakPtrFactory<ApplicationManager> weak_ptr_factory_;
 

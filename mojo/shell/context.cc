@@ -134,10 +134,10 @@ class Context::NativeViewportApplicationLoader
   // ApplicationLoader implementation.
   virtual void Load(ApplicationManager* manager,
                     const GURL& url,
-                    scoped_refptr<LoadCallbacks> callbacks) override {
-    ScopedMessagePipeHandle shell_handle = callbacks->RegisterApplication();
-    if (shell_handle.is_valid())
-      app_.reset(new ApplicationImpl(this, shell_handle.Pass()));
+                    ScopedMessagePipeHandle shell_handle,
+                    LoadCallback callback) override {
+    DCHECK(shell_handle.is_valid());
+    app_.reset(new ApplicationImpl(this, shell_handle.Pass()));
   }
 
   virtual void OnApplicationError(ApplicationManager* manager,

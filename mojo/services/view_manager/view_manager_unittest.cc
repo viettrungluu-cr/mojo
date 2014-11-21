@@ -422,12 +422,11 @@ class EmbedApplicationLoader : public ApplicationLoader,
   // ApplicationLoader implementation:
   void Load(ApplicationManager* manager,
             const GURL& url,
-            scoped_refptr<LoadCallbacks> callbacks) override {
-    ScopedMessagePipeHandle shell_handle = callbacks->RegisterApplication();
-    if (!shell_handle.is_valid())
-      return;
-    scoped_ptr<ApplicationImpl> app(new ApplicationImpl(this,
-                                                        shell_handle.Pass()));
+            ScopedMessagePipeHandle shell_handle,
+            LoadCallback callback) override {
+    ASSERT_TRUE(shell_handle.is_valid());
+    scoped_ptr<ApplicationImpl> app(
+        new ApplicationImpl(this, shell_handle.Pass()));
     apps_.push_back(app.release());
   }
   void OnApplicationError(ApplicationManager* manager,
@@ -517,10 +516,9 @@ class WindowManagerLoader : public ApplicationLoader,
   // ApplicationLoader implementation:
   virtual void Load(ApplicationManager* manager,
                     const GURL& url,
-                    scoped_refptr<LoadCallbacks> callbacks) override {
-    ScopedMessagePipeHandle shell_handle = callbacks->RegisterApplication();
-    if (!shell_handle.is_valid())
-      return;
+                    ScopedMessagePipeHandle shell_handle,
+                    LoadCallback callback) override {
+    ASSERT_TRUE(shell_handle.is_valid());
     scoped_ptr<ApplicationImpl> app(
         new ApplicationImpl(this, shell_handle.Pass()));
     apps_.push_back(app.release());

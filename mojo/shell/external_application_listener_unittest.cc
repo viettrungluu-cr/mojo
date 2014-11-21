@@ -33,7 +33,8 @@ class NotAnApplicationLoader : public ApplicationLoader {
 
   void Load(ApplicationManager* application_manager,
             const GURL& url,
-            scoped_refptr<LoadCallbacks> callbacks) override {
+            ScopedMessagePipeHandle shell_handle,
+            LoadCallback callback) override {
     NOTREACHED();
   }
 

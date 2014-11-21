@@ -22,7 +22,7 @@ ViewManagerLoader::~ViewManagerLoader() {
 
 void ViewManagerLoader::Load(ApplicationManager* manager,
                              const GURL& url,
-                             scoped_refptr<LoadCallbacks> callbacks) {
+                             LoadCallback callback) {
   ScopedMessagePipeHandle shell_handle = callbacks->RegisterApplication();
   if (!shell_handle.is_valid())
     return;

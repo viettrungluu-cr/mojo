@@ -10,29 +10,6 @@
 
 namespace mojo {
 
-class UIApplicationLoader::UILoader {
- public:
-  explicit UILoader(ApplicationLoader* loader) : loader_(loader) {}
-  ~UILoader() {}
-
-  void Load(ApplicationManager* manager,
-            const GURL& url,
-            ScopedMessagePipeHandle shell_handle) {
-    scoped_refptr<LoadCallbacks> callbacks(
-        new ApplicationLoader::SimpleLoadCallbacks(shell_handle.Pass()));
-    loader_->Load(manager, url, callbacks);
-  }
-
-  void OnApplicationError(ApplicationManager* manager, const GURL& url) {
-    loader_->OnApplicationError(manager, url);
-  }
-
- private:
-  ApplicationLoader* loader_;  // Owned by UIApplicationLoader
-
-  DISALLOW_COPY_AND_ASSIGN(UILoader);
-};
-
 UIApplicationLoader::UIApplicationLoader(
     scoped_ptr<ApplicationLoader> real_loader,
     shell::Context* context)
@@ -48,18 +25,13 @@ UIApplicationLoader::~UIApplicationLoader() {
 
 void UIApplicationLoader::Load(ApplicationManager* manager,
                                const GURL& url,
-                               scoped_refptr<LoadCallbacks> callbacks) {
-  ScopedMessagePipeHandle shell_handle = callbacks->RegisterApplication();
-  if (!shell_handle.is_valid())
-    return;
+                               ScopedMessagePipeHandle shell_handle,
+                               LoadCallback callback) {
+  DCHECK(shell_handle.is_valid());
   context_->ui_loop()->PostTask(
       FROM_HERE,
-      base::Bind(
-          &UIApplicationLoader::LoadOnUIThread,
-          base::Unretained(this),
-          manager,
-          url,
-          base::Owned(new ScopedMessagePipeHandle(shell_handle.Pass()))));
+      base::Bind(&UIApplicationLoader::LoadOnUIThread, base::Unretained(this),
+                 manager, url, base::Passed(&shell_handle)));
 }
 
 void UIApplicationLoader::OnApplicationError(ApplicationManager* manager,
@@ -72,25 +44,19 @@ void UIApplicationLoader::OnApplicationError(ApplicationManager* manager,
                  url));
 }
 
-void UIApplicationLoader::LoadOnUIThread(
-    ApplicationManager* manager,
-    const GURL& url,
-    ScopedMessagePipeHandle* shell_handle) {
-  if (!ui_loader_)
-    ui_loader_ = new UILoader(loader_.get());
-  ui_loader_->Load(manager, url, shell_handle->Pass());
+void UIApplicationLoader::LoadOnUIThread(ApplicationManager* manager,
+                                         const GURL& url,
+                                         ScopedMessagePipeHandle shell_handle) {
+  loader_->Load(manager, url, shell_handle.Pass(), SimpleLoadCallback());
 }
 
 void UIApplicationLoader::OnApplicationErrorOnUIThread(
     ApplicationManager* manager,
     const GURL& url) {
-  if (!ui_loader_)
-    ui_loader_ = new UILoader(loader_.get());
-  ui_loader_->OnApplicationError(manager, url);
+  loader_->OnApplicationError(manager, url);
 }
 
 void UIApplicationLoader::ShutdownOnUIThread() {
-  delete ui_loader_;
   // Destroy |loader_| on the thread it's actually used on.
   loader_.reset();
 }

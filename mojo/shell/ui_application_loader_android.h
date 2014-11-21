@@ -29,7 +29,8 @@ class UIApplicationLoader : public ApplicationLoader {
   // ApplicationLoader overrides:
   void Load(ApplicationManager* manager,
             const GURL& url,
-            scoped_refptr<LoadCallbacks> callbacks) override;
+            ScopedMessagePipeHandle shell_handle,
+            LoadCallback callback) override;
   void OnApplicationError(ApplicationManager* manager,
                           const GURL& url) override;
 
@@ -42,16 +43,13 @@ class UIApplicationLoader : public ApplicationLoader {
   // isn't thread safe).
   void LoadOnUIThread(ApplicationManager* manager,
                       const GURL& url,
-                      ScopedMessagePipeHandle* shell_handle);
+                      ScopedMessagePipeHandle shell_handle);
   void OnApplicationErrorOnUIThread(ApplicationManager* manager,
                                     const GURL& url);
   void ShutdownOnUIThread();
 
   scoped_ptr<ApplicationLoader> loader_;
   shell::Context* context_;
-
-  // Lives on the UI thread. Trivial interface that calls through to |loader_|.
-  UILoader* ui_loader_;
 
   DISALLOW_COPY_AND_ASSIGN(UIApplicationLoader);
 };

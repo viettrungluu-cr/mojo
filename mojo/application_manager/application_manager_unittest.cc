@@ -115,10 +115,10 @@ class TestApplicationLoader : public ApplicationLoader,
   // ApplicationLoader implementation.
   void Load(ApplicationManager* manager,
             const GURL& url,
-            scoped_refptr<LoadCallbacks> callbacks) override {
+            ScopedMessagePipeHandle shell_handle,
+            LoadCallback callback) override {
     ++num_loads_;
-    test_app_.reset(
-        new ApplicationImpl(this, callbacks->RegisterApplication().Pass()));
+    test_app_.reset(new ApplicationImpl(this, shell_handle.Pass()));
   }
 
   void OnApplicationError(ApplicationManager* manager,
@@ -326,9 +326,9 @@ class Tester : public ApplicationDelegate,
  private:
   void Load(ApplicationManager* manager,
             const GURL& url,
-            scoped_refptr<LoadCallbacks> callbacks) override {
-    app_.reset(
-        new ApplicationImpl(this, callbacks->RegisterApplication().Pass()));
+            ScopedMessagePipeHandle shell_handle,
+            LoadCallback callback) override {
+    app_.reset(new ApplicationImpl(this, shell_handle.Pass()));
   }
 
   void OnApplicationError(ApplicationManager* manager,

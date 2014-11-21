@@ -83,9 +83,8 @@ TEST_F(DynamicApplicationLoaderTest, DoesNotExist) {
   base::FilePath nonexistent_file(FILE_PATH_LITERAL("nonexistent.txt"));
   GURL url(FilePathToFileURL(temp_dir.path().Append(nonexistent_file)));
   MessagePipe pipe;
-  scoped_refptr<ApplicationLoader::SimpleLoadCallbacks> callbacks(
-      new ApplicationLoader::SimpleLoadCallbacks(pipe.handle0.Pass()));
-  loader_->Load(context_.application_manager(), url, callbacks);
+  loader_->Load(context_.application_manager(), url, pipe.handle0.Pass(),
+                ApplicationLoader::SimpleLoadCallback());
   EXPECT_FALSE(state_.runner_was_created);
   EXPECT_FALSE(state_.runner_was_started);
   EXPECT_FALSE(state_.runner_was_destroyed);

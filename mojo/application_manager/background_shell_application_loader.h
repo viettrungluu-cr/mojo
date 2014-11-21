@@ -29,13 +29,12 @@ class MOJO_APPLICATION_MANAGER_EXPORT BackgroundShellApplicationLoader
   // ApplicationLoader overrides:
   void Load(ApplicationManager* manager,
             const GURL& url,
-            scoped_refptr<LoadCallbacks> callbacks) override;
+            ScopedMessagePipeHandle shell_handle,
+            LoadCallback callback) override;
   void OnApplicationError(ApplicationManager* manager,
                           const GURL& url) override;
 
  private:
-  class BackgroundLoader;
-
   // |base::DelegateSimpleThread::Delegate| method:
   void Run() override;
 
@@ -45,7 +44,7 @@ class MOJO_APPLICATION_MANAGER_EXPORT BackgroundShellApplicationLoader
   // isn't thread safe).
   void LoadOnBackgroundThread(ApplicationManager* manager,
                               const GURL& url,
-                              ScopedMessagePipeHandle* shell_handle);
+                              ScopedMessagePipeHandle shell_handle);
   void OnApplicationErrorOnBackgroundThread(ApplicationManager* manager,
                                             const GURL& url);
   bool quit_on_shutdown_;
@@ -65,9 +64,6 @@ class MOJO_APPLICATION_MANAGER_EXPORT BackgroundShellApplicationLoader
   base::Closure quit_closure_;
 
   scoped_ptr<base::DelegateSimpleThread> thread_;
-
-  // Lives on |thread_|. Trivial interface that calls through to |loader_|.
-  BackgroundLoader* background_loader_;
 
   DISALLOW_COPY_AND_ASSIGN(BackgroundShellApplicationLoader);
 };

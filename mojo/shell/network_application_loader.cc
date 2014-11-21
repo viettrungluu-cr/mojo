@@ -31,11 +31,9 @@ NetworkApplicationLoader::~NetworkApplicationLoader() {
 
 void NetworkApplicationLoader::Load(ApplicationManager* manager,
                                     const GURL& url,
-                                    scoped_refptr<LoadCallbacks> callbacks) {
-  ScopedMessagePipeHandle shell_handle = callbacks->RegisterApplication();
-  if (!shell_handle.is_valid())
-    return;
-
+                                    ScopedMessagePipeHandle shell_handle,
+                                    LoadCallback callback) {
+  DCHECK(shell_handle.is_valid());
   uintptr_t key = reinterpret_cast<uintptr_t>(manager);
   if (apps_.find(key) == apps_.end()) {
     scoped_ptr<ApplicationImpl> app(

@@ -10,29 +10,6 @@
 
 namespace mojo {
 
-class BackgroundShellApplicationLoader::BackgroundLoader {
- public:
-  explicit BackgroundLoader(ApplicationLoader* loader) : loader_(loader) {}
-  ~BackgroundLoader() {}
-
-  void Load(ApplicationManager* manager,
-            const GURL& url,
-            ScopedMessagePipeHandle shell_handle) {
-    scoped_refptr<LoadCallbacks> callbacks(
-        new ApplicationLoader::SimpleLoadCallbacks(shell_handle.Pass()));
-    loader_->Load(manager, url, callbacks);
-  }
-
-  void OnApplicationError(ApplicationManager* manager, const GURL& url) {
-    loader_->OnApplicationError(manager, url);
-  }
-
- private:
-  ApplicationLoader* loader_;  // Owned by BackgroundShellApplicationLoader
-
-  DISALLOW_COPY_AND_ASSIGN(BackgroundLoader);
-};
-
 BackgroundShellApplicationLoader::BackgroundShellApplicationLoader(
     scoped_ptr<ApplicationLoader> real_loader,
     const std::string& thread_name,
@@ -40,8 +17,7 @@ BackgroundShellApplicationLoader::BackgroundShellApplicationLoader(
     : loader_(real_loader.Pass()),
       message_loop_type_(message_loop_type),
       thread_name_(thread_name),
-      message_loop_created_(true, false),
-      background_loader_(NULL) {
+      message_loop_created_(true, false) {
 }
 
 BackgroundShellApplicationLoader::~BackgroundShellApplicationLoader() {
@@ -52,11 +28,9 @@ BackgroundShellApplicationLoader::~BackgroundShellApplicationLoader() {
 void BackgroundShellApplicationLoader::Load(
     ApplicationManager* manager,
     const GURL& url,
-    scoped_refptr<LoadCallbacks> callbacks) {
-  ScopedMessagePipeHandle shell_handle = callbacks->RegisterApplication();
-  if (!shell_handle.is_valid())
-    return;
-
+    ScopedMessagePipeHandle shell_handle,
+    LoadCallback callback) {
+  DCHECK(shell_handle.is_valid());
   if (!thread_) {
     // TODO(tim): It'd be nice if we could just have each Load call
     // result in a new thread like DynamicService{Loader, Runner}. But some
@@ -72,12 +46,9 @@ void BackgroundShellApplicationLoader::Load(
 
   task_runner_->PostTask(
       FROM_HERE,
-      base::Bind(
-          &BackgroundShellApplicationLoader::LoadOnBackgroundThread,
-          base::Unretained(this),
-          manager,
-          url,
-          base::Owned(new ScopedMessagePipeHandle(shell_handle.Pass()))));
+      base::Bind(&BackgroundShellApplicationLoader::LoadOnBackgroundThread,
+                 base::Unretained(this), manager, url,
+                 base::Passed(&shell_handle)));
 }
 
 void BackgroundShellApplicationLoader::OnApplicationError(
@@ -99,8 +70,6 @@ void BackgroundShellApplicationLoader::Run() {
   message_loop_created_.Signal();
   loop.Run();
 
-  delete background_loader_;
-  background_loader_ = NULL;
   // Destroy |loader_| on the thread it's actually used on.
   loader_.reset();
 }
@@ -108,20 +77,16 @@ void BackgroundShellApplicationLoader::Run() {
 void BackgroundShellApplicationLoader::LoadOnBackgroundThread(
     ApplicationManager* manager,
     const GURL& url,
-    ScopedMessagePipeHandle* shell_handle) {
+    ScopedMessagePipeHandle shell_handle) {
   DCHECK(task_runner_->RunsTasksOnCurrentThread());
-  if (!background_loader_)
-    background_loader_ = new BackgroundLoader(loader_.get());
-  background_loader_->Load(manager, url, shell_handle->Pass());
+  loader_->Load(manager, url, shell_handle.Pass(), SimpleLoadCallback());
 }
 
 void BackgroundShellApplicationLoader::OnApplicationErrorOnBackgroundThread(
     ApplicationManager* manager,
     const GURL& url) {
   DCHECK(task_runner_->RunsTasksOnCurrentThread());
-  if (!background_loader_)
-    background_loader_ = new BackgroundLoader(loader_.get());
-  background_loader_->OnApplicationError(manager, url);
+  loader_->OnApplicationError(manager, url);
 }
 
 }  // namespace mojo

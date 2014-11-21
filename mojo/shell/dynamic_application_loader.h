@@ -40,7 +40,8 @@ class DynamicApplicationLoader : public ApplicationLoader {
   // ApplicationLoader methods:
   void Load(ApplicationManager* manager,
             const GURL& url,
-            scoped_refptr<LoadCallbacks> callbacks) override;
+            ScopedMessagePipeHandle shell_handle,
+            LoadCallback callback) override;
   void OnApplicationError(ApplicationManager* manager,
                           const GURL& url) override;
 

@@ -18,7 +18,8 @@ class DummyLoader : public ApplicationLoader {
   // ApplicationLoader overrides:
   void Load(ApplicationManager* manager,
             const GURL& url,
-            scoped_refptr<LoadCallbacks> callbacks) override {
+            ScopedMessagePipeHandle shell_handle,
+            LoadCallback callback) override {
     if (simulate_app_quit_)
       base::MessageLoop::current()->Quit();
   }
@@ -48,9 +49,8 @@ TEST(BackgroundShellApplicationLoaderTest, Load) {
   BackgroundShellApplicationLoader loader(
       real_loader.Pass(), "test", base::MessageLoop::TYPE_DEFAULT);
   MessagePipe dummy;
-  scoped_refptr<ApplicationLoader::SimpleLoadCallbacks> callbacks(
-      new ApplicationLoader::SimpleLoadCallbacks(dummy.handle0.Pass()));
-  loader.Load(NULL, GURL(), callbacks);
+  loader.Load(NULL, GURL(), dummy.handle0.Pass(),
+              ApplicationLoader::SimpleLoadCallback());
 }
 
 }  // namespace mojo
