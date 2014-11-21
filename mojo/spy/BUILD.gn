@@ -16,8 +16,9 @@ source_set("spy") {
   deps = [
     ":spy_bindings",
     "//base",
-    "//url",
     "//mojo/application_manager",
+    "//mojo/public/cpp/system",
+    "//url",
   ]
 }
 

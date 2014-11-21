@@ -446,11 +446,14 @@ def _CheckGNCheck(input_api, output_api):
     KNOWN_PASSING = [
       '//mojo/aura/*',
       '//mojo/cc/*',
+      '//mojo/common/*',
       '//mojo/edk/*',
       '//mojo/gles2/*',
       '//mojo/gpu/*',
       '//mojo/public/*',
       '//mojo/services/gles2/*',
+      '//mojo/skia/*',
+      '//mojo/spy/*',
       '//mojo/tools/*',
       '//mojo/views/*',
     ]

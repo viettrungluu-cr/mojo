@@ -12,7 +12,7 @@ static_library("skia") {
 
   deps = [
     "//base",
-    "//gpu/command_buffer/client:gles2_interface",
+    "//gpu/command_buffer/client:gles2_c_lib",
     "//gpu/skia_bindings",
     "//mojo/gpu",
     "//skia",

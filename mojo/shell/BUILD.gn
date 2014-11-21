@@ -47,6 +47,7 @@ executable("mojo_launcher") {
     "//mojo/common",
     "//mojo/edk/system",
     "//mojo/environment:chromium",
+    "//url",
   ]
 }
 
@@ -59,7 +60,9 @@ source_set("in_process_dynamic_service_runner") {
   ]
 
   deps = [
+    "//base",
     "//mojo/gles2",
+    "//mojo/public/cpp/system",
   ]
 }
 
@@ -113,6 +116,7 @@ source_set("lib") {
     "//mojo/application_manager",
     "//mojo/common",
     "//mojo/edk/system",
+    "//mojo/public/cpp/bindings",
     "//mojo/public/interfaces/application",
     "//mojo/services/public/interfaces/network",
     "//mojo/shell/domain_socket",
@@ -132,6 +136,7 @@ source_set("lib") {
     ]
 
     deps += [
+      "//mojo/services/gles2",
       "//mojo/services/native_viewport:lib",
       "//mojo/services/network:lib",
     ]
@@ -173,6 +178,9 @@ if (is_android) {
     deps = [
       ":jni_headers",
       ":lib",
+      "//mojo/application_manager",
+      "//mojo/services/native_viewport:lib",
+      "//net",
       "//ui/gl",
     ]
   }
@@ -218,7 +226,13 @@ source_set("external_application_registrar_connection") {
 
   deps = [
     ":external_application_registrar_bindings",
-    "//mojo/shell/domain_socket"
+    "//base",
+    "//mojo/common",
+    "//mojo/edk/system",
+    "//mojo/public/cpp/bindings",
+    "//mojo/public/interfaces/application",
+    "//mojo/shell/domain_socket",
+    "//url",
   ]
 
   if (is_win) {
@@ -243,6 +257,7 @@ test("mojo_shell_tests") {
   ]
 
   deps = [
+    ":in_process_dynamic_service_runner",
     ":lib",
     "//base",
     "//base:i18n",
@@ -255,6 +270,7 @@ test("mojo_shell_tests") {
     "//mojo/edk/system",
     "//mojo/environment:chromium",
     "//mojo/services/test_service:bindings",
+    "//mojo/public/cpp/bindings",
   ]
 
   datadeps = [
@@ -279,6 +295,8 @@ source_set("test_support") {
 
   deps = [
     ":lib",
+    "//base",
+    "//mojo/application_manager",
     "//mojo/edk/system",
   ]
 }
@@ -293,6 +311,7 @@ test("external_application_unittests") {
   deps = [
     ":lib",
     ":external_application_registrar_connection",
+    ":external_application_registrar_bindings",
     "//base",
     "//base/test:test_support",
     "//testing/gtest",
@@ -301,6 +320,7 @@ test("external_application_unittests") {
     "//mojo/common",
     "//mojo/edk/system",
     "//mojo/environment:chromium",
+    "//mojo/shell/domain_socket",
     "//mojo/shell/domain_socket:tests",
   ]
 
@@ -313,6 +333,8 @@ test("external_application_unittests") {
     deps -= [
       ":lib",
       ":external_application_registrar_connection",
+      ":external_application_registrar_bindings",
+      "//mojo/shell/domain_socket",
       "//mojo/shell/domain_socket:tests",
     ]
   }
