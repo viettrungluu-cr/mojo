@@ -46,6 +46,10 @@ GaneshContext::GaneshContext(base::WeakPtr<GLContext> gl_context)
 }
 
 GaneshContext::~GaneshContext() {
+  if (context_) {
+    Scope scope(this);
+    context_.clear();
+  }
   if (gl_context_.get())
     gl_context_->RemoveObserver(this);
 }
