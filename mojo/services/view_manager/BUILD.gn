@@ -65,6 +65,7 @@ source_set("view_manager_lib") {
     "//mojo/services/public/interfaces/surfaces",
     "//mojo/services/public/interfaces/view_manager",
     "//mojo/services/public/interfaces/window_manager",
+    "//mojo/services/public/cpp/view_manager:common",
     "//ui/gfx/geometry",
   ]
 }
@@ -81,6 +82,7 @@ source_set("test_support") {
     "//base",
     "//mojo/common",
     "//mojo/public/cpp/bindings:bindings",
+    "//mojo/services/public/cpp/view_manager:common",
     "//mojo/services/public/interfaces/geometry",
     "//mojo/services/public/interfaces/view_manager",
   ]

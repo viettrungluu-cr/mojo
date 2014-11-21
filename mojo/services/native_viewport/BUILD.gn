@@ -28,6 +28,7 @@ if (is_android) {
       "//mojo/application",
       "//mojo/public/c/system:for_shared_library",
       "//mojo/public/cpp/bindings:bindings",
+      "//mojo/services/gles2:gles2",
       "//mojo/services/public/interfaces/native_viewport",
       "//mojo/services/public/cpp/native_viewport:args",
       "//ui/gl",

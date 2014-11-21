@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 
+#include "base/basictypes.h"
 #include "mojo/public/cpp/bindings/array.h"
 #include "mojo/services/public/cpp/view_manager/types.h"
 #include "mojo/services/public/interfaces/geometry/geometry.mojom.h"
@@ -63,7 +64,7 @@ struct Change {
   Id view_id3;
   Rect bounds;
   Rect bounds2;
-  int32 event_action;
+  int32_t event_action;
   String creator_url;
   String embed_url;
   OrderDirection direction;

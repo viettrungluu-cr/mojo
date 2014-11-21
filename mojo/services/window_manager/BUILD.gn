@@ -46,13 +46,16 @@ source_set("lib") {
   deps = [
     "//base",
     "//ui/base",
+    "//ui/events",
     "//ui/gfx",
     "//ui/gfx/geometry",
     "//mojo/application",
     "//mojo/common",
+    "//mojo/converters/geometry",
     "//mojo/converters/input_events",
+    "//mojo/public/cpp/bindings:bindings",
+    "//mojo/public/interfaces/application",
     "//mojo/services/public/cpp/view_manager",
-    "//mojo/public/interfaces/application:application",
     "//mojo/services/public/interfaces/native_viewport",
     "//mojo/services/public/interfaces/window_manager",
   ]
@@ -76,8 +79,10 @@ test("window_manager_unittests") {
   deps = [
     "//base/test:test_support",
     "//mojo/application_manager",
+    "//mojo/converters/geometry",
     "//mojo/edk/system",
     "//mojo/environment:chromium",
+    "//mojo/public/cpp/application",
     "//mojo/services/public/cpp/view_manager",
     "//mojo/services/public/interfaces/view_manager",
     "//mojo/services/public/interfaces/window_manager",
