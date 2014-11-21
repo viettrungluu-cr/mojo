@@ -1552,68 +1552,11 @@ def CheckChangeOnUpload(input_api, output_api):
   return results
 
 
-def GetTryServerMasterForBot(bot):
-  """Returns the Try Server master for the given bot.
-
-  It tries to guess the master from the bot name, but may still fail
-  and return None.  There is no longer a default master.
-  """
-  # Potentially ambiguous bot names are listed explicitly.
-  master_map = {
-      'linux_gpu': 'tryserver.chromium.gpu',
-      'mac_gpu': 'tryserver.chromium.gpu',
-      'win_gpu': 'tryserver.chromium.gpu',
-      'chromium_presubmit': 'tryserver.chromium.linux',
-      'blink_presubmit': 'tryserver.chromium.linux',
-      'tools_build_presubmit': 'tryserver.chromium.linux',
-  }
-  master = master_map.get(bot)
-  if not master:
-    if 'gpu' in bot:
-      master = 'tryserver.chromium.gpu'
-    elif 'linux' in bot or 'android' in bot or 'presubmit' in bot:
-      master = 'tryserver.chromium.linux'
-    elif 'win' in bot:
-      master = 'tryserver.chromium.win'
-    elif 'mac' in bot or 'ios' in bot:
-      master = 'tryserver.chromium.mac'
-  return master
-
-
 def GetDefaultTryConfigs(bots=None):
   """Returns a list of ('bot', set(['tests']), optionally filtered by [bots].
 
-  To add tests to this list, they MUST be in the the corresponding master's
-  gatekeeper config. For example, anything on master.chromium would be closed by
-  tools/build/masters/master.chromium/master_gatekeeper_cfg.py.
-
   If 'bots' is specified, will only return configurations for bots in that list.
   """
-
-  standard_tests = [
-      'base_unittests',
-      'browser_tests',
-      'cacheinvalidation_unittests',
-      'check_deps',
-      'check_deps2git',
-      'content_browsertests',
-      'content_unittests',
-      'crypto_unittests',
-      'gpu_unittests',
-      'interactive_ui_tests',
-      'ipc_tests',
-      'jingle_unittests',
-      'media_unittests',
-      'net_unittests',
-      'ppapi_unittests',
-      'printing_unittests',
-      'sql_unittests',
-      'sync_unit_tests',
-      'unit_tests',
-      # Broken in release.
-      #'url_unittests',
-      #'webkit_unit_tests',
-  ]
 
   builders_and_tests = {
       # TODO(maruel): Figure out a way to run 'sizes' where people can
@@ -1623,51 +1566,7 @@ def GetDefaultTryConfigs(bots=None):
       # http://chromium.org/developers/tree-sheriffs/perf-sheriffs.
       # TODO(maruel): An option would be to run 'sizes' but not count a failure
       # of this step as a try job failure.
-      'android_aosp': ['compile'],
-      'android_arm64_dbg_recipe': ['slave_steps'],
-      'android_chromium_gn_compile_dbg': ['compile'],
-      'android_chromium_gn_compile_rel': ['compile'],
-      'android_clang_dbg': ['slave_steps'],
-      'android_clang_dbg_recipe': ['slave_steps'],
-      'android_dbg_tests_recipe': ['slave_steps'],
-      'cros_x86': ['defaulttests'],
-      'ios_dbg_simulator': [
-          'compile',
-          'base_unittests',
-          'content_unittests',
-          'crypto_unittests',
-          'url_unittests',
-          'net_unittests',
-          'sql_unittests',
-          'ui_base_unittests',
-          'ui_unittests',
-      ],
-      'ios_rel_device': ['compile'],
-      'ios_rel_device_ninja': ['compile'],
-      'mac_asan': ['compile'],
-      #TODO(stip): Change the name of this builder to reflect that it's release.
-      'linux_gtk': standard_tests,
-      'linux_chromeos_asan': ['compile'],
-      'linux_chromium_chromeos_clang_dbg': ['defaulttests'],
-      'linux_chromium_chromeos_rel_swarming': ['defaulttests'],
-      'linux_chromium_compile_dbg': ['defaulttests'],
-      'linux_chromium_gn_dbg': ['compile'],
-      'linux_chromium_gn_rel': ['defaulttests'],
-      'linux_chromium_rel_swarming': ['defaulttests'],
-      'linux_chromium_clang_dbg': ['defaulttests'],
-      'linux_gpu': ['defaulttests'],
-      'linux_nacl_sdk_build': ['compile'],
-      'mac_chromium_compile_dbg': ['defaulttests'],
-      'mac_chromium_rel_swarming': ['defaulttests'],
-      'mac_gpu': ['defaulttests'],
-      'mac_nacl_sdk_build': ['compile'],
-      'win_chromium_compile_dbg': ['defaulttests'],
-      'win_chromium_dbg': ['defaulttests'],
-      'win_chromium_rel_swarming': ['defaulttests'],
-      'win_chromium_x64_rel_swarming': ['defaulttests'],
-      'win_gpu': ['defaulttests'],
-      'win_nacl_sdk_build': ['compile'],
-      'win8_chromium_rel': ['defaulttests'],
+      'Mojo Linux Try': ['defaulttests'],
   }
 
   if bots:
@@ -1681,7 +1580,7 @@ def GetDefaultTryConfigs(bots=None):
   # Build up the mapping from tryserver master to bot/test.
   out = dict()
   for bot, tests in filtered_builders_and_tests.iteritems():
-    out.setdefault(GetTryServerMasterForBot(bot), {})[bot] = tests
+    out.setdefault("tryserver.client.mojo", {})[bot] = tests
   return out
 
 
@@ -1702,73 +1601,8 @@ def GetPreferredTryMasters(project, change):
   if not files or all(re.search(r'[\\\/]OWNERS$', f) for f in files):
     return {}
 
-  if all(re.search(r'\.(m|mm)$|(^|[\\\/_])mac[\\\/_.]', f) for f in files):
-    return GetDefaultTryConfigs([
-        'mac_chromium_compile_dbg',
-        'mac_chromium_rel_swarming',
-    ])
-  if all(re.search('(^|[/_])win[/_.]', f) for f in files):
-    return GetDefaultTryConfigs([
-        'win_chromium_dbg',
-        'win_chromium_rel_swarming',
-        'win8_chromium_rel',
-    ])
-  if all(re.search(r'(^|[\\\/_])android[\\\/_.]', f) for f in files):
-    return GetDefaultTryConfigs([
-        'android_aosp',
-        'android_clang_dbg',
-        'android_dbg_tests_recipe',
-    ])
-  if all(re.search(r'[\\\/_]ios[\\\/_.]', f) for f in files):
-    return GetDefaultTryConfigs(['ios_rel_device', 'ios_dbg_simulator'])
-
   builders = [
-      'android_arm64_dbg_recipe',
-      'android_chromium_gn_compile_rel',
-      'android_chromium_gn_compile_dbg',
-      'android_clang_dbg',
-      'android_clang_dbg_recipe',
-      'android_dbg_tests_recipe',
-      'ios_dbg_simulator',
-      'ios_rel_device',
-      'ios_rel_device_ninja',
-      'linux_chromium_chromeos_rel_swarming',
-      'linux_chromium_clang_dbg',
-      'linux_chromium_gn_dbg',
-      'linux_chromium_gn_rel',
-      'linux_chromium_rel_swarming',
-      'linux_gpu',
-      'mac_chromium_compile_dbg',
-      'mac_chromium_rel_swarming',
-      'mac_gpu',
-      'win_chromium_compile_dbg',
-      'win_chromium_rel_swarming',
-      'win_chromium_x64_rel_swarming',
-      'win_gpu',
-      'win8_chromium_rel',
+      'Mojo Linux Try',
   ]
-
-  # Match things like path/aura/file.cc and path/file_aura.cc.
-  # Same for chromeos.
-  if any(re.search(r'[\\\/_](aura|chromeos)', f) for f in files):
-    builders.extend([
-        'linux_chromeos_asan',
-        'linux_chromium_chromeos_clang_dbg'
-    ])
-
-  # If there are gyp changes to base, build, or chromeos, run a full cros build
-  # in addition to the shorter linux_chromeos build. Changes to high level gyp
-  # files have a much higher chance of breaking the cros build, which is
-  # differnt from the linux_chromeos build that most chrome developers test
-  # with.
-  if any(re.search('^(base|build|chromeos).*\.gypi?$', f) for f in files):
-    builders.extend(['cros_x86'])
-
-  # The AOSP bot doesn't build the chrome/ layer, so ignore any changes to it
-  # unless they're .gyp(i) files as changes to those files can break the gyp
-  # step on that bot.
-  if (not all(re.search('^chrome', f) for f in files) or
-      any(re.search('\.gypi?$', f) for f in files)):
-    builders.extend(['android_aosp'])
 
   return GetDefaultTryConfigs(builders)
