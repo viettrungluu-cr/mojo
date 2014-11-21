@@ -22,16 +22,18 @@ namespace {
 
 void DrawViewTree(Pass* pass,
                   const ServerView* view,
-                  const gfx::Vector2d& offset) {
+                  const gfx::Vector2d& offset,
+                  float opacity) {
   if (!view->visible())
     return;
 
   const gfx::Rect node_bounds = view->bounds() + offset;
   std::vector<const ServerView*> children(view->GetChildren());
+  const float combined_opacity = opacity * view->opacity();
   for (std::vector<const ServerView*>::reverse_iterator it = children.rbegin();
        it != children.rend();
        ++it) {
-    DrawViewTree(pass, *it, node_bounds.OffsetFromOrigin());
+    DrawViewTree(pass, *it, node_bounds.OffsetFromOrigin(), combined_opacity);
   }
 
   cc::SurfaceId node_id = view->surface_id();
@@ -54,7 +56,7 @@ void DrawViewTree(Pass* pass,
 
   SharedQuadStatePtr sqs = CreateDefaultSQS(*Size::From(node_bounds.size()));
   sqs->blend_mode = SK_XFERMODE_kSrcOver_Mode;
-  sqs->opacity = view->opacity();
+  sqs->opacity = combined_opacity;
   sqs->content_to_target_transform = Transform::From(node_transform);
 
   pass->quads.push_back(surface_quad.Pass());
@@ -144,7 +146,7 @@ void DefaultDisplayManager::Draw() {
   PassPtr pass = CreateDefaultPass(1, rect);
   pass->damage_rect = Rect::From(dirty_rect_);
 
-  DrawViewTree(pass.get(), connection_manager_->root(), gfx::Vector2d());
+  DrawViewTree(pass.get(), connection_manager_->root(), gfx::Vector2d(), 1.0f);
 
   FramePtr frame = Frame::New();
   frame->passes.push_back(pass.Pass());

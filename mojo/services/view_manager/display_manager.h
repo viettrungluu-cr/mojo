@@ -66,11 +66,11 @@ class DefaultDisplayManager : public DisplayManager,
   void OnSurfaceConnectionCreated(SurfacePtr surface, uint32_t id_namespace);
   void Draw();
 
-  // NativeViewportClient implementation.
+  // NativeViewportClient:
   void OnDestroyed() override;
   void OnSizeChanged(SizePtr size) override;
 
-  // SurfaceClient implementation.
+  // SurfaceClient:
   void ReturnResources(Array<ReturnedResourcePtr> resources) override;
 
   ApplicationConnection* app_connection_;
