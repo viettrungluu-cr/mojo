@@ -80,8 +80,7 @@ class SimpleWM : public mojo::ApplicationDelegate,
       mojo::InterfaceRequest<mojo::ServiceProvider> service_provider) override {
     DCHECK(view_manager_);
     mojo::View* app_view = NULL;
-    mojo::View* frame_view = CreateTopLevelWindow(&app_view);
-    window_container_->AddChild(frame_view);
+    CreateTopLevelWindow(&app_view);
 
     // TODO(beng): We're dropping the |service_provider| passed from the client
     //             on the floor here and passing our own. Seems like we should
@@ -113,6 +112,8 @@ class SimpleWM : public mojo::ApplicationDelegate,
 
   mojo::View* CreateTopLevelWindow(mojo::View** app_view) {
     mojo::View* frame_view = mojo::View::Create(view_manager_);
+    // Add the View to it's parent before showing so that animations can happen.
+    window_container_->AddChild(frame_view);
     mojo::Rect rect;
     rect.x = next_window_origin_.x();
     rect.y = next_window_origin_.y();

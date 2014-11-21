@@ -130,7 +130,7 @@ FrameController::FrameController(
 FrameController::~FrameController() {}
 
 void FrameController::CloseWindow() {
-  app_view_->Destroy();
+  // This destroys |app_view_| as it is a child of |view_|.
   view_->Destroy();
 }
 
