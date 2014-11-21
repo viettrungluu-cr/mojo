@@ -18,6 +18,13 @@ source_set("chromium") {
   public_deps = [
     ":chromium_impl",
   ]
+
+  deps = [
+    "//mojo/public/c/environment",
+    "//mojo/public/cpp/bindings:callback",
+    "//mojo/public/cpp/environment",
+    "//mojo/public/cpp/system",
+  ]
 }
 
 # GYP version: mojo_base.gyp:mojo_environment_chromium_impl
@@ -42,5 +49,6 @@ component("chromium_impl") {
     "//base",
     "//base/third_party/dynamic_annotations",
     "//mojo/common",
+    "//mojo/public/c/environment",
   ]
 }
