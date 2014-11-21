@@ -20,7 +20,7 @@ namespace examples {
 
 class DemoTask;
 
-typedef typename base::Callback<void(DemoTask*, const std::vector<int32_t>&)>
+typedef base::Callback<void(DemoTask*, const std::vector<int32_t>&)>
     DemoTaskFinishedCallback;
 
 // A thread that connects to the IndirectIntegerService, gets a connection
