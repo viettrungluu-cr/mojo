@@ -58,8 +58,9 @@ class ApplicationThread : public base::PlatformThread::Delegate {
 class ContentHandlerImpl : public InterfaceImpl<ContentHandler> {
  public:
   explicit ContentHandlerImpl(ContentHandlerFactory::Delegate* delegate)
-      : delegate_(delegate) {}
+      : in_destructor_(false), delegate_(delegate) {}
   ~ContentHandlerImpl() {
+    in_destructor_ = true;
     for (auto thread : active_threads_) {
       base::PlatformThread::Join(thread.second);
       delete thread.first;
@@ -83,6 +84,10 @@ class ContentHandlerImpl : public InterfaceImpl<ContentHandler> {
   }
 
   void OnThreadEnd(ApplicationThread* thread) {
+    if (in_destructor_) {
+      // The destructor is already taking care of cleaning up this thread.
+      return;
+    }
     DCHECK(active_threads_.find(thread) != active_threads_.end());
     base::PlatformThreadHandle handle = active_threads_[thread];
     active_threads_.erase(thread);
@@ -93,6 +98,7 @@ class ContentHandlerImpl : public InterfaceImpl<ContentHandler> {
     }
   }
 
+  bool in_destructor_;
   ContentHandlerFactory::Delegate* delegate_;
   std::map<ApplicationThread*, base::PlatformThreadHandle> active_threads_;
 
