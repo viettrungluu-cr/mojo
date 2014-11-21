@@ -253,31 +253,26 @@ int32_t CommandBufferClientImpl::CreateGpuMemoryBufferImage(
   return -1;
 }
 
-uint32 CommandBufferClientImpl::InsertSyncPoint() {
-  command_buffer_->InsertSyncPoint();
+uint32_t CommandBufferClientImpl::InsertSyncPoint() {
+  command_buffer_->InsertSyncPoint(true);
   return sync_point_client_impl_->WaitForInsertSyncPoint();
 }
 
-uint32 CommandBufferClientImpl::InsertFutureSyncPoint() {
-  // TODO(abarth): I'm not sure this implementation is correct. Don't we need
-  // to wait until RetireSyncPoint is called to retire the sync point? Otherwise
-  // it seems like we won't know whether the commands inserted between now and
-  // RetireSyncPoint will have bee processed by the server.
-  command_buffer_->InsertSyncPoint();
+uint32_t CommandBufferClientImpl::InsertFutureSyncPoint() {
+  command_buffer_->InsertSyncPoint(false);
   return sync_point_client_impl_->WaitForInsertSyncPoint();
 }
 
-void CommandBufferClientImpl::RetireSyncPoint(uint32 sync_point) {
-  // TODO(piman)
-  NOTIMPLEMENTED();
+void CommandBufferClientImpl::RetireSyncPoint(uint32_t sync_point) {
+  command_buffer_->RetireSyncPoint(sync_point);
 }
 
-void CommandBufferClientImpl::SignalSyncPoint(uint32 sync_point,
+void CommandBufferClientImpl::SignalSyncPoint(uint32_t sync_point,
                                               const base::Closure& callback) {
   // TODO(piman)
 }
 
-void CommandBufferClientImpl::SignalQuery(uint32 query,
+void CommandBufferClientImpl::SignalQuery(uint32_t query,
                                           const base::Closure& callback) {
   // TODO(piman)
   NOTIMPLEMENTED();
@@ -288,7 +283,7 @@ void CommandBufferClientImpl::SetSurfaceVisible(bool visible) {
   NOTIMPLEMENTED();
 }
 
-uint32 CommandBufferClientImpl::CreateStreamTexture(uint32 texture_id) {
+uint32_t CommandBufferClientImpl::CreateStreamTexture(uint32_t texture_id) {
   // TODO(piman)
   NOTIMPLEMENTED();
   return 0;

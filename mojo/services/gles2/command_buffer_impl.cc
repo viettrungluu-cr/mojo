@@ -18,11 +18,6 @@ void DestroyDriver(scoped_ptr<CommandBufferDriver> driver) {
 void RunCallback(const Callback<void()>& callback) {
   callback.Run();
 }
-
-void RetireSyncPoint(scoped_refptr<gpu::SyncPointManager> sync_point_manager,
-                     uint32_t sync_point) {
-  sync_point_manager->RetireSyncPoint(sync_point);
-}
 }
 
 CommandBufferImpl::CommandBufferImpl(
@@ -96,11 +91,20 @@ void CommandBufferImpl::DestroyTransferBuffer(int32_t id) {
                             base::Unretained(driver_.get()), id));
 }
 
-void CommandBufferImpl::InsertSyncPoint() {
+void CommandBufferImpl::InsertSyncPoint(bool retire) {
   uint32_t sync_point = sync_point_manager_->GenerateSyncPoint();
   sync_point_client_->DidInsertSyncPoint(sync_point);
+  if (retire) {
+    driver_task_runner_->PostTask(
+        FROM_HERE, base::Bind(&gpu::SyncPointManager::RetireSyncPoint,
+                              sync_point_manager_, sync_point));
+  }
+}
+
+void CommandBufferImpl::RetireSyncPoint(uint32_t sync_point) {
   driver_task_runner_->PostTask(
-      FROM_HERE, base::Bind(&RetireSyncPoint, sync_point_manager_, sync_point));
+      FROM_HERE, base::Bind(&gpu::SyncPointManager::RetireSyncPoint,
+                            sync_point_manager_, sync_point));
 }
 
 void CommandBufferImpl::Echo(const Callback<void()>& callback) {

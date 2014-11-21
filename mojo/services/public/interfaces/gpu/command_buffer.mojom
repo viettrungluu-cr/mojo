@@ -36,7 +36,12 @@ interface CommandBuffer {
   RegisterTransferBuffer(
       int32 id, handle<shared_buffer>? transfer_buffer, uint32 size);
   DestroyTransferBuffer(int32 id);
-  InsertSyncPoint();  // Sync point returned via DidInsertSyncPoint
+
+  // InsertSyncPoint returns the sync point returned via DidInsertSyncPoint.
+  // If |retire| is true, the sync point is retired on insertion. Otherwise,
+  // explicitly call RetireSyncPoint to retire it.
+  InsertSyncPoint(bool retire);
+  RetireSyncPoint(uint32 sync_point);
   Echo() => ();
 
   // TODO(piman): sync points

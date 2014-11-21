@@ -41,7 +41,8 @@ class CommandBufferImpl : public CommandBuffer {
                               ScopedSharedBufferHandle transfer_buffer,
                               uint32_t size) override;
   void DestroyTransferBuffer(int32_t id) override;
-  void InsertSyncPoint() override;
+  void InsertSyncPoint(bool retire) override;
+  void RetireSyncPoint(uint32_t sync_point) override;
   void Echo(const Callback<void()>& callback) override;
 
  private:
