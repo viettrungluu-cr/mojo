@@ -43,6 +43,10 @@ GURL GetAppURLAndSetArgs(const std::string& app_url_and_args,
   if (argv.empty())
     return GURL::EmptyGURL();
   GURL app_url(argv[0]);
+  if (!app_url.is_valid()) {
+    LOG(ERROR) << "Error: invalid URL: " << argv[0];
+    return app_url;
+  }
   if (argv.size() > 1)
     context->application_manager()->SetArgsForURL(argv, app_url);
   return app_url;
@@ -57,6 +61,9 @@ void RunApps(mojo::shell::Context* context) {
 #else
     arg2 = arg;
 #endif
+    GURL url = GetAppURLAndSetArgs(arg2, context);
+    if (!url.is_valid())
+      return;
     context->Run(GetAppURLAndSetArgs(arg2, context));
   }
 }

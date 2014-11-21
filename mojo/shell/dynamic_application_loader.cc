@@ -365,6 +365,8 @@ DynamicApplicationLoader::~DynamicApplicationLoader() {
 void DynamicApplicationLoader::RegisterContentHandler(
     const std::string& mime_type,
     const GURL& content_handler_url) {
+  DCHECK(content_handler_url.is_valid())
+    << "Content handler URL is invalid for mime type " << mime_type;
   mime_type_to_url_[mime_type] = content_handler_url;
 }
 

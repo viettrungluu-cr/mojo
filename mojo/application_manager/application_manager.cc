@@ -97,8 +97,12 @@ class ApplicationManager::ShellImpl : public Shell, public ErrorHandler {
       InterfaceRequest<ServiceProvider> in_service_provider) override {
     ServiceProviderPtr out_service_provider;
     out_service_provider.Bind(in_service_provider.PassMessagePipe());
-    manager_->ConnectToApplication(
-        app_url.To<GURL>(), url_, out_service_provider.Pass());
+    GURL app_gurl(app_url);
+    if (!app_gurl.is_valid()) {
+      LOG(ERROR) << "Error: invalid URL: " << app_url;
+      return;
+    }
+    manager_->ConnectToApplication(app_gurl, url_, out_service_provider.Pass());
   }
 
   // ErrorHandler implementation:
@@ -179,6 +183,7 @@ void ApplicationManager::ConnectToApplication(
     const GURL& requested_url,
     const GURL& requestor_url,
     ServiceProviderPtr service_provider) {
+  DCHECK(requested_url.is_valid());
   ApplicationLoader* loader = GetLoaderForURL(requested_url,
                                               DONT_INCLUDE_DEFAULT_LOADER);
   if (loader) {
