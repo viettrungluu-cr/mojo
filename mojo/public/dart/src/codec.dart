@@ -565,7 +565,7 @@ class MessageReader {
 
 abstract class MojoType<T> {
   static const int encodedSize = 0;
-  static T decode(MojoDecoder decoder) { return null }
+  static T decode(MojoDecoder decoder) { return null; }
   static void encode(MojoEncoder encoder, T val) {}
 }
 
@@ -705,7 +705,7 @@ class PointerTo {
 
 
 class NullablePointerTo extends PointerTo {
-  static const int encodedSize = PointerTo.encodedSize;
+  NullablePointerTo(Object val) : super(val);
 }
 
 
@@ -726,7 +726,7 @@ class ArrayOf {
 
 
 class NullableArrayOf extends ArrayOf {
-  static const int encodedSize = ArrayOf.encodedSize;
+  NullableArrayOf(Object val, [int length = 0]) : super(val, length);
 }
 
 

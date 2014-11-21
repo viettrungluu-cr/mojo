@@ -12,7 +12,9 @@ group("dart") {
 
 copy("testing") {
   sources = [
+    "test/bindings_generation_test.dart",
     "test/codec_test.dart",
+    "test/compile_all_interfaces_test.dart",
     "test/core_test.dart",
     "test/handle_watcher_test.dart",
     "test/handle_finalizer_test.dart",

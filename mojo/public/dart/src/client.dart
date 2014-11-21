@@ -9,6 +9,7 @@ abstract class Client {
   core.MojoHandle _handle;
   List _sendQueue;
   List _completerQueue;
+  bool _isOpen = false;
 
   void handleResponse(MessageReader reader);
 
@@ -63,19 +64,22 @@ abstract class Client {
         _handle.close();
       }
     });
+    _isOpen = true;
   }
 
   void close() {
+    assert(isOpen);
     _handle.close();
+    _isOpen = false;
   }
 
   void enqueueMessage(Type t, int name, Object msg) {
     var builder = new MessageBuilder(name, align(getEncodedSize(t)));
     builder.encodeStruct(t, msg);
     var message = builder.finish();
-    sendQueue.add([message, null]);
-    if ((sendQueue.length > 0) && !handle.writeEnabled()) {
-      handle.enableWriteEvents();
+    _sendQueue.add([message, null]);
+    if ((_sendQueue.length > 0) && !_handle.writeEnabled()) {
+      _handle.enableWriteEvents();
     }
   }
 
@@ -86,18 +90,14 @@ abstract class Client {
     var message = builder.finish();
 
     var completer = new Completer();
-    sendQueue.add([message, completer]);
-    if ((sendQueue.length > 0) && !handle.writeEnabled()) {
-      handle.enableWriteEvents();
+    _sendQueue.add([message, completer]);
+    if ((_sendQueue.length > 0) && !_handle.writeEnabled()) {
+      _handle.enableWriteEvents();
     }
     return completer.future;
   }
 
-  // We need getters for these because they are abstract in the "Calls"
-  // mixin classes.
-  List get sendQueue => _sendQueue;
-  core.MojoHandle get handle => _handle;
-
   // Need a getter for this for access in subclasses.
   List get completerQueue => _completerQueue;
+  bool get isOpen => _isOpen;
 }
