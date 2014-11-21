@@ -46,6 +46,10 @@ def IncludeCompareKey(line):
       line = line[len(prefix):]
       break
 
+  # In sky, config.h must always be first to defined HAVE, USE, etc.
+  if line.startswith('"sky/engine/config.h"'):
+    return '0'
+
   # The win32 api has all sorts of implicit include order dependencies :-/
   # Give a few headers special sort keys that make sure they appear before all
   # other headers.
