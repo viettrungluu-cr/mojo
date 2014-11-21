@@ -449,14 +449,10 @@ def _CheckGNCheck(input_api, output_api):
       '//mojo/public/*',
       '//mojo/tools/*',
     ]
-    # TODO(eseidel): //sky is temporarily broken during the process of
-    # making all of our headers aboslute.  crbug.com/435361
-    # Now that they're absolute gn understands our includes and our previous
-    # passing of gn check was a total lie.
-    # if input_api.platform != 'win32':
-    #   KNOWN_PASSING += [
-    #     '//sky/*',
-    #   ]
+    if input_api.platform != 'win32':
+      KNOWN_PASSING += [
+        '//sky/*',
+      ]
     for target_filter in KNOWN_PASSING:
       try:
         input_api.subprocess.check_output(['gn', 'check', relative_out_dir,
