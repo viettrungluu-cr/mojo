@@ -448,6 +448,8 @@ def _CheckGNCheck(input_api, output_api):
       '//mojo/gpu/*',
       '//mojo/public/*',
       '//mojo/tools/*',
+      '//mojo/gles2/*',
+      '//mojo/services/gles2/*',
     ]
     if input_api.platform != 'win32':
       KNOWN_PASSING += [
