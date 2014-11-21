@@ -13,7 +13,6 @@ group("examples") {
     "//examples/echo",
     "//examples/ganesh_app",
     "//examples/http_handler",
-    "//examples/indirect_service",
     "//examples/png_viewer",
     "//examples/recursive_content_handler",
     "//examples/sample_app",
