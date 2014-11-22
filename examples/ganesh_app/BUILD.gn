@@ -30,6 +30,8 @@ mojo_native_application("ganesh_app") {
     "//mojo/public/cpp/system",
     "//mojo/public/cpp/utility",
     "//mojo/public/gles2:for_shared_library",
+    "//mojo/public/interfaces/application",
+    "//mojo/services/public/cpp/geometry",
     "//mojo/services/public/cpp/surfaces",
     "//mojo/services/public/cpp/view_manager",
     "//mojo/services/public/interfaces/geometry",

@@ -10,6 +10,7 @@ mojo_native_application("recursive_content_handler") {
   ]
 
   deps = [
+    "//base",
     "//mojo/application",
     "//mojo/application:content_handler",
     "//mojo/public/c/system:for_shared_library",

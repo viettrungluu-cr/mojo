@@ -21,6 +21,7 @@ mojo_native_application("embedded_app") {
     "//mojo/services/public/cpp/view_manager",
     "//mojo/services/public/interfaces/geometry",
     "//mojo/services/public/interfaces/navigation",
+    "//ui/events:events_base",
     "//ui/gfx/geometry",
     "//ui/gl",
     "//url",

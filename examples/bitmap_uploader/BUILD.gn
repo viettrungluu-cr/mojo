@@ -20,11 +20,13 @@ source_set("bitmap_uploader") {
     "//mojo/public/cpp/bindings:bindings",
     "//mojo/public/gles2:for_shared_library",
     "//mojo/public/interfaces/application",
+    "//mojo/services/public/cpp/geometry",
     "//mojo/services/public/cpp/surfaces",
     "//mojo/services/public/cpp/view_manager",
     "//mojo/services/public/interfaces/geometry",
     "//mojo/services/public/interfaces/input_events:input_events",
     "//mojo/services/public/interfaces/surfaces:surface_id",
     "//mojo/services/public/interfaces/view_manager",
+    "//ui/gfx/geometry",
   ]
 }

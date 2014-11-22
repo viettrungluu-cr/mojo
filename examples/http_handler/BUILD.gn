@@ -10,6 +10,7 @@ mojo_native_application("http_handler") {
   ]
 
   deps = [
+    "//base",
     "//mojo/application",
     "//mojo/public/c/system:for_shared_library",
     "//mojo/public/cpp/bindings",

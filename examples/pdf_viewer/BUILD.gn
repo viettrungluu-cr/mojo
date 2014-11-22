@@ -18,6 +18,7 @@ mojo_native_application("pdf_viewer") {
     "//mojo/public/cpp/utility",
     "//mojo/services/public/cpp/view_manager",
     "//mojo/services/public/interfaces/content_handler",
+    "//mojo/services/public/interfaces/input_events",
     "//mojo/services/public/interfaces/network",
     "//third_party/pdfium",
   ]

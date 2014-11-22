@@ -28,7 +28,9 @@ mojo_native_application("service") {
     ":bindings",
     "//mojo/public/c/system:for_shared_library",
     "//mojo/public/cpp/application:standalone",
-    "//mojo/public/cpp/utility"
+    "//mojo/public/cpp/bindings",
+    "//mojo/public/cpp/system",
+    "//mojo/public/cpp/utility",
   ]
 }
 
@@ -50,6 +52,9 @@ mojo_native_application("apptests") {
     "//mojo/public/c/system:for_shared_library",
     "//mojo/public/cpp/application:standalone",
     "//mojo/public/cpp/application:test_support_standalone",
+    "//mojo/public/cpp/bindings:callback",
+    "//mojo/public/cpp/environment",
+    "//mojo/public/cpp/system",
    ]
 
    datadeps = [ ":service", ]
