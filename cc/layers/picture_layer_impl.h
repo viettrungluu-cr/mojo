@@ -144,6 +144,8 @@ class CC_EXPORT PictureLayerImpl
 
   void RunMicroBenchmark(MicroBenchmarkImpl* benchmark) override;
 
+  bool CanHaveTilings() const;
+
   // Functions used by tile manager.
   PictureLayerImpl* GetPendingOrActiveTwinLayer() const;
   bool IsOnActiveOrPendingTree() const;
@@ -158,7 +160,6 @@ class CC_EXPORT PictureLayerImpl
 
   PictureLayerImpl(LayerTreeImpl* tree_impl, int id);
   PictureLayerTiling* AddTiling(float contents_scale);
-  void RemoveTiling(float contents_scale);
   void RemoveAllTilings();
   void SyncFromActiveLayer(const PictureLayerImpl* other);
   void AddTilingsForRasterScale();
@@ -179,7 +180,6 @@ class CC_EXPORT PictureLayerImpl
   }
   void DoPostCommitInitialization();
 
-  bool CanHaveTilings() const;
   bool CanHaveTilingWithScale(float contents_scale) const;
   void SanityCheckTilingState() const;
   // Checks if all tiles required for a certain action (e.g. activation) are

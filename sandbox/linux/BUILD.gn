@@ -68,6 +68,7 @@ source_set("sandbox_linux_test_utils") {
 test("sandbox_linux_unittests") {
   sources = [
     "services/scoped_process_unittest.cc",
+    "services/syscall_wrappers_unittest.cc",
     "services/thread_helpers_unittests.cc",
     "services/yama_unittests.cc",
     "syscall_broker/broker_process_unittest.cc",
@@ -75,6 +76,7 @@ test("sandbox_linux_unittests") {
     "tests/scoped_temporary_file.cc",
     "tests/scoped_temporary_file.h",
     "tests/scoped_temporary_file_unittest.cc",
+    "tests/test_utils_unittest.cc",
     "tests/unit_tests_unittest.cc",
   ]
 
@@ -150,15 +152,12 @@ component("seccomp_bpf") {
     "bpf_dsl/policy_compiler.cc",
     "bpf_dsl/policy_compiler.h",
     "bpf_dsl/trap_registry.h",
-    "seccomp-bpf/basicblock.cc",
-    "seccomp-bpf/basicblock.h",
     "seccomp-bpf/codegen.cc",
     "seccomp-bpf/codegen.h",
     "seccomp-bpf/die.cc",
     "seccomp-bpf/die.h",
     "seccomp-bpf/errorcode.cc",
     "seccomp-bpf/errorcode.h",
-    "seccomp-bpf/instruction.h",
     "seccomp-bpf/linux_seccomp.h",
     "seccomp-bpf/sandbox_bpf.cc",
     "seccomp-bpf/sandbox_bpf.h",
@@ -225,6 +224,8 @@ component("sandbox_services") {
     "services/init_process_reaper.h",
     "services/scoped_process.cc",
     "services/scoped_process.h",
+    "services/syscall_wrappers.cc",
+    "services/syscall_wrappers.h",
     "services/thread_helpers.cc",
     "services/thread_helpers.h",
     "services/yama.h",

@@ -40,7 +40,8 @@ class TestRunner(instr_test_runner.TestRunner):
         test_apk_jar_path=None,
         test_runner=None,
         test_support_apk_path=None,
-        device_flags=None)
+        device_flags=None,
+        isolate_file_path=None)
     super(TestRunner, self).__init__(instrumentation_options, device,
                                      shard_index, test_pkg)
 
@@ -56,15 +57,11 @@ class TestRunner(instr_test_runner.TestRunner):
     self.test_pkg.Install(self.device)
 
   #override
-  def PushDataDeps(self):
-    pass
-
-  #override
   def _RunTest(self, test, timeout):
     self.device.ClearApplicationState(self._package)
     if self.flags:
       annotations = self.test_pkg.GetTestAnnotations(test)
-      if ('FirstRunExperience' == annotations.get('Feature', None)):
+      if 'FirstRunExperience' == annotations.get('Feature', None):
         self.flags.RemoveFlags(['--disable-fre'])
       else:
         self.flags.AddFlags(['--disable-fre'])

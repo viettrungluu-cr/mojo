@@ -63,6 +63,7 @@ class ResourceUpdateQueue;
 class SharedBitmapManager;
 class TopControlsManager;
 class UIResourceRequest;
+struct PendingPageScaleAnimation;
 struct RenderingStats;
 struct ScrollAndScaleSet;
 
@@ -179,11 +180,14 @@ class CC_EXPORT LayerTreeHost {
   void SetRootLayer(scoped_refptr<Layer> root_layer);
   Layer* root_layer() { return root_layer_.get(); }
   const Layer* root_layer() const { return root_layer_.get(); }
+  const Layer* overscroll_elasticity_layer() const {
+    return overscroll_elasticity_layer_.get();
+  }
   const Layer* page_scale_layer() const { return page_scale_layer_.get(); }
-  void RegisterViewportLayers(
-      scoped_refptr<Layer> page_scale_layer,
-      scoped_refptr<Layer> inner_viewport_scroll_layer,
-      scoped_refptr<Layer> outer_viewport_scroll_layer);
+  void RegisterViewportLayers(scoped_refptr<Layer> overscroll_elasticity_layer,
+                              scoped_refptr<Layer> page_scale_layer,
+                              scoped_refptr<Layer> inner_viewport_scroll_layer,
+                              scoped_refptr<Layer> outer_viewport_scroll_layer);
   Layer* inner_viewport_scroll_layer() const {
     return inner_viewport_scroll_layer_.get();
   }
@@ -314,6 +318,9 @@ class CC_EXPORT LayerTreeHost {
   void set_surface_id_namespace(uint32_t id_namespace);
   SurfaceSequence CreateSurfaceSequence();
 
+  void SetChildrenNeedBeginFrames(bool children_need_begin_frames) const;
+  void SendBeginFramesToChildren(const BeginFrameArgs& args) const;
+
  protected:
   LayerTreeHost(LayerTreeHostClient* client,
                 SharedBitmapManager* shared_bitmap_manager,
@@ -433,12 +440,6 @@ class CC_EXPORT LayerTreeHost {
 
   scoped_ptr<AnimationRegistrar> animation_registrar_;
 
-  struct PendingPageScaleAnimation {
-    gfx::Vector2d target_offset;
-    bool use_anchor;
-    float scale;
-    base::TimeDelta duration;
-  };
   scoped_ptr<PendingPageScaleAnimation> pending_page_scale_animation_;
 
   bool in_paint_layer_contents_;
@@ -460,6 +461,7 @@ class CC_EXPORT LayerTreeHost {
   int id_;
   bool next_commit_forces_redraw_;
 
+  scoped_refptr<Layer> overscroll_elasticity_layer_;
   scoped_refptr<Layer> page_scale_layer_;
   scoped_refptr<Layer> inner_viewport_scroll_layer_;
   scoped_refptr<Layer> outer_viewport_scroll_layer_;

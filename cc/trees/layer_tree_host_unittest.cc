@@ -1018,8 +1018,8 @@ class LayerTreeHostTestStartPageScaleAnimation : public LayerTreeHostTest {
     layer_tree_host()->root_layer()->AddChild(scroll_layer_);
     // This test requires the page_scale and inner viewport layers to be
     // identified.
-    layer_tree_host()->RegisterViewportLayers(
-        root_layer, scroll_layer_.get(), NULL);
+    layer_tree_host()->RegisterViewportLayers(NULL, root_layer,
+                                              scroll_layer_.get(), NULL);
     layer_tree_host()->SetPageScaleFactorAndLimits(1.f, 0.5f, 2.f);
   }
 
@@ -1308,7 +1308,7 @@ MULTI_THREAD_TEST_F(LayerTreeHostTestDeviceScaleFactorScalesViewportAndLayers);
 class LayerTreeHostTestDirectRendererAtomicCommit : public LayerTreeHostTest {
  public:
   void InitializeSettings(LayerTreeSettings* settings) override {
-    settings->texture_id_allocation_chunk_size = 1;
+    settings->renderer_settings.texture_id_allocation_chunk_size = 1;
     // Make sure partial texture updates are turned off.
     settings->max_partial_texture_updates = 0;
     // Linear fade animator prevents scrollbars from drawing immediately.
@@ -1485,7 +1485,7 @@ class LayerTreeHostTestAtomicCommitWithPartialUpdate
     : public LayerTreeHostTest {
  public:
   void InitializeSettings(LayerTreeSettings* settings) override {
-    settings->texture_id_allocation_chunk_size = 1;
+    settings->renderer_settings.texture_id_allocation_chunk_size = 1;
     // Allow one partial texture update.
     settings->max_partial_texture_updates = 1;
     // No partial updates when impl side painting is enabled.
@@ -2980,7 +2980,7 @@ class LayerTreeHostTestUIResource : public LayerTreeHostTest {
   LayerTreeHostTestUIResource() : num_ui_resources_(0) {}
 
   void InitializeSettings(LayerTreeSettings* settings) override {
-    settings->texture_id_allocation_chunk_size = 1;
+    settings->renderer_settings.texture_id_allocation_chunk_size = 1;
   }
 
   void BeginTest() override { PostSetNeedsCommitToMainThread(); }
@@ -5140,7 +5140,7 @@ class LayerTreeHostTestContinuousPainting : public LayerTreeHostTest {
             base::Unretained(this)));
     // Wait 50x longer than expected.
     double milliseconds_per_frame =
-        1000.0 / layer_tree_host()->settings().refresh_rate;
+        1000.0 / layer_tree_host()->settings().renderer_settings.refresh_rate;
     MainThreadTaskRunner()->PostDelayedTask(
         FROM_HERE,
         base::Bind(
@@ -5196,6 +5196,82 @@ class LayerTreeHostTestContinuousPainting : public LayerTreeHostTest {
 };
 
 MULTI_THREAD_TEST_F(LayerTreeHostTestContinuousPainting);
+
+class LayerTreeHostTestSendBeginFramesToChildren : public LayerTreeHostTest {
+ public:
+  LayerTreeHostTestSendBeginFramesToChildren()
+      : begin_frame_sent_to_children_(false) {
+  }
+
+  void InitializeSettings(LayerTreeSettings* settings) override {
+    settings->forward_begin_frames_to_children = true;
+  }
+
+  void BeginTest() override {
+    // Kick off the test with a commit.
+    PostSetNeedsCommitToMainThread();
+  }
+
+  void SendBeginFramesToChildren(const BeginFrameArgs& args) override {
+    begin_frame_sent_to_children_ = true;
+    EndTest();
+  }
+
+  void DidBeginMainFrame() override {
+    // Children requested BeginFrames.
+    layer_tree_host()->SetChildrenNeedBeginFrames(true);
+  }
+
+  void AfterTest() override {
+    // Ensure that BeginFrame message is sent to children during parent
+    // scheduler handles its BeginFrame.
+    EXPECT_TRUE(begin_frame_sent_to_children_);
+  }
+
+ private:
+  bool begin_frame_sent_to_children_;
+};
+
+SINGLE_THREAD_TEST_F(LayerTreeHostTestSendBeginFramesToChildren);
+
+class LayerTreeHostTestSendBeginFramesToChildrenWithExternalBFS
+    : public LayerTreeHostTest {
+ public:
+  LayerTreeHostTestSendBeginFramesToChildrenWithExternalBFS()
+      : begin_frame_sent_to_children_(false) {
+  }
+
+  void InitializeSettings(LayerTreeSettings* settings) override {
+    settings->use_external_begin_frame_source = true;
+    settings->forward_begin_frames_to_children = true;
+  }
+
+  void BeginTest() override {
+    // Kick off the test with a commit.
+    PostSetNeedsCommitToMainThread();
+  }
+
+  void SendBeginFramesToChildren(const BeginFrameArgs& args) override {
+    begin_frame_sent_to_children_ = true;
+    EndTest();
+  }
+
+  void DidBeginMainFrame() override {
+    // Children requested BeginFrames.
+    layer_tree_host()->SetChildrenNeedBeginFrames(true);
+  }
+
+  void AfterTest() override {
+    // Ensure that BeginFrame message is sent to children during parent
+    // scheduler handles its BeginFrame.
+    EXPECT_TRUE(begin_frame_sent_to_children_);
+  }
+
+ private:
+  bool begin_frame_sent_to_children_;
+};
+
+SINGLE_THREAD_TEST_F(LayerTreeHostTestSendBeginFramesToChildrenWithExternalBFS);
 
 class LayerTreeHostTestActivateOnInvisible : public LayerTreeHostTest {
  public:
@@ -5412,7 +5488,7 @@ class LayerTreeHostTestCrispUpAfterPinchEnds : public LayerTreeHostTest {
     layer->disable_lcd_text();
     pinch->AddChild(layer);
 
-    layer_tree_host()->RegisterViewportLayers(root, pinch, pinch);
+    layer_tree_host()->RegisterViewportLayers(NULL, root, pinch, pinch);
     layer_tree_host()->SetPageScaleFactorAndLimits(1.f, 1.f, 4.f);
     layer_tree_host()->SetRootLayer(root);
     LayerTreeHostTest::SetupTree();
@@ -5622,7 +5698,7 @@ class LayerTreeHostTestContinuousDrawWhenCreatingVisibleTiles
     layer->disable_lcd_text();
     pinch->AddChild(layer);
 
-    layer_tree_host()->RegisterViewportLayers(root, pinch, pinch);
+    layer_tree_host()->RegisterViewportLayers(NULL, root, pinch, pinch);
     layer_tree_host()->SetPageScaleFactorAndLimits(1.f, 1.f, 4.f);
     layer_tree_host()->SetRootLayer(root);
     LayerTreeHostTest::SetupTree();

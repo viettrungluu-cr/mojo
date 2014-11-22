@@ -23,6 +23,7 @@
 #include "cc/debug/devtools_instrumentation.h"
 #include "cc/debug/rendering_stats_instrumentation.h"
 #include "cc/input/layer_selection_bound.h"
+#include "cc/input/page_scale_animation.h"
 #include "cc/input/top_controls_manager.h"
 #include "cc/layers/heads_up_display_layer.h"
 #include "cc/layers/heads_up_display_layer_impl.h"
@@ -197,7 +198,7 @@ LayerTreeHost::~LayerTreeHost() {
   }
 
   // We must clear any pointers into the layer tree prior to destroying it.
-  RegisterViewportLayers(NULL, NULL, NULL);
+  RegisterViewportLayers(NULL, NULL, NULL, NULL);
 
   if (root_layer_.get()) {
     // The layer tree must be destroyed before the layer tree host. We've
@@ -347,11 +348,12 @@ void LayerTreeHost::FinishCommitOnImplThread(LayerTreeHostImpl* host_impl) {
   sync_tree->set_has_transparent_background(has_transparent_background_);
 
   if (page_scale_layer_.get() && inner_viewport_scroll_layer_.get()) {
-    sync_tree->SetViewportLayersFromIds(page_scale_layer_->id(),
-                                        inner_viewport_scroll_layer_->id(),
-                                        outer_viewport_scroll_layer_.get()
-                                            ? outer_viewport_scroll_layer_->id()
-                                            : Layer::INVALID_ID);
+    sync_tree->SetViewportLayersFromIds(
+        overscroll_elasticity_layer_.get() ? overscroll_elasticity_layer_->id()
+                                           : Layer::INVALID_ID,
+        page_scale_layer_->id(), inner_viewport_scroll_layer_->id(),
+        outer_viewport_scroll_layer_.get() ? outer_viewport_scroll_layer_->id()
+                                           : Layer::INVALID_ID);
   } else {
     sync_tree->ClearViewportLayers();
   }
@@ -381,12 +383,8 @@ void LayerTreeHost::FinishCommitOnImplThread(LayerTreeHostImpl* host_impl) {
   host_impl->SetDeviceScaleFactor(device_scale_factor_);
   host_impl->SetDebugState(debug_state_);
   if (pending_page_scale_animation_) {
-    sync_tree->SetPageScaleAnimation(
-        pending_page_scale_animation_->target_offset,
-        pending_page_scale_animation_->use_anchor,
-        pending_page_scale_animation_->scale,
-        pending_page_scale_animation_->duration);
-    pending_page_scale_animation_ = nullptr;
+    sync_tree->SetPendingPageScaleAnimation(
+        pending_page_scale_animation_.Pass());
   }
 
   if (!ui_resource_request_queue_.empty()) {
@@ -724,11 +722,12 @@ void LayerTreeHost::StartPageScaleAnimation(const gfx::Vector2d& target_offset,
                                             bool use_anchor,
                                             float scale,
                                             base::TimeDelta duration) {
-  pending_page_scale_animation_.reset(new PendingPageScaleAnimation);
-  pending_page_scale_animation_->target_offset = target_offset;
-  pending_page_scale_animation_->use_anchor = use_anchor;
-  pending_page_scale_animation_->scale = scale;
-  pending_page_scale_animation_->duration = duration;
+  pending_page_scale_animation_.reset(
+      new PendingPageScaleAnimation(
+          target_offset,
+          use_anchor,
+          scale,
+          duration));
 
   SetNeedsCommit();
 }
@@ -1288,9 +1287,11 @@ gfx::Size LayerTreeHost::GetUIResourceSize(UIResourceId uid) const {
 }
 
 void LayerTreeHost::RegisterViewportLayers(
+    scoped_refptr<Layer> overscroll_elasticity_layer,
     scoped_refptr<Layer> page_scale_layer,
     scoped_refptr<Layer> inner_viewport_scroll_layer,
     scoped_refptr<Layer> outer_viewport_scroll_layer) {
+  overscroll_elasticity_layer_ = overscroll_elasticity_layer;
   page_scale_layer_ = page_scale_layer;
   inner_viewport_scroll_layer_ = inner_viewport_scroll_layer;
   outer_viewport_scroll_layer_ = outer_viewport_scroll_layer;
@@ -1350,6 +1351,16 @@ void LayerTreeHost::set_surface_id_namespace(uint32_t id_namespace) {
 
 SurfaceSequence LayerTreeHost::CreateSurfaceSequence() {
   return SurfaceSequence(surface_id_namespace_, next_surface_sequence_++);
+}
+
+void LayerTreeHost::SetChildrenNeedBeginFrames(
+    bool children_need_begin_frames) const {
+  proxy_->SetChildrenNeedBeginFrames(children_need_begin_frames);
+}
+
+void LayerTreeHost::SendBeginFramesToChildren(
+    const BeginFrameArgs& args) const {
+  client_->SendBeginFramesToChildren(args);
 }
 
 }  // namespace cc

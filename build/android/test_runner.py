@@ -91,6 +91,9 @@ def AddCommonOptions(option_parser):
   group.add_option('-e', '--environment', default='local',
                    help=('Test environment to run in. Must be one of: %s' %
                          ', '.join(constants.VALID_ENVIRONMENTS)))
+  group.add_option('--adb-path',
+                   help=('Specify the absolute path of the adb binary that '
+                         'should be used.'))
   option_parser.add_option_group(group)
 
 
@@ -102,6 +105,12 @@ def ProcessCommonOptions(options, error_func):
     constants.SetBuildDirectory(options.build_directory)
   if options.output_directory:
     constants.SetOutputDirectort(options.output_directory)
+  if options.adb_path:
+    constants.SetAdbPath(options.adb_path)
+  # Some things such as Forwarder require ADB to be in the environment path.
+  adb_dir = os.path.dirname(constants.GetAdbPath())
+  if adb_dir and adb_dir not in os.environ['PATH'].split(os.pathsep):
+    os.environ['PATH'] = adb_dir + os.pathsep + os.environ['PATH']
   if options.environment not in constants.VALID_ENVIRONMENTS:
     error_func('--environment must be one of: %s' %
                ', '.join(constants.VALID_ENVIRONMENTS))
@@ -272,6 +281,11 @@ def AddInstrumentationTestOptions(option_parser):
   option_parser.add_option('--device-flags', dest='device_flags', default='',
                            help='The relative filepath to a file containing '
                                 'command-line flags to set on the device')
+  option_parser.add_option('--isolate_file_path',
+                           '--isolate-file-path',
+                           dest='isolate_file_path',
+                           help='.isolate file path to override the default '
+                                'path')
 
 
 def ProcessInstrumentationOptions(options, error_func):
@@ -334,7 +348,8 @@ def ProcessInstrumentationOptions(options, error_func):
       options.test_apk_jar_path,
       options.test_runner,
       options.test_support_apk_path,
-      options.device_flags
+      options.device_flags,
+      options.isolate_file_path
       )
 
 
@@ -657,7 +672,8 @@ def _RunInstrumentationTests(options, error_func, devices):
   exit_code = 0
 
   if options.run_java_tests:
-    runner_factory, tests = instrumentation_setup.Setup(instrumentation_options)
+    runner_factory, tests = instrumentation_setup.Setup(
+        instrumentation_options, devices)
 
     test_results, exit_code = test_dispatcher.RunTests(
         tests, runner_factory, devices, shard=True, test_timeout=None,

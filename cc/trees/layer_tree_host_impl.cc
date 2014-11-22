@@ -414,6 +414,48 @@ void LayerTreeHostImpl::ManageTiles() {
   client_->DidManageTiles();
 }
 
+void LayerTreeHostImpl::StartPageScaleAnimation(
+    const gfx::Vector2d& target_offset,
+    bool anchor_point,
+    float page_scale,
+    base::TimeDelta duration) {
+  if (!InnerViewportScrollLayer())
+    return;
+
+  gfx::ScrollOffset scroll_total = active_tree_->TotalScrollOffset();
+  gfx::SizeF scaled_scrollable_size = active_tree_->ScrollableSize();
+  gfx::SizeF viewport_size =
+      active_tree_->InnerViewportContainerLayer()->bounds();
+
+  // Easing constants experimentally determined.
+  scoped_ptr<TimingFunction> timing_function =
+      CubicBezierTimingFunction::Create(.8, 0, .3, .9);
+
+  // TODO(miletus) : Pass in ScrollOffset.
+  page_scale_animation_ =
+      PageScaleAnimation::Create(ScrollOffsetToVector2dF(scroll_total),
+                                 active_tree_->total_page_scale_factor(),
+                                 viewport_size,
+                                 scaled_scrollable_size,
+                                 timing_function.Pass());
+
+  if (anchor_point) {
+    gfx::Vector2dF anchor(target_offset);
+    page_scale_animation_->ZoomWithAnchor(anchor,
+                                          page_scale,
+                                          duration.InSecondsF());
+  } else {
+    gfx::Vector2dF scaled_target_offset = target_offset;
+    page_scale_animation_->ZoomTo(scaled_target_offset,
+                                  page_scale,
+                                  duration.InSecondsF());
+  }
+
+  SetNeedsAnimate();
+  client_->SetNeedsCommitOnImplThread();
+  client_->RenewTreePriority();
+}
+
 bool LayerTreeHostImpl::IsCurrentlyScrollingLayerAt(
     const gfx::Point& viewport_point,
     InputHandler::ScrollInputType type) {
@@ -1514,7 +1556,8 @@ void LayerTreeHostImpl::DrawLayers(FrameData* frame,
         IsActivelyScrolling() || needs_animate_layers();
 
     scoped_ptr<SoftwareRenderer> temp_software_renderer =
-        SoftwareRenderer::Create(this, &settings_, output_surface_.get(), NULL);
+        SoftwareRenderer::Create(this, &settings_.renderer_settings,
+                                 output_surface_.get(), NULL);
     temp_software_renderer->DrawFrame(&frame->render_passes,
                                       device_scale_factor_,
                                       DeviceViewport(),
@@ -1807,13 +1850,14 @@ void LayerTreeHostImpl::ActivateSyncTree() {
         stats.draw_duration.GetLastTimeDelta());
   }
 
-  scoped_ptr<PageScaleAnimation> page_scale_animation =
-      active_tree_->TakePageScaleAnimation();
-  if (page_scale_animation) {
-    page_scale_animation_ = page_scale_animation.Pass();
-    SetNeedsAnimate();
-    client_->SetNeedsCommitOnImplThread();
-    client_->RenewTreePriority();
+  scoped_ptr<PendingPageScaleAnimation> pending_page_scale_animation =
+      active_tree_->TakePendingPageScaleAnimation();
+  if (pending_page_scale_animation) {
+    StartPageScaleAnimation(
+        pending_page_scale_animation->target_offset,
+        pending_page_scale_animation->use_anchor,
+        pending_page_scale_animation->scale,
+        pending_page_scale_animation->duration);
   }
 }
 
@@ -1896,18 +1940,18 @@ void LayerTreeHostImpl::CreateAndSetRenderer() {
   DCHECK(resource_provider_);
 
   if (output_surface_->capabilities().delegated_rendering) {
-    renderer_ = DelegatingRenderer::Create(
-        this, &settings_, output_surface_.get(), resource_provider_.get());
+    renderer_ = DelegatingRenderer::Create(this, &settings_.renderer_settings,
+                                           output_surface_.get(),
+                                           resource_provider_.get());
   } else if (output_surface_->context_provider()) {
-    renderer_ = GLRenderer::Create(this,
-                                   &settings_,
-                                   output_surface_.get(),
-                                   resource_provider_.get(),
-                                   texture_mailbox_deleter_.get(),
-                                   settings_.highp_threshold_min);
+    renderer_ = GLRenderer::Create(
+        this, &settings_.renderer_settings, output_surface_.get(),
+        resource_provider_.get(), texture_mailbox_deleter_.get(),
+        settings_.renderer_settings.highp_threshold_min);
   } else if (output_surface_->software_device()) {
-    renderer_ = SoftwareRenderer::Create(
-        this, &settings_, output_surface_.get(), resource_provider_.get());
+    renderer_ = SoftwareRenderer::Create(this, &settings_.renderer_settings,
+                                         output_surface_.get(),
+                                         resource_provider_.get());
   }
   DCHECK(renderer_);
 
@@ -2026,12 +2070,11 @@ void LayerTreeHostImpl::CreateResourceAndRasterWorkerPool(
         resource_provider_->memory_efficient_texture_format());
 
     *raster_worker_pool = PixelBufferRasterWorkerPool::Create(
-        task_runner,
-        RasterWorkerPool::GetTaskGraphRunner(),
-        context_provider,
+        task_runner, RasterWorkerPool::GetTaskGraphRunner(), context_provider,
         resource_provider_.get(),
-        GetMaxTransferBufferUsageBytes(context_provider->ContextCapabilities(),
-                                       settings_.refresh_rate));
+        GetMaxTransferBufferUsageBytes(
+            context_provider->ContextCapabilities(),
+            settings_.renderer_settings.refresh_rate));
   }
 }
 
@@ -2058,9 +2101,7 @@ bool LayerTreeHostImpl::CanUseZeroCopyRasterizer() const {
 }
 
 bool LayerTreeHostImpl::CanUseOneCopyRasterizer() const {
-  // Sync query support is required by one-copy rasterizer.
-  return GetRendererCapabilities().using_image &&
-         resource_provider_->use_sync_query();
+  return GetRendererCapabilities().using_image;
 }
 
 void LayerTreeHostImpl::EnforceZeroBudget(bool zero_budget) {
@@ -2086,14 +2127,12 @@ bool LayerTreeHostImpl::InitializeRenderer(
     return false;
 
   output_surface_ = output_surface.Pass();
-  resource_provider_ =
-      ResourceProvider::Create(output_surface_.get(),
-                               shared_bitmap_manager_,
-                               gpu_memory_buffer_manager_,
-                               proxy_->blocking_main_thread_task_runner(),
-                               settings_.highp_threshold_min,
-                               settings_.use_rgba_4444_textures,
-                               settings_.texture_id_allocation_chunk_size);
+  resource_provider_ = ResourceProvider::Create(
+      output_surface_.get(), shared_bitmap_manager_, gpu_memory_buffer_manager_,
+      proxy_->blocking_main_thread_task_runner(),
+      settings_.renderer_settings.highp_threshold_min,
+      settings_.renderer_settings.use_rgba_4444_textures,
+      settings_.renderer_settings.texture_id_allocation_chunk_size);
 
   if (output_surface_->capabilities().deferred_gl_initialization)
     EnforceZeroBudget(true);
@@ -2105,8 +2144,9 @@ bool LayerTreeHostImpl::InitializeRenderer(
 
   // Initialize vsync parameters to sane values.
   const base::TimeDelta display_refresh_interval =
-      base::TimeDelta::FromMicroseconds(base::Time::kMicrosecondsPerSecond /
-                                        settings_.refresh_rate);
+      base::TimeDelta::FromMicroseconds(
+          base::Time::kMicrosecondsPerSecond /
+          settings_.renderer_settings.refresh_rate);
   CommitVSyncParameters(base::TimeTicks(), display_refresh_interval);
 
   // TODO(brianderson): Don't use a hard-coded parent draw time.
@@ -2633,40 +2673,49 @@ InputHandlerScrollResult LayerTreeHostImpl::ScrollBy(
       }
     }
 
+    // Scrolls should bubble perfectly between the outer and inner viewports.
+    bool allow_unrestricted_bubbling_for_current_layer =
+        layer_impl == OuterViewportScrollLayer();
+    bool allow_bubbling_for_current_layer =
+        allow_unrestricted_bubbling_for_current_layer || should_bubble_scrolls_;
+
     // If the layer wasn't able to move, try the next one in the hierarchy.
     bool did_move_layer_x = std::abs(applied_delta.x()) > kEpsilon;
     bool did_move_layer_y = std::abs(applied_delta.y()) > kEpsilon;
     did_scroll_x |= did_move_layer_x;
     did_scroll_y |= did_move_layer_y;
     if (!did_move_layer_x && !did_move_layer_y) {
-      // Scrolls should always bubble between the outer and inner viewports
-      if (should_bubble_scrolls_ || !did_lock_scrolling_layer_ ||
-          layer_impl == OuterViewportScrollLayer())
+      if (allow_bubbling_for_current_layer || !did_lock_scrolling_layer_)
         continue;
       else
         break;
     }
 
     did_lock_scrolling_layer_ = true;
-    if (!should_bubble_scrolls_) {
+    if (!allow_bubbling_for_current_layer) {
       active_tree_->SetCurrentlyScrollingLayer(layer_impl);
       break;
     }
 
-    // If the applied delta is within 45 degrees of the input delta, bail out to
-    // make it easier to scroll just one layer in one direction without
-    // affecting any of its parents.
-    float angle_threshold = 45;
-    if (MathUtil::SmallestAngleBetweenVectors(
-            applied_delta, pending_delta) < angle_threshold) {
-      pending_delta = gfx::Vector2dF();
-      break;
-    }
+    if (allow_unrestricted_bubbling_for_current_layer) {
+      pending_delta -= applied_delta;
+    } else {
+      // If the applied delta is within 45 degrees of the input delta, bail out
+      // to make it easier to scroll just one layer in one direction without
+      // affecting any of its parents.
+      float angle_threshold = 45;
+      if (MathUtil::SmallestAngleBetweenVectors(applied_delta, pending_delta) <
+          angle_threshold) {
+        pending_delta = gfx::Vector2dF();
+        break;
+      }
 
-    // Allow further movement only on an axis perpendicular to the direction in
-    // which the layer moved.
-    gfx::Vector2dF perpendicular_axis(-applied_delta.y(), applied_delta.x());
-    pending_delta = MathUtil::ProjectVector(pending_delta, perpendicular_axis);
+      // Allow further movement only on an axis perpendicular to the direction
+      // in which the layer moved.
+      gfx::Vector2dF perpendicular_axis(-applied_delta.y(), applied_delta.x());
+      pending_delta =
+          MathUtil::ProjectVector(pending_delta, perpendicular_axis);
+    }
 
     if (gfx::ToRoundedVector2d(pending_delta).IsZero())
       break;
@@ -3202,9 +3251,9 @@ BeginFrameArgs LayerTreeHostImpl::CurrentBeginFrameArgs() const {
   // task), fall back to physical time.  This should still be monotonic.
   if (current_begin_frame_args_.IsValid())
     return current_begin_frame_args_;
-  return BeginFrameArgs::Create(gfx::FrameTime::Now(),
-                                base::TimeTicks(),
-                                BeginFrameArgs::DefaultInterval());
+  return BeginFrameArgs::Create(gfx::FrameTime::Now(), base::TimeTicks(),
+                                BeginFrameArgs::DefaultInterval(),
+                                BeginFrameArgs::NORMAL);
 }
 
 scoped_refptr<base::debug::ConvertableToTraceFormat>

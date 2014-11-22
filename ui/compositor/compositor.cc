@@ -114,7 +114,7 @@ Compositor::Compositor(gfx::AcceleratedWidget widget,
   CommandLine* command_line = CommandLine::ForCurrentProcess();
 
   cc::LayerTreeSettings settings;
-  settings.refresh_rate =
+  settings.renderer_settings.refresh_rate =
       context_factory_->DoesCreateTestContexts()
       ? kTestRefreshRate
       : kDefaultRefreshRate;
@@ -122,7 +122,7 @@ Compositor::Compositor(gfx::AcceleratedWidget widget,
   settings.throttle_frame_production =
       !command_line->HasSwitch(switches::kDisableGpuVsync);
 #if !defined(OS_MACOSX)
-  settings.partial_swap_enabled =
+  settings.renderer_settings.partial_swap_enabled =
       !command_line->HasSwitch(cc::switches::kUIDisablePartialSwap);
 #endif
 #if defined(OS_CHROMEOS)
@@ -253,10 +253,9 @@ void Compositor::Draw() {
   if (!IsLocked()) {
     // TODO(nduca): Temporary while compositor calls
     // compositeImmediately() directly.
-    cc::BeginFrameArgs args =
-        cc::BeginFrameArgs::Create(gfx::FrameTime::Now(),
-                                   base::TimeTicks(),
-                                   cc::BeginFrameArgs::DefaultInterval());
+    cc::BeginFrameArgs args = cc::BeginFrameArgs::Create(
+        gfx::FrameTime::Now(), base::TimeTicks(),
+        cc::BeginFrameArgs::DefaultInterval(), cc::BeginFrameArgs::SYNCHRONOUS);
     BeginMainFrame(args);
     host_->Composite(args.frame_time);
   }

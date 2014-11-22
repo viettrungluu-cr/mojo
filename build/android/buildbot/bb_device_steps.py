@@ -81,8 +81,8 @@ INSTRUMENTATION_TESTS = dict((suite.name, suite) for suite in [
     ])
 
 VALID_TESTS = set(['chromedriver', 'chrome_proxy', 'gpu',
-                   'telemetry_perf_unittests', 'ui', 'unit', 'webkit',
-                   'webkit_layout', 'python_unittests'])
+                   'telemetry_unittests', 'telemetry_perf_unittests', 'ui',
+                   'unit', 'webkit', 'webkit_layout', 'python_unittests'])
 
 RunCmd = bb_utils.RunCmd
 
@@ -190,19 +190,23 @@ def RunChromeProxyTests(options):
   RunCmd(['tools/chrome_proxy/run_tests'] + args)
 
 
-def RunTelemetryPerfUnitTests(options):
-  """Runs the telemetry perf unit tests.
+def RunTelemetryTests(options, step_name, run_tests_path):
+  """Runs either telemetry_perf_unittests or telemetry_unittests.
 
   Args:
     options: options object.
+    step_name: either 'telemetry_unittests' or 'telemetry_perf_unittests'
+    run_tests_path: path to run_tests script (tools/perf/run_tests for
+                    perf_unittests and tools/telemetry/run_tests for
+                    telemetry_unittests)
   """
   InstallApk(options, INSTRUMENTATION_TESTS['ChromeShell'], False)
   args = ['--browser', 'android-chrome-shell']
   devices = android_commands.GetAttachedDevices()
   if devices:
     args = args + ['--device', devices[0]]
-  bb_annotations.PrintNamedStep('telemetry_perf_unittests')
-  RunCmd(['tools/perf/run_tests'] + args)
+  bb_annotations.PrintNamedStep(step_name)
+  RunCmd([run_tests_path] + args)
 
 
 def InstallApk(options, test, print_step=False):
@@ -472,6 +476,14 @@ def RunUnitTests(options):
   RunTestSuites(options, suites)
 
 
+def RunTelemetryUnitTests(options):
+  RunTelemetryTests(options, 'telemetry_unittests', 'tools/telemetry/run_tests')
+
+
+def RunTelemetryPerfUnitTests(options):
+  RunTelemetryTests(options, 'telemetry_perf_unittests', 'tools/perf/run_tests')
+
+
 def RunInstrumentationTests(options):
   for test in INSTRUMENTATION_TESTS.itervalues():
     RunInstrumentationSuite(options, test)
@@ -529,6 +541,7 @@ def GetTestStepCmds():
       ('chrome_proxy', RunChromeProxyTests),
       ('gpu', RunGPUTests),
       ('python_unittests', RunPythonUnitTests),
+      ('telemetry_unittests', RunTelemetryUnitTests),
       ('telemetry_perf_unittests', RunTelemetryPerfUnitTests),
       ('ui', RunInstrumentationTests),
       ('unit', RunUnitTests),
@@ -582,7 +595,7 @@ def LogcatDump(options):
   # Print logcat, kill logcat monitor
   bb_annotations.PrintNamedStep('logcat_dump')
   logcat_file = os.path.join(CHROME_OUT_DIR, options.target, 'full_log.txt')
-  RunCmd([SrcPath('build' , 'android', 'adb_logcat_printer.py'),
+  RunCmd([SrcPath('build', 'android', 'adb_logcat_printer.py'),
           '--output-path', logcat_file, LOGCAT_DIR])
   gs_path = MakeGSPath(options, 'chromium-android/logcat_dumps')
   RunCmd([bb_utils.GSUTIL_PATH, 'cp', '-z', 'txt', logcat_file,
@@ -693,9 +706,9 @@ def GetDeviceStepsOptParser():
       '--chrome-output-dir',
       help='Chrome output directory to be used while bisecting.')
 
-  parser.add_option('--disable-stack-tool',  action='store_true',
+  parser.add_option('--disable-stack-tool', action='store_true',
       help='Do not run stack tool.')
-  parser.add_option('--asan-symbolize',  action='store_true',
+  parser.add_option('--asan-symbolize', action='store_true',
       help='Run stack tool for ASAN')
   parser.add_option('--cleanup', action='store_true',
       help='Delete out/<target> directory at the end of the run.')

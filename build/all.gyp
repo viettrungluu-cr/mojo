@@ -42,13 +42,13 @@
             # NOTE: This list of targets is present because
             # mojo_base.gyp:mojo_base cannot be built on iOS, as
             # javascript-related targets cause v8 to be built.
-            '../mojo/edk/mojo_edk.gyp:mojo_public_bindings_unittests',
-            '../mojo/edk/mojo_edk.gyp:mojo_public_environment_unittests',
-            '../mojo/edk/mojo_edk.gyp:mojo_public_system_perftests',
-            '../mojo/edk/mojo_edk.gyp:mojo_public_system_unittests',
-            '../mojo/edk/mojo_edk.gyp:mojo_public_utility_unittests',
+            '../mojo/edk/mojo_edk_tests.gyp:mojo_public_bindings_unittests',
+            '../mojo/edk/mojo_edk_tests.gyp:mojo_public_environment_unittests',
+            '../mojo/edk/mojo_edk_tests.gyp:mojo_public_system_perftests',
+            '../mojo/edk/mojo_edk_tests.gyp:mojo_public_system_unittests',
+            '../mojo/edk/mojo_edk_tests.gyp:mojo_public_utility_unittests',
             '../mojo/edk/mojo_edk.gyp:mojo_system_impl',
-            '../mojo/edk/mojo_edk.gyp:mojo_system_unittests',
+            '../mojo/edk/mojo_edk_tests.gyp:mojo_system_unittests',
             '../mojo/mojo_base.gyp:mojo_common_lib',
             '../mojo/mojo_base.gyp:mojo_common_unittests',
             '../mojo/public/mojo_public.gyp:mojo_cpp_bindings',
@@ -405,6 +405,11 @@
             }],
           ],
         }],
+        ['chromeos==1', {
+          'dependencies': [
+            '../ui/chromeos/ui_chromeos.gyp:ui_chromeos_unittests',
+          ],
+        }],
         ['OS=="linux"', {
           'dependencies': [
             '../dbus/dbus.gyp:dbus_unittests',
@@ -738,6 +743,11 @@
                 '../skia/tools/clusterfuzz-data/fuzzers/filter_fuzzer/filter_fuzzer.gyp:filter_fuzzer',
               ],
             }], # internal_filter_fuzzer
+            ['clang==1', {
+              'dependencies': [
+                'sanitizers/sanitizers.gyp:llvm-symbolizer',
+              ],
+            }],
             ['OS=="win" and fastbuild==0 and target_arch=="ia32" and syzyasan==1', {
               'dependencies': [
                 '../chrome/chrome_syzygy.gyp:chrome_dll_syzygy',
@@ -856,6 +866,7 @@
             ['enable_webrtc==1 and "<(libpeer_target_type)"=="static_library"', {
               'dependencies': [
                 '../components/devtools_bridge.gyp:devtools_bridge_tests_apk',
+                '../components/devtools_bridge.gyp:libdevtools_bridge_browsertests',
               ],
             }],
           ],
@@ -871,6 +882,7 @@
             '../tools/android/android_tools.gyp:memconsumer',
             # Unit test bundles packaged as an apk.
             '../components/devtools_bridge.gyp:devtools_bridge_tests_apk',
+            '../components/devtools_bridge.gyp:libdevtools_bridge_browsertests',
             '../content/content_shell_and_tests.gyp:content_browsertests_apk',
           ],
         },  # target_name: android_builder_chromium_webrtc
@@ -1294,8 +1306,9 @@
             }],
             ['chromeos==1', {
               'dependencies': [
-                '../chromeos/chromeos.gyp:chromeos_unittests',
                 '../athena/main/athena_main.gyp:*',
+                '../chromeos/chromeos.gyp:chromeos_unittests',
+                '../ui/chromeos/ui_chromeos.gyp:ui_chromeos_unittests',
               ],
             }],
             ['use_ozone==1', {

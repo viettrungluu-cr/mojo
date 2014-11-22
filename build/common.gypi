@@ -41,7 +41,7 @@
 
             'conditions': [
               # Compute the architecture that we're building on.
-              ['OS=="win" or OS=="mac" or OS=="ios"', {
+              ['OS=="win" or OS=="ios"', {
                 'host_arch%': 'ia32',
               }, {
                 'host_arch%': '<!pymod_do_main(detect_host_arch)',
@@ -997,8 +997,8 @@
 
         # TODO(baixo): Enable v8_use_external_startup_data
         # http://crbug.com/421063
-        ['android_webview_build==0 and android_webview_telemetry_build==0 and chromecast==0', {
-          'v8_use_external_startup_data': 0,
+        ['android_webview_build==0 and android_webview_telemetry_build==0 and chromecast==0 and OS=="android"', {
+          'v8_use_external_startup_data': 1,
         }, {
           'v8_use_external_startup_data': 0,
         }],
@@ -2275,6 +2275,11 @@
         'arm_thumb%': 1,
       }],
 
+      # Set default compiler flags depending on MIPS architecture variant.
+      ['target_arch=="mipsel" and mips_arch_variant=="r2" and android_webview_build==0', {
+        'mips_fpu_mode%': 'fp32',
+      }],
+
       ['android_webview_build==1', {
         # The WebView build gets its cpu-specific flags from the Android build system.
         'arm_arch%': '',
@@ -2282,6 +2287,7 @@
         'arm_fpu%': '',
         'arm_float_abi%': '',
         'arm_thumb%': 0,
+        'mips_fpu_mode%': '',
       }],
 
       # Enable brlapi by default for chromeos.
@@ -3163,6 +3169,12 @@
               'delayimp.lib',
               'credui.lib',
               'netapi32.lib',
+            ],
+            'AdditionalOptions': [
+              # Suggested by Microsoft Devrel to avoid
+              #   LINK : fatal error LNK1248: image size (80000000) exceeds maximum allowable size (80000000)
+              # which started happening more regularly after VS2013 Update 4.
+              '/maxilksize:2147483647',
             ],
           },
         },
@@ -5405,7 +5417,6 @@
           # removed as code is fixed.
           4100, # Unreferenced formal parameter
           4121, # Alignment of a member was sensitive to packing
-          4189, # Local variable is initialized but not referenced
           4244, # Conversion from 'type1' to 'type2', possible loss of data
           4481, # Nonstandard extension used: override specifier 'keyword'
           4505, # Unreferenced local function has been removed

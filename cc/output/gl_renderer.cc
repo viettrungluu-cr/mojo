@@ -289,7 +289,7 @@ class GLRenderer::SyncQuery {
 
 scoped_ptr<GLRenderer> GLRenderer::Create(
     RendererClient* client,
-    const LayerTreeSettings* settings,
+    const RendererSettings* settings,
     OutputSurface* output_surface,
     ResourceProvider* resource_provider,
     TextureMailboxDeleter* texture_mailbox_deleter,
@@ -303,7 +303,7 @@ scoped_ptr<GLRenderer> GLRenderer::Create(
 }
 
 GLRenderer::GLRenderer(RendererClient* client,
-                       const LayerTreeSettings* settings,
+                       const RendererSettings* settings,
                        OutputSurface* output_surface,
                        ResourceProvider* resource_provider,
                        TextureMailboxDeleter* texture_mailbox_deleter,

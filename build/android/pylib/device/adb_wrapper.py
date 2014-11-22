@@ -12,6 +12,7 @@ import errno
 import os
 
 from pylib import cmd_helper
+from pylib import constants
 from pylib.device import decorators
 from pylib.device import device_errors
 from pylib.utils import timeout_retry
@@ -45,11 +46,11 @@ class AdbWrapper(object):
     """
     self._device_serial = str(device_serial)
 
-  # pylint: disable=W0613
+  # pylint: disable=unused-argument
   @classmethod
   @decorators.WithTimeoutAndRetries
   def _RunAdbCmd(cls, arg_list, timeout=None, retries=None, check_error=True):
-    cmd = ['adb'] + arg_list
+    cmd = [constants.GetAdbPath()] + arg_list
     exit_code, output = cmd_helper.GetCmdStatusAndOutputWithTimeout(
       cmd, timeout_retry.CurrentTimeoutThread().GetRemainingTime())
     if exit_code != 0:
@@ -62,7 +63,7 @@ class AdbWrapper(object):
     if check_error and output[:len('error:')] == 'error:':
       raise device_errors.AdbCommandFailedError(arg_list, output)
     return output
-  # pylint: enable=W0613
+  # pylint: enable=unused-argument
 
   def _DeviceAdbCmd(self, arg_list, timeout, retries, check_error=True):
     """Runs an adb command on the device associated with this object.
