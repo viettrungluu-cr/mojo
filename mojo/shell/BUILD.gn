@@ -316,6 +316,7 @@ test("external_application_unittests") {
     "//base/test:test_support",
     "//testing/gtest",
     "//url",
+    "//mojo/application",
     "//mojo/application_manager",
     "//mojo/common",
     "//mojo/edk/system",
