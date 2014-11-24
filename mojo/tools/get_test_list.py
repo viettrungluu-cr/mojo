@@ -63,7 +63,7 @@ def GetTestList(test_config):
          "mojob_test_successes"]))
 
   # C++ app tests:
-  if _TestTypesMatch(types_to_run, [mopy.test_config.TEST_TYPE_DEFAULT]):
+  if _TestTypesMatch(types_to_run, [mopy.test_config.TEST_TYPE_DEFAULT, "app"]):
     test_list.append(_MakeMaybeXvfbEntry(
         test_config,
         "App tests",
@@ -78,16 +78,37 @@ def GetTestList(test_config):
         "Python unit tests",
         ["python", os.path.join("mojo", "tools", "run_mojo_python_tests.py")]))
 
-  # Python bindings tests (Linux-only):
+  # Python bindings unit tests (Linux-only):
   if (test_config["target_os"] == mopy.test_config.OS_LINUX and
-      _TestTypesMatch(types_to_run, [mopy.test_config.TEST_TYPE_DEFAULT])):
+      _TestTypesMatch(types_to_run, [mopy.test_config.TEST_TYPE_DEFAULT,
+                                     mopy.test_config.TEST_TYPE_UNIT])):
     test_list.append(_MakeEntry(
-        "Python bindings tests",
+        "Python bindings unit tests",
         ["python",
          os.path.join("mojo", "tools", "run_mojo_python_bindings_tests.py"),
          "--build-dir=" + build_dir]))
 
-  # TODO(vtl): other tests
+  # Sky tests (Linux-only):
+  if (test_config["target_os"] == mopy.test_config.OS_LINUX and
+      _TestTypesMatch(types_to_run, [mopy.test_config.TEST_TYPE_DEFAULT,
+                                     "sky"])):
+    sky_command = [
+        "sky/tools/test_sky",
+        "-t", "Debug" if test_config["build_type"] ==
+                         mopy.test_config.BUILD_TYPE_DEBUG else "Release",
+        "--no-new-test-results",
+        "--no-show-results",
+        "--verbose"]
+    if "builder_name" in test_config:
+      sky_command += ["--builder-name", test_config["builder_name"]]
+    if "build_number" in test_config:
+      sky_command += ["--build-number", test_config["build_number"]]
+    if "master_name" in test_config:
+      sky_command += ["--master-name", test_config["master_name"]]
+    if "test_results_server" in test_config:
+      sky_command += ["--test-results-server",
+                      test_config["test_results_server"]]
+    test_list.append(_MakeMaybeXvfbEntry(test_config, "Sky tests", sky_command))
 
   return test_list
 
