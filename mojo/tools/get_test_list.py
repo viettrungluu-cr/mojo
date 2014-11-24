@@ -3,8 +3,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-#TODO
-"""TODO"""
+"""Central list of tests to run (as appropriate for a given test config). Add
+tests to run by modifying this file."""
 
 
 import argparse
@@ -39,17 +39,30 @@ def _MakeMaybeXvfbEntry(test_config, name, command):
 
 
 def GetTestList(test_config):
+  """Gets the list of tests to run for the given test config. The test list
+  (which is returned) is just a list of dictionaries, each dictionary having two
+  required fields:
+    {
+      "name": "Short name",
+      "command": ["python", "test_runner.py", "--some", "args"]
+    }
+  """
+
   types_to_run = set(test_config["test_types"])
 
-  # The test list is just a list of dictionaries, each dictionary having two
-  # required fields:
-  #   {
-  #     "name": "Short name",
-  #     "command": ["python", "test_runner.py", "--some", "args"]
-  #   }
-
+  # See above for a description of the test list.
   test_list = []
+
+  # TODO(vtl): Currently, we only know how to run tests on Linux or Windows.
+  # (The "real" problem is that we only know how to run tests when the target OS
+  # is the same as the host OS.)
+  if (test_config["target_os"] != mopy.test_config.OS_LINUX and
+      test_config["target_os"] != mopy.test_config.OS_WINDOWS):
+    return test_list
+
   build_dir = mopy.test_config.GetBuildDir(test_config)
+
+  # Tests run by default -------------------------------------------------------
 
   # C++ unit tests:
   if _TestTypesMatch(types_to_run, [mopy.test_config.TEST_TYPE_DEFAULT,
@@ -78,12 +91,12 @@ def GetTestList(test_config):
         "Python unit tests",
         ["python", os.path.join("mojo", "tools", "run_mojo_python_tests.py")]))
 
-  # Python bindings unit tests (Linux-only):
+  # Python bindings tests (Linux-only):
   if (test_config["target_os"] == mopy.test_config.OS_LINUX and
       _TestTypesMatch(types_to_run, [mopy.test_config.TEST_TYPE_DEFAULT,
                                      mopy.test_config.TEST_TYPE_UNIT])):
     test_list.append(_MakeEntry(
-        "Python bindings unit tests",
+        "Python bindings tests",
         ["python",
          os.path.join("mojo", "tools", "run_mojo_python_bindings_tests.py"),
          "--build-dir=" + build_dir]))
@@ -109,6 +122,16 @@ def GetTestList(test_config):
       sky_command += ["--test-results-server",
                       test_config["test_results_server"]]
     test_list.append(_MakeMaybeXvfbEntry(test_config, "Sky tests", sky_command))
+
+  # Perf tests -----------------------------------------------------------------
+
+  if (test_config["target_os"] == mopy.test_config.OS_LINUX and
+      _TestTypesMatch(types_to_run, [mopy.test_config.TEST_TYPE_PERF])):
+    test_list.append(_MakeEntry(
+        "Perf tests",
+        [os.path.join(build_dir, 'mojo_public_system_perftests')]))
+
+  # Other (non-default) tests --------------------------------------------------
 
   return test_list
 
