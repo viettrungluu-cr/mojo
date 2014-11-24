@@ -15,6 +15,55 @@ _logging = logging.getLogger()
 
 from mopy.gtest_list_tests import gtest_list_tests
 
+
+def print_output(command_line, output):
+  print command_line
+  print 72 * '-'
+  print output
+  print 72 * '-'
+
+
+def try_command_line(command_line):
+  """Returns the output of a command line or an empty string on error."""
+  _logging.debug("Running command line: %s" % command_line)
+  try:
+    output = subprocess.check_output(command_line, stderr=subprocess.STDOUT)
+    return output
+  except subprocess.CalledProcessError as e:
+    print "Failed with exit code %d, command line, and output:" % e.returncode
+    print_output(command_line, e.output)
+  except Exception as e:
+    print "Failed with command line and exception:"
+    print_output(command_line, e)
+  return None
+
+
+def get_fixtures(command_line):
+  """Returns the "Test.Fixture" list from a --gtest_list_tests commandline."""
+  list_output = try_command_line(command_line)
+  _logging.debug("Tests listed:\n%s" % list_output)
+  try:
+    return gtest_list_tests(list_output)
+  except Exception as e:
+    print "Failed to get test fixtures with command line and exception:"
+    print_output(command_line, e)
+    return []
+
+
+def run_test(command_line):
+  """Runs a command line and checks the output for signs of gtest failure."""
+  output = try_command_line(command_line)
+  # Fail on output with gtest's "[  FAILED  ]" or a lack of "[  PASSED  ]".
+  # The latter condition ensures failure on broken command lines or output.
+  # Check output instead of exit codes because mojo_shell always exits with 0.
+  if output.find("[  FAILED  ]") != -1 or output.find("[  PASSED  ]") == -1:
+    print "Failed test with command line and output:"
+    print_output(command_line, output)
+    return False
+  _logging.debug("Succeeded with output:\n%s" % output)
+  return True
+
+
 def main(argv):
   logging.basicConfig()
   # Uncomment to debug:
@@ -40,54 +89,37 @@ def main(argv):
   if platform.system() == 'Windows':
     mojo_shell += ".exe"
 
+  exit_code = 0
   for apptest in apptest_list:
     print "Running " + apptest + "...",
     sys.stdout.flush()
 
     # List the apptest fixtures so they can be run independently for isolation.
     # TODO(msw): Run some apptests without fixture isolation?
-    list_command_line = [mojo_shell, apptest + " --gtest_list_tests"]
-    _logging.debug("Listing tests: %s" % list_command_line)
-    try:
-      # TODO(msw): Need to fail on errors! mojo_shell always exits with 0!
-      list_output = subprocess.check_output(list_command_line)
-      _logging.debug("Tests listed:\n%s" % list_output)
-    except subprocess.CalledProcessError as e:
-      print "Failed with exit code %d and output:" % e.returncode
-      print 72 * '-'
-      print e.output
-      print 72 * '-'
-      return 1
-    except OSError as e:
-      print "  Failed to start test"
-      return 1
+    command = [mojo_shell,
+               "--args-for={0} --gtest_list_tests".format(apptest),
+               apptest]
+    fixtures = get_fixtures(command)
 
-    test_list = gtest_list_tests(list_output)
-    for test in test_list:
-      # TODO(msw): enable passing arguments to tests down from the test harness.
-      command_line = [
-          mojo_shell,
+    if not fixtures:
+      print "Failed with no tests found."
+      exit_code = 1
+      continue
+
+    apptest_result = "Succeeded"
+    for fixture in fixtures:
+      # ExampleApplicationTest.CheckCommandLineArg checks --example_apptest_arg.
+      # TODO(msw): Enable passing arguments to tests down from the test harness.
+      command = [mojo_shell,
           "--args-for={0} --example_apptest_arg --gtest_filter={1}".format(
-              apptest, test),
+              apptest, fixture),
           apptest]
+      if not run_test(command):
+        apptest_result = "Failed test(s) in " + apptest
+        exit_code = 1
+    print apptest_result
 
-      _logging.debug("Running %s..." % command_line)
-      try:
-        # TODO(msw): Need to fail on errors! mojo_shell always exits with 0!
-        subprocess.check_output(command_line, stderr=subprocess.STDOUT)
-        _logging.debug("Succeeded")
-      except subprocess.CalledProcessError as e:
-        print "Failed with exit code %d and output:" % e.returncode
-        print 72 * '-'
-        print e.output
-        print 72 * '-'
-        return 1
-      except OSError as e:
-        print "  Failed to start test"
-        return 1
-    print "Succeeded"
-
-  return 0
+  return exit_code
 
 if __name__ == '__main__':
   sys.exit(main(sys.argv))
