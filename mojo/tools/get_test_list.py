@@ -28,11 +28,12 @@ def _MakeEntry(name, command):
 
 def _MakeUnitTestEntry(test_config):
   command = ["python"]
+  build_dir = mopy.test_config.GetBuildDir(test_config)
   if test_config["target_os"] == mopy.test_config.OS_LINUX:
-    command += ["./testing/xvfb.py", test_config["build_dir"]]
+    command += ["./testing/xvfb.py", build_dir]
   command += [os.path.join("mojo", "tools", "test_runner.py"),
               os.path.join("mojo", "tools", "data", "unittests"),
-              test_config["build_dir"],
+              build_dir,
               "mojob_test_successes"]
   return _MakeEntry("Unit tests", command)
 

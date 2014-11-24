@@ -7,17 +7,16 @@ provides some utilities."""
 
 
 import json
+import os.path
 import sys
 
 
 # Valid values for the required fields:
-OS_ANDROID = "chromeos"
+OS_ANDROID = "android"
 OS_CHROMEOS = "chromeos"
 OS_LINUX = "linux"
 OS_MAC = "mac"
 OS_WINDOWS = "windows"
-
-ARCH_X64 = "x64"
 
 BUILD_TYPE_DEBUG = "debug"
 BUILD_TYPE_RELEASE = "release"
@@ -28,18 +27,14 @@ TEST_TYPE_UNIT = "unit"
 TEST_TYPE_PERF = "perf"
 
 
-def MakeTestConfig(target_os, target_arch, build_type, build_dir, test_types,
-                   **kwargs):
+def MakeTestConfig(target_os, build_type, test_types, **kwargs):
   """Makes a test config with the given (required) field values. Optional fields
   may be specified as keyword arguments, and these may override the required
   values."""
 
   # Required fields:
   test_config = {"target_os": target_os,
-                 "target_arch": target_arch,
                  "build_type": build_type,
-                 # The build directory, relative to the src/ directory.
-                 "build_dir": build_dir,
                  # This is a list of test types to execute. (A test may have
                  # multiple types.)
                  "test_types": test_types}
@@ -61,11 +56,29 @@ def GetDefaultTestConfig(**kwargs):
   else:
     raise NotImplementedError
 
-  # TODO(vtl):
-  target_arch = ARCH_X64
-
-  return MakeTestConfig(target_os, target_arch, BUILD_TYPE_DEBUG, "out/Debug",
+  return MakeTestConfig(target_os, BUILD_TYPE_DEBUG, "out/Debug",
                         [TEST_TYPE_DEFAULT], **kwargs)
+
+
+def GetBuildDir(test_config):
+  """Gets the (default) build directory for the given test config, relative to
+  the src directory."""
+
+  dirname = ""
+
+  if test_config["target_os"] == OS_ANDROID:
+    dirname += "android_"
+  elif test_config["target_os"] == OS_CHROMEOS:
+    dirname += "chromeos_"
+
+  if test_config["build_type"] == BUILD_TYPE_DEBUG:
+    dirname += "Debug"
+  elif test_config["build_type"] == BUILD_TYPE_RELEASE:
+    dirname += "Release"
+  else:
+    raise NotImplementedError
+
+  return os.path.join("out", dirname)
 
 
 if __name__ == "__main__":
