@@ -63,8 +63,8 @@ def GetTestList(test_config):
   # C++ app tests:
   if _TestTypesMatch(types_to_run, [mopy.test_config.TEST_TYPE_DEFAULT]):
     test_list.append(_MakeMaybeXvfbEntry(
-        [os.path.join("mojo", "tools", "apptest_runner.py")
-         os.path.join("mojo", "tools", "data", "apptests")
+        [os.path.join("mojo", "tools", "apptest_runner.py"),
+         os.path.join("mojo", "tools", "data", "apptests"),
          build_dir]))
 
   # Python unit tests:
