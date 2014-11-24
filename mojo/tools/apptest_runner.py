@@ -64,7 +64,12 @@ def main(argv):
 
     test_list = gtest_list_tests(list_output)
     for test in test_list:
-      command_line = [mojo_shell, apptest + " --gtest_filter=" + test]
+      # TODO(msw): enable passing arguments to tests down from the test harness.
+      command_line = [
+          mojo_shell,
+          "--args-for={0} --example_apptest_arg --gtest_filter={1}".format(
+              apptest, test),
+          apptest]
 
       _logging.debug("Running %s..." % command_line)
       try:

@@ -17,8 +17,7 @@ namespace {
 // Exemplifies ApplicationTestBase's application testing pattern.
 class ExampleApplicationTest : public test::ApplicationTestBase {
  public:
-  // TODO(msw): Exemplify the use of actual command line arguments.
-  ExampleApplicationTest() : ApplicationTestBase(Array<String>()) {}
+  ExampleApplicationTest() : ApplicationTestBase() {}
   ~ExampleApplicationTest() override {}
 
  protected:
@@ -28,6 +27,7 @@ class ExampleApplicationTest : public test::ApplicationTestBase {
   }
   void SetUp() override {
     ApplicationTestBase::SetUp();
+
     application_impl()->ConnectToService("mojo:example_service",
                                          &example_service_);
     example_service_.set_client(&example_client_);
@@ -73,6 +73,13 @@ TEST_F(ExampleApplicationTest, RunCallbackViaService) {
   example_service_->RunCallback(SetCallback<bool>(&was_run, true));
   EXPECT_TRUE(example_service_.WaitForIncomingMethodCall());
   EXPECT_TRUE(was_run);
+}
+
+TEST_F(ExampleApplicationTest, CheckCommandLineArg) {
+  // apptest_runner.py adds this argument unconditionally so we can check
+  // for it here to verify that command line args are getting passed to
+  // apptests.
+  ASSERT_TRUE(application_impl()->HasArg("--example_apptest_arg"));
 }
 
 }  // namespace

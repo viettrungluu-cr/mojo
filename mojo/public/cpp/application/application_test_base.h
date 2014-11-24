@@ -21,10 +21,14 @@ namespace test {
 ScopedMessagePipeHandle PassShellHandle();
 void SetShellHandle(ScopedMessagePipeHandle handle);
 
+// Access the command line arguments passed to the application test.
+const Array<String>& Args();
+void InitializeArgs(int argc, std::vector<const char*> argv);
+
 // A GTEST base class for application testing executed in mojo_shell.
 class ApplicationTestBase : public testing::Test {
  public:
-  explicit ApplicationTestBase(Array<String> args);
+  ApplicationTestBase();
   ~ApplicationTestBase() override;
 
  protected:
@@ -33,14 +37,15 @@ class ApplicationTestBase : public testing::Test {
   // Get the ApplicationDelegate for the application to be tested.
   virtual ApplicationDelegate* GetApplicationDelegate() = 0;
 
+  // A testing::Test::SetUp helper to override the application command
+  // line arguments.
+  void SetUpWithArgs(const Array<String>& args);
+
   // testing::Test:
   void SetUp() override;
   void TearDown() override;
 
  private:
-  // The command line arguments supplied to each test application instance.
-  Array<String> args_;
-
   // The application implementation instance, reconstructed for each test.
   ApplicationImpl* application_impl_;
 

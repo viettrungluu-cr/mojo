@@ -226,7 +226,7 @@ class TestReceiveCallback
 class UDPSocketAppTest : public test::ApplicationTestBase,
                          public ApplicationDelegate {
  public:
-  UDPSocketAppTest() : ApplicationTestBase(Array<String>()) {}
+  UDPSocketAppTest() {}
   ~UDPSocketAppTest() override {}
 
   void SetUp() override {

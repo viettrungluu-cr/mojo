@@ -345,7 +345,7 @@ class ViewManagerClientFactory : public InterfaceFactory<ViewManagerClient> {
 class ViewManagerServiceAppTest : public test::ApplicationTestBase,
                                   public ApplicationDelegate {
  public:
-  ViewManagerServiceAppTest() : ApplicationTestBase(Array<String>()) {}
+  ViewManagerServiceAppTest() {}
   ~ViewManagerServiceAppTest() override {}
 
  protected:
