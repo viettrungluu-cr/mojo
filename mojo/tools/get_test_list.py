@@ -23,19 +23,19 @@ def _TestTypesMatch(types_to_run, this_tests_types):
 
 
 def _MakeEntry(name, command):
+  """Makes an entry with the given name to run the given command."""
   return {"name": name, "command": command}
 
 
-def _MakeUnitTestEntry(test_config):
-  command = ["python"]
-  build_dir = mopy.test_config.GetBuildDir(test_config)
+def _MakeMaybeXvfbEntry(test_config, name, command):
+  """Makes an entry with the given name to run the given command, using xvfb if
+  appropriate."""
+  real_command = ["python"]
   if test_config["target_os"] == mopy.test_config.OS_LINUX:
-    command += ["./testing/xvfb.py", build_dir]
-  command += [os.path.join("mojo", "tools", "test_runner.py"),
-              os.path.join("mojo", "tools", "data", "unittests"),
-              build_dir,
-              "mojob_test_successes"]
-  return _MakeEntry("Unit tests", command)
+    real_command += ["./testing/xvfb.py",
+                     mopy.test_config.GetBuildDir(test_config)]
+  real_command += command
+  return _MakeEntry(name, command)
 
 
 def GetTestList(test_config):
@@ -49,10 +49,38 @@ def GetTestList(test_config):
   #   }
 
   test_list = []
+  build_dir = mopy.test_config.GetBuildDir(test_config)
 
+  # C++ unit tests:
   if _TestTypesMatch(types_to_run, [mopy.test_config.TEST_TYPE_DEFAULT,
                                     mopy.test_config.TEST_TYPE_UNIT]):
-    test_list.append(_MakeUnitTestEntry(test_config))
+    test_list.append(_MakeMaybeXvfbEntry(
+        [os.path.join("mojo", "tools", "test_runner.py"),
+         os.path.join("mojo", "tools", "data", "unittests"),
+         build_dir,
+         "mojob_test_successes"]))
+
+  # C++ app tests:
+  if _TestTypesMatch(types_to_run, [mopy.test_config.TEST_TYPE_DEFAULT]):
+    test_list.append(_MakeMaybeXvfbEntry(
+        [os.path.join("mojo", "tools", "apptest_runner.py")
+         os.path.join("mojo", "tools", "data", "apptests")
+         build_dir]))
+
+  # Python unit tests:
+  if _TestTypesMatch(types_to_run, [mopy.test_config.TEST_TYPE_DEFAULT,
+                                    mopy.test_config.TEST_TYPE_UNIT]):
+    test_list.append(_MakeEntry(
+        ["python", os.path.join("mojo", "tools", "run_mojo_python_tests.py")]))
+
+  # Python bindings tests (Linux-only):
+  if test_config["target_os"] == mopy.test_config.OS_LINUX and
+      _TestTypesMatch(types_to_run, [mopy.test_config.TEST_TYPE_DEFAULT]):
+    test_list.append(_MakeEntry(
+        ["python",
+         os.path.join("mojo", "tools", "run_mojo_python_bindings_tests.py"),
+         "--build-dir=" + build_dir]))
+
   # TODO(vtl): other tests
 
   return test_list
