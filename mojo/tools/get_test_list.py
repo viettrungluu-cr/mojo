@@ -55,6 +55,8 @@ def GetTestList(test_config):
   if _TestTypesMatch(types_to_run, [mopy.test_config.TEST_TYPE_DEFAULT,
                                     mopy.test_config.TEST_TYPE_UNIT]):
     test_list.append(_MakeMaybeXvfbEntry(
+        test_config,
+        "Unit tests",
         [os.path.join("mojo", "tools", "test_runner.py"),
          os.path.join("mojo", "tools", "data", "unittests"),
          build_dir,
@@ -63,6 +65,8 @@ def GetTestList(test_config):
   # C++ app tests:
   if _TestTypesMatch(types_to_run, [mopy.test_config.TEST_TYPE_DEFAULT]):
     test_list.append(_MakeMaybeXvfbEntry(
+        test_config,
+        "App tests",
         [os.path.join("mojo", "tools", "apptest_runner.py"),
          os.path.join("mojo", "tools", "data", "apptests"),
          build_dir]))
@@ -71,12 +75,14 @@ def GetTestList(test_config):
   if _TestTypesMatch(types_to_run, [mopy.test_config.TEST_TYPE_DEFAULT,
                                     mopy.test_config.TEST_TYPE_UNIT]):
     test_list.append(_MakeEntry(
+        "Python unit tests",
         ["python", os.path.join("mojo", "tools", "run_mojo_python_tests.py")]))
 
   # Python bindings tests (Linux-only):
   if (test_config["target_os"] == mopy.test_config.OS_LINUX and
       _TestTypesMatch(types_to_run, [mopy.test_config.TEST_TYPE_DEFAULT])):
     test_list.append(_MakeEntry(
+        "Python bindings tests",
         ["python",
          os.path.join("mojo", "tools", "run_mojo_python_bindings_tests.py"),
          "--build-dir=" + build_dir]))
