@@ -146,7 +146,7 @@ LRESULT CALLBACK MoveLoopMouseWatcher::KeyHook(int n_code,
   if (n_code == HC_ACTION && w_param == VK_ESCAPE) {
     if (base::win::GetVersion() >= base::win::VERSION_VISTA) {
       int value = TRUE;
-      HRESULT result = DwmSetWindowAttribute(
+      DwmSetWindowAttribute(
           instance_->host_->hwnd(),
           DWMWA_TRANSITIONS_FORCEDISABLED,
           &value,
