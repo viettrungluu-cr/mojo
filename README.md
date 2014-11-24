@@ -9,14 +9,16 @@ The instructions below only need to be done once. Note that a simple "git clone"
 
 1. Download depot_tools and make sure it is in your path:<br>http://www.chromium.org/developers/how-tos/install-depot-tools<br>
 
-2. Create a directory somewhere for your checkout, cd into it, and run the following commands:
+2. [Googlers only] Install Goma in ~/goma.
+
+3. Create a directory somewhere for your checkout (preferably on an SSD), cd into it, and run the following commands:
 
 
 ```
-$ fetch mojo # use --target_os=android if you want an Android build.
+$ fetch mojo # append --target_os=android to include Android build support.
 $ cd src
 $ ./build/install-build-deps.sh
-$ gn gen out/Debug
+$ mojo/tools/mojob.py gn
 ```
 
 The "fetch mojo" command does the following:
@@ -24,7 +26,7 @@ The "fetch mojo" command does the following:
 - clones the repository using git clone
 - clones dependencies with gclient sync
 
-Finally, "install-build-deps.sh" installs any packages needed to build.
+`install-build-deps.sh` installs any packages needed to build, then `mojo/tools/mojob.py gn` runs `gn args` and configures the build directory, out/Debug.
 
 If the fetch command fails, you will need to delete the src directory and start over.
 
@@ -80,12 +82,12 @@ Commit your change locally (this doesn't commit your change to the SVN or Git se
 ```
   git commit -a
 ```
-If you added new files, you should tell git so by running `git add <files>` before committing.
+If you added new files, you should tell git by running `git add <files>` before committing.
 
 Upload your change for review
 
 ```
-  git cl upload
+$ git cl upload
 ```
 
 Respond to review comments
@@ -97,6 +99,32 @@ $ git cl land
 ```
 
 Don't break the build! Waterfall is here: http://build.chromium.org/p/client.mojo/waterfall
+
+## Android Builds
+
+To build for Android, first make sure you've downloaded build support for Android, which you would have done by adding --target_os=android when you ran `fetch mojo`. If you didn't do that, there's an easy fix. Edit the file .gclient in your root Mojo directory (the parent directory to src.) Add this line at the end of the file:
+
+```
+target_os = [u'android']
+```
+
+Pull down all of the packages with this command:
+
+```
+$ gclient sync
+```
+
+Prepare the build directory for Android:
+
+```
+$ src/mojo/tools/mojob.py gn --android
+```
+
+Finally, perform the build. The result will be in out/android_Debug:
+
+```
+$ src/mojo/tools/mojob.py build --android
+```
 
 ## Googlers
 
