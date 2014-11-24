@@ -20,7 +20,6 @@ external_application_unittests
 # These tests currently crash. We should re-enable them when they pass.
 # mojo_view_manager_lib_unittests
 mojo_surfaces_lib_unittests
-network_service_unittests
 view_manager_service_unittests
 view_manager_unittests
 

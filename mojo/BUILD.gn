@@ -81,7 +81,6 @@ group("tests") {
     "//mojo/public/cpp/utility/tests:mojo_public_utility_unittests",
     "//mojo/services/clipboard:clipboard_unittests",
     "//mojo/services/network:apptests",
-    "//mojo/services/network:unittests",
     "//mojo/shell:external_application_unittests",
     "//mojo/shell:mojo_shell_tests",
     "//mojo/tools:message_generator",

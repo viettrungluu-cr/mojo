@@ -56,29 +56,6 @@ source_set("lib") {
   ]
 }
 
-# TODO(yzshen): Remove this test once the apptests is run on bots.
-test("unittests") {
-  output_name = "network_service_unittests"
-
-  sources = [
-    "udp_socket_unittest.cc",
-  ]
-
-  deps = [
-    ":network",
-    "//base",
-    "//base/test:run_all_unittests",
-    "//base/test:test_support",
-    "//mojo/application_manager",
-    "//mojo/edk/system",
-    "//mojo/environment:chromium",
-    "//mojo/services/public/cpp/network",
-    "//mojo/services/public/interfaces/network",
-    "//mojo/shell:test_support",
-    "//testing/gtest",
-  ]
-}
-
 mojo_native_application("apptests") {
   output_name = "network_service_apptests"
   testonly = true
