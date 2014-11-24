@@ -16,7 +16,7 @@ namespace mojo {
 namespace js {
 
 class JsContentHandler : public ApplicationDelegate,
-                         public ContentHandlerFactory::Delegate {
+                         public ContentHandlerFactory::ManagedDelegate {
  public:
   JsContentHandler() : content_handler_factory_(this) {}
 
@@ -34,7 +34,7 @@ class JsContentHandler : public ApplicationDelegate,
     return true;
   }
 
-  // Overridden from ContentHandlerFactory::Delegate:
+  // Overridden from ContentHandlerFactory::ManagedDelegate:
   scoped_ptr<ContentHandlerFactory::HandledApplicationHolder> CreateApplication(
       ShellPtr shell,
       URLResponsePtr response) override {

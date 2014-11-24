@@ -198,7 +198,7 @@ class PNGView : public ApplicationDelegate,
 };
 
 class PNGViewer : public ApplicationDelegate,
-                  public ContentHandlerFactory::Delegate {
+                  public ContentHandlerFactory::ManagedDelegate {
  public:
   PNGViewer() : content_handler_factory_(this) {}
 
@@ -210,7 +210,7 @@ class PNGViewer : public ApplicationDelegate,
     return true;
   }
 
-  // Overridden from ContentHandlerFactory::Delegate:
+  // Overridden from ContentHandlerFactory::ManagedDelegate:
   virtual scoped_ptr<ContentHandlerFactory::HandledApplicationHolder>
   CreateApplication(ShellPtr shell, URLResponsePtr response) override {
     return make_handled_factory_holder(new mojo::ApplicationImpl(

@@ -212,7 +212,7 @@ class PDFView : public ApplicationDelegate,
 };
 
 class PDFViewer : public ApplicationDelegate,
-                  public ContentHandlerFactory::Delegate {
+                  public ContentHandlerFactory::ManagedDelegate {
  public:
   PDFViewer() : content_handler_factory_(this) {
     v8::V8::InitializeICU();
@@ -229,7 +229,7 @@ class PDFViewer : public ApplicationDelegate,
     return true;
   }
 
-  // Overridden from ContentHandlerFactory::Delegate:
+  // Overridden from ContentHandlerFactory::ManagedDelegate:
   virtual scoped_ptr<ContentHandlerFactory::HandledApplicationHolder>
   CreateApplication(ShellPtr shell, URLResponsePtr response) override {
     return make_handled_factory_holder(new mojo::ApplicationImpl(

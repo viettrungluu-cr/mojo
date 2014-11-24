@@ -17,7 +17,7 @@ namespace mojo {
 namespace examples {
 
 class RecursiveContentHandler : public ApplicationDelegate,
-                                public ContentHandlerFactory::Delegate {
+                                public ContentHandlerFactory::ManagedDelegate {
  public:
   RecursiveContentHandler() : content_handler_factory_(this) {}
 
@@ -29,7 +29,7 @@ class RecursiveContentHandler : public ApplicationDelegate,
     return true;
   }
 
-  // Overridden from ContentHandlerFactory::Delegate:
+  // Overridden from ContentHandlerFactory::ManagedDelegate:
   virtual scoped_ptr<ContentHandlerFactory::HandledApplicationHolder>
   CreateApplication(ShellPtr shell, URLResponsePtr response) override {
     LOG(INFO) << "RecursiveContentHandler called with url: " << response->url;

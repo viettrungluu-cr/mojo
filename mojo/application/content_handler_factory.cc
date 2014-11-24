@@ -38,10 +38,7 @@ class ApplicationThread : public base::PlatformThread::Delegate {
 
  private:
   void ThreadMain() override {
-    base::MessageLoop loop(common::MessagePumpMojo::Create());
-    auto application =
-        handler_delegate_->CreateApplication(shell_.Pass(), response_.Pass());
-    loop.Run();
+    handler_delegate_->RunApplication(shell_.Pass(), response_.Pass());
     handler_thread_->PostTask(FROM_HERE,
                               base::Bind(termination_callback_, this));
   }
@@ -112,6 +109,14 @@ ContentHandlerFactory::ContentHandlerFactory(Delegate* delegate)
 }
 
 ContentHandlerFactory::~ContentHandlerFactory() {
+}
+
+void ContentHandlerFactory::ManagedDelegate::RunApplication(
+    ShellPtr shell,
+    URLResponsePtr response) {
+  base::MessageLoop loop(common::MessagePumpMojo::Create());
+  auto application = this->CreateApplication(shell.Pass(), response.Pass());
+  loop.Run();
 }
 
 void ContentHandlerFactory::Create(ApplicationConnection* connection,
