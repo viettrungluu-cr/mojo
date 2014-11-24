@@ -227,6 +227,10 @@ class Browser : public ApplicationDelegate,
                               const ui::KeyEvent& key_event) override {
     if (key_event.key_code() == ui::VKEY_RETURN) {
       GURL url(sender->text());
+      if (!url.is_valid()) {
+        LOG(ERROR) << "Not a valid URL: " << sender->text();
+        return false;
+      }
       printf("User entered this URL: %s\n", url.spec().c_str());
       URLRequestPtr request(URLRequest::New());
       request->url = String::From(url);
