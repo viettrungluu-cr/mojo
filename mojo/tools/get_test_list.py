@@ -35,7 +35,7 @@ def _MakeMaybeXvfbEntry(test_config, name, command):
     real_command += ["./testing/xvfb.py",
                      mopy.test_config.GetBuildDir(test_config)]
   real_command += command
-  return _MakeEntry(name, command)
+  return _MakeEntry(name, real_command)
 
 
 def GetTestList(test_config):
