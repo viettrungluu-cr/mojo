@@ -74,8 +74,8 @@ def GetTestList(test_config):
         ["python", os.path.join("mojo", "tools", "run_mojo_python_tests.py")]))
 
   # Python bindings tests (Linux-only):
-  if test_config["target_os"] == mopy.test_config.OS_LINUX and
-      _TestTypesMatch(types_to_run, [mopy.test_config.TEST_TYPE_DEFAULT]):
+  if (test_config["target_os"] == mopy.test_config.OS_LINUX and
+      _TestTypesMatch(types_to_run, [mopy.test_config.TEST_TYPE_DEFAULT])):
     test_list.append(_MakeEntry(
         ["python",
          os.path.join("mojo", "tools", "run_mojo_python_bindings_tests.py"),
