@@ -12,18 +12,23 @@ import re
 import subprocess
 import sys
 
-import mopy.paths
+from mopy.config import Config
+from mopy.paths import Paths
+
+
+def args_to_config(args):
+  # Default to host OS.
+  target_os = None
+  if args.android:
+    target_os = Config.OS_ANDROID
+  elif args.chromeos:
+    target_os = Config.OS_CHROMEOS
+  return Config(target_os=target_os, build_type=args.debug)
 
 
 def get_out_dir(args):
-  out_dir = "out"
-  prefix = ''
-  if args.android:
-    prefix = 'android_'
-  elif args.chromeos:
-    prefix = 'chromeos_'
-  subdir = prefix + ('Debug' if args.debug else 'Release')
-  return os.path.join(out_dir, subdir)
+  paths = Paths(config=args_to_config(args))
+  return paths.SrcRelPath(paths.build_dir)
 
 
 def sync(args):
@@ -222,7 +227,7 @@ def darttest(args):
 
 
 def main():
-  os.chdir(mopy.paths.Paths().src_root)
+  os.chdir(Paths().src_root)
 
   parser = argparse.ArgumentParser(description='A script to make building'
       '/testing Mojo components easier.')
@@ -299,6 +304,8 @@ def main():
   darttest_parser.set_defaults(func=darttest)
 
   args = parser.parse_args()
+
+  # TODO(vtl): Pass a Config through to everything, instead of args.
 
   # Android always wants GCC.
   if args.android:

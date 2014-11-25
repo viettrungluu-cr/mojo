@@ -11,10 +11,11 @@ import tempfile
 import time
 import zipfile
 
+from mopy.config import Config
 from mopy.paths import Paths
 from mopy.version import Version
 
-paths = Paths(os.path.join("out", "Release"))
+paths = Paths(Config(target_os=Config.OS_LINUX, is_debug=False))
 
 sys.path.insert(0, os.path.join(paths.src_root, "tools"))
 # pylint: disable=F0401
