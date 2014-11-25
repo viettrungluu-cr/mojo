@@ -18,7 +18,7 @@ def _GetHostOS():
     return Config.OS_MAC
   if sys.platform == "win32":
     return Config.OS_WINDOWS
-  raise NotImplementedError
+  raise NotImplementedError("Unsupported host OS")
 
 
 class Config(object):
@@ -72,5 +72,5 @@ class Config(object):
 
   @property
   def test_types(self):
-    """List of test types to run (or None if not set)."""
-    return self.values.get("test_types")
+    """List of test types to run."""
+    return self.values.get("test_types", [Config.TEST_TYPE_DEFAULT])
