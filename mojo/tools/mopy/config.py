@@ -36,6 +36,12 @@ class Config(object):
   # TODO(vtl): Add clang vs gcc.
   # TODO(vtl): Add ASan/TSan/etc.
 
+  # Standard values for test types (test types are arbitrary strings; other
+  # values are allowed).
+  TEST_TYPE_DEFAULT = "default"
+  TEST_TYPE_UNIT = "unit"
+  TEST_TYPE_PERF = "perf"
+
   def __init__(self, target_os=None, is_debug=True, **kwargs):
     """Constructs a Config with key-value pairs specified via keyword arguments.
     If target_os is not specified, it will be set to the host OS."""
@@ -43,6 +49,8 @@ class Config(object):
     assert target_os in (None, Config.OS_ANDROID, Config.OS_CHROMEOS,
                          Config.OS_LINUX, Config.OS_MAC, Config.OS_WINDOWS)
     assert isinstance(is_debug, bool)
+    if "test_types" in kwargs:
+      assert isinstance(kwargs["test_types"], list)
 
     self.values = {}
     self.values["target_os"] = _GetHostOS() if target_os is None else target_os
@@ -61,3 +69,8 @@ class Config(object):
   def is_debug(self):
     """Is Debug build?"""
     return self.values.get("is_debug")
+
+  @property
+  def test_types(self):
+    """List of test types to run (or None if not set)."""
+    return self.values.get("test_types")
