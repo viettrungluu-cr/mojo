@@ -23,7 +23,7 @@ def args_to_config(args):
     target_os = Config.OS_ANDROID
   elif args.chromeos:
     target_os = Config.OS_CHROMEOS
-  return Config(target_os=target_os, build_type=args.debug)
+  return Config(target_os=target_os, is_debug=args.debug)
 
 
 def get_out_dir(args):
