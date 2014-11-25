@@ -15,6 +15,10 @@ mojo_native_application("js_content_handler") {
     "content_handler_main.cc",
     "js_app.cc",
     "js_app.h",
+    "js_app_runner_delegate.cc",
+    "js_app_runner_delegate.h",
+    "js_app_shell.cc",
+    "js_app_shell.h",
     "mojo_bridge_module.cc",
     "mojo_bridge_module.h",
   ]

@@ -8,8 +8,8 @@
 #include "mojo/application/application_runner_chromium.h"
 #include "mojo/application/content_handler_factory.h"
 #include "mojo/public/c/system/main.h"
+#include "mojo/public/cpp/application/application_delegate.h"
 #include "mojo/public/cpp/application/application_impl.h"
-#include "mojo/public/cpp/application/interface_factory_impl.h"
 #include "services/js/js_app.h"
 
 namespace mojo {
