@@ -28,11 +28,15 @@ mojo_native_application("js_content_handler") {
     "//mojo/application",
     "//mojo/application:application",
     "//mojo/application:content_handler",
+    "//mojo/common",
     "//mojo/edk/js/",
     "//mojo/environment:chromium",
     "//mojo/public/c/system:for_shared_library",
+    "//mojo/public/cpp/system",
     "//mojo/public/cpp/utility",
+    "//mojo/public/interfaces/application",
     "//mojo/services/public/interfaces/content_handler",
+    "//mojo/services/public/interfaces/network",
   ]
 }
 

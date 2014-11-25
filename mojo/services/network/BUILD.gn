@@ -49,6 +49,7 @@ source_set("lib") {
     "//mojo/application",
     "//mojo/common",
     "//mojo/environment:chromium",
+    "//mojo/public/cpp/bindings",
     "//mojo/services/public/cpp/network",
     "//mojo/services/public/interfaces/network",
     "//net",
@@ -71,7 +72,10 @@ mojo_native_application("apptests") {
     "//mojo/application:test_support",
     "//mojo/public/c/system:for_shared_library",
     "//mojo/public/cpp/bindings",
+    "//mojo/public/cpp/bindings:callback",
     "//mojo/services/public/cpp/network",
     "//mojo/services/public/interfaces/network",
+    "//net",
+    "//testing/gtest",
   ]
 }

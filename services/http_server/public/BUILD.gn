@@ -20,5 +20,7 @@ source_set("util") {
 
   deps = [
     ":public",
+    "//base",
+    "//mojo/public/cpp/system",
   ]
 }

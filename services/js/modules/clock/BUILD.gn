@@ -3,15 +3,16 @@
 # found in the LICENSE file.
 
 source_set("clock") {
+  sources = [
+    "monotonic_clock.cc",
+    "monotonic_clock.h",
+  ]
+
   deps = [
     "//base",
     "//gin",
     "//mojo/edk/js",
+    "//mojo/public/cpp/system",
     "//v8",
-  ]
-
-  sources = [
-    "monotonic_clock.cc",
-    "monotonic_clock.h",
   ]
 }

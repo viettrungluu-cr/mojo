@@ -26,6 +26,7 @@ mojo_native_application("surfaces") {
     "//mojo/converters/surfaces",
     "//mojo/environment:chromium",
     "//mojo/public/c/system:for_shared_library",
+    "//mojo/public/cpp/bindings",
     "//mojo/public/gles2:for_shared_library",
     "//mojo/services/public/interfaces/geometry",
     "//mojo/services/public/interfaces/gpu",
