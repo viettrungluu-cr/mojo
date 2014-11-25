@@ -29,4 +29,6 @@ executable("noop") {
   testonly = true
 
   sources = [ "noop.cc" ]
+
+  deps = [ "//build/config/sanitizers:deps" ]
 }
