@@ -5,7 +5,6 @@
 #include "mojo/services/surfaces/surfaces_service_application.h"
 
 #include "cc/surfaces/display.h"
-
 #include "mojo/application/application_runner_chromium.h"
 #include "mojo/public/c/system/main.h"
 #include "mojo/services/surfaces/surfaces_service_impl.h"

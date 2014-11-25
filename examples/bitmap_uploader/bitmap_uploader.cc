@@ -222,7 +222,7 @@ void BitmapUploader::Upload() {
 
   frame->passes.push_back(pass.Pass());
 
-  surface_->SubmitFrame(surface_id_.Clone(), frame.Pass());
+  surface_->SubmitFrame(surface_id_.Clone(), frame.Pass(), mojo::Closure());
 }
 
 void BitmapUploader::ReturnResources(Array<ReturnedResourcePtr> resources) {

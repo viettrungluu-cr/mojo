@@ -102,7 +102,7 @@ void ViewportSurface::SubmitFrame() {
   FramePtr frame = Frame::New();
   frame->passes.push_back(pass.Pass());
   frame->resources.resize(0u);
-  surface_->SubmitFrame(SurfaceId::From(id_), frame.Pass());
+  surface_->SubmitFrame(SurfaceId::From(id_), frame.Pass(), mojo::Closure());
 }
 
 void ViewportSurface::ReturnResources(Array<ReturnedResourcePtr> resources) {

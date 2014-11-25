@@ -121,7 +121,7 @@ void TextureUploader::Upload(scoped_ptr<mojo::GLTexture> texture) {
   pass->quads.push_back(quad.Pass());
 
   frame->passes.push_back(pass.Pass());
-  surface_->SubmitFrame(surface_id_.Clone(), frame.Pass());
+  surface_->SubmitFrame(surface_id_.Clone(), frame.Pass(), mojo::Closure());
 }
 
 void TextureUploader::EnsureSurfaceForSize(const mojo::Size& size) {

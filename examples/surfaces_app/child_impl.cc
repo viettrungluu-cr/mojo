@@ -91,8 +91,8 @@ void ChildImpl::Draw() {
   scoped_ptr<CompositorFrame> frame(new CompositorFrame);
   frame->delegated_frame_data = delegated_frame_data.Pass();
 
-  surface_->SubmitFrame(mojo::SurfaceId::From(id_),
-                        mojo::Frame::From(*frame));
+  surface_->SubmitFrame(mojo::SurfaceId::From(id_), mojo::Frame::From(*frame),
+                        mojo::Closure());
   produce_callback_.Run(SurfaceId::From(id_));
 }
 

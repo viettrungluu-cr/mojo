@@ -4,6 +4,7 @@
 
 #include "mojo/services/surfaces/surfaces_impl.h"
 
+#include "base/debug/trace_event.h"
 #include "cc/output/compositor_frame.h"
 #include "cc/resources/returned_resource.h"
 #include "cc/surfaces/display.h"
@@ -14,6 +15,11 @@
 #include "mojo/converters/surfaces/surfaces_type_converters.h"
 
 namespace mojo {
+namespace {
+void CallCallback(const mojo::Closure& callback) {
+  callback.Run();
+}
+}
 
 SurfacesImpl::SurfacesImpl(cc::SurfaceManager* manager,
                            uint32_t id_namespace,
@@ -41,7 +47,10 @@ void SurfacesImpl::CreateSurface(SurfaceIdPtr id, mojo::SizePtr size) {
   factory_.Create(id.To<cc::SurfaceId>(), size.To<gfx::Size>());
 }
 
-void SurfacesImpl::SubmitFrame(SurfaceIdPtr id, FramePtr frame_ptr) {
+void SurfacesImpl::SubmitFrame(SurfaceIdPtr id,
+                               FramePtr frame_ptr,
+                               const mojo::Closure& callback) {
+  TRACE_EVENT0("mojo", "SurfacesImpl::SubmitFrame");
   cc::SurfaceId cc_id = id.To<cc::SurfaceId>();
   if (cc::SurfaceIdAllocator::NamespaceForId(cc_id) != id_namespace_) {
     // Bad message, do something bad to the caller?
@@ -51,8 +60,8 @@ void SurfacesImpl::SubmitFrame(SurfaceIdPtr id, FramePtr frame_ptr) {
     return;
   }
   factory_.SubmitFrame(id.To<cc::SurfaceId>(),
-                       frame_ptr.To<scoped_ptr<cc::CompositorFrame> >(),
-                       base::Closure());
+                       frame_ptr.To<scoped_ptr<cc::CompositorFrame>>(),
+                       base::Bind(&CallCallback, callback));
   client_->FrameSubmitted();
 }
 

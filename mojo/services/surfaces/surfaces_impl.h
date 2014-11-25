@@ -42,7 +42,9 @@ class SurfacesImpl : public Surface,
 
   // Surface implementation.
   void CreateSurface(SurfaceIdPtr id, mojo::SizePtr size) override;
-  void SubmitFrame(SurfaceIdPtr id, FramePtr frame) override;
+  void SubmitFrame(SurfaceIdPtr id,
+                   FramePtr frame,
+                   const mojo::Closure& callback) override;
   void DestroySurface(SurfaceIdPtr id) override;
   void CreateGLES2BoundSurface(CommandBufferPtr gles2_client,
                                SurfaceIdPtr id,
